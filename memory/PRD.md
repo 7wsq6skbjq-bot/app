@@ -65,9 +65,22 @@
 - Chips header Services mis à jour (ajout "Consultation vitreries" + "Inspection & expertise")
 - Backend, MongoDB, JWT auth, dashboard admin → tous opérationnels après restauration
 
+### 2026-04 — Iter 5 (Légal + form + visuels + branding)
+- **Resend configuré** (clé live `re_dhhg7MKi_...`) — emails de leads arrivent maintenant à `portech.infos@gmail.com` (`email_sent: true` confirmé en test)
+- **Page `/mentions-legales`** créée (`Legal.jsx`) — Mentions légales (éditeur, hébergement, propriété intellectuelle, marques déposées, limitation de responsabilité) + Politique de confidentialité conforme **Loi 25 du Québec** (collecte, usage, sous-traitants, durée, droits de l'utilisateur, cookies). Lien dans le footer.
+- **Formulaire contact étendu** — ajout `Entreprise` (facultatif) + `Lieu des travaux` (obligatoire). Backend : `ContactSubmissionCreate` strict, `ContactSubmission` (réponse) tolérant aux anciennes soumissions sans `work_location`. Email Resend mis à jour.
+- **Marquee "secteurs" enrichi** : ajout Cinémas, Banques, Dépanneurs.
+- **Mur de marques** (12 marques de quincaillerie) : Adams Rite, Von Duprin, Sargent, LCN, Schlage, Yale, Norton, dormakaba, Corbin Russwin, Best, Hager, Stanley — typographies variées (italic, condensed, wide, block) pour donner l'impression d'un wall of brands sans utiliser de logos copyrightés.
+- **Image `heritage-torch.png`** générée via Gemini Nano Banana — main expérimentée transmettant la quincaillerie à une main plus jeune au-dessus d'un établi sombre. Symbolise le passage du flambeau du mentor à Cédrick. Affichée au chapitre 05 dans À propos.
+- **Image `panic-bar.png`** régénérée — barre antipanique stock-photo réaliste (sans défauts) sur porte de couloir d'hôpital.
+- **Image `workshop-tools.png`** régénérée — étagère industrielle remplie de boîtes de quincaillerie alignées (replace flatlay précédent peu lisible).
+- **Nom "Cédrick Pimparé"** affiché dans un bel encart en bas de la photo du fondateur (page À propos).
+- **Photos Service 05 ↔ 06 inversées** : 05 (Consultation) montre maintenant la grille de catalogue, 06 (Inspection) montre la vraie photo de chantier en cours d'installation.
+- **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
+- **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
+
 ## Backlog / P1
-- [ ] **Configurer la clé `RESEND_API_KEY`** dans `/app/backend/.env` pour activer l'envoi des emails de leads (formulaire contact). Compte créé sur [resend.com](https://resend.com) requis.
-- [ ] Vérifier / acheter un domaine (portech.ca ?) et le connecter à Resend pour envoyer à n'importe quelle adresse
+- [ ] Acheter le domaine `portech.ca` et le vérifier sur Resend pour pouvoir envoyer à n'importe quelle adresse en mode prod (actuellement, mode test Resend = limites possibles)
 - [ ] Photos avant/après réelles (remplacer les placeholders IA)
 - [ ] Numéro de téléphone lorsque disponible
 - [ ] Restreindre `CORS_ORIGINS` au domaine de prod

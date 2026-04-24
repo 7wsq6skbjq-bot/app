@@ -76,7 +76,7 @@ class ContactSubmission(BaseModel):
     message: str
     project_type: Optional[str] = None
     company: Optional[str] = None
-    work_location: str
+    work_location: Optional[str] = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     email_sent: bool = False
 
