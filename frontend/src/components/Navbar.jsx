@@ -3,10 +3,10 @@ import { NavLink, Link, useLocation } from "react-router-dom";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 
 const links = [
-    { to: "/", label: "Accueil" },
-    { to: "/services", label: "Services" },
-    { to: "/a-propos", label: "À propos" },
-    { to: "/contact", label: "Contact" },
+    { to: "/", label: "Accueil", slug: "accueil" },
+    { to: "/services", label: "Services", slug: "services" },
+    { to: "/a-propos", label: "À propos", slug: "apropos" },
+    { to: "/contact", label: "Contact", slug: "contact" },
 ];
 
 const Navbar = () => {
@@ -30,41 +30,35 @@ const Navbar = () => {
             data-testid="site-navbar"
             className={`sticky top-0 z-50 border-b transition-colors duration-200 ${
                 scrolled
-                    ? "bg-white/90 backdrop-blur-xl border-zinc-200"
-                    : "bg-white border-zinc-200"
+                    ? "bg-white/95 backdrop-blur-xl border-[#dde5f0]"
+                    : "bg-white border-[#dde5f0]"
             }`}
         >
-            <div className="container-portech flex items-center justify-between h-16 md:h-20">
+            <div className="container-portech flex items-center justify-between h-20 md:h-24">
                 <Link
                     to="/"
                     data-testid="nav-logo"
-                    className="flex items-center gap-3 group"
+                    className="flex items-center group"
                 >
-                    <div className="w-9 h-9 bg-zinc-950 text-white flex items-center justify-center font-display font-bold text-lg tracking-tight group-hover:bg-blue-700 transition-colors">
-                        P
-                    </div>
-                    <div className="flex flex-col leading-tight">
-                        <span className="font-display text-lg font-bold tracking-tight uppercase">
-                            Portech
-                        </span>
-                        <span className="tech-stamp text-[10px]">
-                            QC / Portes commerciales
-                        </span>
-                    </div>
+                    <img
+                        src="/brand/logo-portech.png"
+                        alt="Portech — quincaillerie de portes commerciales"
+                        className="h-12 md:h-16 w-auto"
+                    />
                 </Link>
 
-                <nav className="hidden md:flex items-center gap-8">
+                <nav className="hidden md:flex items-center gap-10">
                     {links.map((l) => (
                         <NavLink
                             key={l.to}
                             to={l.to}
                             end={l.to === "/"}
-                            data-testid={`nav-link-${l.label.toLowerCase().replace(/\s|à|é/g, "")}`}
+                            data-testid={`nav-link-${l.slug}`}
                             className={({ isActive }) =>
                                 `font-display uppercase tracking-wider text-sm font-semibold transition-colors ${
                                     isActive
-                                        ? "text-zinc-950"
-                                        : "text-zinc-500 hover:text-zinc-950"
+                                        ? "text-[#162842]"
+                                        : "text-[#4b5d7a] hover:text-[#162842]"
                                 }`
                             }
                         >
@@ -87,7 +81,7 @@ const Navbar = () => {
                 <button
                     type="button"
                     data-testid="nav-mobile-toggle"
-                    className="md:hidden p-2 border border-zinc-300"
+                    className="md:hidden p-2 border border-[#dde5f0]"
                     onClick={() => setOpen((v) => !v)}
                     aria-label="Menu"
                 >
@@ -98,7 +92,7 @@ const Navbar = () => {
             {open && (
                 <div
                     data-testid="nav-mobile-menu"
-                    className="md:hidden border-t border-zinc-200 bg-white"
+                    className="md:hidden border-t border-[#dde5f0] bg-white"
                 >
                     <div className="container-portech py-6 flex flex-col gap-1">
                         {links.map((l) => (
@@ -106,10 +100,10 @@ const Navbar = () => {
                                 key={l.to}
                                 to={l.to}
                                 end={l.to === "/"}
-                                data-testid={`mobile-nav-link-${l.label.toLowerCase().replace(/\s|à|é/g, "")}`}
+                                data-testid={`mobile-nav-link-${l.slug}`}
                                 className={({ isActive }) =>
-                                    `font-display uppercase tracking-wider text-lg font-semibold py-3 border-b border-zinc-100 ${
-                                        isActive ? "text-zinc-950" : "text-zinc-600"
+                                    `font-display uppercase tracking-wider text-lg font-semibold py-3 border-b border-[#eef2f8] ${
+                                        isActive ? "text-[#162842]" : "text-[#4b5d7a]"
                                     }`
                                 }
                             >

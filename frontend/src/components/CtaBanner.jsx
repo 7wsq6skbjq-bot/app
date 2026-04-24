@@ -17,8 +17,8 @@ const CtaBanner = ({
             data-testid={testId}
             className={`relative overflow-hidden border-t ${
                 isDark
-                    ? "bg-zinc-950 text-white border-zinc-900"
-                    : "bg-zinc-50 text-zinc-950 border-zinc-200"
+                    ? "bg-[#0c182b] text-white border-[#1e3457]"
+                    : "bg-[#f3f6fb] text-[#0c182b] border-[#dde5f0]"
             }`}
         >
             <div
@@ -31,7 +31,7 @@ const CtaBanner = ({
                     <div className="lg:col-span-8">
                         <div
                             className={`tech-stamp mb-5 ${
-                                isDark ? "text-zinc-400" : "text-zinc-500"
+                                isDark ? "text-[#97b0d0]" : "text-[#4b5d7a]"
                             }`}
                         >
                             {eyebrow}
@@ -41,7 +41,7 @@ const CtaBanner = ({
                         </h2>
                         <p
                             className={`mt-6 max-w-xl text-base md:text-lg leading-relaxed ${
-                                isDark ? "text-zinc-400" : "text-zinc-600"
+                                isDark ? "text-[#b2c3dd]" : "text-[#4b5d7a]"
                             }`}
                         >
                             {description}
@@ -51,9 +51,7 @@ const CtaBanner = ({
                         <Link
                             to={buttonTo}
                             data-testid={`${testId}-button`}
-                            className={
-                                isDark ? "btn-ghost-dark" : "btn-primary"
-                            }
+                            className={isDark ? "btn-ghost-dark" : "btn-primary"}
                         >
                             {buttonLabel}
                             <ArrowUpRight className="w-4 h-4" />

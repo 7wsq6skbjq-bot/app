@@ -1,11 +1,9 @@
 import CtaBanner from "@/components/CtaBanner";
 import { CheckCircle2, Target, Compass } from "lucide-react";
 
-const FOUNDER_IMG =
-    "https://images.unsplash.com/photo-1759847527437-a548715aef7a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwzfHxjb25zdHJ1Y3Rpb24lMjB3b3JrZXIlMjBpbmR1c3RyaWFsfGVufDB8fHx8MTc3NzA1OTUzN3ww&ixlib=rb-4.1.0&q=85";
-
-const TEXTURE_IMG =
-    "https://images.unsplash.com/photo-1770208741276-dc9e2d235620?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxpbmR1c3RyaWFsJTIwbWV0YWwlMjB0ZXh0dXJlfGVufDB8fHx8MTc3NzA1OTUyNXww&ixlib=rb-4.1.0&q=85";
+const FOUNDER_IMG = "/generated/technician-hands.png";
+const TEXTURE_IMG = "/generated/workshop-tools.png";
+const EXTRA_IMG = "/generated/precision-install.png";
 
 const storyBlocks = [
     {
@@ -41,7 +39,7 @@ const storyBlocks = [
         title: "De l'apprentissage à la maîtrise.",
         paragraphs: [
             "Parce que très tôt, j'ai compris une chose : je ne travaillais pas seulement pour gagner ma vie. Je travaillais pour bâtir mon expertise.",
-            "Avec le temps, ce qui était un apprentissage est devenu une maîtrise — une compréhension complète du métier : préparation et transformation des portes, installation de quincaillerie spécialisée, ajustement de précision, gestion de projets et coordination.",
+            "Avec le temps, ce qui était un apprentissage est devenu une maîtrise — une compréhension complète du métier : préparation et modification de portes, installation de quincaillerie spécialisée, ajustement de précision, gestion de projets et coordination.",
             "Une expertise acquise sur le terrain, dans des conditions réelles, là où les erreurs coûtent du temps, de l'argent… et parfois des maux de tête.",
         ],
     },
@@ -62,31 +60,32 @@ const About = () => {
             {/* ============ HEADER ============ */}
             <section
                 data-testid="about-header"
-                className="relative bg-zinc-950 text-white overflow-hidden border-b border-zinc-900"
+                className="relative bg-[#0c182b] text-white overflow-hidden border-b border-[#1e3457]"
             >
                 <div
                     className="absolute inset-0 bg-cover bg-center opacity-25"
                     style={{ backgroundImage: `url(${TEXTURE_IMG})` }}
                     aria-hidden
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 to-zinc-950" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0c182b]/85 to-[#0c182b]" />
                 <div className="absolute inset-0 bg-blueprint-dark pointer-events-none" />
 
                 <div className="container-portech relative py-24 md:py-32">
-                    <div className="tech-stamp text-blue-400 mb-6">
+                    <div className="tech-stamp text-[#97b0d0] mb-6">
                         03 / À propos
                     </div>
                     <h1 className="font-display font-bold uppercase tracking-tight text-5xl md:text-6xl lg:text-7xl leading-[0.92] max-w-4xl">
                         Une entreprise bâtie sur{" "}
-                        <span className="text-blue-400">10 ans</span> de
-                        chantier et <span className="text-blue-400">45 ans</span>{" "}
-                        de métier transmis.
+                        <span className="text-[#97b0d0]">10 ans</span> de
+                        chantier et{" "}
+                        <span className="text-[#97b0d0]">45 ans</span> de métier
+                        transmis.
                     </h1>
-                    <p className="mt-8 max-w-2xl text-lg md:text-xl text-zinc-300 leading-relaxed">
+                    <p className="mt-8 max-w-2xl text-lg md:text-xl text-[#b2c3dd] leading-relaxed">
                         Portech est une entreprise spécialisée dans la
                         quincaillerie de portes commerciales. Notre mission est
                         simple : offrir des installations fiables, précises et
-                        durables.
+                        durables — partout dans le Grand Montréal.
                     </p>
                 </div>
             </section>
@@ -94,39 +93,42 @@ const About = () => {
             {/* ============ STORY ============ */}
             <section
                 data-testid="about-story"
-                className="bg-white border-b border-zinc-200"
+                className="bg-white border-b border-[#dde5f0]"
             >
                 <div className="container-portech py-20 md:py-28">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-14">
                         <div className="lg:col-span-5">
-                            <div className="sticky top-28">
-                                <div className="border border-zinc-200 relative">
+                            <div className="sticky top-28 space-y-6">
+                                <div className="border border-[#dde5f0] relative">
                                     <img
                                         src={FOUNDER_IMG}
-                                        alt="Fondateur de Portech dans son atelier"
-                                        className="w-full h-[28rem] md:h-[32rem] object-cover grayscale"
+                                        alt="Fondateur de Portech au travail"
+                                        className="w-full h-[28rem] md:h-[32rem] object-cover"
                                     />
-                                    <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-zinc-200 px-3 py-2">
+                                    <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-[#dde5f0] px-3 py-2">
                                         Fondateur · Portech
                                     </div>
                                 </div>
-                                <div className="mt-6 p-6 border border-zinc-200 bg-zinc-50">
-                                    <div className="tech-stamp text-blue-700 mb-3">
+                                <div className="p-6 border border-[#dde5f0] bg-[#f3f6fb]">
+                                    <div className="tech-stamp text-[#2f4f7f] mb-3">
                                         Philosophie
                                     </div>
                                     <p className="font-display font-bold uppercase text-lg tracking-tight leading-tight">
-                                        « Peu importe le client, le besoin
-                                        reste le même : chaque porte doit
-                                        fonctionner parfaitement. »
+                                        « Peu importe le client, le besoin reste le même : chaque porte doit fonctionner parfaitement. »
                                     </p>
+                                </div>
+                                <div className="border border-[#dde5f0] relative">
+                                    <img
+                                        src={EXTRA_IMG}
+                                        alt="Précision au millimètre"
+                                        className="w-full h-56 object-cover"
+                                    />
                                 </div>
                             </div>
                         </div>
 
                         <div className="lg:col-span-7">
-                            <div className="tech-stamp mb-4">
-                                Notre histoire
-                            </div>
+                            <div className="tech-stamp mb-4">Notre histoire</div>
                             <h2 className="font-display font-bold uppercase tracking-tight text-4xl md:text-5xl leading-[0.95] mb-10">
                                 Un parcours qui ne s'invente pas.
                             </h2>
@@ -136,15 +138,15 @@ const About = () => {
                                     <div
                                         key={b.label}
                                         data-testid={`story-block-${b.label}`}
-                                        className="pl-6 border-l border-zinc-200 hover:border-blue-600 transition-colors"
+                                        className="pl-6 border-l border-[#dde5f0] hover:border-[#2f4f7f] transition-colors"
                                     >
-                                        <div className="tech-stamp text-blue-700 mb-3">
+                                        <div className="tech-stamp text-[#2f4f7f] mb-3">
                                             Chapitre {b.label}
                                         </div>
                                         <h3 className="font-display font-bold uppercase text-2xl md:text-3xl tracking-tight leading-tight mb-5">
                                             {b.title}
                                         </h3>
-                                        <div className="space-y-4 text-zinc-700 leading-relaxed">
+                                        <div className="space-y-4 text-[#1e3457] leading-relaxed">
                                             {b.paragraphs.map((p, i) => (
                                                 <p key={i}>{p}</p>
                                             ))}
@@ -160,41 +162,39 @@ const About = () => {
             {/* ============ MISSION & VISION ============ */}
             <section
                 data-testid="about-mission-vision"
-                className="bg-zinc-50 border-b border-zinc-200"
+                className="bg-[#f3f6fb] border-b border-[#dde5f0]"
             >
                 <div className="container-portech py-20 md:py-28">
-                    <div className="grid grid-cols-1 md:grid-cols-2 border border-zinc-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 border border-[#dde5f0]">
                         <div
                             data-testid="mission-block"
-                            className="p-10 md:p-14 border-b md:border-b-0 md:border-r border-zinc-200 bg-white"
+                            className="p-10 md:p-14 border-b md:border-b-0 md:border-r border-[#dde5f0] bg-white"
                         >
-                            <Target className="w-8 h-8 text-blue-700 mb-6" />
+                            <Target className="w-8 h-8 text-[#2f4f7f] mb-6" />
                             <div className="tech-stamp mb-4">Mission</div>
                             <h3 className="font-display font-bold uppercase text-3xl md:text-4xl tracking-tight leading-[1] mb-6">
-                                Offrir des installations fiables, précises et
-                                durables.
+                                Offrir des installations fiables, précises et durables.
                             </h3>
-                            <p className="text-zinc-700 leading-relaxed">
-                                On sait qu'une porte mal installée devient
-                                rapidement un problème. C'est pourquoi chaque
-                                projet est réalisé avec rigueur — même les plus
-                                petits.
+                            <p className="text-[#1e3457] leading-relaxed">
+                                On sait qu'une quincaillerie mal installée
+                                devient rapidement un problème. C'est pourquoi
+                                chaque projet est réalisé avec rigueur — même
+                                les plus petits.
                             </p>
                         </div>
                         <div
                             data-testid="vision-block"
-                            className="p-10 md:p-14 bg-zinc-950 text-white relative overflow-hidden"
+                            className="p-10 md:p-14 bg-[#0c182b] text-white relative overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-blueprint-dark pointer-events-none" />
-                            <Compass className="w-8 h-8 text-blue-400 mb-6 relative" />
-                            <div className="tech-stamp text-zinc-400 mb-4 relative">
+                            <Compass className="w-8 h-8 text-[#97b0d0] mb-6 relative" />
+                            <div className="tech-stamp text-[#97b0d0] mb-4 relative">
                                 Vision
                             </div>
                             <h3 className="font-display font-bold uppercase text-3xl md:text-4xl tracking-tight leading-[1] mb-6 relative">
-                                Devenir la référence des portes commerciales au
-                                Québec.
+                                Devenir la référence quincaillerie au Grand Montréal.
                             </h3>
-                            <p className="text-zinc-300 leading-relaxed relative">
+                            <p className="text-[#b2c3dd] leading-relaxed relative">
                                 Offrir un service constant, professionnel, et
                                 tellement fiable qu'on en parle entre
                                 gestionnaires d'immeubles, directeurs d'école
@@ -208,7 +208,7 @@ const About = () => {
             {/* ============ WHY US ============ */}
             <section
                 data-testid="about-why"
-                className="bg-white border-b border-zinc-200"
+                className="bg-white border-b border-[#dde5f0]"
             >
                 <div className="container-portech py-20 md:py-28">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -217,24 +217,24 @@ const About = () => {
                             <h2 className="font-display font-bold uppercase tracking-tight text-4xl md:text-5xl leading-[0.95]">
                                 On ne fait pas du
                                 <br />
-                                <span className="text-blue-700">« vite fait ».</span>
+                                <span className="text-[#2f4f7f]">« vite fait ».</span>
                             </h2>
                         </div>
                         <div className="lg:col-span-7">
                             <ul className="space-y-5">
                                 {[
-                                    "Chaque porte est bien ajustée",
-                                    "Chaque porte est solide",
-                                    "Chaque porte est fonctionnelle dès le départ",
+                                    "Chaque quincaillerie est bien ajustée",
+                                    "Chaque pièce est solide et commerciale",
+                                    "Chaque installation fonctionne dès le départ",
                                     "Chaque intervention respecte vos opérations",
                                     "Chaque projet est documenté — rien n'est laissé au hasard",
                                 ].map((line) => (
                                     <li
                                         key={line}
-                                        className="flex gap-4 items-start pb-5 border-b border-zinc-200"
+                                        className="flex gap-4 items-start pb-5 border-b border-[#dde5f0]"
                                     >
-                                        <CheckCircle2 className="w-6 h-6 text-blue-700 flex-shrink-0 mt-0.5" />
-                                        <span className="text-lg md:text-xl font-display font-semibold uppercase tracking-tight text-zinc-900">
+                                        <CheckCircle2 className="w-6 h-6 text-[#2f4f7f] flex-shrink-0 mt-0.5" />
+                                        <span className="text-lg md:text-xl font-display font-semibold uppercase tracking-tight text-[#0c182b]">
                                             {line}
                                         </span>
                                     </li>

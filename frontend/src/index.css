@@ -7,16 +7,30 @@
     --font-body: "IBM Plex Sans", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
+    /* Navy blue palette — inspired by the Portech logo */
+    --color-navy-50: #f3f6fb;
+    --color-navy-100: #e4ecf6;
+    --color-navy-200: #c5d4e7;
+    --color-navy-300: #97b0d0;
+    --color-navy-400: #6485b4;
+    --color-navy-500: #416599;
+    --color-navy-600: #2f4f7f;
+    --color-navy-700: #27406a;
+    --color-navy-800: #1e3457;
+    --color-navy-900: #162842;
+    --color-navy-950: #0c182b;
+
     --color-bg: #ffffff;
-    --color-bg-muted: #f4f4f5;
-    --color-bg-dark: #09090b;
-    --color-text: #09090b;
-    --color-text-muted: #52525b;
-    --color-border: #e4e4e7;
-    --color-border-dark: #27272a;
-    --color-brand: #1a56db;
-    --color-brand-hover: #1e40af;
-    --color-metal: #71717a;
+    --color-bg-muted: #f3f6fb;
+    --color-bg-dark: #0c182b;
+    --color-text: #0c182b;
+    --color-text-muted: #4b5d7a;
+    --color-border: #dde5f0;
+    --color-border-dark: #1e3457;
+    --color-brand: #1e3457;
+    --color-brand-hover: #162842;
+    --color-accent: #2f4f7f;
+    --color-metal: #6485b4;
 }
 
 html,
@@ -32,7 +46,7 @@ body {
 }
 
 ::selection {
-    background: #09090b;
+    background: var(--color-navy-900);
     color: #ffffff;
 }
 
@@ -45,32 +59,19 @@ body {
     font-family: var(--font-mono);
 }
 
-/* Industrial grid background utility */
+/* Blueprint grid utilities */
 .bg-blueprint {
     background-image:
-        linear-gradient(to right, rgba(9, 9, 11, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(9, 9, 11, 0.04) 1px, transparent 1px);
+        linear-gradient(to right, rgba(30, 52, 87, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 52, 87, 0.06) 1px, transparent 1px);
     background-size: 48px 48px;
 }
 
 .bg-blueprint-dark {
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 48px 48px;
-}
-
-.grain-overlay {
-    position: relative;
-}
-.grain-overlay::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.25 0'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.6'/></svg>");
-    opacity: 0.35;
-    mix-blend-mode: overlay;
 }
 
 /* Reveal animation */
@@ -100,24 +101,24 @@ body {
     to { transform: translateX(-50%); }
 }
 .marquee-track {
-    animation: marquee 40s linear infinite;
+    animation: marquee 42s linear infinite;
 }
 
-/* Technical number stamp */
+/* Technical stamp */
 .tech-stamp {
     font-family: var(--font-mono);
     font-size: 0.72rem;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--color-metal);
 }
 
-/* Button primary */
+/* Buttons */
 .btn-primary {
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    background: #09090b;
+    background: var(--color-navy-900);
     color: #ffffff;
     padding: 1rem 1.5rem;
     font-family: var(--font-display);
@@ -125,12 +126,15 @@ body {
     letter-spacing: 0.05em;
     text-transform: uppercase;
     font-size: 0.95rem;
-    border: 1px solid #09090b;
-    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    border: 1px solid var(--color-navy-900);
+    transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        border-color 0.18s ease;
 }
 .btn-primary:hover {
-    background: #1a56db;
-    border-color: #1a56db;
+    background: var(--color-navy-500);
+    border-color: var(--color-navy-500);
     color: #ffffff;
 }
 
@@ -139,18 +143,18 @@ body {
     align-items: center;
     gap: 0.75rem;
     background: transparent;
-    color: #09090b;
+    color: var(--color-navy-900);
     padding: 1rem 1.5rem;
     font-family: var(--font-display);
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     font-size: 0.95rem;
-    border: 1px solid #09090b;
+    border: 1px solid var(--color-navy-900);
     transition: background-color 0.18s ease, color 0.18s ease;
 }
 .btn-secondary:hover {
-    background: #09090b;
+    background: var(--color-navy-900);
     color: #ffffff;
 }
 
@@ -165,36 +169,36 @@ body {
     letter-spacing: 0.05em;
     text-transform: uppercase;
     font-size: 0.95rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    transition: background-color 0.18s ease, border-color 0.18s ease;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 .btn-ghost-dark:hover {
     background: #ffffff;
-    color: #09090b;
+    color: var(--color-navy-950);
     border-color: #ffffff;
 }
 
 @layer base {
     :root {
         --background: 0 0% 100%;
-        --foreground: 0 0% 3.9%;
+        --foreground: 220 40% 11%;
         --card: 0 0% 100%;
-        --card-foreground: 0 0% 3.9%;
+        --card-foreground: 220 40% 11%;
         --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 3.9%;
-        --primary: 0 0% 9%;
+        --popover-foreground: 220 40% 11%;
+        --primary: 218 48% 23%;
         --primary-foreground: 0 0% 98%;
-        --secondary: 0 0% 96.1%;
-        --secondary-foreground: 0 0% 9%;
-        --muted: 0 0% 96.1%;
-        --muted-foreground: 0 0% 45.1%;
-        --accent: 0 0% 96.1%;
-        --accent-foreground: 0 0% 9%;
+        --secondary: 218 40% 95%;
+        --secondary-foreground: 218 48% 23%;
+        --muted: 218 40% 95%;
+        --muted-foreground: 218 15% 42%;
+        --accent: 218 40% 95%;
+        --accent-foreground: 218 48% 23%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 89.8%;
-        --input: 0 0% 89.8%;
-        --ring: 217 91% 47%;
+        --border: 218 30% 90%;
+        --input: 218 30% 90%;
+        --ring: 218 60% 35%;
         --radius: 0rem;
     }
 }
