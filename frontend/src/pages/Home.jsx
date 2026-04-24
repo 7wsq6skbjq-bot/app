@@ -128,6 +128,24 @@ const sectors = [
     "Boucheries",
     "Pharmacies",
     "Cliniques",
+    "Cinémas",
+    "Banques",
+    "Dépanneurs",
+];
+
+const brands = [
+    { name: "Adams Rite", style: "italic" },
+    { name: "Von Duprin", style: "condensed" },
+    { name: "Sargent", style: "wide" },
+    { name: "LCN", style: "block" },
+    { name: "Schlage", style: "italic" },
+    { name: "Yale", style: "block" },
+    { name: "Norton", style: "wide" },
+    { name: "dormakaba", style: "condensed" },
+    { name: "Corbin Russwin", style: "italic" },
+    { name: "Best", style: "block" },
+    { name: "Hager", style: "wide" },
+    { name: "Stanley", style: "condensed" },
 ];
 
 const testimonials = [
@@ -334,6 +352,69 @@ const Home = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            {/* ============ BRANDS WALL ============ */}
+            <section
+                data-testid="home-brands"
+                className="bg-white border-b border-[#dde5f0]"
+            >
+                <div className="container-portech py-16 md:py-20">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-10">
+                        <div className="lg:col-span-5">
+                            <div className="tech-stamp mb-4">
+                                Toutes les marques
+                            </div>
+                            <h2 className="font-display font-bold uppercase tracking-tight text-3xl md:text-4xl leading-[0.95]">
+                                On travaille avec
+                                <br />
+                                <span className="text-[#2f4f7f]">toutes les marques</span>
+                                <br />
+                                de quincaillerie.
+                            </h2>
+                        </div>
+                        <div className="lg:col-span-6 lg:col-start-7 pt-2">
+                            <p className="text-lg leading-relaxed text-[#4b5d7a]">
+                                Pas de fournisseur unique, pas de marque
+                                imposée. On installe, ajuste et répare la
+                                quincaillerie de tous les manufacturiers
+                                commerciaux reconnus — du{" "}
+                                <strong className="text-[#0c182b]">haut de gamme</strong>{" "}
+                                au standard, peu importe ce qui est déjà sur
+                                vos portes.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-px bg-[#dde5f0] border border-[#dde5f0]">
+                        {brands.map((b) => (
+                            <div
+                                key={b.name}
+                                data-testid={`brand-${b.name.toLowerCase().replace(/\s+/g, "-")}`}
+                                className="bg-white p-6 md:p-8 flex items-center justify-center min-h-[110px] group hover:bg-[#f3f6fb] transition-colors"
+                            >
+                                <span
+                                    className={`font-display font-bold uppercase text-lg md:text-xl tracking-tight text-[#0c182b] group-hover:text-[#2f4f7f] transition-colors text-center ${
+                                        b.style === "italic"
+                                            ? "italic"
+                                            : b.style === "condensed"
+                                                ? "tracking-tighter"
+                                                : b.style === "wide"
+                                                    ? "tracking-widest"
+                                                    : ""
+                                    }`}
+                                >
+                                    {b.name}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <p className="mt-8 text-sm text-[#4b5d7a] italic">
+                        * Liste non exhaustive. On adapte à ce que vous avez,
+                        ou on recommande la meilleure option pour votre besoin.
+                    </p>
                 </div>
             </section>
 

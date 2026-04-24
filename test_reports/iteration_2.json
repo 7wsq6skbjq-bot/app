@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 2 testing for Portech site (FastAPI + React). Backend: 22/23 pytest tests pass — login (PortechAdmin/Portech2026!), /api/contact with new fields (company optional, work_location required + 422 validation), Resend email_sent=true, /api/admin/stats, /api/admin/submissions DELETE, /api/auth/me, logout. Frontend: All requested UI elements verified — /mentions-legales shows mentions + Politique Loi 25 + Cédrick Pimparé + portech.infos@gmail.com; footer-link-legal navigates correctly; founder-name shows 'CÉDRICK PIMPARÉ'; services-scope shows 'LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT.'; home-brands has all 12 brands (Adams Rite, Von Duprin, Sargent, LCN, Schlage, Yale, Norton, dormakaba, Corbin Russwin, Best, Hager, Stanley); home-sectors marquee includes Cinémas/Banques/Dépanneurs; contact form has contact-input-company + contact-input-work-location fields and full E2E submission shows success message 'DEMANDE ENVOYÉE'.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/admin/submissions",
+        "issue": "Returns 500 ResponseValidationError because legacy submissions in DB don't have 'work_location' (newly required field). 'Field required' on response item index 3. The admin dashboard cannot list submissions until legacy data is migrated or response model is made tolerant.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_portech_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix GET /api/admin/submissions 500: either (a) make ContactSubmission.work_location Optional with default '' for response model, or (b) migrate existing MongoDB docs to add work_location='' where missing (e.g., db.contact_submissions.update_many({work_location: {$exists: false}}, {$set: {work_location: ''}})), or (c) coerce missing work_location to '' in the list endpoint before returning. Recommended: option (a) for backwards-compatibility on the response model while keeping ContactSubmissionCreate strict."
+  ],
+  "critical_code_review_comments": [
+    "ContactSubmission output model has work_location as required, but legacy DB docs predate this field — causes 500 on /api/admin/submissions. Production resilience requires the response model to tolerate missing/empty work_location on read.",
+    "server.py /auth/me endpoint and others log 401 on every page load because the frontend probably probes session on every public page — consider gating the /auth/me check to admin routes only to reduce console noise (currently 2 x 401 console errors on each public page).",
+    "seed_admin() rehashes the admin password every restart if it doesn't match env — fine, but means changing ADMIN_PASSWORD in .env will silently invalidate any tokens and overwrite manual changes in DB. Document this behavior."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_portech_api.py (updated admin password to Portech2026!, added tests for company optional, work_location required, missing work_location → 422)"
+  ],
+  "success_rate": {"backend": "95.6% (22/23)", "frontend": "100%"},
+  "test_credentials": "PortechAdmin / Portech2026! (used successfully for /api/auth/login)",
+  "seed_data_creation": "Test contact submissions created with TEST_ prefix (Jean Dupont, Sans Compagnie, ToDelete, Playwright User). The ToDelete and validation-failure ones were cleaned up; a few TEST_ records remain in db.contact_submissions and may aggravate the legacy bug (but the root cause is the pre-existing legacy doc without work_location).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All UI work verified OK. Only one backend bug remains: GET /api/admin/submissions returns 500 due to legacy docs missing work_location. After main agent fixes, re-run: pytest /app/backend/tests/test_portech_api.py::TestAdmin::test_submissions_with_auth -v. Resend integration is live and email_sent=true was returned for all valid submissions.",
+  "rca of the issue": "RCA: ContactSubmission Pydantic model declares work_location as required (Field(..., min_length=1)). FastAPI uses this same model as response_model for GET /api/admin/submissions. When MongoDB returns documents inserted before the field existed (e.g., id=60ca31bd-7d2e-4536-8972-2c89e746b510), Pydantic raises ResponseValidationError → FastAPI converts to 500. Reproduction: login as admin, GET /api/admin/submissions → 500. Mitigation options listed in action_items."
+}

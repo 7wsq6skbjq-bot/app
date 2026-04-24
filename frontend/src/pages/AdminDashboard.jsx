@@ -64,7 +64,7 @@ const AdminDashboard = () => {
         const q = query.trim().toLowerCase();
         if (!q) return submissions;
         return submissions.filter((s) =>
-            [s.name, s.email, s.phone, s.message, s.project_type]
+            [s.name, s.email, s.phone, s.message, s.project_type, s.company, s.work_location]
                 .filter(Boolean)
                 .some((v) => String(v).toLowerCase().includes(q)),
         );
@@ -328,6 +328,22 @@ const AdminDashboard = () => {
                                     <div className="tech-stamp mb-2">Type</div>
                                     <div className="font-display font-semibold uppercase text-sm tracking-tight">
                                         {selected.project_type}
+                                    </div>
+                                </div>
+                            )}
+                            {selected.company && (
+                                <div>
+                                    <div className="tech-stamp mb-2">Entreprise</div>
+                                    <div className="font-display font-semibold uppercase text-sm tracking-tight">
+                                        {selected.company}
+                                    </div>
+                                </div>
+                            )}
+                            {selected.work_location && (
+                                <div>
+                                    <div className="tech-stamp mb-2">Lieu des travaux</div>
+                                    <div className="text-[#0c182b]">
+                                        {selected.work_location}
                                     </div>
                                 </div>
                             )}

@@ -15,7 +15,7 @@ if not BASE_URL:
 
 API = f"{BASE_URL}/api"
 ADMIN_USER = "PortechAdmin"
-ADMIN_PASS = "Leagueoflegend1998"
+ADMIN_PASS = "Portech2026!"
 
 
 @pytest.fixture(scope="module")
@@ -94,13 +94,15 @@ class TestAuth:
 
 # ==== Contact + email ====
 class TestContact:
-    def test_post_valid_triggers_email(self, client):
+    def test_post_valid_with_company_and_work_location(self, client):
         payload = {
             "name": "TEST_Jean Dupont",
             "phone": "+1 514-555-1234",
             "email": "test_jean@example.com",
             "message": "Besoin d'une soumission pour 3 portes.",
             "project_type": "Barres antipaniques",
+            "company": "TEST_ABC Construction Inc.",
+            "work_location": "1234 rue Notre-Dame, Montréal, QC",
         }
         r = client.post(f"{API}/contact", json=payload)
         assert r.status_code == 201, r.text
@@ -108,20 +110,52 @@ class TestContact:
         assert data["name"] == payload["name"]
         assert data["email"] == payload["email"]
         assert data["project_type"] == "Barres antipaniques"
+        assert data["company"] == payload["company"]
+        assert data["work_location"] == payload["work_location"]
         assert "id" in data and "created_at" in data
         assert "_id" not in data
         # Resend is live — expect email_sent True
         assert data.get("email_sent") is True, f"email_sent should be True, got {data.get('email_sent')}"
 
+    def test_post_valid_without_company(self, client):
+        # company is optional, work_location is required
+        payload = {
+            "name": "TEST_Sans Compagnie",
+            "phone": "+1 514-555-9999",
+            "email": "test_nocompany@example.com",
+            "message": "Demande sans nom d'entreprise.",
+            "work_location": "5678 boul. René-Lévesque, Montréal",
+        }
+        r = client.post(f"{API}/contact", json=payload)
+        assert r.status_code == 201, r.text
+        data = r.json()
+        assert data["company"] in (None, "")
+        assert data["work_location"] == payload["work_location"]
+
+    def test_post_missing_work_location_returns_422(self, client):
+        # work_location is required — missing should fail validation
+        payload = {
+            "name": "TEST_NoLocation",
+            "phone": "555-0000",
+            "email": "test_noloc@example.com",
+            "message": "Lieu manquant",
+        }
+        r = client.post(f"{API}/contact", json=payload)
+        assert r.status_code == 422, r.text
+
     def test_post_invalid_email(self, client):
         r = client.post(f"{API}/contact", json={
-            "name": "TEST_X", "phone": "555-1234", "email": "not-an-email", "message": "hi",
+            "name": "TEST_X", "phone": "555-1234", "email": "not-an-email",
+            "message": "hi", "work_location": "Montréal",
         })
         assert r.status_code == 422
 
-    @pytest.mark.parametrize("missing", ["name", "phone", "email", "message"])
+    @pytest.mark.parametrize("missing", ["name", "phone", "email", "message", "work_location"])
     def test_post_missing_field(self, client, missing):
-        payload = {"name": "TEST_X", "phone": "555-1234", "email": "test_x@example.com", "message": "hi"}
+        payload = {
+            "name": "TEST_X", "phone": "555-1234", "email": "test_x@example.com",
+            "message": "hi", "work_location": "Montréal",
+        }
         payload.pop(missing)
         r = client.post(f"{API}/contact", json=payload)
         assert r.status_code == 422
@@ -166,6 +200,7 @@ class TestAdmin:
         payload = {
             "name": "TEST_ToDelete", "phone": "555-0001",
             "email": "test_delete@example.com", "message": "delete me",
+            "work_location": "Montréal",
         }
         cr = client.post(f"{API}/contact", json=payload)
         assert cr.status_code == 201

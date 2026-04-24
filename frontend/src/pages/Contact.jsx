@@ -14,9 +14,11 @@ const API = `${BACKEND_URL}/api`;
 
 const initialForm = {
     name: "",
+    company: "",
     phone: "",
     email: "",
     project_type: "",
+    work_location: "",
     message: "",
 };
 
@@ -45,6 +47,7 @@ const Contact = () => {
         try {
             const payload = { ...form };
             if (!payload.project_type) delete payload.project_type;
+            if (!payload.company) delete payload.company;
             await axios.post(`${API}/contact`, payload);
             setStatus("success");
             setForm(initialForm);
@@ -188,6 +191,39 @@ const Contact = () => {
                                                 onChange={onChange}
                                                 data-testid="contact-input-email"
                                                 placeholder="vous@entreprise.com"
+                                                className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] placeholder-[#97b0d0] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="company" className="tech-stamp block mb-2">
+                                                Entreprise <span className="text-[#97b0d0] normal-case font-normal">(facultatif)</span>
+                                            </label>
+                                            <input
+                                                id="company"
+                                                name="company"
+                                                type="text"
+                                                value={form.company}
+                                                onChange={onChange}
+                                                data-testid="contact-input-company"
+                                                placeholder="Nom de votre entreprise"
+                                                className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] placeholder-[#97b0d0] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="work_location" className="tech-stamp block mb-2">
+                                                Lieu des travaux *
+                                            </label>
+                                            <input
+                                                id="work_location"
+                                                name="work_location"
+                                                type="text"
+                                                required
+                                                value={form.work_location}
+                                                onChange={onChange}
+                                                data-testid="contact-input-work-location"
+                                                placeholder="Adresse ou ville (ex. : 123 rue Saint-Denis, Montréal)"
                                                 className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] placeholder-[#97b0d0] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
                                             />
                                         </div>

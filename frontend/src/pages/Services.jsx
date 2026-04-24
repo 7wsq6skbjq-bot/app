@@ -86,7 +86,7 @@ const serviceDetails = [
         num: "05",
         icon: Lightbulb,
         title: "Consultation pour vitreries",
-        img: IMG.luxuryGlass,
+        img: IMG.grid,
         summary:
             "On agit comme consultant auprès des vitriers : on vous accompagne dans le choix et l'achat de la quincaillerie pour vos projets — résidentiels haut de gamme, commerciaux, institutionnels. Le bon mécanisme du premier coup, sans devinette.",
         items: [
@@ -102,7 +102,7 @@ const serviceDetails = [
         num: "06",
         icon: ClipboardCheck,
         title: "Inspection & rapport d'expertise",
-        img: IMG.grid,
+        img: IMG.luxuryGlass,
         summary:
             "Vous êtes entrepreneur général et vous avez sous-traité l'installation à un vitrier ? Avant de livrer le projet à votre client, on inspecte la quincaillerie posée et on remet un rapport d'expertise détaillé. Vous protégez votre nom, vous évitez les retours de garantie.",
         items: [
@@ -244,7 +244,7 @@ const Services = () => {
                                 Notre périmètre
                             </div>
                             <h3 className="font-display font-bold uppercase text-2xl md:text-3xl tracking-tight leading-tight">
-                                Quincaillerie — c'est tout ce qu'on fait.
+                                La quincaillerie — c'est tout ce qu'on fait.
                             </h3>
                         </div>
                         <div className="lg:col-span-8 text-[#4b5d7a] leading-relaxed space-y-4">

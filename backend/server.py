@@ -63,6 +63,8 @@ class ContactSubmissionCreate(BaseModel):
     email: EmailStr
     message: str = Field(..., min_length=1, max_length=4000)
     project_type: Optional[str] = Field(default=None, max_length=120)
+    company: Optional[str] = Field(default=None, max_length=160)
+    work_location: str = Field(..., min_length=1, max_length=240)
 
 
 class ContactSubmission(BaseModel):
@@ -73,6 +75,8 @@ class ContactSubmission(BaseModel):
     email: EmailStr
     message: str
     project_type: Optional[str] = None
+    company: Optional[str] = None
+    work_location: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     email_sent: bool = False
 
@@ -171,9 +175,11 @@ def build_lead_email_html(sub: ContactSubmission) -> str:
           <tr><td style="padding:24px;">
             <table width="100%" cellpadding="8" cellspacing="0" style="font-size:14px; color:#27272a;">
               <tr><td style="width:140px; color:#71717a; vertical-align:top;"><b>Nom</b></td><td>{sub.name}</td></tr>
+              <tr><td style="color:#71717a; vertical-align:top;"><b>Entreprise</b></td><td>{sub.company or '—'}</td></tr>
               <tr><td style="color:#71717a; vertical-align:top;"><b>Téléphone</b></td><td>{sub.phone}</td></tr>
               <tr><td style="color:#71717a; vertical-align:top;"><b>Courriel</b></td><td><a href="mailto:{sub.email}" style="color:#1d4ed8;">{sub.email}</a></td></tr>
               <tr><td style="color:#71717a; vertical-align:top;"><b>Type de projet</b></td><td>{sub.project_type or '—'}</td></tr>
+              <tr><td style="color:#71717a; vertical-align:top;"><b>Lieu des travaux</b></td><td>{sub.work_location}</td></tr>
               <tr><td style="color:#71717a; vertical-align:top;"><b>Message</b></td><td style="white-space:pre-wrap;">{sub.message}</td></tr>
               <tr><td style="color:#71717a;"><b>Reçu le</b></td><td>{sub.created_at.strftime('%Y-%m-%d %H:%M UTC')}</td></tr>
             </table>

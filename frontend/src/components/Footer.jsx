@@ -94,7 +94,14 @@ const Footer = () => {
                     <div className="tech-stamp text-[#6485b4]">
                         © {new Date().getFullYear()} Portech · Tous droits réservés
                     </div>
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                        <Link
+                            to="/mentions-legales"
+                            data-testid="footer-link-legal"
+                            className="tech-stamp text-[#6485b4] hover:text-white transition-colors"
+                        >
+                            Mentions légales · Confidentialité
+                        </Link>
                         <span className="tech-stamp text-[#6485b4]">
                             Rigueur · Précision · Durabilité
                         </span>

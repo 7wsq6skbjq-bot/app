@@ -3,7 +3,7 @@ import { CheckCircle2, Target, Compass } from "lucide-react";
 
 const FOUNDER_IMG = "/uploads/founder.png";
 const TEXTURE_IMG = "/generated/workshop-tools.png";
-const EXTRA_IMG = "/generated/precision-install.png";
+const EXTRA_IMG = "/generated/heritage-torch.png";
 
 const storyBlocks = [
     {
@@ -102,11 +102,22 @@ const About = () => {
                                 <div className="border border-[#dde5f0] relative">
                                     <img
                                         src={FOUNDER_IMG}
-                                        alt="Fondateur de Portech au travail"
+                                        alt="Cédrick Pimparé, fondateur de Portech"
                                         className="w-full h-[28rem] md:h-[32rem] object-cover object-top"
                                     />
                                     <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-[#dde5f0] px-3 py-2">
                                         Fondateur · Portech
+                                    </div>
+                                </div>
+                                <div
+                                    data-testid="founder-name"
+                                    className="border border-[#dde5f0] border-t-0 bg-white px-5 py-4 -mt-6 relative"
+                                >
+                                    <div className="tech-stamp text-[#2f4f7f] mb-1">
+                                        Fondateur
+                                    </div>
+                                    <div className="font-display font-bold uppercase text-2xl md:text-3xl tracking-tight leading-tight text-[#0c182b]">
+                                        Cédrick Pimparé
                                     </div>
                                 </div>
                                 <div className="p-6 border border-[#dde5f0] bg-[#f3f6fb]">
