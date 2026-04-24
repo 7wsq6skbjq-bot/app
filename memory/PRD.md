@@ -1,64 +1,79 @@
 # Portech — PRD
 
-## Problem statement (verbatim)
-> "Je veux créé un site pour mon entreprise. Portech est une entreprise spécialisée dans l'installation de quincaillerie pour portes commerciales. Clients : commerces, restaurants, écoles, tours à condos, bureaux. Services : achat de portes en aluminium, usinage, installation de quincaillerie (barres antipaniques, ferme-portes, serrures), préparation complète prête à installer. Objectif : générer des leads, inspirer confiance, montrer l'expertise, inciter les visiteurs à contacter. Style : moderne, professionnel, industriel, noir/blanc/gris + accent métallique/bleu. 4 pages : Accueil, Services, À propos (avec storytelling fondateur), Contact (formulaire)."
+## Problem statement (verbatim, itération initiale)
+> "Je veux créé un site pour mon entreprise. Portech est une entreprise spécialisée dans l'installation de quincaillerie pour portes commerciales..."
+
+## Itération 2 — mise à jour (user input verbatim)
+> "Je veux que tu retire le fond blanc de mon Logo, assure toi qu'il est bien grand, gros et visible sur le site. Mon courriel pro est: portech.infos@gmail.com. je déserrverai tout le grand montréal. attention, je n'installe pas des portes, je ne fait qu'installer la quincailerie. Utilse les ton de bleu marine comme mon logo. Resend. Auth admin + dashboard. Plus d'images."
+
+## Itération 3 — ajustements
+> "Hero: 'Votre expert en quincaillerie de portes commerciales.' Admin login: plus de blanc/contraste, mélanger les tons."
 
 ## Architecture
-- **Backend**: FastAPI (`/app/backend/server.py`) + MongoDB (motor). Routes préfixées `/api`.
-  - `GET /api/` — health
-  - `POST /api/contact` — stocke une soumission (name, phone, email, message, project_type?) → 201
-  - `GET /api/contact` — liste des soumissions (admin — à protéger en prod)
-  - Models Pydantic v2 avec `EmailStr`, UUID, datetime ISO.
-- **Frontend**: React 19 + React Router v7 + Tailwind + lucide-react.
-  - `Layout` (Navbar sticky + Outlet + Footer) wrap toutes les routes.
-  - Pages : `Home`, `Services`, `About`, `Contact`.
-  - Fonts : Barlow Condensed (display) + IBM Plex Sans (body) + JetBrains Mono (accents).
-- **MongoDB collections**: `contact_submissions`, `status_checks`.
+- **Backend** : FastAPI + motor (MongoDB). Routes préfixées `/api`.
+  - Public : `GET /` (health), `POST /contact`, `GET/POST /status`
+  - Auth : `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`
+  - Admin (JWT requis) : `GET /admin/submissions`, `GET /admin/stats`, `DELETE /admin/submissions/{id}`
+  - Intégrations : **Resend** (notification email leads) + **Nano Banana** (génération images hors-runtime)
+- **Frontend** : React 19 + React Router 7 + Tailwind + lucide-react.
+  - Public : Home, Services, About, Contact (Layout wrapper)
+  - Admin : `/admin/login` + `/admin` (hors Layout, ProtectedRoute)
+  - AuthContext avec localStorage token fallback (cross-origin)
+- **MongoDB** : `contact_submissions`, `admin_users`, `status_checks`
 
 ## User personas
-- **Gestionnaire d'immeuble / syndic de copropriété** — cherche une solution durable pour des portes qui coûtent cher en service.
-- **Directeur de commerce / restaurant / épicerie** — veut une porte commerciale qui ne bloque pas les opérations.
-- **Directeur d'école / institution** — sécurité + conformité des barres antipaniques.
-- **Entrepreneur général / contracteur** — a besoin d'un sous-traitant fiable pour la quincaillerie.
+- Gestionnaires d'immeubles / syndics (tours à condos)
+- Directeurs de commerce, restaurant, épicerie, boulangerie
+- Directeurs d'écoles / institutions
+- Entrepreneurs généraux cherchant un sous-traitant quincaillerie
 
-## Core requirements (static)
-- 4 pages SEO-optimisées (mots-clés : « quincaillerie porte commerciale », « installation porte commerciale », « barre antipaniques installation »).
-- Formulaire de contact fonctionnel (stockage MongoDB).
-- Design industriel épuré, haut de gamme, monochrome + bleu métallique.
-- Storytelling fondateur intégré (10+ ans, 45 ans transmis).
-- CTA répétés « Demander une soumission ».
-- Section problèmes / solution / avant-après pour conversion.
+## Core requirements
+- Site lead-gen avec CTA "Demander une soumission" répétés
+- Clarifier : Portech = **quincaillerie uniquement** (pas installation de portes — c'est le vitrier)
+- 4 pages SEO + formulaire contact + dashboard admin
+- Palette **bleu marine** cohérente avec le logo
+- Service : **Grand Montréal**
 
-## What's been implemented (2026-01)
-- **Backend** : endpoint `/api/contact` (POST/GET) avec validation Pydantic, stockage MongoDB UUID + ISO datetime.
-- **Frontend** — Page Accueil : hero plein écran avec fiche technique, marquee secteurs, grille problèmes (4 pain points), solution Portech, grille 4 services, pourquoi Portech (4 bénéfices), avant/après visuel, 3 témoignages, CTA final.
-- **Frontend** — Page Services : hero, 4 blocs détaillés avec check-lists, 4 étapes processus, CTA final.
-- **Frontend** — Page À propos : hero, storytelling en 5 chapitres avec image fondateur sticky, Mission + Vision (split card), pourquoi nous, CTA final.
-- **Frontend** — Page Contact : hero, formulaire complet (nom, téléphone, email, type de projet, message) avec états success/error, panneau coordonnées sombre, note confidentialité.
-- **SEO** : meta description + keywords + OG tags, H1/H2 structurés.
-- **data-testid** sur tous les éléments interactifs.
-- **Testing** : testing_agent_v3 → 100% backend, 100% frontend (iteration_1.json).
+## What's been implemented
+
+### 2026-01 — MVP (iter 1)
+- 4 pages publiques, formulaire contact, design industriel monochrome + bleu
+- Backend + MongoDB, 100% tests réussis
+
+### 2026-01 — Iter 2
+- **Logo Portech** avec fond transparent (PNG, +version blanche pour fonds sombres), affiché grand dans le nav et le footer
+- **Copywriting repositionné** — accent sur "quincaillerie" partout ; nouvelle section "Notre périmètre" sur la page Services qui clarifie que Portech ne pose pas les portes elles-mêmes (vitrier)
+- **Palette bleu marine** (10 teintes navy #0c182b → #f3f6fb) remplace le monochrome + accent bleu
+- **Coordonnées** : `portech.infos@gmail.com` + `Grand Montréal` dans footer, page Contact, métadonnées
+- **Resend** intégré — chaque soumission du formulaire envoie un email HTML formaté à `portech.infos@gmail.com` (sender `onboarding@resend.dev`, reply-to = email du lead). Fallback : si Resend échoue, la soumission est quand même sauvée.
+- **Auth JWT admin** : bcrypt + JWT (HS256, 8h), seed au startup depuis env, cookie httpOnly + bearer fallback
+- **Dashboard admin** (`/admin`) : stats (total, 30j, emails envoyés), tableau recherchable, détail en drawer avec bouton Répondre (mailto préformaté) + Supprimer
+- **14 images générées** via Gemini Nano Banana (barres antipaniques, ferme-portes, serrures, techniciens, avant/après, corridor école, lobby condo, etc.) — servies depuis `/public/generated/`
+- **Tests** : backend 100% (20/20 pytest), frontend 100%, Resend live confirmé
+
+### 2026-01 — Iter 3
+- Hero title → "Votre expert en quincaillerie de portes commerciales."
+- Page admin login redesignée en split 42/58 (panneau bleu branding + panneau blanc form) — beaucoup plus de contraste
 
 ## Backlog / P1
-- [ ] Intégration envoi d'email (SendGrid ou Resend) pour notifier le propriétaire à chaque soumission.
-- [ ] Authentification admin pour protéger `GET /api/contact` + petit dashboard de leads.
-- [ ] Restreindre `CORS_ORIGINS` au domaine de prod.
-- [ ] Galerie photos avant/après réelles (remplacer les placeholders).
-- [ ] Coordonnées réelles (téléphone, adresse) dans le footer et Contact.
-- [ ] Page `/mentions-legales` + `/politique-de-confidentialite`.
+- [ ] Vérifier / acheter un domaine (portech.ca ?) et le connecter à Resend pour envoyer à n'importe quelle adresse
+- [ ] Photos avant/après réelles (remplacer les placeholders IA)
+- [ ] Numéro de téléphone lorsque disponible
+- [ ] Restreindre `CORS_ORIGINS` au domaine de prod
+- [ ] Page mentions légales + politique de confidentialité
 
 ## Backlog / P2
-- [ ] Blog / articles SEO (« comment choisir une barre antipaniques », « signes qu'une porte commerciale doit être remplacée »).
-- [ ] Formulaire multi-étape avec photo upload pour soumissions.
-- [ ] Intégration Google Maps pour zone de service.
-- [ ] Témoignages vidéo ou avec photos réelles.
-- [ ] Animation scroll-reveal plus poussée (Framer Motion / Motion).
-- [ ] Mode sombre optionnel.
+- [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
+- [ ] Blog SEO (barres antipaniques, codes du bâtiment QC)
+- [ ] Upload de photos dans le formulaire de contact
+- [ ] Export CSV des soumissions depuis le dashboard
+- [ ] Calendrier des rendez-vous / intégration Google Calendar
 
 ## Key URLs
-- Preview : `https://web-project-fr-2.preview.emergentagent.com`
-- Backend test : `{REACT_APP_BACKEND_URL}/api/`
+- Site : `https://web-project-fr-2.preview.emergentagent.com`
+- Admin : `https://web-project-fr-2.preview.emergentagent.com/admin/login`
+- Identifiants : voir `/app/memory/test_credentials.md`
 
-## Notes
-- Testid À propos généré par regex supprime « à » → `nav-link-propos` (fonctionnel mais convention à améliorer).
-- Test de soumission contact validé en prod via curl (id UUID retourné, stocké en base).
+## Notes techniques
+- Resend en mode test : les emails ne partent qu'à l'adresse du compte Resend (sauf domaine vérifié). Pour envoyer librement à portech.infos@gmail.com, le compte Resend doit être créé avec cette adresse OU un domaine doit être vérifié.
+- Script de régénération d'images : `python3 /app/scripts/generate_images.py` (idempotent, écrase les PNGs existants).

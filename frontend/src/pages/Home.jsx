@@ -162,11 +162,11 @@ const Home = () => {
                                 data-testid="hero-title"
                                 className="font-display font-bold uppercase leading-[0.92] tracking-tight text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem]"
                             >
-                                La quincaillerie
+                                Votre <span className="text-[#97b0d0]">expert</span>
                                 <br />
-                                <span className="text-[#97b0d0]">qui tient</span>
+                                en quincaillerie
                                 <br />
-                                vos portes commerciales.
+                                de portes commerciales.
                             </h1>
                             <p className="mt-8 max-w-2xl text-lg md:text-xl text-[#b2c3dd] leading-relaxed">
                                 Installation, réparation et modification de
