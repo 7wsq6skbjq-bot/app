@@ -1,0 +1,128 @@
+{
+  "project_name": "Portech",
+  "theme": "Light",
+  "archetype": "4 (Swiss & High-Contrast) - Customized for Industrial Engineering",
+  "design_concept": {
+    "vibe": "Industrial, mechanical precision, measured to the millimeter, high-end construction.",
+    "anti_patterns": [
+      "Purple/Teal gradients",
+      "Soft UI / heavy shadows",
+      "Center-everything alignment",
+      "Rounded pill buttons",
+      "AI slop abstract graphics"
+    ],
+    "emotions": [
+      "Trust",
+      "Authority",
+      "Precision",
+      "Professionalism"
+    ]
+  },
+  "colors": {
+    "background": {
+      "primary": "#FFFFFF",
+      "secondary": "#F4F4F5",
+      "tertiary": "#09090B"
+    },
+    "text": {
+      "primary": "#09090B",
+      "secondary": "#52525B",
+      "inverse": "#FFFFFF"
+    },
+    "brand": {
+      "primary": "#1A56DB",
+      "primary_hover": "#1E40AF",
+      "accent": "#94A3B8",
+      "metallic_grey": "#71717A"
+    },
+    "border": {
+      "default": "#E4E4E7",
+      "dark": "#27272A"
+    }
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Clash Display, Cabinet Grotesk, Barlow, sans-serif",
+      "weight": "font-bold",
+      "tracking": "tracking-tight",
+      "text_transform": "uppercase or none"
+    },
+    "body": {
+      "font_family": "IBM Plex Sans, Inter, sans-serif",
+      "weight": "font-normal",
+      "tracking": "tracking-normal",
+      "line_height": "leading-relaxed"
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tighter text-zinc-950",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight text-zinc-900",
+      "h3": "text-xl sm:text-2xl tracking-tight text-zinc-900",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base text-zinc-600",
+      "overline": "text-xs font-bold uppercase tracking-[0.2em] text-zinc-500"
+    }
+  },
+  "layout": {
+    "spacing_system": "Generous scaling: p-6, p-8, p-12, py-24. Containers with borders MUST have internal p-6 or p-8 to prevent text collision.",
+    "grids": "Bento grids with asymmetry. Use Mode B 'Control Room' logic for services: tight gaps (gap-4 or gap-6) with pure 1px borders.",
+    "alignment": "Left-align by default. Create tension via asymmetry. Avoid centering large blocks of text.",
+    "surface_strategy": "Grid Borders (The 'Technical' Look). Expose the skeleton. Use border-collapse style layouts for features. No soft shadows. 1px solid borders everywhere. Sharp corners (rounded-none or max rounded-sm)."
+  },
+  "motion": {
+    "hover_states": "Crisp, fast. transition-all duration-200 ease-in-out. Background shifts from transparent to very light grey, or border color shifts to metallic blue.",
+    "page_transitions": "Fade-in with slight vertical reveal."
+  },
+  "components": {
+    "buttons": "Square edges (rounded-none or rounded-sm). High contrast. Primary: bg-blue-700 text-white hover:bg-blue-800. Secondary: bg-transparent border border-zinc-300 text-zinc-900 hover:bg-zinc-100.",
+    "cards": "Flat, 1px border (border-zinc-200). No drop shadow. Padding inside must be at least p-6.",
+    "forms": "Shadcn components heavily customized: sharp edges, clear focus states (ring-blue-600), monochrome neutral borders.",
+    "navigation": "Sticky, Glassmorphism with sharp 1px bottom border (backdrop-blur-xl bg-white/90 border-b border-zinc-200). Must include CTA."
+  },
+  "image_urls": [
+    {
+      "category": "hero_background",
+      "url": "https://images.unsplash.com/photo-1773291933719-fc02bea5a68f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwxfHxjb21tZXJjaWFsJTIwYnVpbGRpbmclMjBlbnRyYW5jZXxlbnwwfHx8fDE3NzcwNTk1Mzd8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Glass revolving doors with modern interior lighting - represents high-end commercial doors. Use with bg-black/60 overlay for text contrast."
+    },
+    {
+      "category": "service_hardware",
+      "url": "https://images.unsplash.com/photo-1762431226940-462dec55884d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwzfHxtZXRhbCUyMGRvb3IlMjBsb2NrJTIwaGFyZHdhcmV8ZW58MHx8fHwxNzc3MDU5NTI1fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Metal door with latch and lock - clean and secure."
+    },
+    {
+      "category": "service_door",
+      "url": "https://images.pexels.com/photos/30829651/pexels-photo-30829651.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Close-up of a locked metal door with industrial design."
+    },
+    {
+      "category": "about_founder",
+      "url": "https://images.unsplash.com/photo-1759847527437-a548715aef7a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwzfHxjb25zdHJ1Y3Rpb24lMjB3b3JrZXIlMjBpbmR1c3RyaWFsfGVufDB8fHx8MTc3NzA1OTUzN3ww&ixlib=rb-4.1.0&q=85",
+      "description": "Man standing in a cluttered workshop with machinery - perfect for 10+ years experience, mentor storytelling."
+    },
+    {
+      "category": "problem_before",
+      "url": "https://images.unsplash.com/photo-1763370356214-e4dd692f8697?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTF8MHwxfHNlYXJjaHwyfHxtZXRhbCUyMGRvb3IlMjBsb2NrJTIwaGFyZHdhcmV8ZW58MHx8fHwxNzc3MDU5NTI1fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Old padlock securing a wooden door - use for the 'Before' or 'Problem' section."
+    },
+    {
+      "category": "texture_background",
+      "url": "https://images.unsplash.com/photo-1770208741276-dc9e2d235620?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxpbmR1c3RyaWFsJTIwbWV0YWwlMjB0ZXh0dXJlfGVufDB8fHx8MTc3NzA1OTUyNXww&ixlib=rb-4.1.0&q=85",
+      "description": "A textured metallic surface with scratches - use for heavy footer or industrial CTA section background with dark overlay."
+    }
+  ],
+  "accessibility_and_testing": {
+    "contrast": "Ensure APCA contrast ratios. Text over textures or hero images must have dark overlays (e.g., bg-black/60).",
+    "testing_attributes": "All interactive elements (buttons, forms, links) MUST include data-testid attributes (e.g., data-testid='hero-cta-button')."
+  },
+  "instructions_to_main_agent": [
+    "Use pure HTML + Tailwind for complex marketing layouts (Hero, About, Grids). Do not over-rely on Shadcn for layout structures.",
+    "Use Shadcn components ONLY for interactive elements (Forms, Inputs, Modals). Customize them to remove the default rounded corners; make them sharp (rounded-none or max rounded-sm).",
+    "Do NOT use center-alignment for text unless in a constrained column. Left-align is preferred for the industrial/precise look.",
+    "In the Hero Section, overlay the background image with bg-black/60 or a gradient to ensure text readability.",
+    "Implement the 'Grid Borders' look for services/problems: Use border-r, border-b on features to look like architectural blueprints. Make it feel measured and precise.",
+    "DO NOT use purple or teal gradients. Strictly adhere to the monochrome + metallic blue palette.",
+    "Install Phosphor Icons or Lucide for technical, precision-looking icons.",
+    "Ensure the navigation has a solid or blurred background; do not leave it fully transparent over scrolling content.",
+    "Follow the requested pages structure: Accueil, Services, À Propos, Contact."
+  ]
+}
