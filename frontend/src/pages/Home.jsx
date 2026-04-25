@@ -615,7 +615,7 @@ const Home = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
                             { img: IMG.restaurant, label: "Restaurants & commerces", sub: "Horaires serrés, zéro arrêt toléré." },
-                            { img: IMG.school, label: "Écoles & institutions", sub: "Sécurité et conformité codes du bâtiment." },
+                            { img: IMG.school, label: "Écoles & institutions", sub: "Sécurité et conformité aux codes du bâtiment." },
                             { img: IMG.condo, label: "Tours à condos", sub: "Portes lourdes, trafic constant, fini haut de gamme." },
                             { img: IMG.entrance, label: "Bureaux & commerces", sub: "Image professionnelle, fonctionnement silencieux." },
                         ].map((c) => (
