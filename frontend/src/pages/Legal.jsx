@@ -1,7 +1,13 @@
 import { Link } from "react-router-dom";
 import { ShieldCheck, FileText, Mail, ArrowUpRight } from "lucide-react";
+import { useSeo } from "@/hooks/use-seo";
 
 const Legal = () => {
+    useSeo({
+        title: "Mentions légales & Politique de confidentialité | Portech",
+        description:
+            "Mentions légales du site Portech et politique de confidentialité conforme à la Loi 25 du Québec : collecte, utilisation, durée de conservation et droits des utilisateurs.",
+    });
     return (
         <div data-testid="page-legal">
             {/* HEADER */}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Download, ArrowUpRight, X } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
+import { useSeo } from "@/hooks/use-seo";
 
 // Vraies photos extraites des PDF catalogues officiels (Sargent, Hager, Von Duprin).
 const C = "/catalogue";
@@ -62,6 +63,12 @@ const Catalogue = () => {
     const [activeCategory, setActiveCategory] = useState(CATALOG[0].slug);
     const [leadModal, setLeadModal] = useState(null); // null | category object
     useEffect(() => { window.scrollTo(0, 0); }, []);
+
+    useSeo({
+        title: "Catalogue · Quincaillerie commerciale Sargent Von Duprin Hager | Portech",
+        description:
+            "Catalogue de quincaillerie commerciale : poignées Sargent Studio, serrures Degree Key, barres antipaniques 5300, ferme-portes Fire Guard, gâches électriques Von Duprin, charnières Hager. PDF téléchargeables.",
+    });
 
     const active = CATALOG.find((c) => c.slug === activeCategory);
 

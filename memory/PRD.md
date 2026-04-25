@@ -79,6 +79,21 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 12 (Refactoring + SEO + CORS)
+- **Home.jsx refactorisé** : 796 → 46 lignes (94 % de réduction). Architecture :
+  - `/pages/home/data.js` — toutes les données (IMG, problems, services, benefits, sectors, brands, testimonials, showcaseTiles, clientTypes)
+  - `/pages/home/sections/` — 9 composants section : HomeHero, HomeSectors, HomeShowcase, HomeBrandsWall, HomeProblems, HomeSolution, HomeServices, HomeClients, HomeWhy, HomeTestimonials
+- **AdminDashboard.jsx refactorisé** : 409 → 115 lignes (72 % de réduction). Composants extraits :
+  - `/pages/admin/AdminHeader.jsx` (header + logout)
+  - `/pages/admin/AdminStats.jsx` (3 KPI tiles)
+  - `/pages/admin/AdminControls.jsx` (search + refresh)
+  - `/pages/admin/AdminTable.jsx` (table + empty state)
+  - `/pages/admin/AdminDrawer.jsx` (detail drawer + reply/delete)
+  - `/pages/admin/utils.js` (formatDate)
+- **SEO meta tags** : nouveau hook `useSeo({ title, description })` dans `/hooks/use-seo.js` (sans dépendance externe, met à jour `document.title`, `meta[name=description]`, `og:title`, `og:description`, `link rel=canonical`). Appliqué sur Home, Services, About, Contact, Legal, Galerie (5 sous-pages avec descriptions locales Grand Montréal), Catalogue.
+- **CORS restreint** : `CORS_ORIGINS` passé de `*` à `https://portech.info,https://www.portech.info,https://dev-retrieval.preview.emergentagent.com`. Vérifié : origin malveillant retourne 400, portech.info accepté avec `access-control-allow-origin` correct. Backend redémarré.
+- **Vérifié** : Home charge sans erreur, Admin login → dashboard fonctionne (12 leads affichés, search/stats/drawer OK), POST /api/contact toujours 201 + Resend OK.
+
 ### 2026-04 — Iter 11 (Capture de leads sur téléchargement PDF)
 - **Modal de capture** : au clic sur « Télécharger la fiche PDF », le PDF se télécharge ET une modale apparaît immédiatement avec :
   - Bandeau « Téléchargement démarré · [Catégorie] »

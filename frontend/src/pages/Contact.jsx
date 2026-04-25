@@ -9,6 +9,7 @@ import {
     ShieldCheck,
     Clock,
 } from "lucide-react";
+import { useSeo } from "@/hooks/use-seo";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -38,6 +39,12 @@ const Contact = () => {
     const [form, setForm] = useState(initialForm);
     const [status, setStatus] = useState("idle");
     const [errorMsg, setErrorMsg] = useState("");
+
+    useSeo({
+        title: "Contact · Demander une soumission | Portech, quincaillerie commerciale Grand Montréal",
+        description:
+            "Contactez Portech pour une soumission gratuite de quincaillerie commerciale : barres antipaniques, ferme-portes, serrures, gâches électriques. Réponse sous 24 h ouvrables.",
+    });
 
     // Pre-fill message when arriving from a Catalogue PDF download
     useEffect(() => {

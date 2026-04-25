@@ -10,6 +10,7 @@ import {
     ClipboardCheck,
 } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
+import { useSeo } from "@/hooks/use-seo";
 
 // 100% commercial aluminum door imagery — generated via Nano Banana, single-use.
 const P = "/generated/portfolio";
@@ -119,6 +120,11 @@ const serviceDetails = [
 ];
 
 const Services = () => {
+    useSeo({
+        title: "Services · Installation, réparation et usinage de quincaillerie commerciale | Portech",
+        description:
+            "Installation de barres antipaniques, ferme-portes, serrures commerciales. Modification et usinage de portes aluminium, réparation ciblée et inspection — partout dans le Grand Montréal.",
+    });
     return (
         <div data-testid="page-services">
             {/* ============ HEADER ============ */}

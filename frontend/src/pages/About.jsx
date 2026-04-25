@@ -1,5 +1,6 @@
 import CtaBanner from "@/components/CtaBanner";
 import { CheckCircle2, Target, Compass } from "lucide-react";
+import { useSeo } from "@/hooks/use-seo";
 
 const FOUNDER_IMG = "/uploads/founder.png";
 const TEXTURE_IMG = "/generated/workshop-tools.png";
@@ -54,6 +55,11 @@ const storyBlocks = [
 ];
 
 const About = () => {
+    useSeo({
+        title: "À propos · Cédrick Pimparé, fondateur de Portech | Quincaillerie commerciale Montréal",
+        description:
+            "Portech a été fondée par Cédrick Pimparé après 10 ans en atelier auprès d'un mentor avec 45 ans de métier. Spécialiste de la quincaillerie de portes commerciales, Grand Montréal.",
+    });
     return (
         <div data-testid="page-about">
             {/* ============ HEADER ============ */}

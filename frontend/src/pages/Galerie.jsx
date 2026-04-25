@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
+import { useSeo } from "@/hooks/use-seo";
 
 const P = "/generated/portfolio";
 
@@ -71,9 +72,43 @@ const CATEGORIES = {
     },
 };
 
+// SEO descriptions optimisées pour intentions locales Grand Montréal.
+const SEO = {
+    interventions: {
+        title: "Galerie · Intervention & installation de quincaillerie commerciale | Portech",
+        description:
+            "Photos d'interventions Portech : pose et installation de quincaillerie commerciale dans le Grand Montréal — serrures mortaises, leviers inox, charnières continues, cylindres haute sécurité.",
+    },
+    chantiers: {
+        title: "Galerie · Chantiers haut de gamme — quincaillerie commerciale | Portech",
+        description:
+            "Chantiers réalisés par Portech : portes pivot vitrées, restaurants gastronomiques, tours à condos rue Peel, sièges sociaux. Pré-assemblage atelier, installation Grand Montréal.",
+    },
+    "dispositifs-sortie": {
+        title: "Galerie · Dispositifs de sortie commercial Montréal | Portech",
+        description:
+            "Installation et ajustement de dispositifs de sortie : barres antipaniques, tiges verticales dissimulées et en surface, touchpads. Conformité codes du bâtiment du Québec.",
+    },
+    "barres-antipaniques": {
+        title: "Galerie · Barres antipaniques Von Duprin Sargent | Installation Montréal | Portech",
+        description:
+            "Installation de barres antipaniques Von Duprin, Sargent, Adams Rite, Yale sur portes commerciales. Pharmacies, cinémas, écoles, commerces du Grand Montréal.",
+    },
+    serrures: {
+        title: "Galerie · Serrures commerciales Schlage Sargent dormakaba | Portech",
+        description:
+            "Serrures mortaises, cylindriques, électroniques sur portes commerciales aluminium. Schlage L-series, Sargent 8200, dormakaba E-Plex. Service rapide Grand Montréal.",
+    },
+};
+
 const Galerie = () => {
     const { category } = useParams();
     const data = CATEGORIES[category];
+    const seo = SEO[category];
+    useSeo({
+        title: seo?.title,
+        description: seo?.description,
+    });
 
     useEffect(() => {
         window.scrollTo(0, 0);
