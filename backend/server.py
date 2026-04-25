@@ -142,7 +142,7 @@ async def seed_admin() -> None:
     username = os.environ.get("ADMIN_USERNAME", "PortechAdmin")
     password = os.environ.get("ADMIN_PASSWORD", "admin")
     existing = await db.admin_users.find_one({"username": username})
-    if existing is None:
+    if not existing:
         await db.admin_users.insert_one(
             {
                 "username": username,

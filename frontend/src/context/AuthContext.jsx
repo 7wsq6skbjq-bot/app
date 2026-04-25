@@ -11,31 +11,31 @@ import axios from "axios";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Axios instance. `withCredentials: true` ensures the httpOnly
+// `access_token` cookie set by the backend is sent on every request.
+// No tokens are stored client-side (no localStorage) — protects against XSS.
 const http = axios.create({
     baseURL: API,
     withCredentials: true,
 });
 
-http.interceptors.request.use((config) => {
-    const token = localStorage.getItem("portech_admin_token");
-    if (token) {
-        config.headers = config.headers || {};
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null); // null = checking, object = logged in, false = not logged
+    // null = checking, object = logged in, false = not logged
+    const [user, setUser] = useState(null);
     const [error, setError] = useState("");
 
     const fetchMe = useCallback(async () => {
         try {
             const { data } = await http.get("/auth/me");
             setUser(data);
-        } catch {
+        } catch (err) {
+            // 401 is the normal "not logged in" path — don't spam console.
+            if (err?.response?.status && err.response.status !== 401) {
+                // eslint-disable-next-line no-console
+                console.error("[auth] fetchMe failed:", err);
+            }
             setUser(false);
         }
     }, []);
@@ -51,13 +51,12 @@ export const AuthProvider = ({ children }) => {
                 username,
                 password,
             });
-            if (data?.access_token) {
-                localStorage.setItem("portech_admin_token", data.access_token);
-            }
+            // httpOnly cookie is set by the backend (Set-Cookie header).
+            // We do NOT persist the token client-side.
             setUser({ username: data.username, role: data.role });
             return true;
-        } catch (e) {
-            const detail = e?.response?.data?.detail;
+        } catch (err) {
+            const detail = err?.response?.data?.detail;
             setError(
                 typeof detail === "string"
                     ? detail
@@ -70,10 +69,10 @@ export const AuthProvider = ({ children }) => {
     const logout = useCallback(async () => {
         try {
             await http.post("/auth/logout");
-        } catch {
-            /* noop */
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error("[auth] logout failed:", err);
         }
-        localStorage.removeItem("portech_admin_token");
         setUser(false);
     }, []);
 

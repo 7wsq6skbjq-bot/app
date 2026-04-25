@@ -115,7 +115,7 @@ class TestContact:
         assert "id" in data and "created_at" in data
         assert "_id" not in data
         # Resend is live — expect email_sent True
-        assert data.get("email_sent") is True, f"email_sent should be True, got {data.get('email_sent')}"
+        assert data.get("email_sent") == True, f"email_sent should be True, got {data.get('email_sent')}"  # noqa: E712
 
     def test_post_valid_without_company(self, client):
         # company is optional, work_location is required

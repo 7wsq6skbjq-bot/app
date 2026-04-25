@@ -143,7 +143,10 @@ function useToast() {
         listeners.splice(index, 1)
       }
     };
-  }, [state])
+    // listeners is a module-level mutable array and setState is stable.
+    // Effect should run exactly once on mount and clean up on unmount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return {
     ...state,

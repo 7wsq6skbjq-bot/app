@@ -157,8 +157,8 @@ const About = () => {
                                             {b.title}
                                         </h3>
                                         <div className="space-y-4 text-[#1e3457] leading-relaxed">
-                                            {b.paragraphs.map((p, i) => (
-                                                <p key={i}>{p}</p>
+                                            {b.paragraphs.map((p) => (
+                                                <p key={p}>{p}</p>
                                             ))}
                                         </div>
                                     </div>

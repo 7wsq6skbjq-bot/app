@@ -133,6 +133,13 @@ const sectors = [
     "Dépanneurs",
 ];
 
+const BRAND_STYLE_MAP = {
+    italic: "italic",
+    condensed: "tracking-tighter",
+    wide: "tracking-widest",
+    block: "",
+};
+
 const brands = [
     { name: "Adams Rite", style: "italic" },
     { name: "Von Duprin", style: "condensed" },
@@ -295,7 +302,7 @@ const Home = () => {
                 <div className="py-6 flex overflow-hidden">
                     <div className="marquee-track flex gap-12 whitespace-nowrap pr-12 font-display uppercase text-2xl md:text-3xl font-bold text-[#1e3457] tracking-tight">
                         {[...sectors, ...sectors, ...sectors].map((s, i) => (
-                            <span key={i} className="flex items-center gap-12">
+                            <span key={`${s}-${i}`} className="flex items-center gap-12">
                                 {s}
                                 <Minus className="w-6 h-6 text-[#97b0d0]" />
                             </span>
@@ -405,15 +412,7 @@ const Home = () => {
                                 className="bg-white p-6 md:p-8 flex items-center justify-center min-h-[110px] group hover:bg-[#f3f6fb] transition-colors"
                             >
                                 <span
-                                    className={`font-display font-bold uppercase text-lg md:text-xl tracking-tight text-[#0c182b] group-hover:text-[#2f4f7f] transition-colors text-center ${
-                                        b.style === "italic"
-                                            ? "italic"
-                                            : b.style === "condensed"
-                                                ? "tracking-tighter"
-                                                : b.style === "wide"
-                                                    ? "tracking-widest"
-                                                    : ""
-                                    }`}
+                                    className={`font-display font-bold uppercase text-lg md:text-xl tracking-tight text-[#0c182b] group-hover:text-[#2f4f7f] transition-colors text-center ${BRAND_STYLE_MAP[b.style] || ""}`}
                                 >
                                     {b.name}
                                 </span>
@@ -704,10 +703,10 @@ const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[#dde5f0] border border-[#dde5f0]">
-                        {testimonials.map((t, i) => (
+                        {testimonials.map((t) => (
                             <figure
-                                key={i}
-                                data-testid={`testimonial-${i}`}
+                                key={`${t.author}-${t.context}`}
+                                data-testid={`testimonial-${t.context.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
                                 className="bg-white p-8 md:p-10 flex flex-col"
                             >
                                 <Quote className="w-8 h-8 text-[#2f4f7f] mb-6" />
