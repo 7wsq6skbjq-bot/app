@@ -79,6 +79,17 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 11 (Capture de leads sur téléchargement PDF)
+- **Modal de capture** : au clic sur « Télécharger la fiche PDF », le PDF se télécharge ET une modale apparaît immédiatement avec :
+  - Bandeau « Téléchargement démarré · [Catégorie] »
+  - Titre « Vous étudiez un projet ? »
+  - Description contextuelle mentionnant la catégorie + délai « 24 h »
+  - CTA principal « Demander une soumission » → `/contact?categorie=...`
+  - Bouton secondaire « Plus tard »
+  - Backdrop navy floutée, fermeture par Esc / X / clic backdrop / dismiss
+- **Pré-remplissage Contact** : `Contact.jsx` lit `?categorie=...` et pré-remplit le champ message : « Bonjour, je viens de télécharger votre fiche « X » et j'aimerais discuter d'un projet. ».
+- Vérifié bout-en-bout : modal s'affiche, CTA ouvre `/contact` avec query param URL-encoded, message du formulaire pré-rempli automatiquement.
+
 ### 2026-04 — Iter 10 (Catalogue complet 6/6 + téléchargement PDF)
 - **5 nouveaux PDF parsés** : Hager Commercial Hinges, Sargent Specialty, Dormakaba Commercial / Full, Von Duprin Electrical Security.
 - **Catalogue 100 % complet** :

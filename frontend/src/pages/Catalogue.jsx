@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, ArrowUpRight, X } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
 // Vraies photos extraites des PDF catalogues officiels (Sargent, Hager, Von Duprin).
@@ -60,9 +60,31 @@ const BRAND_TAGS = [
 
 const Catalogue = () => {
     const [activeCategory, setActiveCategory] = useState(CATALOG[0].slug);
+    const [leadModal, setLeadModal] = useState(null); // null | category object
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
     const active = CATALOG.find((c) => c.slug === activeCategory);
+
+    // Trigger PDF download AND open the lead-capture modal
+    const handlePdfDownload = (cat) => {
+        // Trigger download programmatically
+        const a = document.createElement("a");
+        a.href = cat.pdf.href;
+        a.download = cat.pdf.href.split("/").pop();
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        // Open modal
+        setLeadModal(cat);
+    };
+
+    // Close on Escape
+    useEffect(() => {
+        if (!leadModal) return;
+        const onKey = (e) => { if (e.key === "Escape") setLeadModal(null); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [leadModal]);
 
     return (
         <div data-testid="page-catalogue">
@@ -141,15 +163,15 @@ const Catalogue = () => {
                             </p>
                         </div>
                         {active.pdf && (
-                            <a
-                                href={active.pdf.href}
-                                download
+                            <button
+                                type="button"
+                                onClick={() => handlePdfDownload(active)}
                                 data-testid={`catalogue-pdf-${active.slug}`}
                                 className="btn-secondary self-start md:self-auto whitespace-nowrap"
                             >
                                 <Download className="w-4 h-4" />
                                 Télécharger la fiche PDF
-                            </a>
+                            </button>
                         )}
                     </div>
                     {active.pdf && (
@@ -185,6 +207,77 @@ const Catalogue = () => {
                 buttonTo="/contact"
                 testId="catalogue-cta"
             />
+
+            {/* ============ LEAD-CAPTURE MODAL (triggered after PDF download) ============ */}
+            {leadModal && (
+                <div
+                    data-testid="catalogue-lead-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="lead-modal-title"
+                    className="fixed inset-0 z-[100] flex items-center justify-center px-4 animate-in fade-in duration-200"
+                >
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-[#0c182b]/70 backdrop-blur-sm"
+                        onClick={() => setLeadModal(null)}
+                        aria-hidden
+                    />
+                    {/* Card */}
+                    <div className="relative bg-white border border-[#dde5f0] shadow-2xl max-w-lg w-full p-8 md:p-10">
+                        <button
+                            type="button"
+                            onClick={() => setLeadModal(null)}
+                            data-testid="lead-modal-close"
+                            aria-label="Fermer"
+                            className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center border border-[#dde5f0] hover:bg-[#f3f6fb] transition-colors"
+                        >
+                            <X className="w-4 h-4 text-[#0c182b]" />
+                        </button>
+
+                        <div className="tech-stamp text-[#2f4f7f] mb-4">
+                            Téléchargement démarré · {leadModal.title}
+                        </div>
+                        <h3
+                            id="lead-modal-title"
+                            className="font-display font-bold uppercase text-2xl md:text-3xl tracking-tight leading-[1.05] mb-4"
+                        >
+                            Vous étudiez un projet&nbsp;?
+                        </h3>
+                        <p className="text-[#4b5d7a] leading-relaxed mb-6">
+                            Pendant que vous parcourez la fiche, on peut déjà
+                            préparer votre soumission. Décrivez-nous votre besoin
+                            en {leadModal.title.toLowerCase()} — on revient sous{" "}
+                            <strong className="text-[#0c182b]">24 h</strong>{" "}
+                            avec un prix précis et des recommandations honnêtes.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Link
+                                to={`/contact?categorie=${encodeURIComponent(leadModal.title)}`}
+                                onClick={() => setLeadModal(null)}
+                                data-testid="lead-modal-cta"
+                                className="btn-primary"
+                            >
+                                Demander une soumission
+                                <ArrowUpRight className="w-4 h-4" />
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setLeadModal(null)}
+                                data-testid="lead-modal-dismiss"
+                                className="btn-secondary"
+                            >
+                                Plus tard
+                            </button>
+                        </div>
+
+                        <p className="mt-6 text-xs text-[#4b5d7a] italic">
+                            Soumission gratuite · Aucun engagement · Grand Montréal
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

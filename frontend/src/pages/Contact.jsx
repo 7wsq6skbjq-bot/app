@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import {
     ArrowUpRight,
@@ -33,9 +34,23 @@ const projectTypes = [
 ];
 
 const Contact = () => {
+    const location = useLocation();
     const [form, setForm] = useState(initialForm);
     const [status, setStatus] = useState("idle");
     const [errorMsg, setErrorMsg] = useState("");
+
+    // Pre-fill message when arriving from a Catalogue PDF download
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const categorie = params.get("categorie");
+        if (categorie) {
+            setForm((f) => ({
+                ...f,
+                message: f.message ||
+                    `Bonjour, je viens de télécharger votre fiche « ${categorie} » et j'aimerais discuter d'un projet. `,
+            }));
+        }
+    }, [location.search]);
 
     const onChange = (e) =>
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
