@@ -3,69 +3,66 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
-const P = "/generated/portfolio";
+// SARGENT (ASSA ABLOY) — vraies photos extraites des PDF catalogues officiels.
+const C = "/catalogue";
 
-// 100% commercial aluminum hardware — generated via Nano Banana, single-use.
 const CATALOG = [
     {
         slug: "poignees-leviers",
         title: "Poignées & leviers",
-        sub: "Lever handles · Push pulls",
+        sub: "Lever handles · Push pulls — Sargent Studio Collection",
         photos: [
-            `${P}/cat-handle-1.png`,
-            `${P}/cat-handle-2.png`,
-            `${P}/cat-handle-3.png`,
+            `${C}/handle-1.png`,
+            `${C}/handle-2.png`,
+            `${C}/handle-3.png`,
         ],
     },
     {
         slug: "serrures-cylindres",
         title: "Serrures & cylindres",
-        sub: "Mortise locks · Cylinders · Deadbolts",
+        sub: "Mortise locks · Cylinders · Deadbolts — Sargent Degree Key System",
         photos: [
-            `${P}/cat-lock-1.png`,
-            `${P}/cat-lock-2.png`,
-            `${P}/cat-lock-3.png`,
+            `${C}/lock-1.png`,
+            `${C}/lock-2.png`,
+            `${C}/lock-3.png`,
         ],
     },
     {
         slug: "barres-antipaniques",
         title: "Barres antipaniques & dispositifs de sortie",
-        sub: "Panic devices · Exit hardware",
+        sub: "Panic devices · Exit hardware — Sargent 5300 Alarmed Exit Device",
         photos: [
-            `${P}/cat-panic-1.png`,
-            `${P}/cat-panic-2.png`,
-            `${P}/cat-panic-3.png`,
+            `${C}/panic-1.png`,
+            `${C}/panic-2.png`,
+            `${C}/panic-3.png`,
         ],
     },
     {
         slug: "ferme-portes",
         title: "Ferme-portes",
-        sub: "Door closers · Surface mount · Concealed",
+        sub: "Door closers · Surface mount · Concealed — Sargent 2300 / 2409 Fire Guard",
         photos: [
-            `${P}/cat-closer-1.png`,
-            `${P}/cat-closer-2.png`,
-            `${P}/cat-closer-3.png`,
+            `${C}/closer-1.png`,
+            `${C}/closer-2.png`,
+            `${C}/closer-3.png`,
         ],
     },
     {
         slug: "controle-acces",
-        title: "Contrôle d'accès",
-        sub: "Electronic locks · Card readers · Keypads",
+        title: "Contrôle d'accès & multi-points",
+        sub: "Multi-point locks · Auto deadlocking — Sargent FM6100",
         photos: [
-            `${P}/cat-access-1.png`,
-            `${P}/cat-access-2.png`,
-            `${P}/cat-access-3.png`,
+            `${C}/access-1.png`,
+            `${C}/access-2.png`,
+            `${C}/access-3.png`,
         ],
     },
     {
         slug: "charnieres-pivots",
         title: "Charnières & pivots",
-        sub: "Hinges · Pivots · Continuous hinges",
-        photos: [
-            `${P}/cat-hinge-1.png`,
-            `${P}/cat-hinge-2.png`,
-            `${P}/cat-hinge-3.png`,
-        ],
+        sub: "Hinges · Pivots · Continuous hinges — sur demande",
+        comingSoon: true,
+        photos: [],
     },
 ];
 
@@ -162,17 +159,41 @@ const Catalogue = () => {
                             <figure
                                 key={src + idx}
                                 data-testid={`catalogue-photo-${active.slug}-${idx}`}
-                                className="border border-[#dde5f0] overflow-hidden group"
+                                className="border border-[#dde5f0] overflow-hidden group bg-white"
                             >
                                 <img
                                     src={src}
-                                    alt={`${active.title} — pièce ${idx + 1}`}
+                                    alt={`${active.title} — fiche ${idx + 1}`}
                                     loading="lazy"
-                                    className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+                                    className="w-full h-[420px] object-contain bg-white transition-transform duration-500 group-hover:scale-[1.02]"
                                 />
                             </figure>
                         ))}
                     </div>
+
+                    {active.comingSoon && (
+                        <div
+                            data-testid={`catalogue-coming-soon-${active.slug}`}
+                            className="border border-dashed border-[#c5d4e7] bg-[#f3f6fb] p-12 text-center"
+                        >
+                            <div className="tech-stamp text-[#2f4f7f] mb-3">
+                                Catalogue · En construction
+                            </div>
+                            <h3 className="font-display font-bold uppercase text-2xl md:text-3xl tracking-tight mb-4 max-w-2xl mx-auto">
+                                Charnières et pivots disponibles sur demande
+                            </h3>
+                            <p className="text-[#4b5d7a] max-w-xl mx-auto mb-6">
+                                On finalise la section catalogue. En attendant, contactez-nous : on identifie la pièce exacte qui vous convient (continue, butt, pivot, à billes, électrifiée).
+                            </p>
+                            <Link
+                                to="/contact"
+                                data-testid="catalogue-coming-soon-cta"
+                                className="btn-primary"
+                            >
+                                Demander une pièce
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </section>
 

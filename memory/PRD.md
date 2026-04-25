@@ -79,6 +79,19 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 9 (Catalogue produit avec vraies photos SARGENT)
+- **5 PDF SARGENT/ASSA ABLOY reçus de l'utilisateur**, parsés et photos extraites :
+  - AADSS1004765 → Studio Collection (poignées & leviers)
+  - AADSS1004587 → Degree Key System (serrures & cylindres)
+  - AADSS1086801 → 5300 Series Alarmed Exit Device (barres antipaniques)
+  - AADSS1257255 → 2300/2409 Fire Guard (ferme-portes)
+  - AADSS1052882 → FM6100 Multi-Point (contrôle d'accès / multi-points)
+- **15 fiches catalogue** générées (pages PDF rendues à 200 dpi puis croppées) dans `/public/catalogue/`.
+- **Catalogue.jsx** refondu : object-contain (au lieu d'object-cover) pour respecter les fiches produit ; sous-titres en anglais avec mention de la marque.
+- **Charnières & pivots** : tuile « Catalogue · En construction · Demander une pièce » (PDF Hager/Stanley pas encore reçu).
+- Suppression des 18 photos AI catalogue précédentes (`cat-*.png`) et du dossier `/public/_catprev/`.
+- Script : `/app/scripts/crop_catalogue.py`.
+
 ### 2026-04 — Iter 8 (Marquage Portech, outils DeWalt, signalétique FR, logos marques)
 - **15 images régénérées** (gal-interv 1-4, gal-chantier-2, gal-exit 1, 2, 4, gal-panic 1-4, gal-lock 1+3, services-installation/machining/repair) avec règles strictes :
   - Technicien en **chandail/polo/hoodie noir avec « PORTECH » en blanc** (gros au dos OU petit côté cœur)
