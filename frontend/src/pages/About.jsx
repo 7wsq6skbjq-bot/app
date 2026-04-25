@@ -22,12 +22,11 @@ const storyBlocks = [
             "C'est un point de passage.",
             "Un enjeu de sécurité.",
             "Le premier contact avec vos clients.",
-            "J'ai commencé comme tous ceux qui apprennent pour vrai : en bas de l'échelle. Couper des matériaux. Observer. Comprendre.",
         ],
     },
     {
         label: "03",
-        title: "Monter, ajuster, installer — répéter.",
+        title: "J'ai commencé comme tous ceux qui apprennent pour vrai : en bas de l'échelle. Couper des matériaux. Observer. Comprendre.",
         paragraphs: [
             "Puis j'ai avancé. Le montage. Les ajustements précis. Les installations. Les projets. Les équipes.",
             "Chaque étape m'a formé. Chaque défi m'a élevé.",
@@ -49,7 +48,7 @@ const storyBlocks = [
         paragraphs: [
             "Aujourd'hui, une page se tourne. Celui qui m'a transmis ce savoir prend sa retraite.",
             "Moi, j'ai fait le choix de continuer. Pas en copiant. Mais en reprenant les standards. En élevant les attentes. En construisant quelque chose à mon image.",
-            "C'est ainsi qu'est née Portech.",
+            "C'est ainsi que naît Portech.",
         ],
     },
 ];
@@ -76,8 +75,8 @@ const About = () => {
                     </div>
                     <h1 className="font-display font-bold uppercase tracking-tight text-5xl md:text-6xl lg:text-7xl leading-[0.92] max-w-4xl">
                         Une entreprise bâtie sur{" "}
-                        <span className="text-[#97b0d0]">10 ans</span> de
-                        chantier et{" "}
+                        <span className="text-[#97b0d0]">10 ans</span> en
+                        atelier et{" "}
                         <span className="text-[#97b0d0]">45 ans</span> de métier
                         transmis.
                     </h1>
@@ -206,10 +205,11 @@ const About = () => {
                                 Devenir la référence quincaillerie au Grand Montréal.
                             </h3>
                             <p className="text-[#b2c3dd] leading-relaxed relative">
-                                Offrir un service constant, professionnel, et
+                                Offrir un service constant, professionnel et
                                 tellement fiable qu'on en parle entre
-                                gestionnaires d'immeubles, directeurs d'école
-                                et propriétaires de commerce.
+                                gestionnaires d'immeubles, directeurs
+                                d'entreprise, propriétaires de commerce et
+                                monsieur-madame tout le monde.
                             </p>
                         </div>
                     </div>
@@ -234,7 +234,7 @@ const About = () => {
                         <div className="lg:col-span-7">
                             <ul className="space-y-5">
                                 {[
-                                    "Chaque quincaillerie est bien ajustée",
+                                    "Chaque pièce quincaillerie est bien ajustée",
                                     "Chaque pièce est solide et commerciale",
                                     "Chaque installation fonctionne dès le départ",
                                     "Chaque intervention respecte vos opérations",
@@ -258,7 +258,7 @@ const About = () => {
 
             <CtaBanner
                 eyebrow="Faisons connaissance"
-                title="Donnez à vos portes le travail qu'elles méritent."
+                title="Donnez à vos portes l'amour qu'elles méritent."
                 description="Un entrepreneur, une école, une tour à condos, une boulangerie — peu importe le client, chaque porte doit fonctionner parfaitement."
                 buttonLabel="Demander une soumission"
                 buttonTo="/contact"

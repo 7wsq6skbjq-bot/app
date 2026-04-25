@@ -155,6 +155,11 @@ const testimonials = [
         context: "Chaîne de commerces alimentaires · Grand Montréal",
     },
     {
+        quote: "Tour de 30 étages, 4 portes principales au lobby et 60 portes coupe-feu d'étage. Personne ne voulait toucher au mécanisme des portes pivots du hall — Portech a tout pris en charge, du choix de la quincaillerie jusqu'à la mise au point finale. Travail impeccable.",
+        author: "Directeur d'immeuble",
+        context: "Tour à condos · 30 étages · Rue Peel, Montréal",
+    },
+    {
         quote: "On a fait venir trois soumissions. Portech était la seule à nous expliquer pourquoi nos portes cognaient depuis deux ans. Résolu en une visite.",
         author: "Gestionnaire d'immeuble",
         context: "Tour à condos · 14 étages",
@@ -168,6 +173,11 @@ const testimonials = [
         quote: "Nos portes pivots sur mesure valaient à elles seules le prix d'une voiture. Quatre vitriers ont refusé de toucher à la quincaillerie — peur de marquer le cadre, peur de mal monter le mécanisme. Portech a accepté, a tout pré-assemblé en atelier, et a livré une fermeture parfaite. Aucune trace, aucune hésitation. C'est le seul que j'appellerai pour le prochain restaurant.",
         author: "Propriétaire-chef",
         context: "Restaurant gastronomique · Vieux-Montréal",
+    },
+    {
+        quote: "Avant l'ouverture du complexe, on devait régler 12 portes coupe-feu et 2 barres antipaniques sur les sorties d'urgence. Portech est venu un dimanche, a tout aligné et inspecté. On a passé l'inspection des pompiers le lundi sans une seule remarque.",
+        author: "Directeur des opérations",
+        context: "Complexe cinématographique · Rive-Sud de Montréal",
     },
 ];
 
@@ -680,76 +690,20 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* ============ BEFORE / AFTER ============ */}
-            <section
-                data-testid="home-before-after"
-                className="bg-[#f3f6fb] border-b border-[#dde5f0]"
-            >
-                <div className="container-portech py-24 md:py-32">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-14">
-                        <div className="lg:col-span-6">
-                            <div className="tech-stamp mb-4">06 — Transformation</div>
-                            <h2 className="font-display font-bold uppercase tracking-tight text-4xl md:text-5xl lg:text-6xl leading-[0.95]">
-                                Avant / Après.
-                            </h2>
-                        </div>
-                        <div className="lg:col-span-5 lg:col-start-8 pt-2">
-                            <p className="text-lg leading-relaxed text-[#4b5d7a]">
-                                On transforme des installations problématiques
-                                en systèmes fluides, silencieux et fiables.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 border border-[#dde5f0]">
-                        <div className="relative border-b md:border-b-0 md:border-r border-[#dde5f0]">
-                            <img
-                                src={IMG.before}
-                                alt="Quincaillerie endommagée, avant intervention Portech"
-                                className="w-full h-80 md:h-[30rem] object-cover"
-                            />
-                            <div className="absolute top-4 left-4 bg-[#b91c1c] text-white tech-stamp px-3 py-2 text-[11px]">
-                                Avant · Problème
-                            </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0c182b]/85 to-transparent p-6">
-                                <h3 className="font-display font-bold uppercase text-xl text-white">
-                                    Quincaillerie usée, alignement perdu
-                                </h3>
-                            </div>
-                        </div>
-                        <div className="relative">
-                            <img
-                                src={IMG.after}
-                                alt="Installation neuve réalisée par Portech"
-                                className="w-full h-80 md:h-[30rem] object-cover"
-                            />
-                            <div className="absolute top-4 left-4 bg-[#1e3457] text-white tech-stamp px-3 py-2 text-[11px]">
-                                Après · Portech
-                            </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0c182b]/85 to-transparent p-6">
-                                <h3 className="font-display font-bold uppercase text-xl text-white">
-                                    Alignement parfait, fermeture silencieuse
-                                </h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* ============ TESTIMONIALS ============ */}
             <section
                 data-testid="home-testimonials"
-                className="bg-white border-b border-[#dde5f0]"
+                className="bg-[#f3f6fb] border-b border-[#dde5f0]"
             >
                 <div className="container-portech py-24 md:py-32">
                     <div className="mb-14">
-                        <div className="tech-stamp mb-4">07 — Retours terrain</div>
+                        <div className="tech-stamp mb-4">06 — Retours terrain</div>
                         <h2 className="font-display font-bold uppercase tracking-tight text-4xl md:text-5xl leading-[0.95] max-w-3xl">
                             Ceux qui nous ont fait confiance — et pourquoi ils rappellent.
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-[#dde5f0] border border-[#dde5f0]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[#dde5f0] border border-[#dde5f0]">
                         {testimonials.map((t, i) => (
                             <figure
                                 key={i}
@@ -776,7 +730,7 @@ const Home = () => {
 
             {/* ============ FINAL CTA ============ */}
             <CtaBanner
-                eyebrow="08 — Passons à l'action"
+                eyebrow="07 — Passons à l'action"
                 title="Besoin d'une porte qui fonctionne vraiment ?"
                 description="Arrêtez de perdre du temps avec des ajustements temporaires. Faites faire le travail correctement dès le départ — Grand Montréal."
                 buttonLabel="Demander une soumission"

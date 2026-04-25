@@ -79,6 +79,18 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 6 (Polissage témoignages + textes À propos)
+- **Section Avant/Après supprimée** — photos pas réalistes ; section retirée du Home.
+- **Témoignages passés de 4 → 6** (grille 3×2). Nouveaux ajouts :
+  - Tour à condos · 30 étages · Rue Peel, Montréal (positionnement haut de gamme)
+  - Complexe cinématographique · Rive-Sud (ancre le secteur Cinémas)
+- **Titre header À propos** : "10 ans de chantier" → "10 ans en atelier" (positionnement plus précis).
+- **Chapitre 03 Story À propos** retitré : "J'ai commencé comme tous ceux qui apprennent pour vrai : en bas de l'échelle. Couper des matériaux. Observer. Comprendre." (déplacé du chapitre 02).
+- **Phrase finale chapitre 05** : "C'est ainsi qu'est née Portech." → "C'est ainsi que naît Portech." (présent narratif, plus vivant).
+- **Vision À propos** mis à jour : public élargi → "directeurs d'entreprise, propriétaires de commerce et monsieur-madame tout le monde" (avant : "directeurs d'école").
+- **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
+- **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
+
 ## Backlog / P1
 - [ ] Acheter le domaine `portech.ca` et le vérifier sur Resend pour pouvoir envoyer à n'importe quelle adresse en mode prod (actuellement, mode test Resend = limites possibles)
 - [ ] Photos avant/après réelles (remplacer les placeholders IA)
