@@ -1,68 +1,54 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
-// SARGENT (ASSA ABLOY) — vraies photos extraites des PDF catalogues officiels.
+// Vraies photos extraites des PDF catalogues officiels (Sargent, Hager, Von Duprin).
 const C = "/catalogue";
+const PDF = "/catalogue/pdf";
 
 const CATALOG = [
     {
         slug: "poignees-leviers",
         title: "Poignées & leviers",
         sub: "Lever handles · Push pulls — Sargent Studio Collection",
-        photos: [
-            `${C}/handle-1.png`,
-            `${C}/handle-2.png`,
-            `${C}/handle-3.png`,
-        ],
+        photos: [`${C}/handle-1.png`, `${C}/handle-2.png`, `${C}/handle-3.png`],
+        pdf: { href: `${PDF}/sargent-studio-collection.pdf`, label: "Sargent · Studio Collection (45 MB)" },
     },
     {
         slug: "serrures-cylindres",
         title: "Serrures & cylindres",
         sub: "Mortise locks · Cylinders · Deadbolts — Sargent Degree Key System",
-        photos: [
-            `${C}/lock-1.png`,
-            `${C}/lock-2.png`,
-            `${C}/lock-3.png`,
-        ],
+        photos: [`${C}/lock-1.png`, `${C}/lock-2.png`, `${C}/lock-3.png`],
+        pdf: { href: `${PDF}/sargent-degree-key-system.pdf`, label: "Sargent · Degree Key System (5 MB)" },
     },
     {
         slug: "barres-antipaniques",
         title: "Barres antipaniques & dispositifs de sortie",
         sub: "Panic devices · Exit hardware — Sargent 5300 Alarmed Exit Device",
-        photos: [
-            `${C}/panic-1.png`,
-            `${C}/panic-2.png`,
-            `${C}/panic-3.png`,
-        ],
+        photos: [`${C}/panic-1.png`, `${C}/panic-2.png`, `${C}/panic-3.png`],
+        pdf: { href: `${PDF}/sargent-5300-alarmed-exit.pdf`, label: "Sargent · 5300 Series Alarmed Exit (2 MB)" },
     },
     {
         slug: "ferme-portes",
         title: "Ferme-portes",
         sub: "Door closers · Surface mount · Concealed — Sargent 2300 / 2409 Fire Guard",
-        photos: [
-            `${C}/closer-1.png`,
-            `${C}/closer-2.png`,
-            `${C}/closer-3.png`,
-        ],
+        photos: [`${C}/closer-1.png`, `${C}/closer-2.png`, `${C}/closer-3.png`],
+        pdf: { href: `${PDF}/sargent-2300-2409-fire-guard.pdf`, label: "Sargent · 2300 / 2409 Fire Guard (4 MB)" },
     },
     {
         slug: "controle-acces",
-        title: "Contrôle d'accès & multi-points",
-        sub: "Multi-point locks · Auto deadlocking — Sargent FM6100",
-        photos: [
-            `${C}/access-1.png`,
-            `${C}/access-2.png`,
-            `${C}/access-3.png`,
-        ],
+        title: "Contrôle d'accès",
+        sub: "Electric strikes · Electrified locks — Von Duprin Electrical Security",
+        photos: [`${C}/access-1.png`, `${C}/access-2.png`, `${C}/access-3.png`],
+        pdf: { href: `${PDF}/von-duprin-electrical-security.pdf`, label: "Von Duprin · Electrical Security (7 MB)" },
     },
     {
         slug: "charnieres-pivots",
         title: "Charnières & pivots",
-        sub: "Hinges · Pivots · Continuous hinges — sur demande",
-        comingSoon: true,
-        photos: [],
+        sub: "Hinges · Pivots · Continuous hinges — Hager Commercial Hinges",
+        photos: [`${C}/hinge-1.png`, `${C}/hinge-2.png`, `${C}/hinge-3.png`],
+        pdf: { href: `${PDF}/hager-commercial-hinges.pdf`, label: "Hager · Commercial Hinges (1 MB)" },
     },
 ];
 
@@ -145,14 +131,32 @@ const Catalogue = () => {
             {/* CONTENT */}
             <section className="bg-white border-b border-[#dde5f0]">
                 <div className="container-portech py-16 md:py-20">
-                    <div className="mb-10">
-                        <h2 className="font-display font-bold uppercase text-3xl md:text-4xl tracking-tight leading-tight mb-2">
-                            {active.title}
-                        </h2>
-                        <p className="tech-stamp text-[#4b5d7a]">
-                            {active.sub}
-                        </p>
+                    <div className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                        <div>
+                            <h2 className="font-display font-bold uppercase text-3xl md:text-4xl tracking-tight leading-tight mb-2">
+                                {active.title}
+                            </h2>
+                            <p className="tech-stamp text-[#4b5d7a]">
+                                {active.sub}
+                            </p>
+                        </div>
+                        {active.pdf && (
+                            <a
+                                href={active.pdf.href}
+                                download
+                                data-testid={`catalogue-pdf-${active.slug}`}
+                                className="btn-secondary self-start md:self-auto whitespace-nowrap"
+                            >
+                                <Download className="w-4 h-4" />
+                                Télécharger la fiche PDF
+                            </a>
+                        )}
                     </div>
+                    {active.pdf && (
+                        <p className="-mt-6 mb-10 text-xs text-[#4b5d7a]">
+                            Source : {active.pdf.label}
+                        </p>
+                    )}
 
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         {active.photos.map((src, idx) => (
@@ -170,30 +174,6 @@ const Catalogue = () => {
                             </figure>
                         ))}
                     </div>
-
-                    {active.comingSoon && (
-                        <div
-                            data-testid={`catalogue-coming-soon-${active.slug}`}
-                            className="border border-dashed border-[#c5d4e7] bg-[#f3f6fb] p-12 text-center"
-                        >
-                            <div className="tech-stamp text-[#2f4f7f] mb-3">
-                                Catalogue · En construction
-                            </div>
-                            <h3 className="font-display font-bold uppercase text-2xl md:text-3xl tracking-tight mb-4 max-w-2xl mx-auto">
-                                Charnières et pivots disponibles sur demande
-                            </h3>
-                            <p className="text-[#4b5d7a] max-w-xl mx-auto mb-6">
-                                On finalise la section catalogue. En attendant, contactez-nous : on identifie la pièce exacte qui vous convient (continue, butt, pivot, à billes, électrifiée).
-                            </p>
-                            <Link
-                                to="/contact"
-                                data-testid="catalogue-coming-soon-cta"
-                                className="btn-primary"
-                            >
-                                Demander une pièce
-                            </Link>
-                        </div>
-                    )}
                 </div>
             </section>
 

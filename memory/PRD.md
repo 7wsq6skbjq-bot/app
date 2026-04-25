@@ -79,6 +79,14 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 10 (Catalogue complet 6/6 + téléchargement PDF)
+- **5 nouveaux PDF parsés** : Hager Commercial Hinges, Sargent Specialty, Dormakaba Commercial / Full, Von Duprin Electrical Security.
+- **Catalogue 100 % complet** :
+  - Charnières & pivots → **Hager Commercial Hinges** (cover, Specialty Hinges, Full Mortise Concealed Electric)
+  - Contrôle d'accès → **Von Duprin Electrical Security** (cover électrifié, 5100 Series electric strikes, 6400 Series modular) — remplace l'ancienne FM6100.
+- **Bouton « Télécharger la fiche PDF »** sur chaque onglet : 6/6 catégories pointent vers le PDF officiel correspondant servi depuis `/catalogue/pdf/` (Sargent Studio 45 MB, Degree Key 5 MB, 5300 Alarmed Exit 2 MB, 2300/2409 Fire Guard 4 MB, Von Duprin Electrical 7 MB, Hager Hinges 1 MB).
+- 18 fiches catalogue extraites (au lieu de 15), placeholder « En construction » supprimé.
+
 ### 2026-04 — Iter 9 (Catalogue produit avec vraies photos SARGENT)
 - **5 PDF SARGENT/ASSA ABLOY reçus de l'utilisateur**, parsés et photos extraites :
   - AADSS1004765 → Studio Collection (poignées & leviers)

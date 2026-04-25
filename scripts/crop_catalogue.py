@@ -1,6 +1,6 @@
 """
-Crop selected catalogue pages from Sargent PDFs into clean catalogue tiles
-for /app/frontend/public/catalogue/.
+Crop selected catalogue pages from Sargent / Hager / Von Duprin / Dormakaba PDFs
+into clean catalogue tiles for /app/frontend/public/catalogue/.
 """
 from pathlib import Path
 from PIL import Image
@@ -15,33 +15,36 @@ HEADER = 90      # remove top header
 FOOTER = 110     # remove bottom footer
 
 # (catalog_id, page_filename, output_filename, crop_box or None for default trim)
-# crop_box is in original coords (x1, y1, x2, y2)
 SELECTIONS = [
-    # ===== POIGNÉES & LEVIERS — Studio Collection (Sargent 1004765) =====
-    # Right-half crop to keep clean white product area (left half has city imagery)
+    # ===== POIGNÉES & LEVIERS — Sargent Studio Collection =====
     ("AADSS1004765", "page-08.jpg", "handle-1.png", (560, HEADER, W, H - FOOTER)),
     ("AADSS1004765", "page-11.jpg", "handle-2.png", (560, HEADER, W, H - FOOTER)),
     ("AADSS1004765", "page-14.jpg", "handle-3.png", (560, HEADER, W, H - FOOTER)),
 
-    # ===== SERRURES & CYLINDRES — Degree Key System (1004587) =====
-    ("AADSS1004587", "page-01.jpg", "lock-1.png", None),       # cover
+    # ===== SERRURES & CYLINDRES — Sargent Degree Key System =====
+    ("AADSS1004587", "page-01.jpg", "lock-1.png", None),
     ("AADSS1004587", "page-06.jpg", "lock-2.png", (0, HEADER, W, H - FOOTER)),
     ("AADSS1004587", "page-08.jpg", "lock-3.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== BARRES ANTIPANIQUES — 5300 Alarmed Exit (1086801) =====
-    ("AADSS1086801", "page-1.jpg", "panic-1.png", None),       # cover with full panic bar
+    # ===== BARRES ANTIPANIQUES — Sargent 5300 Alarmed Exit =====
+    ("AADSS1086801", "page-1.jpg", "panic-1.png", None),
     ("AADSS1086801", "page-3.jpg", "panic-2.png", (0, HEADER, W, H - FOOTER)),
     ("AADSS1086801", "page-4.jpg", "panic-3.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== FERME-PORTES — 2300/2409 Fire Guard (1257255) =====
-    ("AADSS1257255", "page-01.jpg", "closer-1.png", None),     # cover
+    # ===== FERME-PORTES — Sargent 2300/2409 Fire Guard =====
+    ("AADSS1257255", "page-01.jpg", "closer-1.png", None),
     ("AADSS1257255", "page-04.jpg", "closer-2.png", (0, HEADER, W, H - FOOTER)),
     ("AADSS1257255", "page-06.jpg", "closer-3.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== CONTRÔLE D'ACCÈS — Multi-Point Auto Deadlocking (1052882) =====
-    ("AADSS1052882", "page-01.jpg", "access-1.png", None),     # cover
-    ("AADSS1052882", "page-04.jpg", "access-2.png", (0, HEADER, W, H - FOOTER)),
-    ("AADSS1052882", "page-06.jpg", "access-3.png", (0, HEADER, W, H - FOOTER)),
+    # ===== CONTRÔLE D'ACCÈS — Von Duprin Electrical Security =====
+    ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-01.jpg", "access-1.png", None),
+    ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-06.jpg", "access-2.png", (0, HEADER, W, H - FOOTER)),
+    ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-20.jpg", "access-3.png", (0, HEADER, W, H - FOOTER)),
+
+    # ===== CHARNIÈRES & PIVOTS — Hager Commercial Hinges =====
+    ("2016_hager_catalog_commhinges_rev5_v148", "page-01.jpg", "hinge-1.png", None),
+    ("2016_hager_catalog_commhinges_rev5_v148", "page-08.jpg", "hinge-2.png", (0, HEADER, W, H - FOOTER)),
+    ("2016_hager_catalog_commhinges_rev5_v148", "page-20.jpg", "hinge-3.png", (0, HEADER, W, H - FOOTER)),
 ]
 
 
@@ -55,7 +58,6 @@ def process():
         im = Image.open(src_path).convert("RGB")
         if box:
             im = im.crop(box)
-        # resize to max 1400px wide
         max_w = 1400
         if im.size[0] > max_w:
             ratio = max_w / im.size[0]
