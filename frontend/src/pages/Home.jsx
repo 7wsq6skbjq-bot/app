@@ -14,27 +14,32 @@ import {
 } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
-const STOCK = "https://images.unsplash.com/";
+// 100% commercial aluminum door imagery — generated via Nano Banana.
+// Each image is used in EXACTLY ONE place across the entire site.
+const P = "/generated/portfolio";
 const IMG = {
-    // Hero (sombre, moody — porte commerciale métal)
-    hero: `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=2000&q=80`,
-    // Showcase tiles
-    hands:       `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`, // Intervention · Installation (poignée premium)
-    exitDevice:  `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1200&q=80`, // Dispositif de sortie (barre verrou)
-    panicBar:    `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`, // Barre antipanique (porte commerciale)
-    lockCloseup: `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1200&q=80`, // Serrure
-    luxuryGlass: "/uploads/glass-door-hardware.jpg",
-    // Other (services / clients)
-    panic:    `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`,
-    closer:   `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1200&q=80`,
-    lock:     `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`,
-    tools:    `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1200&q=80`,
-    entrance: `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`,
-    school:   `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1400&q=80`,
-    condo:    `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`,
-    grid:     `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`,
-    restaurant: `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`,
-    precision:  `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`,
+    // Hero
+    hero:        `${P}/home-hero.png`,
+    // Showcase tiles (5 unique)
+    hands:       `${P}/home-showcase-tech.png`,        // Intervention · Installation
+    luxuryGlass: `${P}/home-luxury-glass.png`,         // Chantier réel · Haut de gamme
+    exitDevice:  `${P}/home-showcase-exit.png`,        // Dispositif de sortie
+    panicBar:    `${P}/home-showcase-panic.png`,       // Barre antipanique
+    lockCloseup: `${P}/home-showcase-lock.png`,        // Serrure
+    // Services tiles (6 unique — different from showcase)
+    serviceInstall:  `${P}/home-service-installation.png`,
+    serviceMachine:  `${P}/home-service-machining.png`,
+    serviceRepair:   `${P}/home-service-repair.png`,
+    serviceUpgrade:  `${P}/home-service-upgrade.png`,
+    serviceConsult:  `${P}/home-showcase-storefront.png`,   // catalogue/consult
+    serviceInspect:  "/generated/precision-install.png",   // existing — caliper precision shot
+    // Solution grid (single use)
+    grid:        `${P}/home-grid-components.png`,
+    // Clients (4 unique)
+    restaurant:  `${P}/home-client-restaurant.png`,
+    school:      `${P}/home-client-school.png`,
+    condo:       `${P}/home-client-condo.png`,
+    entrance:    `${P}/home-client-office.png`,
 };
 
 const problems = [
@@ -65,37 +70,37 @@ const services = [
         num: "01",
         title: "Installation de quincaillerie",
         desc: "Barres antipaniques, ferme-portes, serrures commerciales, plaques et accessoires. Alignement au millimètre.",
-        img: IMG.panic,
+        img: IMG.serviceInstall,
     },
     {
         num: "02",
         title: "Modification & usinage",
         desc: "Préparation, perçage et ajustement de vos portes existantes pour accueillir une nouvelle quincaillerie.",
-        img: IMG.tools,
+        img: IMG.serviceMachine,
     },
     {
         num: "03",
         title: "Réparation ciblée",
         desc: "On intervient sur une porte qui force, une serrure qui coince, un ferme-porte qui claque. On règle à la source.",
-        img: IMG.closer,
+        img: IMG.serviceRepair,
     },
     {
         num: "04",
         title: "Mise à niveau & remplacement",
         desc: "Remplacement de pièces usées par des équivalents commerciaux robustes, conformes aux codes du bâtiment.",
-        img: IMG.lock,
+        img: IMG.serviceUpgrade,
     },
     {
         num: "05",
         title: "Consultation pour vitreries",
         desc: "Accompagnement des vitriers dans le choix et l'achat de la quincaillerie : compatibilité, normes, fournisseurs. Vous vendez la porte, on sécurise la ferrure.",
-        img: IMG.luxuryGlass,
+        img: IMG.serviceConsult,
     },
     {
         num: "06",
         title: "Inspection & rapport d'expertise",
         desc: "Avant que vous livriez le projet à votre client, on inspecte le travail des sous-traitants en quincaillerie et on remet un rapport d'expertise détaillé.",
-        img: IMG.grid,
+        img: IMG.serviceInspect,
     },
 ];
 

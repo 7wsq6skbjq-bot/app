@@ -11,15 +11,16 @@ import {
 } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
-const STOCK = "https://images.unsplash.com/";
+// 100% commercial aluminum door imagery — generated via Nano Banana, single-use.
+const P = "/generated/portfolio";
 const IMG = {
-    hero:    `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1800&q=80`,
-    install: `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`,
-    tools:   `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`,
-    closer:  `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`,
-    lock:    `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`,
-    luxuryGlass: "/uploads/glass-door-hardware.jpg",
-    grid:    `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`,
+    hero:        `${P}/services-hero.png`,
+    install:     `${P}/services-installation.png`,
+    tools:       `${P}/services-machining.png`,
+    closer:      `${P}/services-repair.png`,
+    lock:        `${P}/services-upgrade.png`,
+    luxuryGlass: `${P}/services-inspection.png`,
+    grid:        `${P}/services-consultation.png`,
 };
 
 const serviceDetails = [

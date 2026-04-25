@@ -3,25 +3,21 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
-const STOCK = "https://images.unsplash.com/";
+const P = "/generated/portfolio";
 
-// Each category has 8-10 stock photos and a short description.
-// Photos are direct Unsplash CDN URLs (free, no auth, stable).
+// 100% commercial aluminum door imagery — generated via Nano Banana.
+// Each photo is single-use across the entire site.
 const CATEGORIES = {
     interventions: {
         eyebrow: "Galerie · 01",
         title: "Intervention & Installation",
         intro:
-            "Pose, ajustement et installation de quincaillerie commerciale sur portes en acier, en verre ou en bois. Travail propre, alignement au millimètre, finitions sans bavures.",
+            "Pose, ajustement et installation de quincaillerie commerciale sur portes en aluminium, en acier ou en verre. Travail propre, alignement au millimètre, finitions sans bavures.",
         photos: [
-            { src: `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`, caption: "Pose d'une serrure mortaise sur porte commerciale" },
-            { src: `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1400&q=80`, caption: "Poignée et plaque de propreté noir mat" },
-            { src: `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`, caption: "Vérification de l'alignement après pose" },
-            { src: `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`, caption: "Cylindre haute sécurité prêt à installer" },
-            { src: `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`, caption: "Quincaillerie sur porte bois — finition châtaignier" },
-            { src: `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`, caption: "Système anti-effraction additionnel" },
-            { src: `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`, caption: "Programmation d'une serrure électronique" },
-            { src: `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1400&q=80`, caption: "Test de fonctionnement d'un dispositif de sortie" },
+            { src: `${P}/gal-interv-1.png`, caption: "Pose d'une poignée à levier sur porte commerciale en aluminium" },
+            { src: `${P}/gal-interv-2.png`, caption: "Ajustement d'un ferme-porte hydraulique de surface" },
+            { src: `${P}/gal-interv-3.png`, caption: "Installation d'une charnière continue à pignons sur porte aluminium" },
+            { src: `${P}/gal-interv-4.png`, caption: "Pose d'un cylindre haute sécurité dans une serrure mortaise" },
         ],
     },
     chantiers: {
@@ -31,13 +27,10 @@ const CATEGORIES = {
             "Quelques projets réalisés sur des portes pivot vitrées, des restaurants gastronomiques, des tours à condos et des sièges sociaux. Pré-assemblage en atelier, livraison sans hésitation.",
         photos: [
             { src: "/uploads/glass-door-hardware.jpg", caption: "Porte pivot vitrée — quincaillerie en cours d'installation" },
-            { src: `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`, caption: "Poignée luxueuse sur porte de hall" },
-            { src: `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1400&q=80`, caption: "Restaurant — ferrure custom finition noire" },
-            { src: `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`, caption: "Tour à condos — porte d'entrée pré-installation" },
-            { src: `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`, caption: "Pré-assemblage en atelier avant livraison" },
-            { src: `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`, caption: "Cylindre haut de gamme — restaurant Vieux-Montréal" },
-            { src: `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`, caption: "Système de fermeture sur mesure" },
-            { src: `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`, caption: "Contrôle d'accès intégré sur porte vitrée" },
+            { src: `${P}/gal-chantier-1.png`, caption: "Boutique haut de gamme — porte pivot en verre frameless" },
+            { src: `${P}/gal-chantier-2.png`, caption: "Pré-assemblage en atelier — kit complet prêt à poser" },
+            { src: `${P}/gal-chantier-3.png`, caption: "Restaurant gastronomique — finition noire avec poignées laiton" },
+            { src: `${P}/gal-chantier-4.png`, caption: "Tour à bureaux — devanture aluminium anodisé en lobby" },
         ],
     },
     "dispositifs-sortie": {
@@ -46,14 +39,10 @@ const CATEGORIES = {
         intro:
             "Aussi appelés barres antipaniques ou crash bars : ces dispositifs s'ouvrent d'un simple appui pour permettre l'évacuation rapide en cas d'urgence. Indispensables pour la conformité aux codes du bâtiment.",
         photos: [
-            { src: `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1400&q=80`, caption: "Dispositif de sortie à barre poussoir" },
-            { src: `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`, caption: "Sortie d'urgence en couloir d'école" },
-            { src: `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1400&q=80`, caption: "Mécanisme verticale sur porte coupe-feu" },
-            { src: `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`, caption: "Test du loquet après ajustement" },
-            { src: `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`, caption: "Système de tige verticale (Vertical Rod)" },
-            { src: `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`, caption: "Cylindre extérieur sur dispositif de sortie" },
-            { src: `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`, caption: "Sortie secondaire — finition acier brossé" },
-            { src: `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`, caption: "Contrôle d'accès couplé à un dispositif de sortie" },
+            { src: `${P}/gal-exit-1.png`, caption: "Dispositif de sortie rim chromé — porte aluminium simple" },
+            { src: `${P}/gal-exit-2.png`, caption: "Tige verticale dissimulée — issue d'auditorium scolaire" },
+            { src: `${P}/gal-exit-3.png`, caption: "Tige verticale en surface — corridor d'hôpital" },
+            { src: `${P}/gal-exit-4.png`, caption: "Dispositif touchpad chromé — gros plan" },
         ],
     },
     "barres-antipaniques": {
@@ -62,14 +51,10 @@ const CATEGORIES = {
         intro:
             "Installation, ajustement et remplacement de barres antipaniques sur tous types de portes commerciales. On travaille avec Von Duprin, Sargent, Adams Rite, Yale et plus encore — selon ce qui est déjà en place.",
         photos: [
-            { src: `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`, caption: "Barre antipanique horizontale — finition acier" },
-            { src: `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1400&q=80`, caption: "Barre poussoir — système Concealed Vertical Rod" },
-            { src: `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1400&q=80`, caption: "Sortie d'urgence — porte coupe-feu" },
-            { src: `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`, caption: "Mécanisme de loquet d'une barre antipanique" },
-            { src: `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`, caption: "Tige verticale extérieure (Surface Vertical Rod)" },
-            { src: `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`, caption: "Cylindre extérieur pour réentrée contrôlée" },
-            { src: `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`, caption: "Barre antipanique — finition aluminium anodisé" },
-            { src: `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`, caption: "Système électrifié pour gestion d'accès" },
+            { src: `${P}/gal-panic-1.png`, caption: "Barre horizontale fini noir — sortie arrière commerce de détail" },
+            { src: `${P}/gal-panic-2.png`, caption: "Barre acier brossé avec dogging — sortie d'urgence cinéma" },
+            { src: `${P}/gal-panic-3.png`, caption: "Barre aluminium anodisé — pharmacie" },
+            { src: `${P}/gal-panic-4.png`, caption: "Barre électrifiée avec REX — zone sécurisée" },
         ],
     },
     serrures: {
@@ -78,14 +63,10 @@ const CATEGORIES = {
         intro:
             "Mortaises, cylindriques, électroniques, à carte, à code. On installe, on remplace, on rénove. On travaille avec toutes les marques majeures et on garde des cylindres maître-clé sur stock pour les dépannages rapides.",
         photos: [
-            { src: `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`, caption: "Cylindre haute sécurité — Adams Rite compatible" },
-            { src: `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`, caption: "Poignée et serrure mortaise — finition or brossé" },
-            { src: `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1400&q=80`, caption: "Serrure cylindrique noire mate" },
-            { src: `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`, caption: "Serrure électronique avec contrôle d'accès mobile" },
-            { src: `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`, caption: "Serrure mortaise sur porte commerciale en bois" },
-            { src: `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`, caption: "Plaque de propreté + cylindre extérieur" },
-            { src: `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`, caption: "Système de verrouillage multipoint" },
-            { src: `${STOCK}photo-1555529902-5261145633bf?auto=format&fit=crop&w=1400&q=80`, caption: "Cadenas commercial inox — issue secondaire" },
+            { src: `${P}/gal-lock-1.png`, caption: "Boîtier mortaise inox partiellement exposé — porte aluminium" },
+            { src: `${P}/gal-lock-2.png`, caption: "Levier cylindrique fini noir mat — porte de bureau" },
+            { src: `${P}/gal-lock-3.png`, caption: "Mortaise électronique à carte — salle sécurisée" },
+            { src: `${P}/gal-lock-4.png`, caption: "Mortaise storeroom — entrepôt commercial" },
         ],
     },
 };

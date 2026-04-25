@@ -3,21 +3,18 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
-const STOCK = "https://images.unsplash.com/";
+const P = "/generated/portfolio";
 
-// Catalogue catégorisé. Chaque catégorie a 6-8 photos.
+// 100% commercial aluminum hardware — generated via Nano Banana, single-use.
 const CATALOG = [
     {
         slug: "poignees-leviers",
         title: "Poignées & leviers",
         sub: "Lever handles · Push pulls",
         photos: [
-            `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1532550256335-c281a64ac9f6?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1200&q=80`,
+            `${P}/cat-handle-1.png`,
+            `${P}/cat-handle-2.png`,
+            `${P}/cat-handle-3.png`,
         ],
     },
     {
@@ -25,12 +22,9 @@ const CATALOG = [
         title: "Serrures & cylindres",
         sub: "Mortise locks · Cylinders · Deadbolts",
         photos: [
-            `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1555529902-5261145633bf?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1585914641050-fa9883c4e21c?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1586661615438-349a276d098b?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1677951570313-b0750351c461?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1200&q=80`,
+            `${P}/cat-lock-1.png`,
+            `${P}/cat-lock-2.png`,
+            `${P}/cat-lock-3.png`,
         ],
     },
     {
@@ -38,12 +32,9 @@ const CATALOG = [
         title: "Barres antipaniques & dispositifs de sortie",
         sub: "Panic devices · Exit hardware",
         photos: [
-            `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1200&q=80`,
+            `${P}/cat-panic-1.png`,
+            `${P}/cat-panic-2.png`,
+            `${P}/cat-panic-3.png`,
         ],
     },
     {
@@ -51,12 +42,9 @@ const CATALOG = [
         title: "Ferme-portes",
         sub: "Door closers · Surface mount · Concealed",
         photos: [
-            `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1200&q=80`,
+            `${P}/cat-closer-1.png`,
+            `${P}/cat-closer-2.png`,
+            `${P}/cat-closer-3.png`,
         ],
     },
     {
@@ -64,12 +52,9 @@ const CATALOG = [
         title: "Contrôle d'accès",
         sub: "Electronic locks · Card readers · Keypads",
         photos: [
-            `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1200&q=80`,
+            `${P}/cat-access-1.png`,
+            `${P}/cat-access-2.png`,
+            `${P}/cat-access-3.png`,
         ],
     },
     {
@@ -77,12 +62,9 @@ const CATALOG = [
         title: "Charnières & pivots",
         sub: "Hinges · Pivots · Continuous hinges",
         photos: [
-            `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1532550256335-c281a64ac9f6?auto=format&fit=crop&w=1200&q=80`,
-            `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1200&q=80`,
+            `${P}/cat-hinge-1.png`,
+            `${P}/cat-hinge-2.png`,
+            `${P}/cat-hinge-3.png`,
         ],
     },
 ];

@@ -79,6 +79,15 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 7 (Banque d'images 100% commercial, zéro doublon)
+- **61 images générées via Nano Banana** dans `/generated/portfolio/` — strictement portes commerciales en aluminium / acier (devantures, tours à bureaux, cinémas, écoles, pharmacies, hôpitaux). Zéro porte résidentielle.
+- **Zéro doublon** : chaque image est utilisée à un seul endroit unique sur tout le site (Home, Services, Galerie, Catalogue).
+- **Home** repensé : nouveau fond hero (devanture commerciale au crépuscule), 5 tuiles showcase uniques, 6 images de services distinctes, 4 photos clients (restaurant, école, condo, bureau).
+- **Services** : nouveau hero + 6 images de blocs services uniques, différentes de celles du Home.
+- **Galerie** (5 catégories × 4 photos = 20) : interventions, chantiers haut de gamme, dispositifs de sortie, barres antipaniques, serrures — toutes en contexte commercial.
+- **Catalogue** (6 catégories × 3 photos = 18) : poignées, serrures, barres antipaniques, ferme-portes, contrôle d'accès, charnières — produit studio sur fond bleu marine.
+- **Script** : `/app/scripts/generate_portfolio_images.py` (idempotent, skip si déjà existant).
+
 ### 2026-04 — Iter 6 (Polissage témoignages + textes À propos)
 - **Section Avant/Après supprimée** — photos pas réalistes ; section retirée du Home.
 - **Témoignages passés de 4 → 6** (grille 3×2). Nouveaux ajouts :
