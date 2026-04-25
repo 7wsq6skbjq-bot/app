@@ -14,22 +14,27 @@ import {
 } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
+const STOCK = "https://images.unsplash.com/";
 const IMG = {
-    hero: "/generated/hero-doors.png",
-    panic: "/generated/panic-bar.png",
-    closer: "/generated/door-closer.png",
-    lock: "/generated/commercial-lock.png",
-    hands: "/generated/technician-hands.png",
-    tools: "/generated/workshop-tools.png",
-    entrance: "/generated/commercial-entrance.png",
-    school: "/generated/school-corridor.png",
-    before: "/generated/before-problem.png",
-    after: "/generated/after-fixed.png",
-    condo: "/generated/condo-lobby.png",
-    grid: "/generated/hardware-grid.png",
-    restaurant: "/generated/restaurant-door.png",
-    precision: "/generated/precision-install.png",
+    // Hero (sombre, moody — porte commerciale métal)
+    hero: `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=2000&q=80`,
+    // Showcase tiles
+    hands:       `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`, // Intervention · Installation (poignée premium)
+    exitDevice:  `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1200&q=80`, // Dispositif de sortie (barre verrou)
+    panicBar:    `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`, // Barre antipanique (porte commerciale)
+    lockCloseup: `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1200&q=80`, // Serrure
     luxuryGlass: "/uploads/glass-door-hardware.jpg",
+    // Other (services / clients)
+    panic:    `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`,
+    closer:   `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1200&q=80`,
+    lock:     `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`,
+    tools:    `${STOCK}photo-1592924271903-1e4b1a1ae20f?auto=format&fit=crop&w=1200&q=80`,
+    entrance: `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1400&q=80`,
+    school:   `${STOCK}photo-1583041398200-09b2205f6cf0?auto=format&fit=crop&w=1400&q=80`,
+    condo:    `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`,
+    grid:     `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`,
+    restaurant: `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`,
+    precision:  `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`,
 };
 
 const problems = [
@@ -157,34 +162,34 @@ const brands = [
 
 const testimonials = [
     {
-        quote: "Portech a remplacé nos barres antipaniques en une seule matinée. Nos équipes travaillaient le soir même, sans la moindre interruption.",
-        author: "Directeur d'exploitation",
-        context: "Chaîne de commerces alimentaires · Grand Montréal",
+        quote: "Trois portes coupe-feu coincées au sous-sol, on n'arrivait plus à les fermer correctement depuis l'été. Cédrick est venu, a démonté les ferme-portes, ajusté les pivots. Tout fonctionne. Première fois en 2 ans qu'on n'a pas un appel par semaine pour les portes.",
+        author: "Mario L.",
+        context: "Concierge en chef · Tour de bureaux Côte-de-Liesse",
     },
     {
-        quote: "Tour de 30 étages, 4 portes principales au lobby et 60 portes coupe-feu d'étage. Personne ne voulait toucher au mécanisme des portes pivots du hall — Portech a tout pris en charge, du choix de la quincaillerie jusqu'à la mise au point finale. Travail impeccable.",
-        author: "Directeur d'immeuble",
-        context: "Tour à condos · 30 étages · Rue Peel, Montréal",
+        quote: "30 étages, condos haut de gamme rue Peel. On avait 2 vitriers en place pour le verre, mais la quincaillerie sur les portes pivot du lobby c'est lui qui a fait la job. Pré-assemblé en atelier, posé en une journée, alignement nickel.",
+        author: "Patrick D.",
+        context: "Surintendant · Tour à condos · Rue Peel, Montréal",
     },
     {
-        quote: "On a fait venir trois soumissions. Portech était la seule à nous expliquer pourquoi nos portes cognaient depuis deux ans. Résolu en une visite.",
-        author: "Gestionnaire d'immeuble",
-        context: "Tour à condos · 14 étages",
+        quote: "Notre barre antipanique de la sortie d'urgence côté ruelle s'enclenchait pas. Inspection des pompiers dans 5 jours, on stressait. Cédrick est passé le lendemain matin, ajustement, nettoyage du loquet. On a passé l'inspection sans correctif.",
+        author: "Marie-Pier T.",
+        context: "Gérante · Pharmacie · Plateau Mont-Royal",
     },
     {
-        quote: "Précision au millimètre. La serrure s'enclenche d'un seul doigt, le ferme-porte est silencieux. On aurait dû les appeler dès le début.",
-        author: "Directrice d'école primaire",
-        context: "Commission scolaire · Laval",
+        quote: "On gère 14 écoles primaires. Quand un cylindre brise ou qu'une serrure de classe se grippe, faut que ça se règle vite. Avec Portech on appelle, et c'est fait dans la semaine, parfois la journée. Pas de drame, pas de devis en 4 pages.",
+        author: "Sylvain B.",
+        context: "Coordonnateur entretien · Centre de services scolaire de Laval",
     },
     {
-        quote: "Nos portes pivots sur mesure valaient à elles seules le prix d'une voiture. Quatre vitriers ont refusé de toucher à la quincaillerie — peur de marquer le cadre, peur de mal monter le mécanisme. Portech a accepté, a tout pré-assemblé en atelier, et a livré une fermeture parfaite. Aucune trace, aucune hésitation. C'est le seul que j'appellerai pour le prochain restaurant.",
-        author: "Propriétaire-chef",
-        context: "Restaurant gastronomique · Vieux-Montréal",
+        quote: "Restaurant, portes pivots sur mesure, le client avait dépensé une fortune. Quatre vitriers ont reculé sur la quincaillerie. Cédrick a accepté, a fait le préassemblage chez lui, livré une fermeture parfaite. Aucune marque sur le cadre. Je l'appelle pour le prochain projet, c'est sûr.",
+        author: "Jean-François M.",
+        context: "Designer-architecte · Restaurant gastronomique · Vieux-Montréal",
     },
     {
-        quote: "Avant l'ouverture du complexe, on devait régler 12 portes coupe-feu et 2 barres antipaniques sur les sorties d'urgence. Portech est venu un dimanche, a tout aligné et inspecté. On a passé l'inspection des pompiers le lundi sans une seule remarque.",
-        author: "Directeur des opérations",
-        context: "Complexe cinématographique · Rive-Sud de Montréal",
+        quote: "Cinéma 8 salles, ouverture en 2 semaines, 12 portes coupe-feu et 2 sorties d'urgence à régler. Cédrick est venu un dimanche, a tout aligné, vérifié la conformité. On a passé l'inspection lundi sans une remarque. Sauveur.",
+        author: "Daniel R.",
+        context: "Chargé de projet · Complexe cinématographique · Brossard",
     },
 ];
 
@@ -275,7 +280,7 @@ const Home = () => {
                                             Spécialité
                                         </dt>
                                         <dd className="font-display font-bold uppercase">
-                                            Quincaillerie
+                                            Installation de quincaillerie
                                         </dd>
                                     </div>
                                     <div className="flex justify-between">
@@ -318,7 +323,11 @@ const Home = () => {
             >
                 <div className="container-portech py-20 md:py-28">
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-5 md:row-span-2 relative overflow-hidden border border-[#dde5f0] group">
+                        <Link
+                            to="/galerie/interventions"
+                            data-testid="showcase-interventions"
+                            className="md:col-span-5 md:row-span-2 relative overflow-hidden border border-[#dde5f0] group cursor-pointer"
+                        >
                             <img
                                 src={IMG.hands}
                                 alt="Technicien installant de la quincaillerie sur une porte commerciale"
@@ -327,8 +336,15 @@ const Home = () => {
                             <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-[#dde5f0] px-3 py-2">
                                 Intervention · Installation
                             </div>
-                        </div>
-                        <div className="md:col-span-4 relative overflow-hidden border border-[#dde5f0] group">
+                            <div className="absolute bottom-4 right-4 bg-[#0c182b] text-white tech-stamp px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Voir la galerie →
+                            </div>
+                        </Link>
+                        <Link
+                            to="/galerie/chantiers"
+                            data-testid="showcase-chantiers"
+                            className="md:col-span-4 relative overflow-hidden border border-[#dde5f0] group cursor-pointer"
+                        >
                             <img
                                 src={IMG.luxuryGlass}
                                 alt="Installation de quincaillerie sur porte pivot vitrée haut de gamme"
@@ -337,37 +353,61 @@ const Home = () => {
                             <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-[#dde5f0] px-3 py-2">
                                 Chantier réel · Haut de gamme
                             </div>
-                        </div>
-                        <div className="md:col-span-3 relative overflow-hidden border border-[#dde5f0] group">
+                            <div className="absolute bottom-4 right-4 bg-[#0c182b] text-white tech-stamp px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Voir la galerie →
+                            </div>
+                        </Link>
+                        <Link
+                            to="/galerie/dispositifs-sortie"
+                            data-testid="showcase-exit-device"
+                            className="md:col-span-3 relative overflow-hidden border border-[#dde5f0] group cursor-pointer"
+                        >
                             <img
-                                src={IMG.tools}
-                                alt="Outils de précision"
+                                src={IMG.exitDevice}
+                                alt="Dispositif de sortie sur porte commerciale"
                                 className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                             <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-[#dde5f0] px-3 py-2">
-                                Atelier
+                                Dispositif de sortie
                             </div>
-                        </div>
-                        <div className="md:col-span-4 relative overflow-hidden border border-[#dde5f0] group">
+                            <div className="absolute bottom-4 right-4 bg-[#0c182b] text-white tech-stamp px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Voir →
+                            </div>
+                        </Link>
+                        <Link
+                            to="/galerie/barres-antipaniques"
+                            data-testid="showcase-panic-bar"
+                            className="md:col-span-4 relative overflow-hidden border border-[#dde5f0] group cursor-pointer"
+                        >
                             <img
-                                src={IMG.panic}
+                                src={IMG.panicBar}
                                 alt="Barre antipanique commerciale"
                                 className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                             <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-[#dde5f0] px-3 py-2">
                                 Barre antipanique
                             </div>
-                        </div>
-                        <div className="md:col-span-3 relative overflow-hidden border border-[#dde5f0] group">
+                            <div className="absolute bottom-4 right-4 bg-[#0c182b] text-white tech-stamp px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Voir →
+                            </div>
+                        </Link>
+                        <Link
+                            to="/galerie/serrures"
+                            data-testid="showcase-lock"
+                            className="md:col-span-3 relative overflow-hidden border border-[#dde5f0] group cursor-pointer"
+                        >
                             <img
-                                src={IMG.lock}
+                                src={IMG.lockCloseup}
                                 alt="Serrure commerciale"
                                 className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                             <div className="absolute top-4 left-4 tech-stamp bg-white/95 border border-[#dde5f0] px-3 py-2">
                                 Serrure
                             </div>
-                        </div>
+                            <div className="absolute bottom-4 right-4 bg-[#0c182b] text-white tech-stamp px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Voir →
+                            </div>
+                        </Link>
                     </div>
                 </div>
             </section>
@@ -406,8 +446,9 @@ const Home = () => {
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-px bg-[#dde5f0] border border-[#dde5f0]">
                         {brands.map((b) => (
-                            <div
+                            <Link
                                 key={b.name}
+                                to="/catalogue"
                                 data-testid={`brand-${b.name.toLowerCase().replace(/\s+/g, "-")}`}
                                 className="bg-white p-6 md:p-8 flex items-center justify-center min-h-[110px] group hover:bg-[#f3f6fb] transition-colors"
                             >
@@ -416,13 +457,12 @@ const Home = () => {
                                 >
                                     {b.name}
                                 </span>
-                            </div>
+                            </Link>
                         ))}
                     </div>
 
                     <p className="mt-8 text-sm text-[#4b5d7a] italic">
-                        * Liste non exhaustive. On adapte à ce que vous avez,
-                        ou on recommande la meilleure option pour votre besoin.
+                        * Cliquez sur une marque pour voir notre catalogue de quincaillerie. Liste non exhaustive — on adapte à ce que vous avez, ou on recommande la meilleure option pour votre besoin.
                     </p>
                 </div>
             </section>

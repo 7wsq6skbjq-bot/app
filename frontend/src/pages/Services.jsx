@@ -11,14 +11,15 @@ import {
 } from "lucide-react";
 import CtaBanner from "@/components/CtaBanner";
 
+const STOCK = "https://images.unsplash.com/";
 const IMG = {
-    hero: "/generated/panic-bar.png",
-    install: "/generated/technician-hands.png",
-    tools: "/generated/workshop-tools.png",
-    closer: "/generated/door-closer.png",
-    lock: "/generated/commercial-lock.png",
+    hero:    `${STOCK}photo-1538766017398-415434a31a5b?auto=format&fit=crop&w=1800&q=80`,
+    install: `${STOCK}photo-1607710533910-d7cdffd9e593?auto=format&fit=crop&w=1400&q=80`,
+    tools:   `${STOCK}photo-1584105154398-99080f81b8ee?auto=format&fit=crop&w=1400&q=80`,
+    closer:  `${STOCK}photo-1586864387634-2f33030dab41?auto=format&fit=crop&w=1400&q=80`,
+    lock:    `${STOCK}photo-1635602739175-bab409a6e94c?auto=format&fit=crop&w=1400&q=80`,
     luxuryGlass: "/uploads/glass-door-hardware.jpg",
-    grid: "/generated/hardware-grid.png",
+    grid:    `${STOCK}photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=80`,
 };
 
 const serviceDetails = [
