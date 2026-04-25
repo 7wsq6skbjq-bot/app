@@ -79,20 +79,8 @@ agenthub/agents/youtube/db
 memory/test_credentials.md
 
 # Mobile development
-android-sdk/-e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
+android-sdk/
+# Sensitive credential files (NOT .env — those must be tracked for Emergent deploy)
 credentials.json
 *.pem
 *.key
