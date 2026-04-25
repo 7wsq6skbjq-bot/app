@@ -110,11 +110,11 @@ const benefits = [
         title: "Travail précis",
         desc: "Chaque mesure validée, chaque coupe vérifiée. Zéro approximation.",
     },
-    {
-        icon: ShieldCheck,
-        title: "Installation durable",
-        desc: "On n'applique pas de patch temporaire. On règle le problème à la source.",
-    },
+                    {
+                        icon: ShieldCheck,
+                        title: "Installation durable",
+                        desc: "On n'applique pas de patch temporaire. On règle le problème à la source.",
+                    },
     {
         icon: Timer,
         title: "Rapidité d'exécution",
@@ -151,18 +151,18 @@ const BRAND_STYLE_MAP = {
 };
 
 const brands = [
-    { name: "Adams Rite", style: "italic" },
-    { name: "Von Duprin", style: "condensed" },
-    { name: "Sargent", style: "wide" },
-    { name: "LCN", style: "block" },
-    { name: "Schlage", style: "italic" },
-    { name: "Yale", style: "block" },
-    { name: "Norton", style: "wide" },
-    { name: "dormakaba", style: "condensed" },
-    { name: "Corbin Russwin", style: "italic" },
-    { name: "Best", style: "block" },
-    { name: "Hager", style: "wide" },
-    { name: "Stanley", style: "condensed" },
+    { name: "Adams Rite",     slug: "adams-rite",     style: "italic" },
+    { name: "Von Duprin",     slug: "von-duprin",     style: "condensed" },
+    { name: "Sargent",        slug: "sargent",        style: "wide" },
+    { name: "LCN",            slug: "lcn",            style: "block" },
+    { name: "Schlage",        slug: "schlage",        style: "italic" },
+    { name: "Yale",           slug: "yale",           style: "block" },
+    { name: "Norton",         slug: "norton",         style: "wide" },
+    { name: "dormakaba",      slug: "dormakaba",      style: "condensed" },
+    { name: "Corbin Russwin", slug: "corbin-russwin", style: "italic" },
+    { name: "Best",           slug: "best",           style: "block" },
+    { name: "Hager",          slug: "hager",          style: "wide" },
+    { name: "Stanley",        slug: "stanley",        style: "condensed" },
 ];
 
 const testimonials = [
@@ -454,11 +454,18 @@ const Home = () => {
                             <Link
                                 key={b.name}
                                 to="/catalogue"
-                                data-testid={`brand-${b.name.toLowerCase().replace(/\s+/g, "-")}`}
-                                className="bg-white p-6 md:p-8 flex items-center justify-center min-h-[110px] group hover:bg-[#f3f6fb] transition-colors"
+                                data-testid={`brand-${b.slug}`}
+                                className="bg-white p-6 md:p-8 flex flex-col items-center justify-center gap-3 min-h-[140px] group hover:bg-[#f3f6fb] transition-colors"
                             >
+                                <img
+                                    src={`/brands/${b.slug}.png`}
+                                    alt={`Logo ${b.name}`}
+                                    className="max-h-10 md:max-h-12 w-auto object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                                    loading="lazy"
+                                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                />
                                 <span
-                                    className={`font-display font-bold uppercase text-lg md:text-xl tracking-tight text-[#0c182b] group-hover:text-[#2f4f7f] transition-colors text-center ${BRAND_STYLE_MAP[b.style] || ""}`}
+                                    className={`font-display font-bold uppercase text-sm md:text-base tracking-tight text-[#4b5d7a] group-hover:text-[#0c182b] transition-colors text-center ${BRAND_STYLE_MAP[b.style] || ""}`}
                                 >
                                     {b.name}
                                 </span>

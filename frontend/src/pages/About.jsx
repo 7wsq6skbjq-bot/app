@@ -234,7 +234,7 @@ const About = () => {
                         <div className="lg:col-span-7">
                             <ul className="space-y-5">
                                 {[
-                                    "Chaque pièce quincaillerie est bien ajustée",
+                                    "Chaque pièce de quincaillerie est bien ajustée",
                                     "Chaque pièce est solide et commerciale",
                                     "Chaque installation fonctionne dès le départ",
                                     "Chaque intervention respecte vos opérations",

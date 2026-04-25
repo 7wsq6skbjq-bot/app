@@ -79,6 +79,16 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 8 (Marquage Portech, outils DeWalt, signalétique FR, logos marques)
+- **15 images régénérées** (gal-interv 1-4, gal-chantier-2, gal-exit 1, 2, 4, gal-panic 1-4, gal-lock 1+3, services-installation/machining/repair) avec règles strictes :
+  - Technicien en **chandail/polo/hoodie noir avec « PORTECH » en blanc** (gros au dos OU petit côté cœur)
+  - **Outils DeWalt jaune et noir** uniquement (perceuses, visseuses)
+  - Toute signalétique en **FRANÇAIS** (« SORTIE » au lieu de « EXIT »)
+- **gal-chantier-2** entièrement remplacée : technicien Portech en hoodie noir agenouillé en lobby de tour à condo de luxe (marbre, mur navy).
+- **Brand wall** : ajout des **logos officiels** (Schlage, Yale, dormakaba, Stanley, Best — Wikimedia) + **wordmarks AI** stylisés (Sargent, Hager, Von Duprin, LCN, Adams Rite, Corbin Russwin, Norton). 12/12 marques avec logo.
+- **Texte « Pourquoi nous »** corrigé : « Chaque pièce **de** quincaillerie est bien ajustée ».
+- **Catalogue : à reprendre** — les 18 photos produit AI ont été rejetées par l'utilisateur. Sites manufacturiers bloquent le scraping automatisé (403 Forbidden). En attente des PDF catalogues de l'utilisateur (Schlage, Sargent, Von Duprin, LCN, dormakaba, Hager, etc.).
+
 ### 2026-04 — Iter 7 (Banque d'images 100% commercial, zéro doublon)
 - **61 images générées via Nano Banana** dans `/generated/portfolio/` — strictement portes commerciales en aluminium / acier (devantures, tours à bureaux, cinémas, écoles, pharmacies, hôpitaux). Zéro porte résidentielle.
 - **Zéro doublon** : chaque image est utilisée à un seul endroit unique sur tout le site (Home, Services, Galerie, Catalogue).
