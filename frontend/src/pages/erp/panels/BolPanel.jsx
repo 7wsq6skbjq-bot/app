@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash2, RefreshCw, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Printer, Send, Download, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { PartyForm } from "../components/PartyForm";
@@ -18,9 +18,15 @@ export const BolPanel = () => {
     const [parties, setParties] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [query, setQuery] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState(null);
     const [form, setForm] = useState(emptyBOL());
+    const [emailModal, setEmailModal] = useState(null);
+    const [emailTo, setEmailTo] = useState("");
+    const [emailMsg, setEmailMsg] = useState("");
+    const [emailSending, setEmailSending] = useState(false);
+    const [emailError, setEmailError] = useState("");
 
     const load = useCallback(async () => {
         setLoading(true); setError("");
@@ -84,6 +90,54 @@ export const BolPanel = () => {
         setRows((prev) => prev.filter((x) => x.id !== d.id));
     };
 
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return rows;
+        return rows.filter((d) =>
+            [
+                `CONN-${String(d.number).padStart(4, "0")}`,
+                d.shipper_snapshot?.name, d.consignee_snapshot?.name,
+                d.carrier, d.status,
+                ...(d.items || []).map((it) => it.description),
+            ].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)),
+        );
+    }, [rows, query]);
+
+    const openEmail = (d) => {
+        setEmailModal(d);
+        setEmailTo(d.consignee_snapshot?.email || "");
+        setEmailMsg("");
+        setEmailError("");
+    };
+    const sendEmail = async () => {
+        if (!emailModal || !emailTo) return;
+        setEmailSending(true); setEmailError("");
+        try {
+            await http.post(`/admin/bills-of-lading/${emailModal.id}/send-email`, {
+                to_email: emailTo, message: emailMsg || undefined,
+            });
+            setEmailModal(null);
+            await load();
+        } catch (e) {
+            setEmailError(e?.response?.data?.detail || "Échec");
+        } finally {
+            setEmailSending(false);
+        }
+    };
+    const downloadPdf = async (d) => {
+        try {
+            const resp = await http.get(`/admin/bills-of-lading/${d.id}/pdf`, { responseType: "blob" });
+            const url = window.URL.createObjectURL(resp.data);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `CONN-${String(d.number).padStart(4, "0")}.pdf`;
+            document.body.appendChild(a); a.click(); a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Échec");
+        }
+    };
+
     const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const updateItem = (idx, patch) => setForm((f) => ({ ...f, items: f.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) }));
     const addItem = () => setForm((f) => ({ ...f, items: [...f.items, emptyBolItem()] }));
@@ -125,7 +179,7 @@ export const BolPanel = () => {
                     <div className="p-12 text-center text-[#4b5d7a] text-sm">Aucun connaissement.</div>
                 )}
                 <ul>
-                    {rows.map((d) => (
+                    {filtered.map((d) => (
                         <li key={d.id} className="border-b border-[#dde5f0] last:border-b-0 hover:bg-[#f3f6fb] transition-colors">
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-3 items-center">
                                 <div className="col-span-2 font-display font-bold text-sm">CONN-{String(d.number).padStart(4, "0")}</div>
@@ -136,13 +190,19 @@ export const BolPanel = () => {
                                     <span className={`tech-stamp px-2 py-1 border ${STATUS_BADGE[d.status] || "border-[#dde5f0]"}`}>{d.status}</span>
                                 </div>
                                 <div className="col-span-2 flex justify-end gap-1">
-                                    <Link to={`/admin/imprimer/connaissement/${d.id}`} target="_blank" rel="noopener" className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]" aria-label="Imprimer">
+                                    <button onClick={() => downloadPdf(d)} title="Télécharger PDF" className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
+                                        <Download className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button onClick={() => openEmail(d)} title="Envoyer par courriel" className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
+                                        <Send className="w-3.5 h-3.5" />
+                                    </button>
+                                    <Link to={`/admin/imprimer/connaissement/${d.id}`} target="_blank" rel="noopener" title="Aperçu HTML" className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
                                         <Printer className="w-3.5 h-3.5" />
                                     </Link>
-                                    <button onClick={() => openEdit(d)} className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
+                                    <button onClick={() => openEdit(d)} title="Modifier" className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
                                         <Pencil className="w-3.5 h-3.5" />
                                     </button>
-                                    <button onClick={() => remove(d)} className="p-2 border border-[#dde5f0] hover:bg-red-50 text-red-600">
+                                    <button onClick={() => remove(d)} title="Supprimer" className="p-2 border border-[#dde5f0] hover:bg-red-50 text-red-600">
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                 </div>

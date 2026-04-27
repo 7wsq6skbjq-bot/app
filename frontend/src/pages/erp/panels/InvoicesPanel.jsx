@@ -15,5 +15,6 @@ export const InvoicesPanel = () => (
         statuses={INVOICE_STATUSES}
         numberPrefix="FAC"
         emptyDoc={emptyInvoice}
+        csvExportPath="/admin/exports/invoices.csv"
     />
 );

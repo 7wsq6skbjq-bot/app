@@ -14,5 +14,6 @@ export const PurchaseOrdersPanel = () => (
         statuses={PO_STATUSES}
         numberPrefix="BC"
         emptyDoc={emptyPO}
+        csvExportPath="/admin/exports/purchase-orders.csv"
     />
 );

@@ -7,25 +7,27 @@ import { ProductsPanel } from "./erp/panels/ProductsPanel";
 import { InvoicesPanel } from "./erp/panels/InvoicesPanel";
 import { PurchaseOrdersPanel } from "./erp/panels/PurchaseOrdersPanel";
 import { BolPanel } from "./erp/panels/BolPanel";
+import { DashboardPanel } from "./erp/panels/DashboardPanel";
 
 const TABS = [
-    { slug: "clients",        label: "Clients",         panel: "parties-customer" },
-    { slug: "fournisseurs",   label: "Fournisseurs",    panel: "parties-supplier" },
-    { slug: "produits",       label: "Produits",        panel: "products" },
-    { slug: "factures",       label: "Factures",        panel: "invoices" },
-    { slug: "bons-commande",  label: "Bons de commande", panel: "purchase-orders" },
-    { slug: "connaissements", label: "Connaissements",  panel: "bills-of-lading" },
+    { slug: "tableau-de-bord", label: "Tableau de bord", panel: "dashboard" },
+    { slug: "clients",         label: "Clients",         panel: "parties-customer" },
+    { slug: "fournisseurs",    label: "Fournisseurs",    panel: "parties-supplier" },
+    { slug: "produits",        label: "Produits",        panel: "products" },
+    { slug: "factures",        label: "Factures",        panel: "invoices" },
+    { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
+    { slug: "connaissements",  label: "Connaissements",  panel: "bills-of-lading" },
 ];
 
 const AdminErp = () => {
     const { tab } = useParams();
     const navigate = useNavigate();
     const { logout, user } = useAuth();
-    const activeSlug = tab || "clients";
+    const activeSlug = tab || "tableau-de-bord";
     const activeTab = TABS.find((t) => t.slug === activeSlug) || TABS[0];
 
     useEffect(() => {
-        if (!tab) navigate("/admin/gestion/clients", { replace: true });
+        if (!tab) navigate("/admin/gestion/tableau-de-bord", { replace: true });
     }, [tab, navigate]);
 
     return (
@@ -64,6 +66,7 @@ const AdminErp = () => {
             </div>
 
             <main className="container-portech py-8">
+                {activeTab.panel === "dashboard" && <DashboardPanel />}
                 {activeTab.panel === "parties-customer" && <PartiesPanel kind="customer" />}
                 {activeTab.panel === "parties-supplier" && <PartiesPanel kind="supplier" />}
                 {activeTab.panel === "products" && <ProductsPanel />}
