@@ -34,7 +34,7 @@ export const IMG = {
 
 export const problems = [
     { icon: AlertTriangle, title: "Porte qui ferme mal", desc: "Elle cogne, elle traîne, elle grince. Un problème qui s'aggrave chaque semaine." },
-    { icon: KeyRound,      title: "Barre antipanique difficile", desc: "Du personnel qui peine à sortir, des inspections qui tombent à plat." },
+    { icon: KeyRound,      title: "Barre antipanique difficile", desc: "Du personnel qui peine à sortir, des inspections échouées." },
     { icon: Wrench,        title: "Serrure mal alignée", desc: "Verrouillage qui force, sécurité compromise, usure prématurée des pièces." },
     { icon: Timer,         title: "Appels de service en boucle", desc: "Des « patchs » temporaires qui reviennent hanter votre budget chaque mois." },
 ];
@@ -52,7 +52,7 @@ export const benefits = [
     { icon: Ruler,        title: "Travail précis",         desc: "Chaque mesure validée, chaque coupe vérifiée. Zéro approximation." },
     { icon: ShieldCheck,  title: "Installation durable",   desc: "On n'applique pas de patch temporaire. On règle le problème à la source." },
     { icon: Timer,        title: "Rapidité d'exécution",   desc: "Planification serrée, intervention ciblée. On respecte vos opérations." },
-    { icon: CheckCircle2, title: "Expertise terrain réelle", desc: "Plus de 10 ans sur le chantier, aux côtés de 45 ans de métier transmis." },
+    { icon: CheckCircle2, title: "Expertise terrain réelle", desc: "Plus de 10 ans en atelier, aux côtés de 45 ans de métier transmis." },
 ];
 
 export const sectors = [
@@ -84,12 +84,12 @@ export const brands = [
 ];
 
 export const testimonials = [
-    { quote: "Trois portes coupe-feu coincées au sous-sol, on n'arrivait plus à les fermer correctement depuis l'été. Cédrick est venu, a démonté les ferme-portes, ajusté les pivots. Tout fonctionne. Première fois en 2 ans qu'on n'a pas un appel par semaine pour les portes.", author: "Mario L.", context: "Concierge en chef · Tour de bureaux Côte-de-Liesse" },
-    { quote: "30 étages, condos haut de gamme rue Peel. On avait 2 vitriers en place pour le verre, mais la quincaillerie sur les portes pivot du lobby c'est lui qui a fait la job. Pré-assemblé en atelier, posé en une journée, alignement nickel.", author: "Patrick D.", context: "Surintendant · Tour à condos · Rue Peel, Montréal" },
-    { quote: "Notre barre antipanique de la sortie d'urgence côté ruelle s'enclenchait pas. Inspection des pompiers dans 5 jours, on stressait. Cédrick est passé le lendemain matin, ajustement, nettoyage du loquet. On a passé l'inspection sans correctif.", author: "Marie-Pier T.", context: "Gérante · Pharmacie · Plateau Mont-Royal" },
-    { quote: "On gère 14 écoles primaires. Quand un cylindre brise ou qu'une serrure de classe se grippe, faut que ça se règle vite. Avec Portech on appelle, et c'est fait dans la semaine, parfois la journée. Pas de drame, pas de devis en 4 pages.", author: "Sylvain B.", context: "Coordonnateur entretien · Centre de services scolaire de Laval" },
-    { quote: "Restaurant, portes pivots sur mesure, le client avait dépensé une fortune. Quatre vitriers ont reculé sur la quincaillerie. Cédrick a accepté, a fait le préassemblage chez lui, livré une fermeture parfaite. Aucune marque sur le cadre. Je l'appelle pour le prochain projet, c'est sûr.", author: "Jean-François M.", context: "Designer-architecte · Restaurant gastronomique · Vieux-Montréal" },
-    { quote: "Cinéma 8 salles, ouverture en 2 semaines, 12 portes coupe-feu et 2 sorties d'urgence à régler. Cédrick est venu un dimanche, a tout aligné, vérifié la conformité. On a passé l'inspection lundi sans une remarque. Sauveur.", author: "Daniel R.", context: "Chargé de projet · Complexe cinématographique · Brossard" },
+    { quote: "Trois portes coupe-feu coincées au sous-sol, on n'arrivait plus à les fermer correctement depuis l'été. Cédrick est venu, a démonté les ferme-portes, ajusté les pivots. Tout fonctionne. Première fois en 2 ans qu'on n'a pas un appel par semaine pour les portes.", context: "Concierge en chef · Tour de bureaux Côte-de-Liesse" },
+    { quote: "30 étages, condos haut de gamme rue Peel. On avait 2 vitriers en place pour le verre, mais la quincaillerie sur les portes pivot du lobby c'est lui qui a fait la job. Pré-assemblé en atelier, posé en une journée, alignement nickel.", context: "Surintendant · Tour à condos · Rue Peel, Montréal" },
+    { quote: "Notre barre antipanique de la sortie d'urgence côté ruelle s'enclenchait pas. Inspection des pompiers dans 5 jours, on stressait. Cédrick est passé le lendemain matin, ajustement, nettoyage du loquet. On a passé l'inspection sans correctif.", context: "Gérante · Pharmacie · Plateau Mont-Royal" },
+    { quote: "On gère 14 écoles primaires. Quand un cylindre brise ou qu'une serrure de classe se grippe, faut que ça se règle vite. Avec Portech on appelle, et c'est fait dans la semaine, parfois la journée. Pas de drame, pas de devis en 4 pages.", context: "Coordonnateur entretien · Centre de services scolaire de Laval" },
+    { quote: "Restaurant, portes pivots sur mesure, le client avait dépensé une fortune. Quatre vitriers ont reculé sur la quincaillerie. Cédrick a accepté, a fait le préassemblage chez lui, livré une fermeture parfaite. Aucune marque sur le cadre. Je l'appelle pour le prochain projet, c'est sûr.", context: "Designer-architecte · Restaurant gastronomique · Vieux-Montréal" },
+    { quote: "Cinéma 8 salles, ouverture en 2 semaines, 12 portes coupe-feu et 2 sorties d'urgence à régler. Cédrick est venu un dimanche, a tout aligné, vérifié la conformité. On a passé l'inspection lundi sans une remarque. Sauveur.", context: "Chargé de projet · Complexe cinématographique · Brossard" },
 ];
 
 export const showcaseTiles = [

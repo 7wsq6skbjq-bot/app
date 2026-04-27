@@ -8,7 +8,7 @@ export const HomeTestimonials = () => (
     >
         <div className="container-portech py-24 md:py-32">
             <div className="mb-14">
-                <div className="tech-stamp mb-4">06 — Retours terrain</div>
+                <div className="tech-stamp mb-4">06 — Retours atelier</div>
                 <h2 className="font-display font-bold uppercase tracking-tight text-4xl md:text-5xl leading-[0.95] max-w-3xl">
                     Ceux qui nous ont fait confiance — et pourquoi ils rappellent.
                 </h2>
@@ -17,7 +17,7 @@ export const HomeTestimonials = () => (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[#dde5f0] border border-[#dde5f0]">
                 {testimonials.map((t) => (
                     <figure
-                        key={`${t.author}-${t.context}`}
+                        key={t.context}
                         data-testid={`testimonial-${t.context.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}
                         className="bg-white p-8 md:p-10 flex flex-col"
                     >
@@ -26,10 +26,7 @@ export const HomeTestimonials = () => (
                             {t.quote}
                         </blockquote>
                         <figcaption className="pt-6 border-t border-[#dde5f0]">
-                            <div className="font-display font-bold uppercase text-sm tracking-wider">
-                                {t.author}
-                            </div>
-                            <div className="tech-stamp mt-1">{t.context}</div>
+                            <div className="tech-stamp">{t.context}</div>
                         </figcaption>
                     </figure>
                 ))}

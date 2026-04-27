@@ -19,6 +19,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
+from erp import build_erp_router
+
 # ==============================================================
 # Configuration
 # ==============================================================
@@ -317,6 +319,9 @@ async def delete_submission(submission_id: str, _: AdminUser = Depends(get_curre
 # ==============================================================
 # Wire up
 # ==============================================================
+# Mount ERP (customers/products/invoices/POs/BOLs) under the /api/admin prefix.
+api_router.include_router(build_erp_router(db, get_current_admin))
+
 app.include_router(api_router)
 
 app.add_middleware(

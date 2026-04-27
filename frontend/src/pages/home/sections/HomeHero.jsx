@@ -65,7 +65,7 @@ export const HomeHero = () => (
                         </div>
                         <dl className="space-y-4 text-sm">
                             {[
-                                ["Expérience", "10+ ans terrain"],
+                                ["Expérience", "10 ans en atelier"],
                                 ["Héritage métier", "45 ans transmis"],
                                 ["Spécialité", "Installation de quincaillerie"],
                             ].map(([dt, dd], i) => (

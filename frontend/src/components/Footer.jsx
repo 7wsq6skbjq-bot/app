@@ -79,7 +79,7 @@ const Footer = () => {
                             <li className="flex items-start gap-3">
                                 <MapPin className="w-4 h-4 mt-1 text-[#97b0d0] flex-shrink-0" />
                                 <span data-testid="footer-zone">
-                                    Grand Montréal — service sur le terrain
+                                    Grand Montréal — service en atelier
                                 </span>
                             </li>
                             <li className="flex items-start gap-3">

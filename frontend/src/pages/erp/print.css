@@ -1,0 +1,212 @@
+/*
+ * Print-optimized styles for invoices, purchase orders, bills of lading.
+ * The user prints to PDF via browser's native "Save as PDF".
+ */
+
+.print-page {
+    font-family: "Inter", sans-serif;
+    color: #0c182b;
+    background: #ffffff;
+    max-width: 210mm; /* A4 width */
+    margin: 0 auto;
+    padding: 20mm;
+    min-height: 297mm;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.print-page .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 3px solid #0c182b;
+    padding-bottom: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.print-page .print-logo {
+    height: 60px;
+    width: auto;
+}
+
+.print-page .print-title {
+    font-size: 2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.print-page .print-number {
+    color: #2f4f7f;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+.print-page .print-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.print-page .print-party-block {
+    background: #f3f6fb;
+    border: 1px solid #dde5f0;
+    padding: 1rem 1.2rem;
+}
+
+.print-page .print-party-block .lbl {
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #4b5d7a;
+    margin-bottom: 0.4rem;
+}
+
+.print-page .print-party-block .name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.3rem;
+}
+
+.print-page .print-party-block .addr {
+    font-size: 0.85rem;
+    color: #1e3457;
+    line-height: 1.4;
+}
+
+.print-page .print-meta {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    border: 1px solid #dde5f0;
+    padding: 0.8rem 1rem;
+    margin-bottom: 2rem;
+    background: #f9fbfd;
+}
+
+.print-page .print-meta > div .lbl {
+    font-family: ui-monospace, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #4b5d7a;
+    margin-bottom: 0.2rem;
+}
+
+.print-page .print-meta > div .val {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+}
+
+.print-page table.print-items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+}
+
+.print-page table.print-items thead th {
+    background: #0c182b;
+    color: #ffffff;
+    font-family: ui-monospace, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    font-weight: 700;
+}
+
+.print-page table.print-items tbody td {
+    border-bottom: 1px solid #dde5f0;
+    padding: 0.7rem 0.8rem;
+    vertical-align: top;
+}
+
+.print-page table.print-items .num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.print-page .print-totals {
+    margin-left: auto;
+    width: 46%;
+    margin-bottom: 2rem;
+}
+
+.print-page .print-totals .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    font-size: 0.9rem;
+}
+
+.print-page .print-totals .grand {
+    border-top: 2px solid #0c182b;
+    margin-top: 0.4rem;
+    padding-top: 0.7rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.print-page .print-footer {
+    border-top: 2px solid #0c182b;
+    padding-top: 1rem;
+    margin-top: 2rem;
+    font-size: 0.75rem;
+    color: #4b5d7a;
+    line-height: 1.5;
+}
+
+.print-page .print-notes {
+    background: #f9fbfd;
+    border: 1px solid #dde5f0;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+}
+
+.print-page .print-status-stamp {
+    display: inline-block;
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border: 2px solid;
+    margin-left: 0.6rem;
+}
+
+.print-page .print-actions {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 10;
+}
+
+/* Print media: hide action buttons, remove shadow */
+@media print {
+    .print-page {
+        max-width: none;
+        margin: 0;
+        padding: 12mm;
+        min-height: auto;
+        box-shadow: none;
+    }
+    .print-actions {
+        display: none !important;
+    }
+    body {
+        background: #ffffff !important;
+    }
+}

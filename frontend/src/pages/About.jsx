@@ -9,10 +9,10 @@ const EXTRA_IMG = "/generated/heritage-torch.png";
 const storyBlocks = [
     {
         label: "01",
-        title: "Sur le terrain, pas dans les livres.",
+        title: "En atelier, pas dans les livres.",
         paragraphs: [
             "Il y a des parcours qui ne s'inventent pas.",
-            "Le mien s'est construit sur le terrain, jour après jour, pendant plus de 10 ans — aux côtés d'un homme qui avait déjà consacré 45 années de sa vie à ce métier.",
+            "Le mien s'est construit en atelier, jour après jour, pendant plus de 10 ans — aux côtés d'un homme qui avait déjà consacré 45 années de sa vie à ce métier.",
             "Un homme de rigueur. Un homme de précision. Un homme qui m'a appris qu'une porte commerciale, ce n'est jamais « juste une porte ».",
         ],
     },
@@ -40,7 +40,7 @@ const storyBlocks = [
         paragraphs: [
             "Parce que très tôt, j'ai compris une chose : je ne travaillais pas seulement pour gagner ma vie. Je travaillais pour bâtir mon expertise.",
             "Avec le temps, ce qui était un apprentissage est devenu une maîtrise — une compréhension complète du métier : préparation et modification de portes, installation de quincaillerie spécialisée, ajustement de précision, gestion de projets et coordination.",
-            "Une expertise acquise sur le terrain, dans des conditions réelles, là où les erreurs coûtent du temps, de l'argent… et parfois des maux de tête.",
+            "Une expertise acquise en atelier, dans des conditions réelles, là où les erreurs coûtent du temps, de l'argent… et parfois des maux de tête.",
         ],
     },
     {

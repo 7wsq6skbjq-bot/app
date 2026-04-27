@@ -50,7 +50,6 @@ const serviceDetails = [
         items: [
             "Découpe et perçage précis (cisaille, scie, routeur)",
             "Préparation pour serrures mortaises et cylindriques",
-            "Ouvertures pour fenêtres, grilles, hublots, passe-plats",
             "Modifications pour conformité aux codes du bâtiment",
             "Travail réalisé sur place ou en atelier selon le besoin",
         ],

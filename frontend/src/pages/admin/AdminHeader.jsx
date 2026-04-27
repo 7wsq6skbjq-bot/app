@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ExternalLink, LogOut } from "lucide-react";
+import { ExternalLink, LogOut, FileText } from "lucide-react";
 
 export const AdminHeader = ({ user, onLogout }) => (
     <header className="bg-[#0c182b] text-white border-b border-[#1e3457]">
@@ -15,6 +15,14 @@ export const AdminHeader = ({ user, onLogout }) => (
                 </span>
             </div>
             <div className="flex items-center gap-4">
+                <Link
+                    to="/admin/gestion"
+                    className="tech-stamp text-[#97b0d0] hover:text-white transition-colors inline-flex items-center gap-2"
+                    data-testid="admin-link-erp"
+                >
+                    <FileText className="w-3.5 h-3.5" />
+                    Gestion
+                </Link>
                 <Link
                     to="/"
                     className="tech-stamp text-[#97b0d0] hover:text-white transition-colors inline-flex items-center gap-2"

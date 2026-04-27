@@ -16,35 +16,53 @@ FOOTER = 110     # remove bottom footer
 
 # (catalog_id, page_filename, output_filename, crop_box or None for default trim)
 SELECTIONS = [
-    # ===== POIGNÉES & LEVIERS — Sargent Studio Collection =====
+    # ===== POIGNÉES & LEVIERS — Sargent Studio Collection (6 fiches) =====
     ("AADSS1004765", "page-08.jpg", "handle-1.png", (560, HEADER, W, H - FOOTER)),
     ("AADSS1004765", "page-11.jpg", "handle-2.png", (560, HEADER, W, H - FOOTER)),
     ("AADSS1004765", "page-14.jpg", "handle-3.png", (560, HEADER, W, H - FOOTER)),
+    ("AADSS1004765", "page-06.jpg", "handle-4.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1004765", "page-17.jpg", "handle-5.png", (560, HEADER, W, H - FOOTER)),
+    ("AADSS1004765", "page-22.jpg", "handle-6.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== SERRURES & CYLINDRES — Sargent Degree Key System =====
+    # ===== SERRURES & CYLINDRES — Sargent Degree Key System (6 fiches) =====
     ("AADSS1004587", "page-01.jpg", "lock-1.png", None),
     ("AADSS1004587", "page-06.jpg", "lock-2.png", (0, HEADER, W, H - FOOTER)),
     ("AADSS1004587", "page-08.jpg", "lock-3.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1004587", "page-07.jpg", "lock-4.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1004587", "page-10.jpg", "lock-5.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1004587", "page-13.jpg", "lock-6.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== BARRES ANTIPANIQUES — Sargent 5300 Alarmed Exit =====
+    # ===== BARRES ANTIPANIQUES — Sargent 5300 Alarmed Exit (6 fiches = toutes les pages) =====
     ("AADSS1086801", "page-1.jpg", "panic-1.png", None),
     ("AADSS1086801", "page-3.jpg", "panic-2.png", (0, HEADER, W, H - FOOTER)),
     ("AADSS1086801", "page-4.jpg", "panic-3.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1086801", "page-2.jpg", "panic-4.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1086801", "page-5.jpg", "panic-5.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1086801", "page-6.jpg", "panic-6.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== FERME-PORTES — Sargent 2300/2409 Fire Guard =====
+    # ===== FERME-PORTES — Sargent 2300/2409 Fire Guard (6 fiches) =====
     ("AADSS1257255", "page-01.jpg", "closer-1.png", None),
     ("AADSS1257255", "page-04.jpg", "closer-2.png", (0, HEADER, W, H - FOOTER)),
     ("AADSS1257255", "page-06.jpg", "closer-3.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1257255", "page-07.jpg", "closer-4.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1257255", "page-09.jpg", "closer-5.png", (0, HEADER, W, H - FOOTER)),
+    ("AADSS1257255", "page-11.jpg", "closer-6.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== CONTRÔLE D'ACCÈS — Von Duprin Electrical Security =====
+    # ===== CONTRÔLE D'ACCÈS — Von Duprin Electrical Security (6 fiches) =====
     ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-01.jpg", "access-1.png", None),
     ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-06.jpg", "access-2.png", (0, HEADER, W, H - FOOTER)),
     ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-20.jpg", "access-3.png", (0, HEADER, W, H - FOOTER)),
+    ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-08.jpg", "access-4.png", (0, HEADER, W, H - FOOTER)),
+    ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-12.jpg", "access-5.png", (0, HEADER, W, H - FOOTER)),
+    ("Von_Duprin_Electrical_Security_Products_and_Accessories_Catalog_109981", "page-18.jpg", "access-6.png", (0, HEADER, W, H - FOOTER)),
 
-    # ===== CHARNIÈRES & PIVOTS — Hager Commercial Hinges =====
+    # ===== CHARNIÈRES & PIVOTS — Hager Commercial Hinges (6 fiches) =====
     ("2016_hager_catalog_commhinges_rev5_v148", "page-01.jpg", "hinge-1.png", None),
     ("2016_hager_catalog_commhinges_rev5_v148", "page-08.jpg", "hinge-2.png", (0, HEADER, W, H - FOOTER)),
     ("2016_hager_catalog_commhinges_rev5_v148", "page-20.jpg", "hinge-3.png", (0, HEADER, W, H - FOOTER)),
+    ("2016_hager_catalog_commhinges_rev5_v148", "page-04.jpg", "hinge-4.png", (0, HEADER, W, H - FOOTER)),
+    ("2016_hager_catalog_commhinges_rev5_v148", "page-12.jpg", "hinge-5.png", (0, HEADER, W, H - FOOTER)),
+    ("2016_hager_catalog_commhinges_rev5_v148", "page-16.jpg", "hinge-6.png", (0, HEADER, W, H - FOOTER)),
 ]
 
 

@@ -79,6 +79,30 @@
 - **Titre périmètre Services** : "LA QUINCAILLERIE — C'EST TOUT CE QU'ON FAIT" (renforcé).
 - **Tests** : 23/23 pytest backend, frontend 100% via testing agent.
 
+### 2026-04 — Iter 13 (Système de gestion interne + retouches contenu)
+**Retouches contenu**
+- Home · Problems : « inspections qui tombent à plat » → « inspections échouées »
+- Home · Fiche technique : « 10+ ans terrain » → « 10 ans en atelier »
+- Home · Benefits : « Plus de 10 ans sur le chantier » → « Plus de 10 ans en atelier »
+- Home · Testimonials : section « Retours terrain » → « Retours atelier » + **tous les noms d'auteurs retirés** (garde poste + lieu)
+- About : « Sur le terrain, pas dans les livres » → « En atelier, pas dans les livres » (+ textes connexes mis à jour)
+- Footer : « service sur le terrain » → « service en atelier »
+- Services : retiré « Ouvertures pour fenêtres, grilles, hublots, passe-plats »
+- Conservée telle quelle (requête explicite) : « Parce qu'une quincaillerie bien posée… sur chaque chantier, sans exception. »
+
+**Catalogue doublé** : passé de 3 → **6 fiches par catégorie** = **36 fiches** au total. Nouvelles sélections extraites des PDF (handle-4 à handle-6, lock-4 à lock-6, etc.).
+
+**Nouveau module ERP dans le portail admin** (`/admin/gestion/*`)
+- **Backend** (`/app/backend/erp.py`) : 6 collections MongoDB (erp_parties, erp_products, erp_invoices, erp_purchase_orders, erp_bills_of_lading, counters) + 23 endpoints CRUD auth-protégés.
+- **Frontend** : navigation à 6 onglets — Clients / Fournisseurs / Produits / Factures / Bons de commande / Connaissements.
+  - Base de données réutilisable clients + fournisseurs (option B).
+  - Catalogue interne produits/services avec prix (option B) — auto-complétion sur les lignes de facture/BC.
+  - Numérotation séquentielle continue : `FAC-0001`, `BC-0001`, `CONN-0001` (option B).
+  - Taxes Québec auto-calculées : TPS 5 % + TVQ 9,975 % avec case « exonéré » (option A).
+- **Impression PDF** : pages dédiées `/admin/imprimer/{facture|bon-commande|connaissement}/:id` avec CSS `@media print` → l'utilisateur clique sur l'imprimante → navigateur → « Enregistrer en PDF ». Logo Portech, coordonnées, mentions Net 30, zones signature sur connaissement.
+- **Intégration AdminHeader** : bouton « Gestion » visible depuis le dashboard principal.
+- **Testé bout-en-bout** : création client → produit → facture (FAC-0001, sous-total 2 598 $ + TPS 129,90 $ + TVQ 259,15 $ = 2 987,05 $) → impression PDF OK.
+
 ### 2026-04 — Iter 12 (Refactoring + SEO + CORS)
 - **Home.jsx refactorisé** : 796 → 46 lignes (94 % de réduction). Architecture :
   - `/pages/home/data.js` — toutes les données (IMG, problems, services, benefits, sectors, brands, testimonials, showcaseTiles, clientTypes)

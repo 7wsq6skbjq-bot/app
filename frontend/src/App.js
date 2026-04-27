@@ -10,6 +10,10 @@ import Catalogue from "@/pages/Catalogue";
 import Legal from "@/pages/Legal";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminErp from "@/pages/AdminErp";
+import AdminPrintInvoice from "@/pages/erp/AdminPrintInvoice";
+import AdminPrintPurchaseOrder from "@/pages/erp/AdminPrintPurchaseOrder";
+import AdminPrintBol from "@/pages/erp/AdminPrintBol";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -37,6 +41,38 @@ function App() {
                             element={
                                 <ProtectedRoute>
                                     <AdminDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/gestion/:tab?"
+                            element={
+                                <ProtectedRoute>
+                                    <AdminErp />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/imprimer/facture/:id"
+                            element={
+                                <ProtectedRoute>
+                                    <AdminPrintInvoice />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/imprimer/bon-commande/:id"
+                            element={
+                                <ProtectedRoute>
+                                    <AdminPrintPurchaseOrder />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/imprimer/connaissement/:id"
+                            element={
+                                <ProtectedRoute>
+                                    <AdminPrintBol />
                                 </ProtectedRoute>
                             }
                         />
