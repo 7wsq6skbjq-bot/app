@@ -36,12 +36,16 @@ const setStoredToken = (t) => {
     }
 };
 
-// Axios instance. `withCredentials: true` keeps the httpOnly cookie path
-// working; the Authorization header is added below as a belt-and-suspenders
-// fallback.
+// Axios instance. We do NOT use `withCredentials` because:
+//   1. In cross-origin production (frontend on portech.info, backend on
+//      emergent.host) the deployed backend returns `Access-Control-Allow-Origin: *`
+//      together with `Access-Control-Allow-Credentials: true` — which modern
+//      browsers reject as a CORS violation, causing intermittent login failures.
+//   2. We already authenticate via `Authorization: Bearer <token>` from the
+//      sessionStorage set after login — no cookies needed.
 const http = axios.create({
     baseURL: API,
-    withCredentials: true,
+    withCredentials: false,
 });
 
 // Attach Bearer token on every outgoing request if we have one in session.

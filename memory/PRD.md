@@ -181,6 +181,19 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 22 (Fix DÉFINITIF login — portech.info prod)
+**Diagnostic approfondi sur portech.info** (pas seulement preview) :
+- Frontend déployé à `https://portech.info`
+- Backend déployé à `https://dev-retrieval.emergent.host/api` (**cross-origin**)
+- **BUG CRITIQUE CORS** : le backend production renvoie simultanément :
+  - `Access-Control-Allow-Origin: *`
+  - `Access-Control-Allow-Credentials: true`
+- **Cette combinaison est interdite par la spec CORS** → tous les navigateurs modernes rejettent la réponse de façon intermittente (dépend du cache / état CDN / round robin) → **login échoue aléatoirement**.
+
+**Fix définitif** : retrait de `withCredentials: true` dans `AuthContext.jsx`. Comme on utilise déjà `Authorization: Bearer <token>` depuis `sessionStorage` (iter 21), on n'a plus besoin du cookie. Avec `withCredentials: false`, le `*` wildcard devient légal et le navigateur accepte la réponse systématiquement.
+
+**Validation** : 10/10 logins rapides consécutifs en preview. 72/72 pytest backend passent. L'utilisateur doit redéployer pour que le fix prenne effet en prod.
+
 ### 2026-04 — Iter 21 (Fix login résiduel — Bearer fallback)
 **Bug reporté à nouveau** : malgré le fix race condition de l'iter 20, l'utilisateur signalait encore des échecs de login occasionnels.
 
