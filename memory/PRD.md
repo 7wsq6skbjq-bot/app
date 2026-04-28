@@ -181,6 +181,24 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 18 (Bouton « Marquer payée » + badges visuels)
+**Bouton vert one-click** dans la table factures (`DocumentPanel.jsx`) :
+- Visible uniquement sur factures `brouillon` ou `envoyée` (pas sur `payée`/`annulée`)
+- Confirmation puis `POST /api/admin/invoices/{id}/mark-paid`
+- Statut → `payée` → **stoppe automatiquement les rappels** (le scheduler ignore les factures non `envoyée`)
+- KPI dashboard mis à jour automatiquement
+
+**Badges visuels** dans la même table (invoices uniquement) :
+- 🔴 **« En retard · Xj »** (rouge clair) — facture `envoyée` avec `due_date` dépassée et aucun rappel envoyé
+- 🟠 **« Rappelé J+7 · Xj retard »** (orange) — palier amical envoyé
+- 🔴 **« Rappelé J+30 · Xj retard »** (rouge ferme) — palier ferme envoyé
+- Logique dans `utils.js::overdueState()` + `OVERDUE_BADGE` colors
+
+**Bug fix** : la fenêtre J+7 du scheduler était trop étroite (7-13j → manquait les factures à 14-29j). Corrigé : seuils linéaires (≥7 → J+7 si pas envoyé, ≥30 → J+30 si pas envoyé). Test pytest existant attrape la régression.
+
+**Nouveau endpoint** : `POST /api/admin/invoices/{id}/mark-paid` (idempotent, refuse si annulée).
+**Tests** : `tests/test_erp_mark_paid.py` (3 cas) + cleanup. **Total 64/64 pytest ✅**.
+
 ### 2026-04 — Iter 17 (Rappels automatiques de factures)
 **Fonctionnalité** : relances automatiques quotidiennes des factures en souffrance via Resend.
 - **2 paliers configurables** :

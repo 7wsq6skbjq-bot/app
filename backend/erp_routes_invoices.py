@@ -67,6 +67,24 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             raise HTTPException(404, "Facture introuvable")
         return {"deleted": invoice_id}
 
+    @router.post("/invoices/{invoice_id}/mark-paid", response_model=Invoice)
+    async def mark_invoice_paid(invoice_id: str, _: dict = Depends(auth_dep)):
+        """One-click status change: brouillon|envoyée → payée. Stops the
+        automatic reminder cycle. No-op if already paid/cancelled."""
+        existing = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})
+        if not existing:
+            raise HTTPException(404, "Facture introuvable")
+        if existing.get("status") == "payée":
+            return Invoice(**existing)
+        if existing.get("status") == "annulée":
+            raise HTTPException(400, "Facture annulée — impossible de marquer payée")
+        await db.erp_invoices.update_one(
+            {"id": invoice_id},
+            {"$set": {"status": "payée"}},
+        )
+        doc = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})
+        return Invoice(**doc)
+
     @router.get("/exports/invoices.csv")
     async def export_invoices(_: dict = Depends(auth_dep)):
         invoices = await db.erp_invoices.find({}, {"_id": 0}).sort("number", -1).to_list(length=None)

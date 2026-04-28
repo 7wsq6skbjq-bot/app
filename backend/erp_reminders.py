@@ -24,11 +24,12 @@ from erp_models import EmailSendRequest  # noqa: F401 — re-exported for caller
 
 logger = logging.getLogger("portech.erp.reminders")
 
-# Tolerance window: we consider an invoice "7 days past due" if it's between
-# 7 and 13 days past due (so a one-off missed run still catches it).
+# Palier definitions: each invoice gets at most ONE reminder per palier.
+# Logic: if days_past >= palier.threshold AND already_sent < palier.level,
+# then send. The highest applicable palier wins.
 PALIERS = [
-    {"level": 7, "window_days": (7, 13), "tone": "friendly"},
-    {"level": 30, "window_days": (30, 999), "tone": "firm"},
+    {"level": 7, "threshold": 7, "tone": "friendly"},
+    {"level": 30, "threshold": 30, "tone": "firm"},
 ]
 
 
@@ -135,8 +136,7 @@ async def run_daily_reminders(db: AsyncIOMotorDatabase) -> dict:
         # Choose the highest applicable palier not yet sent
         target = None
         for p in PALIERS:
-            lo, hi = p["window_days"]
-            if lo <= days <= hi and already_sent < p["level"]:
+            if days >= p["threshold"] and already_sent < p["level"]:
                 target = p["level"]
         if target is None:
             skipped_count += 1

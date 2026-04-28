@@ -139,3 +139,27 @@ export const computeTotals = (items, taxable = true) => {
         total: Math.round((subtotal + tps + tvq) * 100) / 100,
     };
 };
+
+/**
+ * Compute the visual overdue state of an invoice (null if not applicable).
+ * Returns { label, tone } with tone: 'red' (overdue, no reminder yet),
+ * 'orange' (J+7 reminder sent), 'red-firm' (J+30 reminder sent).
+ */
+export const overdueState = (invoice) => {
+    if (!invoice || invoice.status !== "envoyée" || !invoice.due_date) return null;
+    const due = new Date(invoice.due_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysPast = Math.floor((today - due) / 86_400_000);
+    if (daysPast < 1) return null;
+    const level = Number(invoice.reminder_level_sent || 0);
+    if (level === 30) return { label: `Rappelé J+30 · ${daysPast}j retard`, tone: "red-firm" };
+    if (level === 7) return { label: `Rappelé J+7 · ${daysPast}j retard`, tone: "orange" };
+    return { label: `En retard · ${daysPast}j`, tone: "red" };
+};
+
+export const OVERDUE_BADGE = {
+    red: "bg-[#fbe8e8] text-[#8a1f1f] border-[#e8a5a5]",
+    orange: "bg-[#fff4e0] text-[#925800] border-[#e5ba67]",
+    "red-firm": "bg-[#8a1f1f] text-white border-[#8a1f1f]",
+};

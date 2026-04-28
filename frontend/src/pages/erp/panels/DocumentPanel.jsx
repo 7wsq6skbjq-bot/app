@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash2, RefreshCw, Printer, Send, Download, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Printer, Send, Download, Search, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { DocumentForm } from "../components/DocumentForm";
 import {
     STATUS_BADGE,
+    OVERDUE_BADGE,
     formatCurrency,
     formatDate,
     newKey,
+    overdueState,
     stripKeys,
 } from "../utils";
 
@@ -185,6 +187,17 @@ export const DocumentPanel = ({
         }
     };
 
+    // Quick status change: invoices only — mark as "payée"
+    const markPaid = async (d) => {
+        if (!window.confirm(`Marquer ${numberPrefix}-${String(d.number).padStart(4, "0")} comme payée ?\n\nCela arrêtera les rappels automatiques.`)) return;
+        try {
+            await http.post(`${apiPath}/${d.id}/mark-paid`);
+            await load();
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Échec");
+        }
+    };
+
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
@@ -239,19 +252,40 @@ export const DocumentPanel = ({
                     </div>
                 )}
                 <ul>
-                    {filtered.map((d) => (
+                {filtered.map((d) => {
+                    const overdue = kind === "invoice" ? overdueState(d) : null;
+                    return (
                         <li key={d.id} className="border-b border-[#dde5f0] last:border-b-0 hover:bg-[#f3f6fb] transition-colors">
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-3 items-center">
                                 <div className="col-span-2 font-display font-bold text-sm">{numberPrefix}-{String(d.number).padStart(4, "0")}</div>
                                 <div className="col-span-3 text-sm truncate">{d[partyKey]?.name || "—"}</div>
                                 <div className="col-span-2 text-sm text-[#4b5d7a]">{formatDate(d.date)}</div>
                                 <div className="col-span-2 text-sm text-right font-display font-bold">{formatCurrency(d.total)}</div>
-                                <div className="col-span-1">
+                                <div className="col-span-1 flex flex-col gap-1 items-start">
                                     <span className={`tech-stamp px-2 py-1 border ${STATUS_BADGE[d.status] || "border-[#dde5f0]"}`}>
                                         {d.status}
                                     </span>
+                                    {overdue && (
+                                        <span
+                                            className={`tech-stamp px-2 py-1 border whitespace-nowrap ${OVERDUE_BADGE[overdue.tone]}`}
+                                            data-testid={`${kind}-overdue-${d.id}`}
+                                            title={overdue.label}
+                                        >
+                                            {overdue.label}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="col-span-2 flex justify-end gap-1">
+                                    {kind === "invoice" && d.status !== "payée" && d.status !== "annulée" && (
+                                        <button
+                                            onClick={() => markPaid(d)}
+                                            data-testid={`${kind}-mark-paid-${d.id}`}
+                                            title="Marquer comme payée"
+                                            className="p-2 border border-[#8ec79d] hover:bg-[#e6f4ea] text-[#0b6b2f]"
+                                        >
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => downloadPdf(d)}
                                         data-testid={`${kind}-pdf-${d.id}`}
@@ -286,7 +320,8 @@ export const DocumentPanel = ({
                                 </div>
                             </div>
                         </li>
-                    ))}
+                    );
+                })}
                 </ul>
             </div>
 
