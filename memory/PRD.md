@@ -181,6 +181,21 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 17 (Rappels automatiques de factures)
+**Fonctionnalité** : relances automatiques quotidiennes des factures en souffrance via Resend.
+- **2 paliers configurables** :
+  - **J+7** (amical) : rappel poli avec copie PDF de la facture
+  - **J+30** (ferme) : mention des intérêts Net 30 (1,5 % / mois)
+- **Scheduler APScheduler** : cron quotidien à **08:00 America/Montreal** (démarré au startup FastAPI, stoppé proprement au shutdown)
+- **Idempotence** : champ `reminder_level_sent` sur la facture (0 → 7 → 30) empêche le double envoi
+- **Endpoints admin** :
+  - `POST /api/admin/invoices/{id}/send-reminder?level=7|30` — déclenchement manuel
+  - `POST /api/admin/reminders/run-now` — re-lance le scan complet (utile en test)
+- **Nouvelle variable env** `DISABLE_SCHEDULER=1` pour tests (empêche le job de tourner pendant pytest)
+- **Nouveau fichier** : `/app/backend/erp_reminders.py` (170 lignes) — scheduler + templates HTML FR + endpoints
+- **Dépendance ajoutée** : `APScheduler==3.11.2` (+ `tzlocal`)
+- **Tests** : 5 nouveaux pytest (`tests/test_erp_reminders.py`) vérifient envoi J+7, idempotence, envoi manuel J+30, rejet niveau invalide, 404 facture inconnue. **61/61 pytest passent globalement**.
+
 ### 2026-04 — Iter 16 (Code quality — refactor + fixes review)
 **Refactor majeur de `erp.py`** (revue de code : complexité cyclomatique 90, 831 lignes, 54 variables locales) :
 - Découpé en 7 modules chacun < 130 lignes :

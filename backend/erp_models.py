@@ -114,6 +114,8 @@ class Invoice(BaseModel):
     taxable: bool = True
     notes: Optional[str] = None
     status: str = Field(default="brouillon", pattern="^(brouillon|envoyée|payée|annulée)$")
+    reminder_level_sent: int = 0  # 0 = none, 7 = J+7 palier sent, 30 = J+30 palier sent
+    last_reminder_sent_at: Optional[str] = None
     created_at: str = Field(default_factory=now_iso)
 
 

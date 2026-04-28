@@ -9,6 +9,7 @@ from fastapi import APIRouter
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from erp_helpers import make_next_number_fn
+from erp_reminders import register_routes as register_reminder_routes
 from erp_routes_bols import register as register_bols
 from erp_routes_dashboard import register as register_dashboard
 from erp_routes_invoices import register as register_invoices
@@ -29,5 +30,6 @@ def build_erp_router(db: AsyncIOMotorDatabase, auth_dep) -> APIRouter:
     register_pos(router, db, auth_dep, next_number)
     register_bols(router, db, auth_dep, next_number)
     register_dashboard(router, db, auth_dep)
+    register_reminder_routes(router, db, auth_dep)
 
     return router

@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
 from erp import build_erp_router
+from erp_reminders import start_scheduler
 
 # ==============================================================
 # Configuration
@@ -338,8 +339,17 @@ async def startup_event():
     await db.admin_users.create_index("username", unique=True)
     await db.contact_submissions.create_index([("created_at", -1)])
     await seed_admin()
+    # Start the daily reminder scheduler unless explicitly disabled
+    # (e.g. inside pytest runs where scheduler side-effects are unwanted).
+    if os.environ.get("DISABLE_SCHEDULER", "").lower() not in ("1", "true", "yes"):
+        app.state.scheduler = start_scheduler(db)
+    else:
+        app.state.scheduler = None
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    sched = getattr(app.state, "scheduler", None)
+    if sched is not None:
+        sched.shutdown(wait=False)
     client.close()
