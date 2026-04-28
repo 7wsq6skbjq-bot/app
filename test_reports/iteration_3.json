@@ -1,0 +1,44 @@
+{
+  "summary": "Comprehensive regression + ERP testing for Portech (FastAPI + React). Backend: 55/55 functional pytest tests PASS (1 skipped — BOL CSV export endpoint not implemented). Validated: auth (PortechAdmin/Portech2026!), public contact form (with company optional + work_location required), admin submissions/stats/delete (legacy work_location bug from iteration_2 is FIXED — ContactSubmission.work_location is now Optional), and full ERP module under /api/admin/*: Parties CRUD (clients + suppliers), Products CRUD, Invoices CRUD with auto-numbering (FAC) + tax math (TPS 5% + TVQ 9.975% verified to the cent — 250→287.44, 800→919.80) + taxable=False path, Purchase Orders CRUD, Bills of Lading CRUD, Dashboard KPI aggregation (10 KPIs + 6-month revenue trend + top customers + outstanding list), CSV exports (invoices + POs), PDF generation (all 3 doc types return valid %PDF bytes), Resend email send-PDF (invoice + PO + BOL all returned sent=True). Frontend: All public pages render without React errors (Home, Services, About, Contact, Catalogue, Mentions). Catalogue lead-capture modal opens on PDF download click. Admin login page renders. ERP dashboard loaded behind auth. NOTE on naming: spec referenced /api/erp/* paths but implementation uses /api/admin/* prefix — code is internally consistent and frontend matches; just spec doc drift.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/admin/exports/bills-of-lading.csv", "issue": "BOL CSV export endpoint is NOT implemented — spec listed it but only invoices.csv and purchase-orders.csv exist in erp.py. If BolPanel.jsx has a CSV button, it will 404."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Router (App.js)", "issue": "/galerie (without :category param) returns blank page + 'No routes matched location /galerie' warning. Only /galerie/:category is mounted. Add an index route /galerie that redirects to first category or shows category picker.", "selector": "Route path='/galerie'", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_erp_api.py",
+    "/app/backend/tests/test_portech_api.py",
+    "/app/test_reports/pytest/iteration_3_results.xml"
+  ],
+  "action_items": [
+    "Implement GET /api/admin/exports/bills-of-lading.csv in /app/backend/erp.py (or remove the CSV export button from BolPanel.jsx if not desired). Pattern is identical to existing export_invoices/export_pos functions.",
+    "Add /galerie index route in /app/frontend/src/App.js — either redirect to a default category (e.g., <Route path='/galerie' element={<Navigate to='/galerie/portes' replace />} />) or add a category-picker landing page so direct visits don't 404 silently.",
+    "OPTIONAL: rename ERP route prefix from /api/admin/* → /api/erp/* to match the original spec/PRD documentation (low priority — current implementation is internally consistent)."
+  ],
+  "critical_code_review_comments": [
+    "ERP routes are mounted under /api/admin/* not /api/erp/* as the original spec stated — make sure docs/PRD reflect the actual paths.",
+    "erp.py is 812 lines — consider splitting into /app/backend/erp/{parties,products,invoices,purchase_orders,bols,dashboard,exports,email}.py modules for maintainability (>700 line threshold).",
+    "Tax constants TPS_RATE=0.05 and TVQ_RATE=0.09975 are hard-coded in erp.py. If rates ever change (or for unit-testing exempt scenarios), pull them from a config table or env vars.",
+    "send-email handlers raise HTTPException(502) on Resend failure but there's no retry/queue — a transient Resend outage will permanently fail the send. Consider logging+queueing for retry.",
+    "Counters collection auto-creates on first insert with $inc upsert — no concurrency safeguard test was added; for high-volume use, MongoDB's atomic findOneAndUpdate is fine but document the assumption.",
+    "BolPanel.jsx (per file list) is supposed to expose a CSV button but the backend endpoint is missing — frontend will display a 404 toast or silent failure. Verify and either add backend or hide button."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_erp_api.py (NEW — 33 ERP test cases covering parties, products, invoices with tax math, POs, BOLs, dashboard, CSV exports, PDF gen, email send, and full cleanup)"
+  ],
+  "success_rate": {"backend": "100% (55/55 passing, 1 skipped — endpoint not implemented)", "frontend": "Public site 100%, Admin/ERP UI partially verified (renders behind auth as expected; login UI loads, login API confirmed working via backend tests; full UI walkthrough behind login was not completed via Playwright due to controlled-input cookie/state timing — backend confirms auth fully functional)"},
+  "test_credentials": "PortechAdmin / Portech2026! (verified working via /api/auth/login)",
+  "seed_data_creation": "Test ERP records (TEST_ prefix) created and cleaned up by test_erp_api.py::TestZCleanup. No leftover ERP data. Counters in db.counters increment with each test run (expected behaviour — does not affect production numbering integrity).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend ERP is fully solid (55/55 pytest). Frontend public site validated. To complete frontend UI walkthrough behind admin login, use page.goto('/admin/login'), fill via page.locator('input').first/.nth(1) (the login form uses controlled React inputs — may need to dispatch input event or use page.type for reliability), submit, then page.wait_for_url('**/admin**'). Then navigate /admin/gestion and click each tab (Tiers, Produits, Factures, Bons de commande, Connaissements). Verify search bar, CSV export button (note BOL CSV is missing), and email modal in DocumentPanel/BolPanel.",
+  "rca of the issue": "(1) BOL CSV missing: erp.py only defines export_invoices and export_pos — no export_bols function. Need to add /admin/exports/bills-of-lading.csv route mirroring the same _csv_response helper. (2) /galerie blank: App.js declares '/galerie/:category' but no parent index route for '/galerie' itself, so React Router yields no match → blank screen. Reproduction: visit /galerie directly → empty body + console warning. Fix: add <Route path='/galerie' element={<Navigate to='/galerie/portes' replace />} /> or render a category index component."
+}
