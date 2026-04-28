@@ -7,10 +7,12 @@ import { ProductsPanel } from "./erp/panels/ProductsPanel";
 import { InvoicesPanel } from "./erp/panels/InvoicesPanel";
 import { PurchaseOrdersPanel } from "./erp/panels/PurchaseOrdersPanel";
 import { BolPanel } from "./erp/panels/BolPanel";
+import { CalendarPanel } from "./erp/panels/CalendarPanel";
 import { DashboardPanel } from "./erp/panels/DashboardPanel";
 
 const TABS = [
     { slug: "tableau-de-bord", label: "Tableau de bord", panel: "dashboard" },
+    { slug: "calendrier",      label: "Calendrier",      panel: "calendar" },
     { slug: "clients",         label: "Clients",         panel: "parties-customer" },
     { slug: "fournisseurs",    label: "Fournisseurs",    panel: "parties-supplier" },
     { slug: "produits",        label: "Produits",        panel: "products" },
@@ -67,6 +69,7 @@ const AdminErp = () => {
 
             <main className="container-portech py-8">
                 {activeTab.panel === "dashboard" && <DashboardPanel />}
+                {activeTab.panel === "calendar" && <CalendarPanel />}
                 {activeTab.panel === "parties-customer" && <PartiesPanel kind="customer" />}
                 {activeTab.panel === "parties-supplier" && <PartiesPanel kind="supplier" />}
                 {activeTab.panel === "products" && <ProductsPanel />}

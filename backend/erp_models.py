@@ -199,3 +199,32 @@ class EmailSendRequest(BaseModel):
     to_email: EmailStr
     subject: Optional[str] = None
     message: Optional[str] = None
+
+
+# ---------- Appointments (calendrier admin interne) ----------
+class Appointment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str = Field(min_length=1, max_length=200)
+    start: str  # ISO datetime "YYYY-MM-DDTHH:MM"
+    end: Optional[str] = None
+    party_id: Optional[str] = None
+    party_name: Optional[str] = None
+    location: Optional[str] = None
+    notes: Optional[str] = None
+    status: str = Field(default="prévu", pattern="^(prévu|fait|annulé)$")
+    color: Optional[str] = None  # hex color for UI accent (optional)
+    created_at: str = Field(default_factory=now_iso)
+
+
+class AppointmentIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    title: str = Field(min_length=1, max_length=200)
+    start: str
+    end: Optional[str] = None
+    party_id: Optional[str] = None
+    party_name: Optional[str] = None
+    location: Optional[str] = None
+    notes: Optional[str] = None
+    status: str = Field(default="prévu", pattern="^(prévu|fait|annulé)$")
+    color: Optional[str] = None

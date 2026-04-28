@@ -241,9 +241,9 @@ export const DocumentPanel = ({
                 <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#dde5f0] bg-[#f3f6fb] tech-stamp">
                     <div className="col-span-2">Numéro</div>
                     <div className="col-span-3">{partyKind === "customer" ? "Client" : "Fournisseur"}</div>
-                    <div className="col-span-2">Date</div>
+                    <div className="col-span-1">Date</div>
                     <div className="col-span-2 text-right">Total</div>
-                    <div className="col-span-1">Statut</div>
+                    <div className="col-span-2">Statut</div>
                     <div className="col-span-2 text-right">Actions</div>
                 </div>
                 {filtered.length === 0 && !loading && (
@@ -259,15 +259,15 @@ export const DocumentPanel = ({
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-3 items-center">
                                 <div className="col-span-2 font-display font-bold text-sm">{numberPrefix}-{String(d.number).padStart(4, "0")}</div>
                                 <div className="col-span-3 text-sm truncate">{d[partyKey]?.name || "—"}</div>
-                                <div className="col-span-2 text-sm text-[#4b5d7a]">{formatDate(d.date)}</div>
+                                <div className="col-span-1 text-xs text-[#4b5d7a]">{formatDate(d.date)}</div>
                                 <div className="col-span-2 text-sm text-right font-display font-bold">{formatCurrency(d.total)}</div>
-                                <div className="col-span-1 flex flex-col gap-1 items-start">
+                                <div className="col-span-2 flex flex-col gap-1 items-start">
                                     <span className={`tech-stamp px-2 py-1 border ${STATUS_BADGE[d.status] || "border-[#dde5f0]"}`}>
                                         {d.status}
                                     </span>
                                     {overdue && (
                                         <span
-                                            className={`tech-stamp px-2 py-1 border whitespace-nowrap ${OVERDUE_BADGE[overdue.tone]}`}
+                                            className={`tech-stamp px-2 py-1 border whitespace-nowrap text-[10px] ${OVERDUE_BADGE[overdue.tone]}`}
                                             data-testid={`${kind}-overdue-${d.id}`}
                                             title={overdue.label}
                                         >

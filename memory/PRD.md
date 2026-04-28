@@ -181,6 +181,20 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 19 (Calendrier admin interne)
+**Module Calendrier complet** (`/admin/gestion/calendrier`) :
+- Vue **mensuelle 6×7** avec navigation Préc / Aujourd'hui / Suiv
+- Cellule jour cliquable → ouvre la création de RDV à cette date
+- Jusqu'à 3 événements visibles par cellule, badge "+X autre(s)" sinon
+- **Sidebar « Rendez-vous à venir »** (5 prochains, hors annulés) avec aperçu titre / date / client / lieu
+- **Statuts** : prévu / fait / annulé (couleurs distinctes)
+- **Champs RDV** : titre*, début* (datetime-local), fin (optionnel), client/contact (lié à la table parties), lieu/adresse, notes, statut
+- **Backend** : `erp_routes_appointments.py` + nouveau modèle `Appointment` (collection MongoDB `erp_appointments`) avec filtres `?start_from=&start_to=` pour le rendu mois
+- **8 nouveaux tests pytest** ✅ (CRUD, range filter, validation, 401)
+- **Total 72/72 pytest** passent. Lint backend + frontend clean.
+
+**Bug fix UI** : colonnes des panels Factures/PO étaient trop étroites — les badges "RAPPELÉ J+7 · 15J RETARD" débordaient sur les boutons d'action (signalé par l'utilisateur via screenshot). Grille rééquilibrée : Numéro 2 / Client 3 / Date **1** / Total 2 / **Statut 2** / Actions 2.
+
 ### 2026-04 — Iter 18 (Bouton « Marquer payée » + badges visuels)
 **Bouton vert one-click** dans la table factures (`DocumentPanel.jsx`) :
 - Visible uniquement sur factures `brouillon` ou `envoyée` (pas sur `payée`/`annulée`)
