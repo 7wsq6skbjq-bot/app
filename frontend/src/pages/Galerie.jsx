@@ -18,7 +18,7 @@ const CATEGORIES = {
             { src: `${P}/gal-interv-1.png`, caption: "Pose d'une poignée à levier sur porte commerciale en aluminium" },
             { src: `${P}/gal-interv-2.png`, caption: "Ajustement d'un ferme-porte hydraulique de surface" },
             { src: `${P}/gal-interv-3.png`, caption: "Installation d'une charnière continue à pignons sur porte aluminium" },
-            { src: `${P}/gal-interv-4.png`, caption: "Pose d'un cylindre haute sécurité dans une serrure mortaise" },
+            { src: `${P}/gal-interv-4.png`, caption: "Cylindre haute sécurité installé dans une serrure mortaise" },
         ],
     },
     chantiers: {
@@ -64,7 +64,7 @@ const CATEGORIES = {
         intro:
             "Mortaises, cylindriques, électroniques, à carte, à code. On installe, on remplace, on rénove. On travaille avec toutes les marques majeures et on garde des cylindres maître-clé sur stock pour les dépannages rapides.",
         photos: [
-            { src: `${P}/gal-lock-1.png`, caption: "Boîtier mortaise inox partiellement exposé — porte aluminium" },
+            { src: `${P}/gal-lock-1.png`, caption: "Mortaise commerciale installée — cylindre + serrure en tranche" },
             { src: `${P}/gal-lock-2.png`, caption: "Levier cylindrique fini noir mat — porte de bureau" },
             { src: `${P}/gal-lock-3.png`, caption: "Mortaise électronique à carte — salle sécurisée" },
             { src: `${P}/gal-lock-4.png`, caption: "Mortaise storeroom — entrepôt commercial" },

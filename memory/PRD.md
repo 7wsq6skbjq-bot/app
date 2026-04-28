@@ -181,12 +181,33 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 14 + 15 (Refonte photo quincaillerie catalogue style + fixes ERP)
+**Feedback utilisateur** : les photos générées avec techniciens Portech + outils DeWalt ne plaisent pas. Remplacées par **gros plans produit** style catalogue manufacturier (SALTO, Sargent, Von Duprin) — aucune personne, aucun outil, aucun logo, aucune signalétique, rien de partiellement exposé.
+
+**Photos régénérées (30 au total)** :
+- **Galerie interventions** (4) : poignée levier sur alu foncé / ferme-porte régulier (corps sur porte, bras sur cadre) / charnière continue pleine hauteur / cylindre haute sécurité installé
+- **Galerie serrures** (4) : mortaise installée complète / levier cylindrique noir mat / mortaise électronique style SALTO XS4 / mortaise storeroom industrielle
+- **Galerie dispositifs de sortie** (3, sauf #3 conservée) : rim chromé / tige verticale dissimulée / touchpad Von Duprin 98/99
+- **Galerie barre antipanique** (1 seule, #2) : cross-bar stainless avec dogging — cinéma
+- **Home showcase + services** (9) : showcase tech / install / usinage / répar / upgrade / showcase exit/panic/lock / precision-install
+- **Page Services** (4) : installation, usinage, réparation, mise à niveau
+
+**Conservées** : tous les chantiers haut de gamme, gal-panic-1/3/4, gal-exit-3, hero Home, brand wall, clients (restaurant/école/condo/bureau), catalogue PDF extraits.
+
+**Fixes ERP (action items testing agent v3)** :
+- ✅ Endpoint manquant **`GET /api/admin/exports/bills-of-lading.csv`** ajouté dans `erp.py`
+- ✅ `BolPanel.jsx` : ajout bouton **Export CSV** + **barre de recherche** (alignement avec Invoices/PO panels)
+- ✅ Route **`/galerie`** (sans catégorie) redirige vers `/galerie/interventions` — fini la page blanche
+
+**Caption fixes** : supprimé toute mention "partiellement exposé" des légendes Galerie (demande utilisateur : rien ne doit être partiellement exposé, ni visuellement ni textuellement).
+
+**Tests backend** : 55/55 pytest passent après ajout BOL CSV. Login/CSV/galerie redirect tous 200.
+
 ## Backlog / P1
-- [ ] Acheter le domaine `portech.ca` et le vérifier sur Resend pour pouvoir envoyer à n'importe quelle adresse en mode prod (actuellement, mode test Resend = limites possibles)
+- [ ] Acheter le domaine `portech.ca` et le vérifier sur Resend pour pouvoir envoyer à n'importe quelle adresse en mode prod
 - [ ] Photos avant/après réelles (remplacer les placeholders IA)
 - [ ] Numéro de téléphone lorsque disponible
-- [ ] Restreindre `CORS_ORIGINS` au domaine de prod
-- [ ] Page mentions légales + politique de confidentialité
+- [ ] Restreindre `CORS_ORIGINS` au domaine de prod (✅ fait — seulement prod + preview)
 
 ## Backlog / P2
 - [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
