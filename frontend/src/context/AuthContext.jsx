@@ -11,13 +11,47 @@ import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const TOKEN_KEY = "portech_access_token";
 
-// Axios instance. `withCredentials: true` ensures the httpOnly
-// `access_token` cookie set by the backend is sent on every request.
-// No tokens are stored client-side (no localStorage) — protects against XSS.
+/**
+ * Read/write of the access token. We use `sessionStorage` so the token dies
+ * when the tab is closed — more secure than localStorage and good enough for
+ * an admin console. The token is ALSO set as an httpOnly cookie by the
+ * backend; the Authorization header is our reliable fallback when a browser
+ * rejects/strips the cookie (Safari ITP, strict privacy settings, etc.).
+ */
+const getStoredToken = () => {
+    try {
+        return window.sessionStorage.getItem(TOKEN_KEY) || "";
+    } catch {
+        return "";
+    }
+};
+const setStoredToken = (t) => {
+    try {
+        if (t) window.sessionStorage.setItem(TOKEN_KEY, t);
+        else window.sessionStorage.removeItem(TOKEN_KEY);
+    } catch {
+        // sessionStorage unavailable (SSR, strict modes) — just fall back to cookie
+    }
+};
+
+// Axios instance. `withCredentials: true` keeps the httpOnly cookie path
+// working; the Authorization header is added below as a belt-and-suspenders
+// fallback.
 const http = axios.create({
     baseURL: API,
     withCredentials: true,
+});
+
+// Attach Bearer token on every outgoing request if we have one in session.
+http.interceptors.request.use((config) => {
+    const tok = getStoredToken();
+    if (tok) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${tok}`;
+    }
+    return config;
 });
 
 const AuthContext = createContext(null);
@@ -28,21 +62,24 @@ export const AuthProvider = ({ children }) => {
     const [error, setError] = useState("");
 
     // Bumped every time the session "state of truth" changes (login/logout).
-    // fetchMe() captures the current version before making its network call
-    // and skips setUser() if the version changed while it was waiting —
+    // fetchMe() captures the current version before its network call and
+    // skips setUser() if the version changed while it was in flight —
     // preventing a late-returning /auth/me from overwriting a fresh login.
     const sessionVersionRef = useRef(0);
 
     const fetchMe = useCallback(async () => {
         const version = sessionVersionRef.current;
+        // Fast path: no token stored → not logged in, skip the network call.
+        if (!getStoredToken()) {
+            // We still hit /auth/me once in case an httpOnly cookie exists
+            // from a previous session — otherwise fall through to setUser(false).
+        }
         try {
             const { data } = await http.get("/auth/me");
             if (sessionVersionRef.current === version) {
                 setUser(data);
             }
         } catch {
-            // 401 is the normal "not logged in" path. Any other failure
-            // (network, 5xx) is also silently treated as "not logged in".
             if (sessionVersionRef.current === version) {
                 setUser(false);
             }
@@ -60,7 +97,12 @@ export const AuthProvider = ({ children }) => {
                 username,
                 password,
             });
-            // httpOnly cookie is set by the backend (Set-Cookie header).
+            // Store the token as a Bearer fallback. The backend ALSO sets
+            // an httpOnly cookie, but storing here protects us against
+            // browsers that silently reject 3rd-party cookies.
+            if (data.access_token) {
+                setStoredToken(data.access_token);
+            }
             sessionVersionRef.current += 1;
             setUser({ username: data.username, role: data.role });
             return true;
@@ -81,6 +123,7 @@ export const AuthProvider = ({ children }) => {
         } catch {
             // Even if the logout request fails, we clear client-side state.
         }
+        setStoredToken("");
         sessionVersionRef.current += 1;
         setUser(false);
     }, []);

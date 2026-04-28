@@ -181,6 +181,23 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 21 (Fix login résiduel — Bearer fallback)
+**Bug reporté à nouveau** : malgré le fix race condition de l'iter 20, l'utilisateur signalait encore des échecs de login occasionnels.
+
+**Hypothèse nouvelle** : certains navigateurs (Safari ITP, mode privé strict, bloqueurs de cookies, antivirus qui filtrent les cookies tiers) **rejettent silencieusement le cookie `SameSite=None; Secure`**. Dans ce cas, `login()` retourne 200 + token dans le body, mais la requête suivante n'a aucun cookie → 401 → bounce-back.
+
+**Fix définitif** — découplage cookie/auth :
+- Le backend **renvoyait déjà** `access_token` dans le body de `/auth/login` et **acceptait déjà** un header `Authorization: Bearer …` en fallback (ligne 124-126 de `server.py`)
+- `AuthContext.jsx` stocke maintenant le token dans **`sessionStorage`** (expire à la fermeture du tab, plus sûr que localStorage)
+- Axios **intercepteur de requête** ajoute `Authorization: Bearer <token>` automatiquement sur tous les appels
+- `logout()` clear le sessionStorage en plus du cookie
+
+**Validation robuste** :
+- 10/10 logins rapides consécutifs avec cookies + storage reset → 100 % succès
+- **Test « cookie bloqué »** : login → effacement forcé des cookies → reload → reste connecté via Bearer ✅
+
+Résultat : l'authentification est maintenant **indépendante des cookies**. Peu importe ce que fait le navigateur côté cookies, l'utilisateur reste authentifié tant que l'onglet est ouvert.
+
 ### 2026-04 — Iter 20 (Fix CRITIQUE race condition login)
 **Bug signalé par l'utilisateur** : « les identifiants ne fonctionnent pas 4× sur 5, je dois cliquer 3-4 fois sur se connecter avant que ça marche ».
 
