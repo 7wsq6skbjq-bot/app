@@ -1,5 +1,5 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
@@ -29,6 +29,7 @@ function App() {
                             <Route path="/services" element={<Services />} />
                             <Route path="/a-propos" element={<About />} />
                             <Route path="/contact" element={<Contact />} />
+                            <Route path="/galerie" element={<Navigate to="/galerie/interventions" replace />} />
                             <Route path="/galerie/:category" element={<Galerie />} />
                             <Route path="/catalogue" element={<Catalogue />} />
                             <Route path="/mentions-legales" element={<Legal />} />

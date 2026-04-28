@@ -138,6 +138,20 @@ export const BolPanel = () => {
         }
     };
 
+    const exportCsv = async () => {
+        try {
+            const resp = await http.get("/admin/exports/bills-of-lading.csv", { responseType: "blob" });
+            const url = window.URL.createObjectURL(resp.data);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `connaissements-portech-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a); a.click(); a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Échec de l'export");
+        }
+    };
+
     const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
     const updateItem = (idx, patch) => setForm((f) => ({ ...f, items: f.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) }));
     const addItem = () => setForm((f) => ({ ...f, items: [...f.items, emptyBolItem()] }));
@@ -157,6 +171,10 @@ export const BolPanel = () => {
                     <button onClick={load} className="btn-secondary !py-2 !px-3 !text-xs">
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
                     </button>
+                    <button onClick={exportCsv} data-testid="erp-export-bol" className="btn-secondary !py-2 !px-3 !text-xs">
+                        <Download className="w-3.5 h-3.5" />
+                        CSV
+                    </button>
                     <button onClick={openNew} data-testid="erp-new-bol" className="btn-primary !py-2 !px-4 !text-xs">
                         <Plus className="w-3.5 h-3.5" />
                         Nouveau connaissement
@@ -165,6 +183,19 @@ export const BolPanel = () => {
             </div>
 
             {error && <div className="mb-4 p-4 border border-red-400 bg-red-50 text-red-800 text-sm">{error}</div>}
+
+            {/* Search bar */}
+            <div className="relative mb-4 max-w-md">
+                <Search className="w-4 h-4 text-[#97b0d0] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Rechercher (numéro, expéditeur, destinataire…)"
+                    data-testid="bol-search"
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-[#dde5f0] focus:border-[#0c182b] focus:outline-none text-sm"
+                />
+            </div>
 
             <div className="border border-[#dde5f0] bg-white">
                 <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#dde5f0] bg-[#f3f6fb] tech-stamp">

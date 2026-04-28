@@ -661,6 +661,25 @@ def build_erp_router(db: AsyncIOMotorDatabase, auth_dep) -> APIRouter:
             })
         return _csv_response(rows, "bons-commande-portech.csv")
 
+    @router.get("/exports/bills-of-lading.csv")
+    async def export_bols(_: dict = Depends(auth_dep)):
+        rows_db = await db.erp_bills_of_lading.find({}, {"_id": 0}).sort("number", -1).to_list(length=None)
+        rows = []
+        for b in rows_db:
+            sh = b.get("shipper_snapshot") or {}
+            cn = b.get("consignee_snapshot") or {}
+            rows.append({
+                "Numéro": f"CONN-{int(b.get('number', 0)):04d}",
+                "Date": b.get("date"),
+                "Livraison attendue": b.get("expected_delivery") or "",
+                "Expéditeur": sh.get("name") or "",
+                "Destinataire": cn.get("name") or "",
+                "Transporteur": b.get("carrier") or "",
+                "Poids total (kg)": b.get("total_weight_kg") or "",
+                "Statut": b.get("status") or "",
+            })
+        return _csv_response(rows, "connaissements-portech.csv")
+
     # ============== PDF download (server-side) ==============
     @router.get("/invoices/{invoice_id}/pdf")
     async def download_invoice_pdf(invoice_id: str, _: dict = Depends(auth_dep)):
