@@ -12,7 +12,7 @@ is also exposed for testing or overrides.
 """
 import asyncio
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import APIRouter, Depends, HTTPException
