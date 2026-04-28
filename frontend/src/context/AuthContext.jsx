@@ -4,6 +4,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import axios from "axios";
@@ -26,15 +27,25 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [error, setError] = useState("");
 
+    // Bumped every time the session "state of truth" changes (login/logout).
+    // fetchMe() captures the current version before making its network call
+    // and skips setUser() if the version changed while it was waiting —
+    // preventing a late-returning /auth/me from overwriting a fresh login.
+    const sessionVersionRef = useRef(0);
+
     const fetchMe = useCallback(async () => {
+        const version = sessionVersionRef.current;
         try {
             const { data } = await http.get("/auth/me");
-            setUser(data);
+            if (sessionVersionRef.current === version) {
+                setUser(data);
+            }
         } catch {
             // 401 is the normal "not logged in" path. Any other failure
-            // (network, 5xx) is also silently treated as "not logged in" —
-            // the UI reacts by routing to /admin/login which surfaces errors.
-            setUser(false);
+            // (network, 5xx) is also silently treated as "not logged in".
+            if (sessionVersionRef.current === version) {
+                setUser(false);
+            }
         }
     }, []);
 
@@ -50,7 +61,7 @@ export const AuthProvider = ({ children }) => {
                 password,
             });
             // httpOnly cookie is set by the backend (Set-Cookie header).
-            // We do NOT persist the token client-side.
+            sessionVersionRef.current += 1;
             setUser({ username: data.username, role: data.role });
             return true;
         } catch (err) {
@@ -70,6 +81,7 @@ export const AuthProvider = ({ children }) => {
         } catch {
             // Even if the logout request fails, we clear client-side state.
         }
+        sessionVersionRef.current += 1;
         setUser(false);
     }, []);
 

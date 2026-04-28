@@ -181,6 +181,15 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 20 (Fix CRITIQUE race condition login)
+**Bug signalé par l'utilisateur** : « les identifiants ne fonctionnent pas 4× sur 5, je dois cliquer 3-4 fois sur se connecter avant que ça marche ».
+
+**Root cause identifiée** : race condition entre `fetchMe()` (auto-lancé au mount d'AuthProvider) et `login()` (déclenché par le clic). Quand l'utilisateur cliquait vite, `login()` finissait en premier (setUser = objet + redirect) mais `fetchMe()` — qui avait démarré avant et subissait un 401 parce que pas encore de cookie — écrasait avec `setUser(false)` → redirection back to login.
+
+**Fix** : ajout d'un `sessionVersionRef` dans `AuthContext.jsx`. Incrémenté à chaque `login`/`logout`. `fetchMe()` capture la version au début et n'appelle `setUser` que si elle n'a pas changé. Empêche toute réponse en retard d'écraser une action plus récente.
+
+**Validation** : 5 logins consécutifs avec cookies reset à chaque tour, 5/5 réussissent sans bounce-back (vs ~1/5 avant). 72/72 pytest passent.
+
 ### 2026-04 — Iter 19 (Calendrier admin interne)
 **Module Calendrier complet** (`/admin/gestion/calendrier`) :
 - Vue **mensuelle 6×7** avec navigation Préc / Aujourd'hui / Suiv
