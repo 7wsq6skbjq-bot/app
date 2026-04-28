@@ -83,8 +83,8 @@ export const PartyBlock = ({ label, party }) => (
 
 export const MetaBlock = ({ entries }) => (
     <div className="print-meta">
-        {entries.map(([lbl, val], i) => (
-            <div key={i}>
+        {entries.map(([lbl, val]) => (
+            <div key={lbl}>
                 <div className="lbl">{lbl}</div>
                 <div className="val">{val || "—"}</div>
             </div>

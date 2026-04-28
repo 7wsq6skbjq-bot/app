@@ -181,6 +181,24 @@
 - **Pourquoi nous** : "Chaque quincaillerie est bien ajustée" → "Chaque pièce quincaillerie est bien ajustée".
 - **CTA "Faisons connaissance"** À propos : "Donnez à vos portes le travail qu'elles méritent." → "Donnez à vos portes l'amour qu'elles méritent."
 
+### 2026-04 — Iter 16 (Code quality — refactor + fixes review)
+**Refactor majeur de `erp.py`** (revue de code : complexité cyclomatique 90, 831 lignes, 54 variables locales) :
+- Découpé en 7 modules chacun < 130 lignes :
+  - `erp_models.py` (199 l.) — tous les modèles Pydantic + constantes TPS/TVQ
+  - `erp_helpers.py` (103 l.) — `compute_totals`, `csv_response`, `send_pdf_email`, `parse_date_safe`, `make_next_number_fn`
+  - `erp_routes_parties.py` (47 l.), `erp_routes_products.py` (37 l.), `erp_routes_invoices.py` (130 l.), `erp_routes_purchase_orders.py` (123 l.), `erp_routes_bols.py` (126 l.), `erp_routes_dashboard.py` (99 l.)
+  - `erp.py` (33 l.) — orchestrateur qui appelle `register(...)` pour chaque domaine
+- **Complexité** : `build_erp_router` 90 → 7, `erp_dashboard` 21 → ~5 (split en 4 helpers : `_kpis`, `_monthly_revenue`, `_top_customers`, `_outstanding_invoices`)
+
+**Fixes frontend (review)** :
+- Clés tableau stables : `_key` unique ajouté aux templates `emptyLineItem`/`emptyBolItem`, helper `stripKeys` pour les strip avant POST/PUT. Plus de `key={idx}` sur les champs éditables.
+- Clés tableau composites sur les vues d'impression (`item-${i}-${description}`) — `AdminPrintInvoice/PO/Bol`.
+- `console.error` retiré d'`AuthContext.jsx` (fetchMe + logout).
+
+**Tests** : 56/56 backend pytest passent (test_erp_api 33/33 + test_portech_api 23/23). Frontend lint ✅ clean. Endpoints `/api/admin/{invoices,purchase-orders,bills-of-lading,parties,products,dashboard,exports/*}` tous 200.
+
+**Note sur la revue** : les alertes « React Hook missing dependencies » du rapport étaient des faux positifs — `http` est un constant module-level (ligne 17 d'AuthContext), `setUser`/`setError` sont des setState stables par React. Notre linter ESLint v9 (react-hooks/exhaustive-deps) ne signale aucun problème.
+
 ### 2026-04 — Iter 14 + 15 (Refonte photo quincaillerie catalogue style + fixes ERP)
 **Feedback utilisateur** : les photos générées avec techniciens Portech + outils DeWalt ne plaisent pas. Remplacées par **gros plans produit** style catalogue manufacturier (SALTO, Sargent, Von Duprin) — aucune personne, aucun outil, aucun logo, aucune signalétique, rien de partiellement exposé.
 

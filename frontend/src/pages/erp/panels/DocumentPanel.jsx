@@ -8,6 +8,8 @@ import {
     STATUS_BADGE,
     formatCurrency,
     formatDate,
+    newKey,
+    stripKeys,
 } from "../utils";
 
 /**
@@ -71,6 +73,7 @@ export const DocumentPanel = ({
         setForm({
             ...d,
             items: (d.items || []).map((it) => ({
+                _key: newKey(),
                 description: it.description,
                 quantity: it.quantity,
                 unit_price: it.unit_price,
@@ -84,7 +87,7 @@ export const DocumentPanel = ({
         try {
             const payload = {
                 ...form,
-                items: form.items.map((it) => ({
+                items: stripKeys(form.items).map((it) => ({
                     description: it.description,
                     quantity: Number(it.quantity || 0),
                     unit_price: Number(it.unit_price || 0),

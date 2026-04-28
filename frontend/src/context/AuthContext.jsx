@@ -30,12 +30,10 @@ export const AuthProvider = ({ children }) => {
         try {
             const { data } = await http.get("/auth/me");
             setUser(data);
-        } catch (err) {
-            // 401 is the normal "not logged in" path — don't spam console.
-            if (err?.response?.status && err.response.status !== 401) {
-                // eslint-disable-next-line no-console
-                console.error("[auth] fetchMe failed:", err);
-            }
+        } catch {
+            // 401 is the normal "not logged in" path. Any other failure
+            // (network, 5xx) is also silently treated as "not logged in" —
+            // the UI reacts by routing to /admin/login which surfaces errors.
             setUser(false);
         }
     }, []);
@@ -69,9 +67,8 @@ export const AuthProvider = ({ children }) => {
     const logout = useCallback(async () => {
         try {
             await http.post("/auth/logout");
-        } catch (err) {
-            // eslint-disable-next-line no-console
-            console.error("[auth] logout failed:", err);
+        } catch {
+            // Even if the logout request fails, we clear client-side state.
         }
         setUser(false);
     }, []);

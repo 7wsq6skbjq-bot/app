@@ -44,6 +44,19 @@ export const formatDate = (iso) => {
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 
+// Stable unique client-side key for form array items (so React doesn't
+// lose state when items are added/removed/reordered). Stripped before
+// POST/PUT payloads are sent to the backend.
+let _keyCounter = 0;
+export const newKey = () => {
+    _keyCounter += 1;
+    return `k-${Date.now()}-${_keyCounter}`;
+};
+
+/** Strip client-only _key field from a list of items before sending to API. */
+export const stripKeys = (items) =>
+    (items || []).map(({ _key, ...rest }) => rest); // eslint-disable-line no-unused-vars
+
 // Empty templates
 export const emptyParty = (kind = "customer") => ({
     kind,
@@ -62,6 +75,7 @@ export const emptyParty = (kind = "customer") => ({
 });
 
 export const emptyLineItem = () => ({
+    _key: newKey(),
     description: "",
     quantity: 1,
     unit_price: 0,
@@ -91,6 +105,7 @@ export const emptyPO = () => ({
 });
 
 export const emptyBolItem = () => ({
+    _key: newKey(),
     description: "",
     quantity: 1,
     unit: "unité",

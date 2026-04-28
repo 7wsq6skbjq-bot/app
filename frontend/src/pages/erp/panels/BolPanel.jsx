@@ -10,6 +10,8 @@ import {
     emptyBOL,
     emptyBolItem,
     formatDate,
+    newKey,
+    stripKeys,
 } from "../utils";
 
 export const BolPanel = () => {
@@ -52,6 +54,7 @@ export const BolPanel = () => {
         setForm({
             ...d,
             items: (d.items || []).map((it) => ({
+                _key: newKey(),
                 description: it.description,
                 quantity: it.quantity,
                 unit: it.unit || "unité",
@@ -67,7 +70,7 @@ export const BolPanel = () => {
             const payload = {
                 ...form,
                 total_weight_kg: form.total_weight_kg === "" ? null : Number(form.total_weight_kg),
-                items: form.items.map((it) => ({
+                items: stripKeys(form.items).map((it) => ({
                     description: it.description,
                     quantity: Number(it.quantity || 0),
                     unit: it.unit || "unité",
@@ -303,7 +306,7 @@ export const BolPanel = () => {
                                 <div className="col-span-1" />
                             </div>
                             {form.items.map((it, idx) => (
-                                <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 px-3 py-2 items-center border-b border-[#dde5f0] last:border-b-0">
+                                <div key={it._key || `row-${idx}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 px-3 py-2 items-center border-b border-[#dde5f0] last:border-b-0">
                                     <div className="md:col-span-5">
                                         <input type="text" value={it.description} onChange={(e) => updateItem(idx, { description: e.target.value })} className={inputClass + " !text-xs"} />
                                     </div>

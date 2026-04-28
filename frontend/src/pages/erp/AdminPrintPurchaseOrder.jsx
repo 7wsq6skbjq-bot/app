@@ -52,7 +52,7 @@ const AdminPrintPurchaseOrder = () => {
                     </thead>
                     <tbody>
                         {doc.items.map((it, i) => (
-                            <tr key={i}>
+                            <tr key={`item-${i}-${it.description || ""}`}>
                                 <td>{it.description}</td>
                                 <td className="num">{Number(it.quantity).toLocaleString("fr-CA")}</td>
                                 <td className="num">{formatCurrency(it.unit_price)}</td>

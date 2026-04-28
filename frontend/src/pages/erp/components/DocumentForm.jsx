@@ -170,7 +170,7 @@ export const DocumentForm = ({
                     {value.items.map((it, idx) => {
                         const lineTotal = Number(it.quantity || 0) * Number(it.unit_price || 0);
                         return (
-                            <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 px-3 py-2 items-center border-b border-[#dde5f0] last:border-b-0">
+                            <div key={it._key || `row-${idx}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 px-3 py-2 items-center border-b border-[#dde5f0] last:border-b-0">
                                 <div className="md:col-span-5">
                                     <input
                                         type="text"
