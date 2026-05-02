@@ -13,9 +13,10 @@ import { HomeTestimonials } from "./home/sections/HomeTestimonials";
 
 const Home = () => {
     useSeo({
-        title: "Portech · Quincaillerie commerciale Grand Montréal | Installation & réparation",
+        title: "Portech · Quincaillerie de porte commerciale | Grand Montréal, Laval, Rive-Sud & Rive-Nord",
         description:
-            "Portech installe, ajuste et répare la quincaillerie de portes commerciales partout dans le Grand Montréal : barres antipaniques, ferme-portes, serrures, gâches électriques. 10+ ans d'expérience.",
+            "Portech · Installation, entretien, réparation et remplacement de quincaillerie de porte commerciale dans le Grand Montréal, Laval, Rive-Sud et Rive-Nord. Barres antipaniques, ferme-portes, serrures mortaise.",
+        canonical: "https://portech.info/",
     });
 
     return (

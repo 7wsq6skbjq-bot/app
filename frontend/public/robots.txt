@@ -1,0 +1,10 @@
+# Portech — robots.txt
+# https://portech.info
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/
+
+Sitemap: https://portech.info/sitemap.xml

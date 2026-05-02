@@ -41,9 +41,10 @@ const Contact = () => {
     const [errorMsg, setErrorMsg] = useState("");
 
     useSeo({
-        title: "Contact · Demander une soumission | Portech, quincaillerie commerciale Grand Montréal",
+        title: "Contact · Demander une soumission — Quincaillerie de porte commerciale | Portech",
         description:
-            "Contactez Portech pour une soumission gratuite de quincaillerie commerciale : barres antipaniques, ferme-portes, serrures, gâches électriques. Réponse sous 24 h ouvrables.",
+            "Contactez Portech pour une soumission gratuite : installation, entretien, réparation ou remplacement de quincaillerie de porte commerciale. Grand Montréal, Laval, Rive-Sud et Rive-Nord. Réponse sous 24 h ouvrables.",
+        canonical: "https://portech.info/contact",
     });
 
     // Pre-fill message when arriving from a Catalogue PDF download

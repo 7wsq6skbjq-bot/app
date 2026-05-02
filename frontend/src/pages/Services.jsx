@@ -120,9 +120,10 @@ const serviceDetails = [
 
 const Services = () => {
     useSeo({
-        title: "Services · Installation, réparation et usinage de quincaillerie commerciale | Portech",
+        title: "Services · Installation, entretien, réparation et remplacement de quincaillerie de porte commerciale | Portech",
         description:
-            "Installation de barres antipaniques, ferme-portes, serrures commerciales. Modification et usinage de portes aluminium, réparation ciblée et inspection — partout dans le Grand Montréal.",
+            "Services Portech : installation, entretien, réparation et remplacement de quincaillerie de porte commerciale. Barres antipaniques, ferme-portes, serrures mortaise, dispositifs de sortie. Grand Montréal, Laval, Rive-Sud et Rive-Nord.",
+        canonical: "https://portech.info/services",
     });
     return (
         <div data-testid="page-services">

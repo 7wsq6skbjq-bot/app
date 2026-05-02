@@ -108,6 +108,7 @@ const Galerie = () => {
     useSeo({
         title: seo?.title,
         description: seo?.description,
+        canonical: `https://portech.info/galerie/${category}`,
     });
 
     useEffect(() => {

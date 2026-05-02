@@ -65,9 +65,10 @@ const Catalogue = () => {
     useEffect(() => { window.scrollTo(0, 0); }, []);
 
     useSeo({
-        title: "Catalogue · Quincaillerie commerciale Sargent Von Duprin Hager | Portech",
+        title: "Catalogue · Quincaillerie de porte commerciale Sargent, Von Duprin, Hager | Portech",
         description:
-            "Catalogue de quincaillerie commerciale : poignées Sargent Studio, serrures Degree Key, barres antipaniques 5300, ferme-portes Fire Guard, gâches électriques Von Duprin, charnières Hager. PDF téléchargeables.",
+            "Catalogue de quincaillerie de porte commerciale : poignées Sargent Studio, serrures Degree Key, barres antipaniques 5300, ferme-portes Fire Guard, gâches électriques Von Duprin, charnières Hager. PDF téléchargeables.",
+        canonical: "https://portech.info/catalogue",
     });
 
     const active = CATALOG.find((c) => c.slug === activeCategory);
