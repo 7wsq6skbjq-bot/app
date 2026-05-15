@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Mail, MapPin, Clock } from "lucide-react";
+import { ArrowUpRight, Mail, MapPin, Clock, Phone } from "lucide-react";
 
 const Footer = () => {
     return (
@@ -66,6 +66,16 @@ const Footer = () => {
                             Coordonnées
                         </div>
                         <ul className="space-y-4 text-sm text-[#b2c3dd]">
+                            <li className="flex items-start gap-3">
+                                <Phone className="w-4 h-4 mt-1 text-[#97b0d0] flex-shrink-0" />
+                                <a
+                                    href="tel:+14383764177"
+                                    className="hover:text-white transition-colors font-display font-bold"
+                                    data-testid="footer-phone"
+                                >
+                                    438 376-4177
+                                </a>
+                            </li>
                             <li className="flex items-start gap-3">
                                 <Mail className="w-4 h-4 mt-1 text-[#97b0d0] flex-shrink-0" />
                                 <a

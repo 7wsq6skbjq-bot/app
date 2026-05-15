@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
-import { Menu, X, ArrowUpRight } from "lucide-react";
+import { Menu, X, ArrowUpRight, Phone } from "lucide-react";
 
 const links = [
     { to: "/", label: "Accueil", slug: "accueil" },
@@ -68,6 +68,14 @@ const Navbar = () => {
                 </nav>
 
                 <div className="hidden md:flex items-center gap-3">
+                    <a
+                        href="tel:+14383764177"
+                        data-testid="nav-phone"
+                        className="hidden lg:flex items-center gap-2 text-sm font-display font-bold uppercase tracking-tight text-[#0c182b] hover:text-[#1d3557] transition-colors"
+                    >
+                        <Phone className="w-4 h-4" />
+                        438 376-4177
+                    </a>
                     <Link
                         to="/contact"
                         data-testid="nav-cta-quote"
@@ -110,10 +118,18 @@ const Navbar = () => {
                                 {l.label}
                             </NavLink>
                         ))}
+                        <a
+                            href="tel:+14383764177"
+                            data-testid="mobile-nav-phone"
+                            className="mt-4 inline-flex items-center justify-center gap-2 border border-[#0c182b] text-[#0c182b] font-display font-bold uppercase tracking-tight py-3"
+                        >
+                            <Phone className="w-4 h-4" />
+                            438 376-4177
+                        </a>
                         <Link
                             to="/contact"
                             data-testid="mobile-nav-cta"
-                            className="btn-primary mt-4 justify-center"
+                            className="btn-primary mt-2 justify-center"
                         >
                             Demander une soumission
                             <ArrowUpRight className="w-4 h-4" />

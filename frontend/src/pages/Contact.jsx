@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     Mail,
     MapPin,
+    Phone,
     ShieldCheck,
     Clock,
 } from "lucide-react";
@@ -329,9 +330,26 @@ const Contact = () => {
                                         Coordonnées
                                     </div>
                                     <h2 className="font-display font-bold uppercase text-3xl tracking-tight leading-tight mb-8">
-                                        Le plus rapide, c'est par courriel.
+                                        Téléphone ou courriel — comme vous préférez.
                                     </h2>
                                     <ul className="space-y-6">
+                                        <li className="flex items-start gap-4">
+                                            <div className="w-10 h-10 border border-[#1e3457] flex items-center justify-center flex-shrink-0">
+                                                <Phone className="w-4 h-4 text-[#97b0d0]" />
+                                            </div>
+                                            <div>
+                                                <div className="tech-stamp text-[#97b0d0] mb-1">
+                                                    Téléphone
+                                                </div>
+                                                <a
+                                                    href="tel:+14383764177"
+                                                    className="font-display font-semibold uppercase text-lg tracking-tight hover:text-[#97b0d0] transition-colors"
+                                                    data-testid="contact-info-phone"
+                                                >
+                                                    438 376-4177
+                                                </a>
+                                            </div>
+                                        </li>
                                         <li className="flex items-start gap-4">
                                             <div className="w-10 h-10 border border-[#1e3457] flex items-center justify-center flex-shrink-0">
                                                 <Mail className="w-4 h-4 text-[#97b0d0]" />
