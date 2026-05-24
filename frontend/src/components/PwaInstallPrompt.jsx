@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Download, X, Smartphone } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const DISMISS_KEY = "portech_pwa_install_dismissed_at";
 const DISMISS_DAYS = 14;
@@ -16,12 +17,17 @@ const DISMISS_DAYS = 14;
  */
 const PwaInstallPrompt = () => {
     const { pathname } = useLocation();
+    const { user } = useAuth();
     const [deferred, setDeferred] = useState(null);
     const [showBanner, setShowBanner] = useState(false);
     const [isIosSafari, setIsIosSafari] = useState(false);
     const [installed, setInstalled] = useState(false);
 
-    const isAdminRoute = pathname.startsWith("/admin");
+    // Only show the install banner once the user is authenticated as admin.
+    // We don't want random visitors of /admin/login installing an app they
+    // can't actually use.
+    const isAuthenticated = user && user !== false;
+    const isAdminRoute = pathname.startsWith("/admin") && isAuthenticated;
 
     useEffect(() => {
         if (!isAdminRoute) return;
