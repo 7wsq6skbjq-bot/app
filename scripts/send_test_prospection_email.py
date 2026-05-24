@@ -107,7 +107,7 @@ HTML = f"""<!DOCTYPE html>
 
 resp = resend.Emails.send({
     "from": "Portech <info@portech.info>",
-    "to": ["info@portech.info"],
+    "to": ["portech.infos@gmail.com"],
     "subject": "Sous-traitance quincaillerie + portes aluminium — Portech",
     "html": HTML,
 })
