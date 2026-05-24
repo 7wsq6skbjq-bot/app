@@ -20,9 +20,15 @@ WHITE = (255, 255, 255)
 MUTED = (151, 176, 208)           # #97b0d0 — secondary text
 
 
+# Available bold + regular sans fonts on this system (DejaVu was removed)
+FONT_BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+FONT_REG  = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+FONT_BOLD_FALLBACK = "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+
+
 def find_font(*candidates, size=24):
-    """Pick the first available TTF on disk; fall back to PIL default."""
-    for name in candidates:
+    """Pick the first available TTF on disk; fall back to known Liberation/Free fonts."""
+    for name in list(candidates) + [FONT_BOLD, FONT_REG, FONT_BOLD_FALLBACK]:
         try:
             return ImageFont.truetype(name, size)
         except Exception:
@@ -43,37 +49,56 @@ for x in range(0, W, 48):
 for y in range(0, H, 48):
     draw.line([(0, y), (W, y)], fill=(20, 35, 58), width=1)
 
-# Accent thin line at the very bottom
+# Top + bottom accent lines for symmetry
+draw.rectangle([(0, 0), (W, 4)], fill=NAVY_LIGHT)
 draw.rectangle([(0, H - 4), (W, H)], fill=MUTED)
 
-# Paste the Portech monogram on the left (vertically centered)
+# Paste the Portech monogram on the left (vertically centered) — big
 mono_src = Path("/app/frontend/public/brand/portech-mark.png")
+mono_w = 0
 if mono_src.exists():
     mono = Image.open(mono_src).convert("RGBA")
-    # Resize to fit ~70 % of header height
-    target_h = int(H * 0.62)
+    target_h = int(H * 0.78)
     ratio = target_h / mono.height
     mono = mono.resize(
         (int(mono.width * ratio), target_h), Image.LANCZOS,
     )
-    # Mask to keep transparency
-    header.paste(mono, (60, (H - mono.height) // 2), mono)
+    mono_w = mono.width
+    header.paste(mono, (48, (H - mono.height) // 2), mono)
 
-# Right side: company name + tagline
-font_bold = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size=58,
-)
-font_light = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=22,
-)
+# HUGE PORTECH wordmark
+font_huge = find_font(size=170)
+font_tagline = find_font(size=22)
+font_meta    = find_font(size=20)
 
-# Headline
-draw.text((310, 65), "PORTECH", font=font_bold, fill=WHITE)
-# Sub-line
+# Position so PORTECH + monogram fill the banner edge-to-edge with breathing room
+text_x = 48 + mono_w + 36
+bbox = draw.textbbox((0, 0), "PORTECH", font=font_huge)
+text_w = bbox[2] - bbox[0]
+# Use ascent for vertical positioning so descender padding doesn't push things down
+ascent, descent = font_huge.getmetrics()
+text_y = 18  # leave room at top
+draw.text((text_x, text_y), "PORTECH", font=font_huge, fill=WHITE)
+text_bottom = text_y + ascent + descent
+
+# Tagline beneath — with comfortable gap
 sub = "QUINCAILLERIE DE PORTE COMMERCIALE"
-draw.text((315, 140), sub, font=font_light, fill=MUTED)
-# Thin separator on the right
-draw.line([(280, 60), (280, 200)], fill=MUTED, width=2)
+tagline_y = H - 38
+draw.text((text_x + 4, tagline_y), sub, font=font_tagline, fill=MUTED)
+
+# Meta tagline to the right of PORTECH to fill the right edge
+meta_x = text_x + text_w + 36
+if meta_x < W - 200:
+    # Vertical separator
+    draw.line([(meta_x - 12, 46), (meta_x - 12, H - 46)], fill=NAVY_LIGHT, width=2)
+    draw.text((meta_x, 64), "GRAND", font=font_meta, fill=MUTED)
+    draw.text((meta_x, 92), "MONTRÉAL", font=font_meta, fill=WHITE)
+    draw.text((meta_x, 132), "LAVAL", font=font_meta, fill=MUTED)
+    draw.text((meta_x, 160), "RIVE-SUD", font=font_meta, fill=WHITE)
+    draw.text((meta_x, 188), "RIVE-NORD", font=font_meta, fill=MUTED)
+
+# Vertical separator between monogram and PORTECH
+draw.line([(text_x - 20, 40), (text_x - 20, H - 40)], fill=NAVY_LIGHT, width=2)
 
 header.save(OUT / "email-header.png", "PNG", optimize=True)
 print(f"Wrote email-header.png ({header.size})")
@@ -127,19 +152,19 @@ if mono_src.exists():
     footer.paste(mono, (60, 36), mono)
 
 font_bold_md = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size=34,
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", size=34,
 )
 font_md = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=22,
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", size=22,
 )
 font_sm = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=18,
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", size=18,
 )
 font_xs = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=15,
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", size=15,
 )
 font_label = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size=13,
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", size=13,
 )
 
 # Brand text next to the small monogram
