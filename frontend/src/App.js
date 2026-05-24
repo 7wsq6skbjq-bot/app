@@ -15,6 +15,7 @@ import AdminPrintInvoice from "@/pages/erp/AdminPrintInvoice";
 import AdminPrintPurchaseOrder from "@/pages/erp/AdminPrintPurchaseOrder";
 import AdminPrintBol from "@/pages/erp/AdminPrintBol";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { AuthProvider } from "@/context/AuthContext";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <div className="App">
             <BrowserRouter>
                 <AuthProvider>
+                    <PwaInstallPrompt />
                     <Routes>
                         {/* Public site */}
                         <Route element={<Layout />}>
