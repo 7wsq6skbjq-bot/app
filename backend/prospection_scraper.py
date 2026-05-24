@@ -118,7 +118,11 @@ async def scrape_region(region_key: str, max_results: int = 30) -> List[dict]:
         raise ValueError(f"Unknown region: {region_key}")
 
     query = _overpass_query(bbox)
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    headers = {
+        "User-Agent": "PortechProspectionBot/1.0 (contact: info@portech.info)",
+        "Accept": "application/json",
+    }
+    async with httpx.AsyncClient(timeout=60.0, headers=headers) as client:
         resp = await client.post(OVERPASS_URL, data={"data": query})
         resp.raise_for_status()
         data = resp.json()

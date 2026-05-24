@@ -1,0 +1,42 @@
+{
+  "summary": "End-to-end testing of the new Portech B2B Prospection (vitreries) feature — backend + frontend. Backend: 20 new pytest cases in /app/backend/tests/test_prospection_api.py all PASS, full regression suite stable at 92/92 (72 prior + 20 new). Verified: auth guardrails (401 without Bearer on /stats, /prospects, /campaigns, /campaigns/default, /outbox); GET /stats returns total_prospects/with_email/sent_today/sent_last_hour/hourly_limit=50/remaining_this_hour/by_status; GET /campaigns/default returns FR template with subject 'Sous-traitance quincaillerie pour vos projets vitrerie' and both banner URLs (https://portech.info/email/email-header.png + email-footer.png); POST /prospects/scrape with location=montreal max_results=5 returned scraped/new/skipped/region from live Overpass; Prospect CRUD (create→list[filter has_email,region]→update→delete→404); Campaign CRUD (create→update→delete); POST /campaigns/send with confirm=false → 400 'Confirmation explicite requise (case Je confirme l'envoi).'; POST /campaigns/send with confirm=true + test_only=true + test_email returned {sent:true, resend_id:<uuid>}; real send to mixed [with_email, no_email] prospects → sent=1, skipped_no_email=1, prospect.status→'envoyé', send_count incremented, outbox entry inserted. Frontend: /admin/gestion/prospection loads ProspectionPanel with all 4 sub-tabs (Vitreries/Campagnes/Envoi/Historique), stats banner shows '2/50 · 4% du quota' (hourly_limit=50 visible), 'Scraper des vitreries' opens modal, 'Ajouter manuellement' modal saves prospect (verified visible in list), 'Nouvelle campagne (modèle FR)' loads default template — subject correct, preview pane renders BOTH header + footer banner images (img src verified). Envoi tab: campaign selector present, prospect checkbox list filtered to with-email only, 'Je confirme l'envoi' checkbox unchecked by default → 'Envoyer maintenant' button disabled (confirmed via is_disabled()=True); after checking confirm + selecting a prospect, button becomes enabled. 'Envoyer un test' modal opens correctly. Historique tab loads outbox table showing previously sent Resend IDs. No console errors during the flow. All test data (TEST_ prefix) cleaned up.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/gestion/* secondary nav", "issues": ["The horizontal tabs bar uses overflow-x-auto and at 1920px width the last two tabs (Connaissements, Prospection) are clipped off-screen requiring horizontal scroll. They are reachable via direct URL but easy for a user to miss. Consider reducing tab padding, wrapping to two rows on overflow, or adding a visible scroll indicator/chevron."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prospection_api.py",
+    "/app/test_reports/pytest/iteration_4_prospection.xml",
+    "/app/test_reports/pytest/iteration_4_full.xml"
+  ],
+  "action_items": [
+    "OPTIONAL UX: secondary nav in AdminErp.jsx clips Connaissements + Prospection tabs at common viewports — make overflow more discoverable (chevrons, wrap, or condense padding).",
+    "OPTIONAL backend hardening: SendCampaignRequest requires prospect_ids: min_length=1, so test_only sends still need a placeholder prospect_id in the payload (UI currently passes ['test']). Consider relaxing min_length when test_only=true to make the API less footgun-prone."
+  ],
+  "critical_code_review_comments": [
+    "prospection_routes.py is 400 lines — still under 700-line threshold, acceptable as a single module.",
+    "_count_sent_last_hour() filters status IN ['sent','queued'], but rate-limit accounting only inserts entries with status 'sent' or 'failed' (no 'queued' branch in current code). Code is consistent but the 'queued' branch is dead today — either remove it or implement an actual queue.",
+    "Send endpoint truncates to `prospects[:remaining]` BEFORE checking which ones have emails — a batch where the first N have no email will under-utilise the remaining quota. Consider filtering by email first, then truncating to quota.",
+    "Outbox writes `sent_at` as ISO string default-factory, so `_count_sent_last_hour` does string-based comparison via `$gte: cutoff_iso`. Works while all timestamps stay in the same TZ and format (UTC ISO with offset), but a single doc inserted with a different format would break the comparison silently. Long-term: store as BSON Date.",
+    "Resend dispatch uses asyncio.to_thread(resend.Emails.send, params) — good (non-blocking) but no per-send timeout. A hung Resend call would tie up the request indefinitely. Add an asyncio.wait_for wrapper.",
+    "Scrape dedupe key is (name, city) — two real vitreries with same name in same city would collide. Consider using OSM `id`/`google_place_id` when available.",
+    "Default template `from_name` env var defaults to 'Cédrick Pimparé · Portech' but Campaign model default is just 'Portech' — saving a campaign from template carries the env-value name forward, which is desirable; just noting the two defaults are inconsistent."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_prospection_api.py (NEW — 20 prospection test cases covering auth guards, stats, default template, prospect CRUD + filters, OSM scrape, campaign CRUD, confirm=false guardrail, test_only Resend send, real mixed-prospect send + outbox + counter updates, full cleanup)"
+  ],
+  "success_rate": {"backend": "100% (92/92 pytest: 72 prior + 20 new prospection)", "frontend": "100% — all 4 sub-tabs render, scrape modal, manual add, default-template loader with banner preview, confirm-checkbox guard, test email modal, outbox listing all verified via Playwright"},
+  "test_credentials": "PortechAdmin / Portech2026! (verified working)",
+  "seed_data_creation": "Tests created TEST_-prefixed prospects + campaigns and cleaned them all up. One real Resend test email was dispatched to portech.infos@gmail.com during test_send_test_only and test_send_real_skips_no_email (live integration — counts toward hourly cap, see stats showing 2/50 used). No leftover data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend prospection is solid (20/20). Regression suite stable at 92/92. Live Resend + Overpass integrations confirmed working with real responses (Resend IDs like a89045fd-329b-4434-8c07-bec5391aa06c, 26acf428-5f31-40e0-a063-e25d8c47238f recorded in outbox). When re-running tests be mindful of the 50/h Resend cap — the suite consumes 2 sends per full run (1 test_only + 1 real). UI: prospection tab is reachable directly at /admin/gestion/prospection but visually clipped in the secondary nav bar at common viewports — not a bug but worth flagging. test_prospection_api.py is the canonical regression file going forward.",
+  "rca of the issue": "No defects found in this iteration. The only observable UX concern is purely cosmetic: AdminErp.jsx renders 9 secondary-nav tabs inside a flex container with `overflow-x-auto`. At 1920×1080 the rightmost two (Connaissements + Prospection) sit beyond the viewport and require horizontal scroll — direct URL navigation (/admin/gestion/prospection) works correctly. Mitigation: reduce per-tab padding (px-4 → px-3), wrap to two rows, or add visible scroll chevrons."
+}

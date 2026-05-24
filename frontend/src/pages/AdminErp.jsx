@@ -9,6 +9,7 @@ import { PurchaseOrdersPanel } from "./erp/panels/PurchaseOrdersPanel";
 import { BolPanel } from "./erp/panels/BolPanel";
 import { CalendarPanel } from "./erp/panels/CalendarPanel";
 import { DashboardPanel } from "./erp/panels/DashboardPanel";
+import { ProspectionPanel } from "./erp/panels/ProspectionPanel";
 
 const TABS = [
     { slug: "tableau-de-bord", label: "Tableau de bord", panel: "dashboard" },
@@ -19,6 +20,7 @@ const TABS = [
     { slug: "factures",        label: "Factures",        panel: "invoices" },
     { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
     { slug: "connaissements",  label: "Connaissements",  panel: "bills-of-lading" },
+    { slug: "prospection",     label: "Prospection",     panel: "prospection" },
 ];
 
 const AdminErp = () => {
@@ -76,6 +78,7 @@ const AdminErp = () => {
                 {activeTab.panel === "invoices" && <InvoicesPanel />}
                 {activeTab.panel === "purchase-orders" && <PurchaseOrdersPanel />}
                 {activeTab.panel === "bills-of-lading" && <BolPanel />}
+                {activeTab.panel === "prospection" && <ProspectionPanel />}
             </main>
         </div>
     );
