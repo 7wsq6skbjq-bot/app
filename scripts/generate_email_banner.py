@@ -97,32 +97,37 @@ fd.rectangle([(0, 0), (FW, 4)], fill=MUTED)
 
 # Try to overlay a real product detail shot on the right side as a "showcase"
 detail_path = Path("/app/frontend/public/gbp/gbp-cover-hero.png")
+band_width = 0
 if detail_path.exists():
     detail = Image.open(detail_path).convert("RGB")
-    # Crop the right half (vertical band ~500px wide) to act as an accent
-    crop_w = 500
+    crop_w = 460
     dW, dH = detail.size
     band = detail.crop(
         (dW // 2, 0, dW // 2 + crop_w, dH) if dW > crop_w else (0, 0, dW, dH)
     )
-    # Resize the band to footer height while maintaining aspect
     ratio = FH / band.height
     band = band.resize((int(band.width * ratio), FH), Image.LANCZOS)
-    # Paste on the right
     px = FW - band.width
+    band_width = band.width
     footer.paste(band, (px, 0))
-    # Gradient overlay from dark to transparent over the band so text stays readable
     overlay = Image.new("RGBA", (band.width, FH), (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
     for i in range(band.width):
-        # alpha goes from 240 (very dark left edge) to 60 (mostly transparent right)
-        alpha = max(60, int(240 - (i / band.width) * 180))
+        alpha = max(80, int(240 - (i / band.width) * 180))
         od.line([(i, 0), (i, FH)], fill=(12, 24, 43, alpha))
     footer.paste(overlay, (px, 0), overlay)
 
-# Footer text on the left
+# Paste the small Portech monogram in the top-left of the footer for branding
+mono_src = Path("/app/frontend/public/brand/portech-mark.png")
+if mono_src.exists():
+    mono = Image.open(mono_src).convert("RGBA")
+    target_h = 60
+    ratio = target_h / mono.height
+    mono = mono.resize((int(mono.width * ratio), target_h), Image.LANCZOS)
+    footer.paste(mono, (60, 36), mono)
+
 font_bold_md = find_font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size=36,
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size=34,
 )
 font_md = find_font(
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=22,
@@ -130,18 +135,48 @@ font_md = find_font(
 font_sm = find_font(
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=18,
 )
-
-fd.text((60, 60), "Cédrick Pimparé", font=font_bold_md, fill=WHITE)
-fd.text((60, 110), "Fondateur · Portech", font=font_md, fill=MUTED)
-
-# Contact stack
-fd.text((60, 165), "438 376-4177", font=font_md, fill=WHITE)
-fd.text((60, 200), "portech.info", font=font_md, fill=WHITE)
-fd.text(
-    (60, 240),
-    "Grand Montréal · Laval · Rive-Sud · Rive-Nord",
-    font=font_sm, fill=MUTED,
+font_xs = find_font(
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", size=15,
 )
+font_label = find_font(
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size=13,
+)
+
+# Brand text next to the small monogram
+fd.text((150, 46), "PORTECH", font=font_bold_md, fill=WHITE)
+fd.text(
+    (150, 86),
+    "Quincaillerie de porte commerciale",
+    font=font_xs, fill=MUTED,
+)
+
+# Vertical separator
+fd.line([(60, 118), (FW - band_width - 60, 118)], fill=(40, 60, 100), width=1)
+
+# Two-column info layout
+# --- LEFT COLUMN: services ---
+fd.text((60, 138), "SERVICES", font=font_label, fill=MUTED)
+services = [
+    "Installation & remplacement",
+    "Entretien & ajustement",
+    "Portes aluminium sur mesure",
+    "Sous-traitance vitreries",
+]
+y = 162
+for s in services:
+    # Small dot bullet
+    fd.ellipse([(60, y + 9), (66, y + 15)], fill=MUTED)
+    fd.text((78, y), s, font=font_xs, fill=WHITE)
+    y += 28
+
+# --- RIGHT COLUMN (still on the left half): contact + zone ---
+right_x = 480
+fd.text((right_x, 138), "CONTACT", font=font_label, fill=MUTED)
+fd.text((right_x, 162), "438 376-4177", font=font_md, fill=WHITE)
+fd.text((right_x, 196), "portech.info", font=font_md, fill=WHITE)
+fd.text((right_x, 234), "ZONE DESSERVIE", font=font_label, fill=MUTED)
+fd.text((right_x, 258), "Grand Montréal · Laval", font=font_xs, fill=WHITE)
+fd.text((right_x, 280), "Rive-Sud · Rive-Nord", font=font_xs, fill=WHITE)
 
 footer.save(OUT / "email-footer.png", "PNG", optimize=True)
 print(f"Wrote email-footer.png ({footer.size})")
