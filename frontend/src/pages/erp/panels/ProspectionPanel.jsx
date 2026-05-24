@@ -552,7 +552,7 @@ const CampaignsTab = () => {
                         <Field label="Courriel expéditeur">
                             <input value={editing.from_email} onChange={(e) => setEditing({ ...editing, from_email: e.target.value })} className={inputClass} />
                         </Field>
-                        <Field label="Corps HTML (variables: {{name}}, {{contact_name}}, {{city}})" className="col-span-2">
+                        <Field label="Corps HTML (variables: {{Nom_Vitrerie}}, {{contact_name}}, {{city}})" className="col-span-2">
                             <textarea
                                 data-testid="campaign-body"
                                 rows={14}

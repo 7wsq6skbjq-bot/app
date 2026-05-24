@@ -58,19 +58,34 @@ DEFAULT_BODY_HTML = """
     <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; max-width:600px;">
       <tr><td><img src="https://portech.info/email/email-header.png" alt="Portech" style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>
       <tr><td style="padding:32px 32px 8px 32px; color:#0c182b; font-size:15px; line-height:1.6;">
-        <p style="margin:0 0 16px 0;">Bonjour,</p>
-        <p style="margin:0 0 16px 0;">Je m'appelle <b>Cédrick Pimparé</b>, je dirige <b>Portech</b> — un atelier spécialisé exclusivement dans la <b>quincaillerie de portes commerciales</b> (serrures, barres antipaniques, ferme-portes, charnières continues, contrôle d'accès) dans le Grand Montréal.</p>
-        <p style="margin:0 0 16px 0;">Je m'adresse à vous parce que <b>les vitreries font régulièrement face au même casse-tête</b> : poser une devanture parfaite, puis devoir gérer une quincaillerie complexe (codes du bâtiment, compatibilité, ajustements millimétriques) qui n'est ni votre cœur de métier ni votre formation.</p>
-        <p style="margin:0 0 16px 0;"><b>Ma proposition :</b> me sous-traiter cette portion. Je m'occupe uniquement de la quincaillerie sur vos chantiers — vous gardez le client, le contrat, la facturation. Je travaille en arrière-boutique, sans logo, sans véhicule identifié si vous le souhaitez.</p>
-        <p style="margin:0 0 16px 0;"><b>Ce que ça vous donne :</b></p>
-        <ul style="margin:0 0 16px 0; padding-left:20px;">
-          <li>Quincaillerie posée du premier coup (10 ans en atelier)</li>
-          <li>Conformité aux codes (NBC, NFPA 80, RBQ)</li>
-          <li>Marge protégée — vous gardez la portion vitrerie, je m'occupe du reste</li>
-          <li>Moins de retours, moins d'inspections échouées</li>
-        </ul>
-        <p style="margin:0 0 16px 0;">Si ça résonne, on peut prendre <b>15 minutes au téléphone</b> cette semaine pour voir si une collaboration ponctuelle ou continue a du sens pour vous.</p>
-        <p style="margin:0 0 24px 0;">Au plaisir,<br/><b>Cédrick Pimparé</b><br/>Portech — Quincaillerie de portes commerciales<br/>📧 <a href="mailto:info@portech.info" style="color:#1d4ed8;">info@portech.info</a> · 🌐 <a href="https://portech.info" style="color:#1d4ed8;">portech.info</a></p>
+        <p style="margin:0 0 16px 0;">Bonjour {{Nom_Vitrerie}},</p>
+        <p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de Portech.</p>
+        <p style="margin:0 0 16px 0;">On est spécialisés en <b>quincaillerie de porte commerciale</b> dans le Grand Montréal, Laval, la Rive-Sud et la Rive-Nord.</p>
+        <p style="margin:0 0 16px 0;">Je vous contacte parce qu'on aide déjà plusieurs vitreries à gérer tout ce qui touche la quincaillerie commerciale et les portes aluminium.</p>
+        <p style="margin:0 0 12px 0;">Concrètement, voici ce qu'on peut faire pour vous :</p>
+
+        <p style="margin:18px 0 6px 0;"><b>• Sous-traitance de quincaillerie sur vos projets</b></p>
+        <p style="margin:0 0 8px 0;">Barres antipaniques, ferme-portes, serrures mortaises, dispositifs de sortie, ajustements, installation complète, etc.</p>
+        <p style="margin:0 0 4px 0;">Vous gardez votre client et votre marge.</p>
+        <p style="margin:0 0 16px 0;">Nous, on s'occupe de l'exécution.</p>
+
+        <p style="margin:18px 0 6px 0;"><b>• Fourniture de portes aluminium prêtes à poser</b></p>
+        <p style="margin:0 0 8px 0;">Portes usinées en atelier ou sur chantier, quincaillerie installée et ajustée avant livraison.</p>
+        <p style="margin:0 0 2px 0;">Moins de temps perdu sur le chantier.</p>
+        <p style="margin:0 0 2px 0;">Moins de coordination.</p>
+        <p style="margin:0 0 2px 0;">Finition plus propre et professionnelle.</p>
+        <p style="margin:0 0 16px 0;">Garantie que toute quincaillerie est adéquate et adaptée au système.</p>
+
+        <p style="margin:18px 0 6px 0;"><b>• Aucun conflit avec votre activité</b></p>
+        <p style="margin:0 0 16px 0;">On ne fait pas de vitrage et on ne touche pas à vos installations de verre. Notre rôle est de compléter votre service, pas de le remplacer.</p>
+
+        <p style="margin:24px 0 16px 0;">Si vous avez 15 minutes cette semaine, je serais content d'en discuter avec vous.</p>
+
+        <p style="margin:0 0 4px 0;"><b><a href="tel:+14383764177" style="color:#0c182b; text-decoration:none;">438-376-4177</a></b></p>
+        <p style="margin:0 0 24px 0;"><a href="https://www.portech.info" style="color:#1d4ed8;">www.portech.info</a></p>
+
+        <p style="margin:0 0 4px 0;">Bonne journée!</p>
+        <p style="margin:16px 0 0 0;"><b>Cédrick Pimparé</b><br/>Portech — Quincaillerie de porte commerciale</p>
       </td></tr>
       <tr><td><img src="https://portech.info/email/email-footer.png" alt="Portech" style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>
       <tr><td style="padding:16px 32px; color:#71717a; font-size:11px; text-align:center;">
@@ -86,7 +101,9 @@ DEFAULT_BODY_HTML = """
 def _render_template(html: str, prospect: dict) -> str:
     """Replace simple {{var}} placeholders in the HTML body."""
     out = html
-    out = out.replace("{{name}}", prospect.get("name") or "")
+    name = prospect.get("name") or ""
+    out = out.replace("{{Nom_Vitrerie}}", name)
+    out = out.replace("{{name}}", name)
     out = out.replace("{{contact_name}}", prospect.get("contact_name") or "")
     out = out.replace("{{city}}", prospect.get("city") or "")
     return out
