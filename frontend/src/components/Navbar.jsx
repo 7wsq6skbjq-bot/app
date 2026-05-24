@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { Menu, X, ArrowUpRight, Phone, Facebook } from "lucide-react";
 import { SOCIAL } from "@/config/social";
+import { trackContact } from "@/lib/fb-pixel";
 
 const links = [
     { to: "/", label: "Accueil", slug: "accueil" },
@@ -71,6 +72,7 @@ const Navbar = () => {
                 <div className="hidden md:flex items-center gap-3">
                     <a
                         href="tel:+14383764177"
+                        onClick={() => trackContact({ method: "phone", source: "navbar" })}
                         data-testid="nav-phone"
                         className="hidden lg:flex items-center gap-2 text-sm font-display font-bold uppercase tracking-tight text-[#0c182b] hover:text-[#1d3557] transition-colors"
                     >
@@ -121,6 +123,7 @@ const Navbar = () => {
                         ))}
                         <a
                             href="tel:+14383764177"
+                            onClick={() => trackContact({ method: "phone", source: "mobile-nav" })}
                             data-testid="mobile-nav-phone"
                             className="mt-4 inline-flex items-center justify-center gap-2 border border-[#0c182b] text-[#0c182b] font-display font-bold uppercase tracking-tight py-3"
                         >

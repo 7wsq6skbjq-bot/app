@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import { trackLead } from "@/lib/fb-pixel";
 import {
     ArrowUpRight,
     CheckCircle2,
@@ -73,6 +74,10 @@ const Contact = () => {
             if (!payload.project_type) delete payload.project_type;
             if (!payload.company) delete payload.company;
             await axios.post(`${API}/contact`, payload);
+            trackLead({
+                content_name: payload.project_type || "Soumission",
+                content_category: "contact-form",
+            });
             setStatus("success");
             setForm(initialForm);
         } catch (err) {
