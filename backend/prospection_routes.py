@@ -280,17 +280,17 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if not prospects:
             raise HTTPException(400, "Aucun prospect valide à contacter")
 
-        # Truncate to remaining quota
-        to_send = prospects[:remaining]
-        skipped_no_email = 0
+        # Filter out prospects without email BEFORE applying the quota cap —
+        # otherwise a batch where the first N have no email would silently
+        # waste the remaining quota.
+        with_email = [p for p in prospects if p.get("email")]
+        skipped_no_email = len(prospects) - len(with_email)
+        to_send = with_email[:remaining]
         sent_ok = 0
         sent_fail = 0
         outbox_entries: list[dict] = []
 
         for p in to_send:
-            if not p.get("email"):
-                skipped_no_email += 1
-                continue
             ok, resend_id, err = await _dispatch_one(campaign, p)
             entry = OutboxEntry(
                 campaign_id=campaign["id"],
@@ -319,7 +319,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             "sent": sent_ok,
             "failed": sent_fail,
             "skipped_no_email": skipped_no_email,
-            "skipped_over_quota": max(0, len(prospects) - len(to_send)),
+            "skipped_over_quota": max(0, len(with_email) - len(to_send)),
             "remaining_this_hour": max(0, remaining - sent_ok),
         }
 

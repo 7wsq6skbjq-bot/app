@@ -57,7 +57,7 @@ const AdminErp = () => {
                             key={t.slug}
                             to={`/admin/gestion/${t.slug}`}
                             data-testid={`erp-tab-${t.slug}`}
-                            className={`tech-stamp px-4 py-2 border whitespace-nowrap transition-colors ${
+                            className={`tech-stamp px-3 py-2 border whitespace-nowrap transition-colors ${
                                 t.slug === activeSlug
                                     ? "border-[#0c182b] bg-[#0c182b] text-white"
                                     : "border-[#dde5f0] text-[#4b5d7a] hover:bg-[#f3f6fb]"

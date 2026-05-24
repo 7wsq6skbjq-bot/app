@@ -312,6 +312,26 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 - [ ] Photos avant/après réelles (remplacer les placeholders IA)
 - [ ] Numéro de téléphone lorsque disponible
 - [ ] Restreindre `CORS_ORIGINS` au domaine de prod (✅ fait — seulement prod + preview)
+- [ ] Bouton flottant « Appelez maintenant » / WhatsApp sur mobile
+- [ ] Page « Soumission Express » (calculateur de coûts)
+
+### 2026-05 — Iter 23 (Outil de prospection B2B vitreries)
+**Nouveau module Prospection** (`/admin/gestion/prospection`) :
+- **Backend** (`prospection_routes.py`, `prospection_models.py`, `prospection_scraper.py`) :
+  - Scraping OpenStreetMap/Overpass gratuit (vitreries Grand Montréal / Laval / Rive-Sud / Rive-Nord)
+  - 2 nouvelles collections : `prospection_prospects`, `prospection_campaigns`, `prospection_outbox`
+  - CRUD complet prospects + campagnes
+  - Modèle FR pré-approuvé (sous-traitance vitrerie) chargeable via `GET /campaigns/default` avec bannières `https://portech.info/email/email-header.png` et `email-footer.png`
+  - Envoi via Resend depuis `info@portech.info` (domaine vérifié)
+  - **Garde-fous** : `confirm=true` obligatoire (400 sinon) + **limite 50 envois/heure** (configurable via `PROSPECTION_HOURLY_LIMIT`) + skip prospects `unsubscribed`
+  - Mode `test_only=true` pour preview à une adresse de test sans toucher la prod
+  - Filtrage des prospects par courriel AVANT troncature quota (évite le gaspillage de quota)
+- **Frontend** (`ProspectionPanel.jsx`) : 4 sous-onglets — **Vitreries** (liste, scrape par région, ajout manuel) · **Campagnes** (éditeur HTML + aperçu live des bannières) · **Envoi** (sélection multi-cases + checkbox « Je confirme l'envoi » + envoi test) · **Historique** (outbox Resend IDs).
+- **Stats banner** : 5 tuiles (prospects, avec courriel, envoyés 24h, envoyés/quota 1h, restant cette heure).
+- **Tests** : 20 nouveaux tests pytest (`test_prospection_api.py`). **Total 92/92 pytest ✅**. Smoke test live Overpass (10 vitreries Montréal scrapées, 1 avec courriel) + Resend (id confirmé).
+- **UI fix** : padding onglets secondaires `px-4 → px-3` pour éviter le clipping à 1920px.
+
+## Backlog / P1
 
 ## Backlog / P2
 - [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
