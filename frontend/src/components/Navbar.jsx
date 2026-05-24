@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
-import { Menu, X, ArrowUpRight, Phone } from "lucide-react";
+import { Menu, X, ArrowUpRight, Phone, Facebook } from "lucide-react";
+import { SOCIAL } from "@/config/social";
 
 const links = [
     { to: "/", label: "Accueil", slug: "accueil" },
@@ -134,6 +135,17 @@ const Navbar = () => {
                             Demander une soumission
                             <ArrowUpRight className="w-4 h-4" />
                         </Link>
+                        <a
+                            href={SOCIAL.facebook}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Page Facebook Portech"
+                            data-testid="mobile-nav-facebook"
+                            className="mt-2 inline-flex items-center justify-center gap-2 text-[#4b5d7a] hover:text-[#0c182b] py-2"
+                        >
+                            <Facebook className="w-4 h-4" />
+                            <span className="text-xs uppercase tracking-wider">Suivez-nous sur Facebook</span>
+                        </a>
                     </div>
                 </div>
             )}

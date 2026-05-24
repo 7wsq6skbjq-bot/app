@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Mail, MapPin, Clock, Phone } from "lucide-react";
+import { ArrowUpRight, Mail, MapPin, Clock, Phone, Facebook } from "lucide-react";
+import { SOCIAL } from "@/config/social";
 
 const Footer = () => {
     return (
@@ -31,6 +32,22 @@ const Footer = () => {
                             Demander une soumission
                             <ArrowUpRight className="w-4 h-4" />
                         </Link>
+
+                        <div className="mt-8">
+                            <div className="tech-stamp text-[#6485b4] mb-3">
+                                Suivez-nous
+                            </div>
+                            <a
+                                href={SOCIAL.facebook}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Page Facebook Portech"
+                                data-testid="footer-facebook"
+                                className="inline-flex w-10 h-10 items-center justify-center border border-[#1e3457] hover:bg-[#1e3457] transition-colors text-[#b2c3dd] hover:text-white"
+                            >
+                                <Facebook className="w-4 h-4" />
+                            </a>
+                        </div>
                     </div>
 
                     <div className="md:col-span-3">
