@@ -22,9 +22,11 @@ Hard safeguards:
   - Prospects flagged `unsubscribed=true` are NEVER sent to.
 """
 import asyncio
+import base64
 import logging
 import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import List, Optional
 
 import resend
@@ -49,6 +51,25 @@ logger = logging.getLogger("portech.prospection")
 HOURLY_SEND_LIMIT = int(os.environ.get("PROSPECTION_HOURLY_LIMIT", "50"))
 FROM_EMAIL = os.environ.get("PROSPECTION_FROM_EMAIL", os.environ.get("SENDER_EMAIL", "info@portech.info"))
 FROM_NAME = os.environ.get("PROSPECTION_FROM_NAME", "Cédrick Pimparé · Portech")
+
+# Inline-attached banners (loaded once at import; small files, ~80KB total).
+# Using CID attachments means recipients see the banners even if portech.info
+# is unreachable, mis-configured, or blocked by their corporate email gateway.
+_BANNER_DIR = Path(__file__).parent.parent / "frontend" / "public" / "email"
+HEADER_CID = "portech-header.png"
+FOOTER_CID = "portech-footer.png"
+
+
+def _load_banner(filename: str) -> Optional[str]:
+    p = _BANNER_DIR / filename
+    if not p.exists():
+        logger.warning("Banner file not found: %s", p)
+        return None
+    return base64.b64encode(p.read_bytes()).decode("ascii")
+
+
+_BANNER_HEADER_B64 = _load_banner("email-header.png")
+_BANNER_FOOTER_B64 = _load_banner("email-footer.png")
 
 # Default subcontracting email template (French, with header/footer banners)
 DEFAULT_SUBJECT = "Sous-traitance quincaillerie pour vos projets vitrerie"
@@ -386,12 +407,34 @@ async def _dispatch_one(campaign: dict, prospect: dict) -> tuple[bool, Optional[
         return False, None, "RESEND_API_KEY non configurée"
     try:
         html = _render_template(campaign["body_html"], prospect)
-        params = {
+        # Rewrite banner URLs to inline CID references so the images embed in
+        # the email itself (not loaded from portech.info, which may be blocked
+        # by recipient mail gateways or not yet deployed).
+        html = html.replace("https://portech.info/email/email-header.png", f"cid:{HEADER_CID}")
+        html = html.replace("https://portech.info/email/email-footer.png", f"cid:{FOOTER_CID}")
+        params: dict = {
             "from": f"{campaign.get('from_name', FROM_NAME)} <{campaign.get('from_email', FROM_EMAIL)}>",
             "to": [prospect["email"]],
             "subject": campaign["subject"],
             "html": html,
         }
+        attachments = []
+        if _BANNER_HEADER_B64:
+            attachments.append({
+                "filename": "email-header.png",
+                "content": _BANNER_HEADER_B64,
+                "content_id": HEADER_CID,
+                "content_type": "image/png",
+            })
+        if _BANNER_FOOTER_B64:
+            attachments.append({
+                "filename": "email-footer.png",
+                "content": _BANNER_FOOTER_B64,
+                "content_id": FOOTER_CID,
+                "content_type": "image/png",
+            })
+        if attachments:
+            params["attachments"] = attachments
         result = await asyncio.to_thread(resend.Emails.send, params)
         return True, result.get("id"), None
     except Exception as exc:
