@@ -87,10 +87,10 @@ DEFAULT_BODY_HTML = """
 
         <p style="margin:18px 0 6px 0;"><b>• Sous-traitance de quincaillerie sur vos projets</b></p>
         <p style="margin:0 0 8px 0;">Barres antipaniques, ferme-portes, serrures mortaises, dispositifs de sortie, ajustements, installation complète, etc.</p>
-        <p style="margin:0 0 4px 0;">Vous gardez votre client et votre marge.</p>
-        <p style="margin:0 0 16px 0;">Nous, on s'occupe de l'exécution.</p>
+        <p style="margin:0 0 4px 0;">Vous, vous conservez vos clients et votre marge de profit.</p>
+        <p style="margin:0 0 16px 0;">Nous, nous prenons en charge l'exécution.</p>
 
-        <p style="margin:18px 0 6px 0;"><b>• Fourniture de portes aluminium prêtes à poser</b></p>
+        <p style="margin:18px 0 6px 0;"><b>• Fourniture de portes en aluminium prêtes à poser</b></p>
         <p style="margin:0 0 8px 0;">Portes usinées en atelier ou sur chantier, quincaillerie installée et ajustée avant livraison.</p>
         <p style="margin:0 0 2px 0;">Moins de temps perdu sur le chantier.</p>
         <p style="margin:0 0 2px 0;">Moins de coordination.</p>
@@ -98,7 +98,7 @@ DEFAULT_BODY_HTML = """
         <p style="margin:0 0 16px 0;">Garantie que toute quincaillerie est adéquate et adaptée au système.</p>
 
         <p style="margin:18px 0 6px 0;"><b>• Aucun conflit avec votre activité</b></p>
-        <p style="margin:0 0 16px 0;">On ne fait pas de vitrage et on ne touche pas à vos installations de verre. Notre rôle est de compléter votre service, pas de le remplacer.</p>
+        <p style="margin:0 0 16px 0;">Nous ne faisons pas de vitrage ni d'installations de verre. Notre rôle est de compléter votre service, pas de le remplacer.</p>
 
         <p style="margin:24px 0 16px 0;">Si vous avez 15 minutes cette semaine, je serais content d'en discuter avec vous.</p>
 

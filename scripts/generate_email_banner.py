@@ -107,7 +107,7 @@ print(f"Wrote email-header.png ({header.size})")
 # ============================================================
 #  FOOTER SIGNATURE  —  1200x300 (displayed 600x150)
 # ============================================================
-FW, FH = 1200, 300
+FW, FH = 1200, 380
 footer = Image.new("RGB", (FW, FH), NAVY)
 fd = ImageDraw.Draw(footer)
 
@@ -146,62 +146,54 @@ if detail_path.exists():
 mono_src = Path("/app/frontend/public/brand/portech-mark.png")
 if mono_src.exists():
     mono = Image.open(mono_src).convert("RGBA")
-    target_h = 60
+    target_h = 80
     ratio = target_h / mono.height
     mono = mono.resize((int(mono.width * ratio), target_h), Image.LANCZOS)
     footer.paste(mono, (60, 36), mono)
 
-font_bold_md = find_font(
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", size=34,
-)
-font_md = find_font(
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", size=22,
-)
-font_sm = find_font(
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", size=18,
-)
-font_xs = find_font(
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", size=15,
-)
-font_label = find_font(
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", size=13,
-)
+# Bumped all font sizes ~40-50% to be readable on desktop
+font_bold_md = find_font(size=46)
+font_md      = find_font(size=30)
+font_sm      = find_font(size=24)
+font_xs      = find_font(size=22)
+font_label   = find_font(size=18)
 
 # Brand text next to the small monogram
-fd.text((150, 46), "PORTECH", font=font_bold_md, fill=WHITE)
+fd.text((180, 44), "PORTECH", font=font_bold_md, fill=WHITE)
 fd.text(
-    (150, 86),
+    (180, 96),
     "Quincaillerie de porte commerciale",
     font=font_xs, fill=MUTED,
 )
 
-# Vertical separator
-fd.line([(60, 118), (FW - band_width - 60, 118)], fill=(40, 60, 100), width=1)
+# Horizontal separator
+fd.line([(60, 142), (FW - band_width - 60, 142)], fill=(40, 60, 100), width=1)
 
 # Two-column info layout
 # --- LEFT COLUMN: services ---
-fd.text((60, 138), "SERVICES", font=font_label, fill=MUTED)
+fd.text((60, 162), "SERVICES AUX PARTICULIERS", font=font_label, fill=MUTED)
 services = [
-    "Installation & remplacement",
-    "Entretien & ajustement",
-    "Portes aluminium sur mesure",
-    "Sous-traitance vitreries",
+    "Installation et remplacement",
+    "Entretien et ajustement",
+    "Portes d'aluminium sur mesure",
+    "Sous-traitance aux vitreries",
+    "Inspection et rapport d'expertise",
 ]
-y = 162
+y = 196
 for s in services:
     # Small dot bullet
-    fd.ellipse([(60, y + 9), (66, y + 15)], fill=MUTED)
-    fd.text((78, y), s, font=font_xs, fill=WHITE)
-    y += 28
+    fd.ellipse([(60, y + 10), (68, y + 18)], fill=MUTED)
+    fd.text((80, y), s, font=font_xs, fill=WHITE)
+    y += 32
 
 # --- RIGHT COLUMN (still on the left half): contact + zone ---
-right_x = 480
-fd.text((right_x, 138), "CONTACT", font=font_label, fill=MUTED)
-fd.text((right_x, 162), "438 376-4177", font=font_md, fill=WHITE)
-fd.text((right_x, 196), "portech.info", font=font_md, fill=WHITE)
-fd.text((right_x, 234), "ZONE DESSERVIE", font=font_label, fill=MUTED)
-fd.text((right_x, 258), "Grand Montréal · Laval", font=font_xs, fill=WHITE)
-fd.text((right_x, 280), "Rive-Sud · Rive-Nord", font=font_xs, fill=WHITE)
+right_x = 560
+fd.text((right_x, 162), "CONTACT", font=font_label, fill=MUTED)
+fd.text((right_x, 196), "438 376-4177", font=font_md, fill=WHITE)
+fd.text((right_x, 238), "portech.info", font=font_md, fill=WHITE)
+fd.text((right_x, 292), "ZONE DESSERVIE", font=font_label, fill=MUTED)
+fd.text((right_x, 320), "Grand Montréal · Laval", font=font_xs, fill=WHITE)
+fd.text((right_x, 348), "Rive-Sud · Rive-Nord", font=font_xs, fill=WHITE)
 
 footer.save(OUT / "email-footer.png", "PNG", optimize=True)
 print(f"Wrote email-footer.png ({footer.size})")
