@@ -13,6 +13,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 OUT = Path("/app/frontend/public/email")
 OUT.mkdir(parents=True, exist_ok=True)
+BACKEND_OUT = Path("/app/backend/email_assets")
+BACKEND_OUT.mkdir(parents=True, exist_ok=True)
 
 NAVY = (12, 24, 43)              # #0c182b — main brand
 NAVY_LIGHT = (29, 53, 87)         # #1d3557 — accent line
@@ -101,6 +103,7 @@ if meta_x < W - 200:
 draw.line([(text_x - 20, 40), (text_x - 20, H - 40)], fill=NAVY_LIGHT, width=2)
 
 header.save(OUT / "email-header.png", "PNG", optimize=True)
+header.save(BACKEND_OUT / "email-header.png", "PNG", optimize=True)
 print(f"Wrote email-header.png ({header.size})")
 
 
@@ -196,5 +199,6 @@ fd.text((right_x, 320), "Grand Montréal · Laval", font=font_xs, fill=WHITE)
 fd.text((right_x, 348), "Rive-Sud · Rive-Nord", font=font_xs, fill=WHITE)
 
 footer.save(OUT / "email-footer.png", "PNG", optimize=True)
+footer.save(BACKEND_OUT / "email-footer.png", "PNG", optimize=True)
 print(f"Wrote email-footer.png ({footer.size})")
 print("\nDone.")

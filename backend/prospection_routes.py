@@ -55,7 +55,10 @@ FROM_NAME = os.environ.get("PROSPECTION_FROM_NAME", "Cédrick Pimparé · Portec
 # Inline-attached banners (loaded once at import; small files, ~80KB total).
 # Using CID attachments means recipients see the banners even if portech.info
 # is unreachable, mis-configured, or blocked by their corporate email gateway.
-_BANNER_DIR = Path(__file__).parent.parent / "frontend" / "public" / "email"
+# Banners live INSIDE the backend folder so they always ship with the backend
+# container (the frontend's public/ may not be reachable in a multi-container
+# deployment).
+_BANNER_DIR = Path(__file__).parent / "email_assets"
 HEADER_CID = "portech-header.png"
 FOOTER_CID = "portech-footer.png"
 
