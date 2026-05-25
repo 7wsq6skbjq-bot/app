@@ -327,7 +327,10 @@ app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
+    # We use Authorization Bearer tokens (sessionStorage), NOT cookies.
+    # Setting allow_credentials=False makes the wildcard origin legal and
+    # eliminates the CORS-spec contradiction that was breaking prod logins.
+    allow_credentials=False,
     allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
     allow_methods=["*"],
     allow_headers=["*"],

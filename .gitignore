@@ -87,9 +87,8 @@ credentials.json
 .credentials
 -e 
 # Environment and credential files
-.env
-.env.*
-*.env
+# .env files MUST be committed for Emergent deployments (CORS, MONGO_URL, secrets
+# are written into .env by the platform and need to be tracked).
 credentials.json
 *.pem
 *.key
