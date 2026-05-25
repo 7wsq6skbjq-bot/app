@@ -1,0 +1,112 @@
+{
+  "project_context": {
+    "domain": "Commercial Door Hardware (Portech)",
+    "user": "Cédrick (Founder), highly mobile, construction sites, workshop",
+    "goal": "Miraculous mobile-first redesign of a 9-panel ERP dashboard without breaking desktop",
+    "vibe": "Industrial, Professional, Efficient, Tool-like"
+  },
+  "theme_and_archetype": {
+    "archetype": "Swiss & High-Contrast (Archetype 4) mixed with Industrial Utility",
+    "theme": "Light mode prioritized (for high-glare environments like construction sites) with heavy Navy structural elements",
+    "rationale": "Needs absolute clarity under sunlight. High contrast ensures readability. Navy base grounds the brand."
+  },
+  "typography": {
+    "headings": {
+      "family": "Barlow Condensed",
+      "style": "uppercase, tracking-tight, font-bold",
+      "usage": "Page titles, KPI numbers, Status badges"
+    },
+    "body": {
+      "family": "IBM Plex Sans",
+      "style": "leading-relaxed",
+      "usage": "Client names, descriptions, standard form labels"
+    },
+    "data_stamps": {
+      "family": "JetBrains Mono",
+      "style": "text-xs tracking-wider",
+      "usage": "Invoice numbers (e.g., #INV-2049), dates, SKUs, amounts"
+    }
+  },
+  "colors": {
+    "primary": "#0c182b",
+    "primary_light": "#1e2f4c",
+    "accent_blue": "#1D4ED8",
+    "background": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "success": "#059669",
+    "warning": "#D97706",
+    "danger": "#DC2626",
+    "border": "#E2E8F0",
+    "text_main": "#0f172a",
+    "text_muted": "#64748B"
+  },
+  "breakpoints_strategy": {
+    "mobile": "Default (no prefix). All classes should target mobile first (e.g., flex-col, p-4, text-base).",
+    "desktop": "md: (min-width: 768px) and lg: (min-width: 1024px). Use these to revert to the existing desktop table/tab layouts (e.g., md:flex-row, md:table, md:p-8)."
+  },
+  "ui_patterns": {
+    "navigation": {
+      "mobile": "Bottom Tab Bar for Top 4 routes (Dashboard, Invoices, Calendar, Clients). A 'More' tab opens a Bottom Sheet for the remaining 5 routes (Suppliers, Products, POs, BOL, Prospecting). Removes the overflowing horizontal tabs.",
+      "desktop": "Keep existing sidebar or top tabs using md: block / hidden classes."
+    },
+    "data_display_tables": {
+      "mobile": "Convert all tables to Stacked Data Cards (Bento style). No horizontal scrolling.",
+      "card_layout": "Header: Tech-stamp ID (left) + Status Badge (right). Body: Main identifier (Client Name/Product) in large Plex Sans. Footer: Key metric (Amount/Date) + Quick action button (icon only)."
+    },
+    "modals_and_forms": {
+      "mobile": "Replace centered modals with full-screen views or Bottom Sheets (<Sheet side='bottom'>).",
+      "long_forms": "Break into vertical sections with sticky bottom action bars. The 'Save/Confirm' button MUST always be fixed to the bottom of the viewport (pb-safe-area).",
+      "inputs": "Height min 44px (touch target). Use native numeric keyboards for amounts."
+    },
+    "kpi_tiles": {
+      "mobile": "2-column grid (grid-cols-2 gap-4). The main KPI (e.g., Month Revenue) spans full width (col-span-2). Use Barlow Condensed for massive numbers."
+    },
+    "calendar": {
+      "mobile": "Do not use a 6x7 grid on mobile. Use a collapsible weekly strip (1 row of 7 days) at the top, and a vertical 'Agenda List' of the selected day's events below it. Add a FAB to quickly create an event."
+    }
+  },
+  "touch_gestures_and_interactions": {
+    "swipe": "Implement Swipe-to-Action on List items (Invoices/BOL). Swipe Right -> 'Mark Paid' (Green). Swipe Left -> 'Delete/Cancel' (Red).",
+    "long_press": "Long-press on a list item activates 'Multi-Select Mode' (shows checkboxes).",
+    "fab": "Floating Action Button in the bottom right for primary context actions (New Invoice on Invoice page, New Prospect on Prospect page)."
+  },
+  "atomic_components_to_create": [
+    {
+      "name": "MobileTabBar",
+      "props": "links (array), activePath (string)",
+      "description": "Fixed bottom navigation bar visible only on mobile (hidden on md:)."
+    },
+    {
+      "name": "DataCard",
+      "props": "title, subtitle, badge, amount, onSwipeRight, onSwipeLeft",
+      "description": "The universal replacement for table rows on mobile."
+    },
+    {
+      "name": "MobileSheet",
+      "props": "isOpen, onClose, title, children, stickyFooter",
+      "description": "Shadcn <Sheet side='bottom'> customized with 90vh max-height and a sticky bottom action area."
+    },
+    {
+      "name": "StickyActionBar",
+      "props": "primaryAction, secondaryAction",
+      "description": "Fixed bottom bar for forms and multi-select modes, ensuring actions are always reachable by thumb."
+    }
+  ],
+  "critical_workflows": {
+    "mark_invoice_paid": {
+      "steps": "User opens Invoices -> Swipes right on an unpaid invoice -> Tap 'Mark Paid' confirmation -> Badge turns green. (2 actions, 0 modals).",
+      "alternative": "Tap invoice -> Opens Bottom Sheet -> Massive 'Mark Paid' button sticky at the bottom."
+    },
+    "create_appointment": {
+      "steps": "Tap FAB (+) on Calendar view -> Bottom Sheet opens -> Title input -> Native Date/Time picker -> Tap 'Save' sticky button."
+    },
+    "prospecting_campaign": {
+      "steps": "Header has a 'Selection' icon. Tap it -> Checkboxes appear next to all prospects. Tap multiple -> A sticky bottom bar appears showing 'N Selected' and a giant Red 'Confirm/Send' button."
+    }
+  },
+  "testing_and_accessibility": {
+    "data_testid": "ALL interactive elements must have data-testid. E.g., data-testid='mobile-tab-dashboard', data-testid='invoice-swipe-paid'.",
+    "touch_targets": "Minimum 44x44px for all buttons and icon links.",
+    "safe_areas": "Use env(safe-area-inset-bottom) for bottom bars to prevent collision with iOS home indicator."
+  }
+}
