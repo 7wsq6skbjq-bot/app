@@ -52,6 +52,13 @@ logger = logging.getLogger("portech.prospection")
 HOURLY_SEND_LIMIT = int(os.environ.get("PROSPECTION_HOURLY_LIMIT", "50"))
 FROM_EMAIL = os.environ.get("PROSPECTION_FROM_EMAIL", os.environ.get("SENDER_EMAIL", "info@portech.info"))
 FROM_NAME = os.environ.get("PROSPECTION_FROM_NAME", "Cédrick Pimparé · Portech")
+# Replies are routed to this real inbox (the domain has no MX records, so
+# replying to FROM_EMAIL would bounce). Defaults to the same inbox used for
+# contact-form leads.
+REPLY_TO_EMAIL = os.environ.get(
+    "PROSPECTION_REPLY_TO_EMAIL",
+    os.environ.get("LEADS_RECIPIENT_EMAIL", "portech.infos@gmail.com"),
+)
 
 # Inline-attached banners (loaded once at import; small files, ~80KB total).
 # Using CID attachments means recipients see the banners even if portech.info
@@ -614,6 +621,7 @@ async def _dispatch_one(campaign: dict, prospect: dict) -> tuple[bool, Optional[
             "to": [prospect["email"]],
             "subject": campaign["subject"],
             "html": html,
+            "reply_to": REPLY_TO_EMAIL,
         }
         attachments = []
         if _BANNER_HEADER_B64:
