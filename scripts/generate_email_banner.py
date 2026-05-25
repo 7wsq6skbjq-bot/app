@@ -171,7 +171,7 @@ fd.line([(60, 142), (FW - band_width - 60, 142)], fill=(40, 60, 100), width=1)
 
 # Two-column info layout
 # --- LEFT COLUMN: services ---
-fd.text((60, 162), "SERVICES AUX PARTICULIERS", font=font_label, fill=MUTED)
+fd.text((60, 162), "SERVICES AUX PARTICULIERS ET ENTREPRISES", font=font_label, fill=MUTED)
 services = [
     "Installation et remplacement",
     "Entretien et ajustement",
