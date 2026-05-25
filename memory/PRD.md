@@ -315,7 +315,19 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 - [ ] Bouton flottant « Appelez maintenant » / WhatsApp sur mobile
 - [ ] Page « Soumission Express » (calculateur de coûts)
 
-### 2026-05 — Iter 24 (Refonte mobile complète de l'ERP)
+### 2026-05 — Iter 25 (Prospection multi-catégories + scraping Pages Jaunes)
+**Refonte majeure du moteur de prospection** suite à la demande de l'utilisateur (« seulement 3 emails sur 27 résultats ») :
+
+- **Nouveau scraper Pages Jaunes Canada** comme source principale (`prospection_scraper.py`) — extrait JSON-LD de yellowpages.ca, visite chaque fiche, crawle les pages de contact des sites web pour récupérer le courriel.
+  - **Taux d'enrichissement courriel : 50% vs 11% avant** (mesure live sur 8 vitreries Montréal).
+  - Récupère désormais : nom, adresse, ville, code postal, lat/lon, téléphone, site web, courriel.
+- **6 catégories d'entreprises supportées** (chacune avec son propre template d'email pré-rédigé) : Vitreries · Entrepreneurs généraux · Architectes · Designers d'intérieur · Constructeurs/Promoteurs · Centres d'achats & bâtiments commerciaux.
+- **6 templates pré-rédigés** (`TEMPLATES` dict dans `prospection_routes.py`) — chaque template a son sujet, son intro contextualisée au métier du destinataire, et 4 sections de propositions de valeur ciblées (sous-traitance pour vitreries, contrat-cadre pour promoteurs, spécification quincaillerie pour architectes, etc.).
+- **Nouveau bouton « Enrichir courriels »** (`POST /admin/prospection/prospects/enrich`) — re-scrape les sites web des prospects existants sans courriel.
+- **Détection des courriels obfusqués** : décode `info [at] domain.com`, `info (at) domain (.) com`, etc.
+- **Endpoint `/categories`** pour lister les catégories disponibles depuis le frontend.
+- **Frontend ProspectionPanel.jsx** : sélecteur de catégorie dans la modale scrape + filtre catégorie dans la liste + boutons « Nouvelle campagne » un par catégorie + badge catégorie sous chaque prospect.
+- **Tests** : 20/20 pytest prospection + 92/92 pytest total ✅.
 **Refonte mobile-first** de tout le panneau Gestion (9 panneaux) pour Cédrick qui travaille beaucoup depuis son téléphone.
 
 **Nouveaux composants atomiques** (`/app/frontend/src/components/mobile/`) :

@@ -22,6 +22,7 @@ class Prospect(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     region: Optional[str] = None  # "montreal", "laval", "rive-sud", "rive-nord"
+    category: Optional[str] = "vitrerie"    # see prospection_scraper.CATEGORIES
     source: str = "manual"        # "manual" | "google-maps" | "csv"
     google_place_id: Optional[str] = None
     rating: Optional[float] = None
@@ -48,6 +49,7 @@ class ProspectIn(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     region: Optional[str] = None
+    category: Optional[str] = None
     notes: Optional[str] = None
     status: Optional[str] = "nouveau"
 
@@ -84,7 +86,12 @@ class ScrapeRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
     query: str = Field(default="vitrerie", description="Search keyword")
     location: str = Field(description="City or region e.g. 'Montréal, QC'")
+    category: str = Field(default="vitrerie", description="See prospection_scraper.CATEGORIES")
     max_results: int = Field(default=20, ge=1, le=60)
+    deep_enrich: bool = Field(
+        default=True,
+        description="If True, web-search missing websites and crawl contact pages for emails",
+    )
 
 
 # ---------- Send campaign request ----------
@@ -114,3 +121,11 @@ class OutboxEntry(BaseModel):
     opened_at: Optional[str] = None
     clicked_at: Optional[str] = None
     status: str = "queued"  # queued | sent | failed | opened | clicked
+
+
+# ---------- Re-enrich existing prospects ----------
+class EnrichRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    prospect_ids: Optional[List[str]] = None  # None = all prospects without email
+    only_missing_email: bool = True
+    max_to_process: int = Field(default=50, ge=1, le=200)

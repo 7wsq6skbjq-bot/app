@@ -11,6 +11,15 @@ const REGIONS = [
     { key: "rive-nord", label: "Rive-Nord" },
 ];
 
+const SCRAPE_CATEGORIES = [
+    { key: "vitrerie",     label: "Vitreries" },
+    { key: "entrepreneur", label: "Entrepreneurs généraux" },
+    { key: "architecte",   label: "Architectes" },
+    { key: "designer",     label: "Designers d'intérieur" },
+    { key: "promoteur",    label: "Constructeurs / promoteurs" },
+    { key: "commercial",   label: "Centres d'achats & bâtiments commerciaux" },
+];
+
 const STATUS_BADGE = {
     "nouveau":         "bg-[#eaf1fb] text-[#1d3557] border-[#9bb6d8]",
     "à contacter":     "bg-[#fff7e0] text-[#7a5a00] border-[#d4be7a]",
@@ -105,10 +114,14 @@ const ProspectsTab = () => {
     const [filterStatus, setFilterStatus] = useState("");
     const [searchQ, setSearchQ] = useState("");
     const [scrapeOpen, setScrapeOpen] = useState(false);
+    const [scrapeCategory, setScrapeCategory] = useState("vitrerie");
     const [scrapeRegion, setScrapeRegion] = useState("montreal");
     const [scrapeMax, setScrapeMax] = useState(30);
     const [scrapeLoading, setScrapeLoading] = useState(false);
     const [scrapeResult, setScrapeResult] = useState(null);
+    const [enrichLoading, setEnrichLoading] = useState(false);
+    const [enrichResult, setEnrichResult] = useState(null);
+    const [filterCategory, setFilterCategory] = useState("");
     const [editOpen, setEditOpen] = useState(false);
     const [editing, setEditing] = useState(null);
 
@@ -118,6 +131,7 @@ const ProspectsTab = () => {
             const params = new URLSearchParams();
             if (filterRegion) params.set("region", filterRegion);
             if (filterStatus) params.set("status", filterStatus);
+            if (filterCategory) params.set("category", filterCategory);
             const [{ data: list }, { data: s }] = await Promise.all([
                 http.get(`/admin/prospection/prospects?${params}`),
                 http.get("/admin/prospection/stats"),
@@ -129,7 +143,7 @@ const ProspectsTab = () => {
         } finally {
             setLoading(false);
         }
-    }, [filterRegion, filterStatus]);
+    }, [filterRegion, filterStatus, filterCategory]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -148,9 +162,11 @@ const ProspectsTab = () => {
         setScrapeResult(null);
         try {
             const { data } = await http.post("/admin/prospection/prospects/scrape", {
-                query: "vitrerie",
+                query: scrapeCategory,
                 location: scrapeRegion,
+                category: scrapeCategory,
                 max_results: scrapeMax,
+                deep_enrich: true,
             });
             setScrapeResult(data);
             await load();
@@ -161,9 +177,27 @@ const ProspectsTab = () => {
         }
     };
 
+    const runEnrich = async () => {
+        if (!window.confirm("Enrichir les prospects sans courriel (max 30) ? Cela peut prendre 1-2 minutes.")) return;
+        setEnrichLoading(true);
+        setEnrichResult(null);
+        try {
+            const { data } = await http.post("/admin/prospection/prospects/enrich", {
+                only_missing_email: true,
+                max_to_process: 30,
+            });
+            setEnrichResult(data);
+            await load();
+        } catch (e) {
+            setEnrichResult({ error: e?.response?.data?.detail || "Erreur enrichissement" });
+        } finally {
+            setEnrichLoading(false);
+        }
+    };
+
     const openEdit = (p) => { setEditing({ ...p }); setEditOpen(true); };
     const openNew = () => {
-        setEditing({ name: "", contact_name: "", email: "", phone: "", website: "", city: "", region: "montreal", notes: "", status: "nouveau" });
+        setEditing({ name: "", contact_name: "", email: "", phone: "", website: "", city: "", region: "montreal", category: "vitrerie", notes: "", status: "nouveau" });
         setEditOpen(true);
     };
 
@@ -174,7 +208,7 @@ const ProspectsTab = () => {
             delete payload.last_sent_at; delete payload.last_opened_at; delete payload.last_clicked_at;
             delete payload.unsubscribed;
             // Empty strings → null to keep validators happy
-            ["email", "phone", "website", "address", "city", "region", "notes", "contact_name"].forEach((k) => {
+            ["email", "phone", "website", "address", "city", "region", "category", "notes", "contact_name"].forEach((k) => {
                 if (payload[k] === "") payload[k] = null;
             });
             if (editing.id) {
@@ -205,22 +239,39 @@ const ProspectsTab = () => {
                     onClick={() => setScrapeOpen(true)}
                     className="px-4 py-2 bg-[#0c182b] text-white tech-stamp hover:bg-[#1e3457] flex items-center gap-2"
                 >
-                    <Download className="w-4 h-4" /> Scraper des vitreries
+                    <Download className="w-4 h-4" /> Scraper
+                </button>
+                <button
+                    data-testid="btn-enrich"
+                    onClick={runEnrich}
+                    disabled={enrichLoading}
+                    title="Trouver les courriels manquants en visitant les sites web des prospects"
+                    className="px-4 py-2 border border-[#0b6b2f] text-[#0b6b2f] tech-stamp hover:bg-[#e6f4ea] flex items-center gap-2 disabled:opacity-50"
+                >
+                    <Mail className="w-4 h-4" /> {enrichLoading ? "Enrichissement…" : "Enrichir courriels"}
                 </button>
                 <button
                     data-testid="btn-new-prospect"
                     onClick={openNew}
                     className="px-4 py-2 border border-[#0c182b] text-[#0c182b] tech-stamp hover:bg-[#f3f6fb] flex items-center gap-2"
                 >
-                    <Plus className="w-4 h-4" /> Ajouter manuellement
+                    <Plus className="w-4 h-4" /> Ajouter
                 </button>
                 <button
                     onClick={load}
                     className="px-3 py-2 border border-[#dde5f0] text-[#4b5d7a] tech-stamp hover:bg-[#f3f6fb] flex items-center gap-2"
                 >
-                    <RefreshCw className="w-4 h-4" /> Rafraîchir
+                    <RefreshCw className="w-4 h-4" />
                 </button>
             </div>
+
+            {enrichResult && (
+                <div data-testid="enrich-result" className={`p-3 border text-sm ${enrichResult.error ? "border-red-300 bg-red-50 text-red-800" : "border-green-300 bg-green-50 text-green-800"}`}>
+                    {enrichResult.error
+                        ? <><AlertTriangle className="w-4 h-4 inline mr-1" /> {enrichResult.error}</>
+                        : <><CheckCircle2 className="w-4 h-4 inline mr-1" /> Enrichis : <b>{enrichResult.enriched}</b> / {enrichResult.processed} · Courriels trouvés : <b>{enrichResult.emails_found}</b> · Sites web : {enrichResult.websites_found}</>}
+                </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-3 p-3 border border-[#dde5f0] bg-white">
                 <div className="flex items-center gap-2 flex-1 min-w-[200px]">
@@ -233,6 +284,15 @@ const ProspectsTab = () => {
                         className="flex-1 outline-none text-sm"
                     />
                 </div>
+                <select
+                    data-testid="filter-category"
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className={inputClass.replace("w-full", "w-auto")}
+                >
+                    <option value="">Toutes catégories</option>
+                    {SCRAPE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
                 <select
                     data-testid="filter-region"
                     value={filterRegion}
@@ -282,6 +342,11 @@ const ProspectsTab = () => {
                                     {p.website && (
                                         <a href={p.website.startsWith("http") ? p.website : `https://${p.website}`} target="_blank" rel="noreferrer" className="block text-xs text-[#4b5d7a] hover:text-[#0c182b] truncate max-w-[240px]">{p.website}</a>
                                     )}
+                                    {p.category && p.category !== "vitrerie" && (
+                                        <div className="tech-stamp text-[10px] text-[#4b5d7a] mt-0.5">
+                                            {SCRAPE_CATEGORIES.find((c) => c.key === p.category)?.label || p.category}
+                                        </div>
+                                    )}
                                 </td>
                                 <td className="px-3 py-2.5">{p.city || "—"}</td>
                                 <td className="px-3 py-2.5">
@@ -311,7 +376,7 @@ const ProspectsTab = () => {
             <Modal
                 open={scrapeOpen}
                 onClose={() => { setScrapeOpen(false); setScrapeResult(null); }}
-                title="Scraper vitreries (OpenStreetMap)"
+                title="Scraper des prospects"
                 testId="scrape-modal"
                 footer={
                     <>
@@ -329,8 +394,13 @@ const ProspectsTab = () => {
             >
                 <div className="space-y-4">
                     <p className="text-sm text-[#4b5d7a]">
-                        Source : OpenStreetMap / Overpass — 100 % gratuit, sans clé API. Le scraper recherche les commerces tagués <code>shop=glaziery</code>, <code>craft=glaziery</code>, et les noms contenant « vitrerie » dans la région choisie.
+                        Source : <b>Pages Jaunes Canada</b> + <b>OpenStreetMap</b> — gratuit, sans clé API. Le scraper visite chaque fiche pour récupérer le nom, l'adresse, le téléphone et le site web, puis crawle la page contact pour le courriel.
                     </p>
+                    <Field label="Catégorie d'entreprise" required>
+                        <select data-testid="scrape-category" value={scrapeCategory} onChange={(e) => setScrapeCategory(e.target.value)} className={inputClass}>
+                            {SCRAPE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                        </select>
+                    </Field>
                     <Field label="Région" required>
                         <select data-testid="scrape-region" value={scrapeRegion} onChange={(e) => setScrapeRegion(e.target.value)} className={inputClass}>
                             {REGIONS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
@@ -347,7 +417,7 @@ const ProspectsTab = () => {
                             ) : (
                                 <div>
                                     <CheckCircle2 className="w-4 h-4 inline mr-1" />
-                                    <b>{scrapeResult.new}</b> nouveau(x) prospect(s) ajouté(s) · {scrapeResult.skipped_duplicates} doublon(s) ignoré(s) · {scrapeResult.scraped} trouvé(s) sur OSM.
+                                    <b>{scrapeResult.new}</b> nouveau(x) prospect(s) ajouté(s) · {scrapeResult.skipped_duplicates} doublon(s) ignoré(s) · {scrapeResult.scraped} trouvé(s).
                                 </div>
                             )}
                         </div>
@@ -399,6 +469,11 @@ const ProspectsTab = () => {
                                 {REGIONS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                             </select>
                         </Field>
+                        <Field label="Catégorie">
+                            <select value={editing.category || "vitrerie"} onChange={(e) => setEditing({ ...editing, category: e.target.value })} className={inputClass}>
+                                {SCRAPE_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                            </select>
+                        </Field>
                         <Field label="Statut" className="col-span-2">
                             <select value={editing.status || "nouveau"} onChange={(e) => setEditing({ ...editing, status: e.target.value })} className={inputClass}>
                                 {Object.keys(STATUS_BADGE).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -434,10 +509,12 @@ const CampaignsTab = () => {
 
     useEffect(() => { load(); }, [load]);
 
-    const newFromTemplate = async () => {
-        const { data } = await http.get("/admin/prospection/campaigns/default");
+    const newFromTemplate = async (category = "vitrerie") => {
+        const { data } = await http.get(`/admin/prospection/campaigns/default?category=${category}`);
+        const catLabel = SCRAPE_CATEGORIES.find((c) => c.key === category)?.label || "Vitreries";
         setEditing({
-            name: "Sous-traitance vitreries — Grand Montréal",
+            name: `${catLabel} — Grand Montréal`,
+            category,
             subject: data.subject,
             from_name: data.from_name,
             from_email: data.from_email,
@@ -477,15 +554,19 @@ const CampaignsTab = () => {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-2">
-                <button
-                    data-testid="btn-new-campaign-template"
-                    onClick={newFromTemplate}
-                    className="px-4 py-2 bg-[#0c182b] text-white tech-stamp hover:bg-[#1e3457] flex items-center gap-2"
-                >
-                    <Plus className="w-4 h-4" /> Nouvelle campagne (modèle FR)
-                </button>
-                <button onClick={load} className="px-3 py-2 border border-[#dde5f0] text-[#4b5d7a] tech-stamp hover:bg-[#f3f6fb] flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+                <span className="tech-stamp text-[#4b5d7a]">Nouvelle campagne depuis :</span>
+                {SCRAPE_CATEGORIES.map((c) => (
+                    <button
+                        key={c.key}
+                        data-testid={`btn-new-campaign-${c.key}`}
+                        onClick={() => newFromTemplate(c.key)}
+                        className="px-3 py-1.5 bg-[#0c182b] text-white tech-stamp text-xs hover:bg-[#1e3457]"
+                    >
+                        {c.label}
+                    </button>
+                ))}
+                <button onClick={load} className="px-3 py-1.5 border border-[#dde5f0] text-[#4b5d7a] tech-stamp hover:bg-[#f3f6fb] flex items-center gap-2 ml-auto">
                     <RefreshCw className="w-4 h-4" /> Rafraîchir
                 </button>
             </div>
