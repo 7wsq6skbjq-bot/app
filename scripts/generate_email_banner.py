@@ -190,7 +190,7 @@ for s in services:
 right_x = 560
 fd.text((right_x, 162), "CONTACT", font=font_label, fill=MUTED)
 fd.text((right_x, 196), "438 376-4177", font=font_md, fill=WHITE)
-fd.text((right_x, 238), "portech.info", font=font_md, fill=WHITE)
+fd.text((right_x, 238), "www.portech.info", font=font_md, fill=WHITE)
 fd.text((right_x, 292), "ZONE DESSERVIE", font=font_label, fill=MUTED)
 fd.text((right_x, 320), "Grand Montréal · Laval", font=font_xs, fill=WHITE)
 fd.text((right_x, 348), "Rive-Sud · Rive-Nord", font=font_xs, fill=WHITE)
