@@ -315,7 +315,25 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 - [ ] Bouton flottant « Appelez maintenant » / WhatsApp sur mobile
 - [ ] Page « Soumission Express » (calculateur de coûts)
 
-### 2026-05 — Iter 23 (Outil de prospection B2B vitreries)
+### 2026-05 — Iter 24 (Refonte mobile complète de l'ERP)
+**Refonte mobile-first** de tout le panneau Gestion (9 panneaux) pour Cédrick qui travaille beaucoup depuis son téléphone.
+
+**Nouveaux composants atomiques** (`/app/frontend/src/components/mobile/`) :
+- `MobileTabBar` — barre de navigation fixée en bas (5 onglets primaires + sheet "Plus" pour les 6 routes secondaires). Honor `env(safe-area-inset-bottom)` iOS.
+- `DataCard` — carte tactile empilée qui remplace les lignes de table sur mobile (stamp, titre, sous-titre, badge, total, actions).
+- `FAB` — Floating Action Button bleu marine pour l'action primaire (new) flottant à droite.
+
+**Patterns appliqués** :
+- **Modal** plein écran sur mobile (au lieu de centrée serrée), header + body scrollable + footer sticky avec safe-area-inset.
+- **Inputs** min-height 44px (touch target) + font 16px (évite zoom auto iOS).
+- **AdminErp.jsx** : onglets horizontaux cachés sur mobile (`md:hidden`), remplacés par MobileTabBar + barre de section "GESTION / [titre]" en haut.
+- **DocumentPanel** (Factures/BC/BOL) : double affichage — cartes empilées sur mobile, table classique sur desktop. Action principale "marquer payée" en vert tactile + envoyer par courriel.
+- **PartiesPanel** (Clients/Fournisseurs) : cartes avec bouton vert "Appeler" (lien `tel:`) accessible au pouce.
+- **DashboardPanel** : hero card mobile "Revenus du mois" en navy/vert pleine largeur, suivi des KPIs en grille 2×2 compacte.
+
+**Préservation desktop** : aucune régression — toutes les tables, onglets, modales centrées restent comme avant à partir de `md:` (768px+).
+
+**Tests** : lint clean, screenshots iPhone 13 (390×844) + desktop 1280px validés.
 **Nouveau module Prospection** (`/admin/gestion/prospection`) :
 - **Backend** (`prospection_routes.py`, `prospection_models.py`, `prospection_scraper.py`) :
   - Scraping OpenStreetMap/Overpass gratuit (vitreries Grand Montréal / Laval / Rive-Sud / Rive-Nord)

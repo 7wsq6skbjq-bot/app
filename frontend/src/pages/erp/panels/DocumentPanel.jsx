@@ -4,6 +4,8 @@ import { Plus, Pencil, Trash2, RefreshCw, Printer, Send, Download, Search, Check
 import { useAuth } from "@/context/AuthContext";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { DocumentForm } from "../components/DocumentForm";
+import { DataCard } from "../../../components/mobile/DataCard";
+import { FAB } from "../../../components/mobile/FAB";
 import {
     STATUS_BADGE,
     OVERDUE_BADGE,
@@ -200,12 +202,12 @@ export const DocumentPanel = ({
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
+            <div className="flex items-start md:items-center justify-between mb-6 gap-3 flex-col md:flex-row">
+                <div className="hidden md:block">
                     <div className="tech-stamp mb-1">{eyebrow}</div>
                     <h1 className="font-display font-bold uppercase text-3xl tracking-tight">{title}</h1>
                 </div>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap w-full md:w-auto">
                     {csvExportPath && (
                         <button onClick={exportCsv} data-testid={`erp-export-${kind}`} className="btn-secondary !py-2 !px-3 !text-xs">
                             <Download className="w-3.5 h-3.5" />
@@ -215,7 +217,7 @@ export const DocumentPanel = ({
                     <button onClick={load} className="btn-secondary !py-2 !px-3 !text-xs">
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
                     </button>
-                    <button onClick={openNew} data-testid={`erp-new-${kind}`} className="btn-primary !py-2 !px-4 !text-xs">
+                    <button onClick={openNew} data-testid={`erp-new-${kind}`} className="hidden md:inline-flex btn-primary !py-2 !px-4 !text-xs">
                         <Plus className="w-3.5 h-3.5" />
                         {feminineArticle ? "Nouvelle" : "Nouveau"} {singular}
                     </button>
@@ -231,14 +233,57 @@ export const DocumentPanel = ({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     data-testid={`${kind}-search`}
-                    className="w-full pl-9 pr-4 py-2 border border-[#c5d4e7] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2f4f7f]"
+                    className="w-full pl-9 pr-4 py-2.5 min-h-[44px] md:min-h-0 md:py-2 border border-[#c5d4e7] bg-white text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-[#2f4f7f]"
                 />
             </div>
 
             {error && <div className="mb-4 p-4 border border-red-400 bg-red-50 text-red-800 text-sm">{error}</div>}
 
-            <div className="border border-[#dde5f0] bg-white">
-                <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#dde5f0] bg-[#f3f6fb] tech-stamp">
+            {/* MOBILE: stacked cards */}
+            <div className="md:hidden space-y-3">
+                {filtered.length === 0 && !loading && (
+                    <div className="p-8 text-center text-[#4b5d7a] text-sm border border-[#dde5f0] bg-white">
+                        {query ? "Aucun résultat." : `Aucun${feminineArticle ? "e" : ""} ${singular}. Appuyez sur + pour en créer un${feminineArticle ? "e" : ""}.`}
+                    </div>
+                )}
+                {filtered.map((d) => {
+                    const overdue = kind === "invoice" ? overdueState(d) : null;
+                    const cardActions = [];
+                    if (kind === "invoice" && d.status !== "payée" && d.status !== "annulée") {
+                        cardActions.push({
+                            icon: CheckCircle2,
+                            onClick: () => markPaid(d),
+                            label: "Marquer payée",
+                            color: "border-[#8ec79d] bg-[#e6f4ea] text-[#0b6b2f] active:bg-[#cdebd6]",
+                            testid: `${kind}-mark-paid-mobile-${d.id}`,
+                        });
+                    }
+                    cardActions.push({
+                        icon: Send,
+                        onClick: () => openEmail(d),
+                        label: "Envoyer par courriel",
+                        testid: `${kind}-email-mobile-${d.id}`,
+                    });
+                    return (
+                        <DataCard
+                            key={d.id}
+                            testid={`${kind}-card-${d.id}`}
+                            stamp={`${numberPrefix}-${String(d.number).padStart(4, "0")}`}
+                            title={d[partyKey]?.name || "—"}
+                            subtitle={formatDate(d.date)}
+                            badge={{ label: d.status, className: STATUS_BADGE[d.status] || "border-[#dde5f0]" }}
+                            extraBadge={overdue ? { label: overdue.label, className: OVERDUE_BADGE[overdue.tone] } : null}
+                            primary={formatCurrency(d.total)}
+                            actions={cardActions}
+                            onTap={() => openEdit(d)}
+                        />
+                    );
+                })}
+            </div>
+
+            {/* DESKTOP: table */}
+            <div className="hidden md:block border border-[#dde5f0] bg-white">
+                <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#dde5f0] bg-[#f3f6fb] tech-stamp">
                     <div className="col-span-2">Numéro</div>
                     <div className="col-span-3">{partyKind === "customer" ? "Client" : "Fournisseur"}</div>
                     <div className="col-span-1">Date</div>
@@ -256,7 +301,7 @@ export const DocumentPanel = ({
                     const overdue = kind === "invoice" ? overdueState(d) : null;
                     return (
                         <li key={d.id} className="border-b border-[#dde5f0] last:border-b-0 hover:bg-[#f3f6fb] transition-colors">
-                            <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-3 items-center">
+                            <div className="grid grid-cols-12 gap-4 px-6 py-3 items-center">
                                 <div className="col-span-2 font-display font-bold text-sm">{numberPrefix}-{String(d.number).padStart(4, "0")}</div>
                                 <div className="col-span-3 text-sm truncate">{d[partyKey]?.name || "—"}</div>
                                 <div className="col-span-1 text-xs text-[#4b5d7a]">{formatDate(d.date)}</div>
@@ -324,6 +369,8 @@ export const DocumentPanel = ({
                 })}
                 </ul>
             </div>
+
+            <FAB onClick={openNew} label={`${feminineArticle ? "Nouvelle" : "Nouveau"} ${singular}`} testid={`erp-fab-new-${kind}`} />
 
             <Modal
                 open={modalOpen}

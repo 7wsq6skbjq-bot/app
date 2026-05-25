@@ -36,17 +36,28 @@ export const DashboardPanel = () => {
 
     return (
         <div data-testid="dashboard-panel">
-            <div className="mb-8">
+            <div className="hidden md:block mb-8">
                 <div className="tech-stamp mb-1">Vue d'ensemble</div>
                 <h1 className="font-display font-bold uppercase text-3xl tracking-tight">Tableau de bord financier</h1>
             </div>
 
+            {/* Mobile hero KPI — full width revenue */}
+            <div className="md:hidden mb-4 bg-[#0c182b] text-white p-5">
+                <div className="tech-stamp text-[#9bb6d8] mb-2 flex items-center gap-2">
+                    <Banknote className="w-4 h-4" /> Revenus du mois
+                </div>
+                <div className="font-display font-black text-4xl tracking-tight text-[#7bd1a0]">
+                    {formatCurrency(kpi.revenue_this_month)}
+                </div>
+                <div className="text-xs text-[#9bb6d8] mt-2">{kpi.invoices_count} factures payées · {formatCurrency(kpi.paid_total)} encaissés</div>
+            </div>
+
             {/* KPI tiles */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#dde5f0] border border-[#dde5f0] mb-8">
-                <KpiTile icon={Banknote}  label="Revenus du mois"   value={formatCurrency(kpi.revenue_this_month)} accent="text-[#0b6b2f]" testid="kpi-revenue" />
-                <KpiTile icon={Hourglass} label="En attente paiement" value={formatCurrency(kpi.outstanding_total)} accent="text-[#925800]" testid="kpi-outstanding" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#dde5f0] border border-[#dde5f0] mb-6 md:mb-8">
+                <KpiTile icon={Banknote}  label="Revenus du mois"   value={formatCurrency(kpi.revenue_this_month)} accent="text-[#0b6b2f]" testid="kpi-revenue" hideMobile />
+                <KpiTile icon={Hourglass} label="En attente"         value={formatCurrency(kpi.outstanding_total)} accent="text-[#925800]" testid="kpi-outstanding" />
                 <KpiTile icon={FileText}  label="Total facturé"      value={formatCurrency(kpi.invoiced_total)} testid="kpi-invoiced" />
-                <KpiTile icon={Calendar}  label="Factures · payées"  value={`${kpi.invoices_count} (${formatCurrency(kpi.paid_total)})`} testid="kpi-paid" />
+                <KpiTile icon={Calendar}  label="Payées"             value={`${kpi.invoices_count}`} sub={formatCurrency(kpi.paid_total)} testid="kpi-paid" />
             </div>
 
             {/* Sub-counts */}
@@ -137,15 +148,16 @@ export const DashboardPanel = () => {
     );
 };
 
-const KpiTile = ({ icon: Icon, label, value, accent, testid }) => (
-    <div data-testid={testid} className="bg-white p-6">
-        <div className="flex items-center gap-3 mb-3 tech-stamp">
+const KpiTile = ({ icon: Icon, label, value, sub, accent, testid, hideMobile = false }) => (
+    <div data-testid={testid} className={`bg-white p-4 md:p-6 ${hideMobile ? "hidden md:block" : ""}`}>
+        <div className="flex items-center gap-2 mb-2 md:mb-3 tech-stamp">
             <Icon className={`w-4 h-4 ${accent || "text-[#2f4f7f]"}`} />
-            {label}
+            <span className="truncate">{label}</span>
         </div>
-        <div className={`font-display font-bold text-2xl md:text-3xl tracking-tight ${accent || ""}`}>
+        <div className={`font-display font-bold text-xl md:text-3xl tracking-tight ${accent || ""}`}>
             {value}
         </div>
+        {sub && <div className="text-xs text-[#4b5d7a] mt-1 truncate">{sub}</div>}
     </div>
 );
 
