@@ -33,12 +33,14 @@ from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from cut_dxf import parse_dxf
+from cut_door_breakdown import decompose_at_door
 from cut_models import (
     DEFAULT_ALU_STOCK_LENGTHS_MM,
     DEFAULT_SAW_KERF_MM,
     CutItem,
     CutList,
     CutListIn,
+    FrameSpecs,
     ITEM_TYPES,
 )
 from cut_optimizer import optimize_cut_list
@@ -62,78 +64,94 @@ MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 
 OCR_SYSTEM = (
     "Tu es un assistant expert en quincaillerie de portes commerciales "
-    "(Portech, Grand Montréal). Tu analyses des plans d'architectes / "
-    "ingénieurs ou des croquis cotés pour produire une LISTE DE COUPE "
-    "PRÊTE À FABRIQUER. Tu sais lire les CARTOUCHES de détails techniques "
-    "où sont indiquées les épaisseurs de profilés (meneaux, montants, "
-    "linteaux) et les jeux/lousses (clearances) entre les éléments. "
-    "Tu retournes UNIQUEMENT du JSON valide."
+    "(Portech, Grand Montréal). Tu analyses des plans d'atelier (AT Fabrication, "
+    "Kawneer, Reynaers, etc.) pour produire une LISTE DE COUPE PRÊTE À "
+    "FABRIQUER. Tu sais lire les CARTOUCHES de détails techniques où sont "
+    "indiquées les épaisseurs de profilés, les lousses, le finis (couleur "
+    "anodisée), la SÉRIE de porte (AT1000, AT2000), et la liste exhaustive "
+    "de quincaillerie avec numéros de pièce (UH-120-DA, ADAM-MS1853S320, "
+    "UNIQ-AC4-36, ILCO-..., etc.). Tu retournes UNIQUEMENT du JSON valide."
 )
 
 OCR_USER = (
-    "Analyse le plan/dessin commercial ci-joint et produis la LISTE DE COUPE "
-    "réelle des éléments à fabriquer — PAS l'ouverture brute, mais les "
-    "dimensions FINALES après soustraction des profilés et des jeux.\n"
+    "Analyse ce plan d'atelier commercial et produis une LISTE DE COUPE EXHAUSTIVE.\n"
     "\n"
-    "ÉTAPE 1 — Lis le cartouche de détails / le détail des sections :\n"
-    "- Repère l'ÉPAISSEUR des profilés (meneaux, montants, linteaux). Termes "
-    "  fréquents : 'meneau 2\"', 'montant 1¾\"', 'profile 50 mm', 'tube alu 2x4'.\n"
-    "- Repère les JEUX / LOUSSES indiqués entre la porte et son cadre :\n"
-    "  • lousse latérale (entre montant et porte, typiquement 1/8\" ou 3 mm)\n"
-    "  • lousse haut (typiquement 1/8\" ou 3 mm)\n"
-    "  • lousse BAS / dégagement sous-porte (typiquement 11/16\" ≈ 17.5 mm)\n"
-    "- Repère les LARGEURS de paneaux verriers et leur épaisseur (6 mm simple, "
-    "  25.4 mm = 1\" thermos).\n"
+    "ÉTAPE 1 — Lis SOIGNEUSEMENT le cartouche / les blocs de détails :\n"
+    "- COULEUR / FINI du cadre ET de la porte (souvent différents) : "
+    "  'Anodisé bronze architectural', 'Anodisé noir', 'Anodisé clair', etc.\n"
+    "- SÉRIE de la porte : AT1000, AT2000, AT1000 avec base AT2000, Kawneer 350/451, etc.\n"
+    "- Épaisseurs des PROFILÉS du cadre (montants, linteau) — souvent un même "
+    "  tube à ailettes 1¾\" × 4\" pour tous les côtés.\n"
+    "- Épaisseurs des PROFILÉS de la porte : traverse haute (top rail), "
+    "  traverse basse (bottom rail), montant charnière, montant serrure.\n"
+    "- LOUSSES (clearances) : lousse latérale, lousse haut, lousse sous-porte.\n"
+    "- SEUIL (threshold) : présent ou non, épaisseur (typiquement 12.7 mm = ½\").\n"
+    "- VITRAGE : type (trempé / thermos), épaisseur (6 mm simple ou 25.4 mm thermos).\n"
     "\n"
-    "ÉTAPE 2 — Pour chaque ouverture détectée, calcule les dimensions FINALES :\n"
-    "- Porte (panneau ou cadre porte) :\n"
-    "    width_mm = ouverture_largeur - 2×lousse_latérale - 2×épaisseur_montant\n"
-    "    height_mm = ouverture_hauteur - lousse_haut - lousse_sous_porte\n"
-    "- Vitrage adjacent (sidelite) :\n"
-    "    width_mm = largeur_sidelite - 2×épaisseur_montant_verre\n"
-    "    height_mm = ouverture_hauteur - 2×épaisseur_traverse\n"
-    "- Linteaux / traverses / montants : longueurs réelles selon les détails du plan.\n"
+    "ÉTAPE 2 — Liste TOUS les éléments de QUINCAILLERIE du cartouche, MÊME "
+    "ceux qui semblent anodins. Pour CHACUN, donne :\n"
+    "- label (court, ex. 'Serrure MS Adams Rite')\n"
+    "- part_number (ex. 'ADAM-MS1853S320', 'UH-120-DA', 'UNIQ-AC4-36', "
+    "  'ILCO-7165SC229KD') — RECOPIE le numéro EXACTEMENT comme écrit\n"
+    "- manufacturer (ex. 'AT Fabrication', 'ASSA ABLOY Adams Rite', 'ILCO Kaba', "
+    "  'Unique', 'LCN', 'Norton')\n"
+    "- qty (1 par défaut si non indiqué)\n"
+    "Inclus : charnière, serrure, têtière, cylindre extérieur, tourniquet "
+    "intérieur, collets, gâche, ferme-porte, barre anti-panique, paddle, "
+    "poignée, butoir, seuil, joints, etc.\n"
     "\n"
-    "Si un détail manque, n'invente PAS — laisse la cote au mieux et ajoute un "
-    "warning du genre 'lousse sous-porte non indiquée — 11/16\" supposé'.\n"
+    "ÉTAPE 3 — Pour les CADRES (encadrement), liste les coupes avec règle :\n"
+    "- Montants verticaux = hauteur totale du cadre (fabrication height brute)\n"
+    "- Linteau / seuil horizontal = largeur du cadre - 2 × épaisseur_montant "
+    "  (toujours ! Le linteau passe ENTRE les montants verticaux)\n"
+    "- Renseigne opening_length_mm (cote brute du plan) ET length_mm (cote finale après soustraction).\n"
     "\n"
-    "Retourne un objet JSON STRICT :\n"
+    "ÉTAPE 4 — Pour les VITRAGES adjacents (sidelites, transoms), donne "
+    "dimensions finales (après lousses).\n"
+    "\n"
+    "ÉTAPE 5 — Pour la PORTE elle-même, NE LA DÉCOMPOSE PAS en 4 pièces "
+    "(le backend Portech le fait automatiquement). Liste-la comme UN SEUL "
+    "item type='panel' avec :\n"
+    "- label = 'Porte AT1000' (ou AT2000 selon la série détectée)\n"
+    "- profile = la série exacte (ex. 'AT1000 avec base AT2000')\n"
+    "- length_mm = hauteur finale de la PORTE LEAF (après lousses haut+bas+seuil)\n"
+    "- width_mm = largeur finale de la PORTE LEAF (après lousses latérales)\n"
+    "- thickness_mm = 44.5 (1¾\")\n"
+    "- opening_length_mm / opening_width_mm = ouverture libre brute (avant lousses)\n"
+    "- material = couleur anodisée exacte\n"
+    "\n"
+    "Retourne ce JSON STRICT :\n"
     "{\n"
-    '  "items": [ { item_type, label, profile?, material?, '
-    'length_mm, width_mm?, thickness_mm?, qty, '
+    '  "items": [ { item_type, label, profile?, material?, part_number?, '
+    'manufacturer?, length_mm, width_mm?, thickness_mm?, qty, '
     'opening_length_mm?, opening_width_mm?, notes? }, ... ],\n'
     '  "frame_specs": {\n'
-    '    "mullion_thickness_mm"?: number,    // épaisseur du meneau\n'
-    '    "jamb_thickness_mm"?: number,        // épaisseur des montants latéraux\n'
-    '    "head_thickness_mm"?: number,        // épaisseur du linteau\n'
-    '    "side_clearance_mm"?: number,        // lousse latérale\n'
-    '    "head_clearance_mm"?: number,        // lousse haut\n'
-    '    "undercut_clearance_mm"?: number     // lousse sous-porte (11/16\" si non indiquée)\n'
+    '    "mullion_thickness_mm"?: number,\n'
+    '    "jamb_thickness_mm"?: number,\n'
+    '    "head_thickness_mm"?: number,\n'
+    '    "profile_depth_mm"?: number,\n'
+    '    "side_clearance_mm"?: number,\n'
+    '    "head_clearance_mm"?: number,\n'
+    '    "undercut_clearance_mm"?: number,\n'
+    '    "threshold_thickness_mm"?: number,\n'
+    '    "has_threshold"?: boolean\n'
+    "  },\n"
+    '  "door_info": {\n'
+    '    "series"?: "AT1000" | "AT1000-AT2000-base" | "AT2000" | ...,\n'
+    '    "leaf_width_mm"?: number,\n'
+    '    "leaf_height_mm"?: number,\n'
+    '    "is_insulated"?: boolean,\n'
+    '    "glass_thickness_mm"?: number,\n'
+    '    "frame_finish"?: "Anodisé bronze" | "Anodisé noir" | ...,\n'
+    '    "door_finish"?: "..."\n'
     "  },\n"
     '  "unit_detected": "mm" | "in" | "cm" | "ft" | "unknown",\n'
     '  "confidence": 0..1,\n'
     '  "warnings": ["..."]\n'
     "}\n"
     "\n"
-    "Règles d'extraction :\n"
-    "- item_type : un de {frame, glass, panel, hardware, hole, other}\n"
-    "  • frame = cadre/profilé aluminium linéaire (linteau, montant, traverse, meneau)\n"
-    "  • glass = vitrage rectangle (longueur × largeur)\n"
-    "  • panel = panneau de porte plein (acier, composite)\n"
-    "  • hardware = serrure / charnière / ferme-porte / barre antipanique\n"
-    "  • hole = perçage / trou Ø\n"
-    "- Toutes dimensions en MILLIMÈTRES. Convertis pouces (1 in = 25.4 mm), "
-    "  fractions ('11/16\"' = 17.46 mm), pieds (1 ft = 304.8 mm).\n"
-    "- Si la même pièce apparaît N fois (qty visible OU symétrie évidente), incrémente `qty`.\n"
-    "- profile : référence du profilé si visible (Reynaers CS68, Kawneer 451, Sapa 5500…).\n"
-    "- material : type si visible (Alu anodisé clair, Verre trempé 6mm, Thermos 25.4mm, etc.).\n"
-    "- label : court, atelier-friendly. Ex. 'Porte gauche', 'Sidelite gauche', "
-    "  'Linteau haut', 'Meneau central', 'Vitrage SL1 6mm'.\n"
-    "- opening_length_mm / opening_width_mm = cote BRUTE lue sur le plan, AVANT "
-    "  soustraction des profilés et lousses. À fournir pour les portes et vitrages "
-    "  pour permettre la vérification atelier.\n"
-    "- length_mm / width_mm = cote FINALE de coupe, APRÈS soustractions.\n"
-    "- notes : indique le calcul appliqué, ex. 'Brut 914 - 2×3 lousse - 2×50 montants = 808'.\n"
+    "Règles :\n"
+    "- Toutes dimensions en MILLIMÈTRES (1 in = 25.4 mm, fractions: 11/16\" = 17.46 mm, 3/4\" = 19.05 mm, 1¾\" = 44.45 mm).\n"
     "- AUCUN texte hors du JSON. Pas de ```json. Pas d'explication."
 )
 
@@ -183,6 +201,8 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
             "label": str(it.get("label") or "")[:140],
             "profile": (it.get("profile") or None) or None,
             "material": (it.get("material") or None) or None,
+            "part_number": (it.get("part_number") or None) or None,
+            "manufacturer": (it.get("manufacturer") or None) or None,
             "length_mm": float(it.get("length_mm") or 0),
             "width_mm": float(it.get("width_mm")) if it.get("width_mm") not in (None, "") else None,
             "thickness_mm": float(it.get("thickness_mm")) if it.get("thickness_mm") not in (None, "") else None,
@@ -195,6 +215,7 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
     return {
         "items": items,
         "frame_specs": data.get("frame_specs") or {},
+        "door_info": data.get("door_info") or {},
         "unit_detected": data.get("unit_detected", "unknown"),
         "confidence": float(data.get("confidence") or 0),
         "warnings": data.get("warnings", []) or [],
@@ -202,6 +223,34 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
 
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
+    @router.post("/cuts/decompose-door")
+    async def decompose_door(payload: dict, _: dict = Depends(auth_dep)):
+        """Take a 'panel'-type door spec and return the 4 frame pieces + 8 mouldings
+        + hardware positions. Frontend calls this after the user fills in or
+        confirms the door dimensions / series. No persistence.
+        """
+        try:
+            door_w = float(payload.get("door_width_mm") or 0)
+            door_h = float(payload.get("door_height_mm") or 0)
+        except (TypeError, ValueError):
+            raise HTTPException(400, "door_width_mm et door_height_mm requis (mm).")
+        if door_w <= 0 or door_h <= 0:
+            raise HTTPException(400, "door_width_mm et door_height_mm doivent être > 0.")
+        result = decompose_at_door(
+            door_width_mm=door_w,
+            door_height_mm=door_h,
+            series=str(payload.get("series") or "AT1000"),
+            glass_thickness_mm=float(payload.get("glass_thickness_mm") or 6.0),
+            material=str(payload.get("material") or "Aluminium anodisé bronze"),
+            label_prefix=str(payload.get("label_prefix") or "Porte"),
+            qty=int(payload.get("qty") or 1),
+            hardware_rules=payload.get("hardware_rules") or None,
+        )
+        return {
+            "items": result.items + result.hardware,
+            "notes": result.notes,
+        }
+
     @router.get("/cuts/meta")
     async def cuts_meta(_: dict = Depends(auth_dep)):
         return {
@@ -350,6 +399,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         buf.write("\ufeff")
         w = csv.writer(buf)
         w.writerow(["Type", "Label", "Profilé", "Matériau",
+                    "N° pièce", "Fabricant",
                     "Long. (mm)", "Larg. (mm)", "Épais. (mm)", "Qté",
                     "Pos. X", "Pos. Y", "Notes"])
         for it in doc.get("items", []):
@@ -358,6 +408,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
                 it.get("label", ""),
                 it.get("profile") or "",
                 it.get("material") or "",
+                it.get("part_number") or "",
+                it.get("manufacturer") or "",
                 f"{float(it.get('length_mm', 0) or 0):.1f}",
                 f"{float(it.get('width_mm') or 0):.1f}" if it.get("width_mm") else "",
                 f"{float(it.get('thickness_mm') or 0):.1f}" if it.get("thickness_mm") else "",

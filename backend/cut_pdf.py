@@ -192,31 +192,35 @@ def render_cut_list_pdf(cut_list: dict, optimization: dict) -> bytes:
             _para("☐", font="Helvetica-Bold", size=8, color=colors.white, align=1),
             _para("TYPE", font="Helvetica-Bold", size=8, color=colors.white),
             _para("DESCRIPTION", font="Helvetica-Bold", size=8, color=colors.white),
+            _para("N° PIÈCE", font="Helvetica-Bold", size=8, color=colors.white),
+            _para("FABRICANT", font="Helvetica-Bold", size=8, color=colors.white),
             _para("POSITION", font="Helvetica-Bold", size=8, color=colors.white),
             _para("QTÉ", font="Helvetica-Bold", size=8, color=colors.white, align=1),
         ]]
         for it in hw_items:
             pos = ""
-            if it.get("position_x") is not None:
-                pos = f"X={it['position_x']:.0f}"
-                if it.get("position_y") is not None:
-                    pos += f"  Y={it['position_y']:.0f}"
+            if it.get("position_y") is not None:
+                pos = f"Y={it['position_y']:.0f} mm"
+                if it.get("position_x") is not None:
+                    pos = f"X={it['position_x']:.0f} · " + pos
             hdata.append([
                 _para("☐", size=11, align=1),
-                _para(ITEM_TYPE_LABELS_FR.get(it.get("item_type", "other"), "—"), size=9),
-                _para(it.get("label") or it.get("notes") or "—", size=9),
-                _para(pos or "—", size=8, color=TEXT_MUTED),
+                _para(ITEM_TYPE_LABELS_FR.get(it.get("item_type", "other"), "—"), size=8),
+                _para(it.get("label") or it.get("notes") or "—", size=8),
+                _para(it.get("part_number") or "—", size=8, font="Courier"),
+                _para(it.get("manufacturer") or "—", size=8),
+                _para(pos or "—", size=7, color=TEXT_MUTED),
                 _para(str(it.get("qty", 1)), size=9, align=1),
             ])
-        h_table = Table(hdata, colWidths=[10 * mm, 25 * mm, 80 * mm, 35 * mm, 14 * mm])
+        h_table = Table(hdata, colWidths=[8 * mm, 22 * mm, 50 * mm, 33 * mm, 30 * mm, 22 * mm, 10 * mm])
         h_table.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), NAVY),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, BG_LIGHT]),
             ("BOX", (0, 0), (-1, -1), 0.5, BORDER),
             ("INNERGRID", (0, 0), (-1, -1), 0.3, BORDER),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
         ]))
         elements.append(h_table)
         elements.append(Spacer(1, 4 * mm))

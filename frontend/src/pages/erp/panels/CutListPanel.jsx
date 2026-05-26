@@ -215,6 +215,60 @@ export const CutListPanel = () => {
         });
     };
 
+    /** Find the first panel item that looks like an AT door and ask the backend
+     *  to break it down into 4 frame pieces + 8 mouldings + hardware positions. */
+    const decomposeATDoor = async () => {
+        const items = editing.items || [];
+        const door = items.find(it =>
+            it.item_type === "panel" &&
+            it.length_mm > 0 && it.width_mm > 0 &&
+            (((it.profile || "") + (it.label || "")).match(/AT\s*1?2?000/i)),
+        );
+        if (!door) {
+            alert(
+                "Pour décomposer une porte AT, ajoutez d'abord une ligne 'Panneau' avec :\n" +
+                "  • profilé = 'AT1000' ou 'AT2000'\n" +
+                "  • longueur (mm) = hauteur de la porte\n" +
+                "  • largeur (mm) = largeur de la porte\n",
+            );
+            return;
+        }
+        // Detect series — "AT1000-AT2000-base" is the special hybrid
+        const text = ((door.profile || "") + " " + (door.label || "")).toLowerCase();
+        let series = "AT1000";
+        if (text.includes("at2000") && text.includes("at1000")) series = "AT1000-AT2000-base";
+        else if (text.includes("at2000")) series = "AT2000";
+        const customSeries = window.prompt(
+            "Série détectée : " + series + "\n\nValidez ou modifiez (ex. 'AT1000', 'AT1000-AT2000-base', 'AT2000') :",
+            series,
+        );
+        if (!customSeries) return;
+        try {
+            const fs = editing.frame_specs || {};
+            const { data } = await http.post("/admin/cuts/decompose-door", {
+                door_width_mm: door.width_mm,
+                door_height_mm: door.length_mm,
+                series: customSeries,
+                glass_thickness_mm: door.thickness_mm || 6.0,
+                material: door.material || "Aluminium anodisé bronze",
+                label_prefix: door.label || "Porte",
+                qty: door.qty || 1,
+                hardware_rules: {
+                    cylinder_height_mm: fs.cylinder_height_mm ?? 1016,
+                    strike_offset_mm: fs.strike_offset_mm ?? 19.05,
+                    handle_height_mm: fs.handle_height_mm ?? 876.3,
+                },
+            });
+            // Replace the panel door with its breakdown
+            const others = items.filter(it => it !== door);
+            setEditing((prev) => ({ ...prev, items: [...others, ...(data.items || [])] }));
+            const notes = (data.notes || []).join(" · ");
+            alert(`✅ Porte décomposée en ${data.items.length} pièces.\n\n${notes}`);
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur de décomposition");
+        }
+    };
+
     const optimize = async () => {
         const hasValidFrame = (editing.items || []).some(
             (it) => it.item_type === "frame" && Number(it.length_mm) > 0,
@@ -481,13 +535,82 @@ export const CutListPanel = () => {
                             </Field>
                         </div>
 
+                        {/* Frame specs (editable, with Portech defaults) */}
+                        <details className="border border-[#dde5f0]" data-testid="cuts-frame-specs">
+                            <summary className="px-3 py-2 bg-[#f3f6fb] tech-stamp text-xs cursor-pointer flex items-center justify-between">
+                                <span>⚙️ Paramètres de fabrication (lousses, profilés, positions)</span>
+                                <span className="text-[#4b5d7a] text-[10px]">cliquez pour ouvrir</span>
+                            </summary>
+                            <div className="p-3 space-y-3 bg-white">
+                                <div className="tech-stamp text-[#4b5d7a] text-[11px] mb-1">Lousses (clearances) entre la porte et le cadre</div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <Field label="Lousse haut (mm)">
+                                        <input type="number" step="0.01" value={editing.frame_specs?.head_clearance_mm ?? 4.84}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), head_clearance_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} data-testid="cuts-spec-head" />
+                                    </Field>
+                                    <Field label="Lousse sous-porte (mm)">
+                                        <input type="number" step="0.01" value={editing.frame_specs?.undercut_clearance_mm ?? 17.46}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), undercut_clearance_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} data-testid="cuts-spec-undercut" />
+                                    </Field>
+                                    <Field label="Lousse latérale (mm)">
+                                        <input type="number" step="0.01" value={editing.frame_specs?.side_clearance_mm ?? 3.0}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), side_clearance_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} />
+                                    </Field>
+                                    <Field label="Épais. seuil (mm)">
+                                        <input type="number" step="0.01" value={editing.frame_specs?.threshold_thickness_mm ?? 12.7}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), threshold_thickness_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} data-testid="cuts-spec-threshold" />
+                                    </Field>
+                                </div>
+                                <div className="tech-stamp text-[#4b5d7a] text-[11px] mt-3 mb-1">Profilés du cadre (tube à ailettes)</div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <Field label="Largeur montant (mm)">
+                                        <input type="number" step="0.1" value={editing.frame_specs?.jamb_thickness_mm ?? 44.5}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), jamb_thickness_mm: parseFloat(e.target.value) || 0, mullion_thickness_mm: parseFloat(e.target.value) || 0, head_thickness_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} data-testid="cuts-spec-jamb" />
+                                    </Field>
+                                    <Field label="Profondeur profilé (mm)">
+                                        <input type="number" step="0.1" value={editing.frame_specs?.profile_depth_mm ?? 101.6}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), profile_depth_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} />
+                                    </Field>
+                                </div>
+                                <div className="tech-stamp text-[#4b5d7a] text-[11px] mt-3 mb-1">Positions de quincaillerie (depuis le bas de la porte)</div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <Field label="Cylindre (mm)">
+                                        <input type="number" step="0.1" value={editing.frame_specs?.cylinder_height_mm ?? 1016}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), cylinder_height_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} />
+                                    </Field>
+                                    <Field label="Gâche (offset)">
+                                        <input type="number" step="0.1" value={editing.frame_specs?.strike_offset_mm ?? 19.05}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), strike_offset_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} />
+                                    </Field>
+                                    <Field label="Poignée (mm)">
+                                        <input type="number" step="0.1" value={editing.frame_specs?.handle_height_mm ?? 876.3}
+                                            onChange={(e) => setEditing({ ...editing, frame_specs: { ...(editing.frame_specs || {}), handle_height_mm: parseFloat(e.target.value) || 0 } })}
+                                            className={inputClass} />
+                                    </Field>
+                                </div>
+                            </div>
+                        </details>
+
                         {/* Items table */}
                         <div>
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                                 <div className="tech-stamp text-[#4b5d7a]">Éléments ({(editing.items || []).length})</div>
-                                <button onClick={addItem} data-testid="cuts-add-item" className="px-3 py-1.5 border border-[#0c182b] text-[#0c182b] tech-stamp text-xs hover:bg-[#f3f6fb] flex items-center gap-1">
-                                    <Plus className="w-3 h-3" /> Ajouter une ligne
-                                </button>
+                                <div className="flex flex-wrap gap-1">
+                                    <button onClick={decomposeATDoor} data-testid="cuts-decompose-door" className="px-3 py-1.5 border border-[#8a4f1f] text-[#8a4f1f] tech-stamp text-xs hover:bg-[#fdf2e0] flex items-center gap-1">
+                                        <Layers className="w-3 h-3" /> Décomposer porte AT
+                                    </button>
+                                    <button onClick={addItem} data-testid="cuts-add-item" className="px-3 py-1.5 border border-[#0c182b] text-[#0c182b] tech-stamp text-xs hover:bg-[#f3f6fb] flex items-center gap-1">
+                                        <Plus className="w-3 h-3" /> Ajouter une ligne
+                                    </button>
+                                </div>
                             </div>
                             {(editing.items || []).length === 0 ? (
                                 <div className="p-6 text-center text-[#4b5d7a] text-sm border border-dashed border-[#dde5f0]">
@@ -501,6 +624,7 @@ export const CutListPanel = () => {
                                                 <th className="p-2 text-left">Type</th>
                                                 <th className="p-2 text-left">Label</th>
                                                 <th className="p-2 text-left">Profilé</th>
+                                                <th className="p-2 text-left">N° pièce</th>
                                                 <th className="p-2 text-right">L (mm)</th>
                                                 <th className="p-2 text-right">l (mm)</th>
                                                 <th className="p-2 text-right">Ép. (mm)</th>
@@ -518,6 +642,7 @@ export const CutListPanel = () => {
                                                     </td>
                                                     <td className="p-1"><input value={it.label || ""} onChange={(e) => updateItem(idx, { label: e.target.value })} className="w-full px-1 py-1 border border-[#dde5f0]" /></td>
                                                     <td className="p-1"><input value={it.profile || ""} onChange={(e) => updateItem(idx, { profile: e.target.value })} className="w-full px-1 py-1 border border-[#dde5f0]" placeholder="ex. CS68" /></td>
+                                                    <td className="p-1"><input value={it.part_number || ""} onChange={(e) => updateItem(idx, { part_number: e.target.value })} className="w-full px-1 py-1 border border-[#dde5f0] font-mono" placeholder="ex. UH-120-DA" /></td>
                                                     <td className="p-1"><input type="number" step="0.1" value={it.length_mm || 0} onChange={(e) => updateItem(idx, { length_mm: parseFloat(e.target.value) || 0 })} className="w-20 px-1 py-1 border border-[#dde5f0] text-right" /></td>
                                                     <td className="p-1"><input type="number" step="0.1" value={it.width_mm || ""} onChange={(e) => updateItem(idx, { width_mm: e.target.value === "" ? null : parseFloat(e.target.value) })} className="w-20 px-1 py-1 border border-[#dde5f0] text-right" disabled={!["glass","panel"].includes(it.item_type)} /></td>
                                                     <td className="p-1"><input type="number" step="0.1" value={it.thickness_mm || ""} onChange={(e) => updateItem(idx, { thickness_mm: e.target.value === "" ? null : parseFloat(e.target.value) })} className="w-16 px-1 py-1 border border-[#dde5f0] text-right" disabled={it.item_type !== "glass"} /></td>

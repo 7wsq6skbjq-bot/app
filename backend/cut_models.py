@@ -45,34 +45,47 @@ class CutItem(BaseModel):
     label: str = ""                  # free-text: "Linteau", "Vitrage haut", etc.
     profile: Optional[str] = None    # e.g., "Reynaers CS68", "Sapa 5500" — for grouping
     material: Optional[str] = None   # e.g., "Alu anodisé clair", "Verre trempé 6mm"
+    part_number: Optional[str] = None  # e.g., "UH-120-DA", "ADAM-MS1853S320"
+    manufacturer: Optional[str] = None  # e.g., "AT Fabrication", "ASSA ABLOY", "ILCO"
     length_mm: float = 0.0
     width_mm: Optional[float] = None  # only for 2D items (glass/panel)
     thickness_mm: Optional[float] = None  # glass thickness
     qty: int = 1
     # Raw rough-opening dimensions (BEFORE subtracting mullions + clearances).
-    # Populated by the OCR when it reads a plan with both opening and detail cards.
-    # Kept alongside length_mm/width_mm (the FINAL cut dims) so the workshop can
-    # double-check the math on the printed PDF.
     opening_length_mm: Optional[float] = None
     opening_width_mm: Optional[float] = None
-    position_x: Optional[float] = None   # for hardware/holes
+    position_x: Optional[float] = None   # for hardware/holes — from bottom-left of door
     position_y: Optional[float] = None
     notes: Optional[str] = None
-    source: str = "manual"           # "manual" | "ocr" | "dxf"
+    source: str = "manual"           # "manual" | "ocr" | "dxf" | "computed"
 
 
 class FrameSpecs(BaseModel):
-    """Extracted profile + clearance specs from the plan's detail cartouche.
+    """Profile + clearance specs used to compute final cut dimensions.
 
-    Stored on the CutList so the workshop can see the assumptions used by the
-    AI when it computed the final cut dimensions from the rough opening.
+    These are EDITABLE by the user — the AI tries to extract them from the
+    plan's detail cartouche, but the user can override them at any time.
+    The defaults match Portech's standard practice for commercial alu doors.
     """
-    mullion_thickness_mm: Optional[float] = None
-    jamb_thickness_mm: Optional[float] = None
-    head_thickness_mm: Optional[float] = None
-    side_clearance_mm: Optional[float] = None
-    head_clearance_mm: Optional[float] = None
-    undercut_clearance_mm: Optional[float] = None
+    # Frame profile thicknesses (in mm)
+    mullion_thickness_mm: float = 44.5      # 1¾" tube — vertical mullion / jamb width
+    jamb_thickness_mm: float = 44.5         # vertical jambs (same as mullion at Portech)
+    head_thickness_mm: float = 44.5         # horizontal head (same — symmetric profile)
+    profile_depth_mm: float = 101.6         # 4" tube depth (front-to-back)
+
+    # Door-to-frame clearances (in mm)
+    side_clearance_mm: float = 3.0          # gap on each side (jamb ↔ door)
+    head_clearance_mm: float = 4.84         # gap on top (head ↔ door)
+    undercut_clearance_mm: float = 17.46    # 11/16" — gap under door (door bottom to floor)
+    threshold_thickness_mm: float = 12.7    # 1/2" — threshold/seuil thickness if present
+    has_threshold: bool = True
+
+    # Hardware position rules (in mm from BOTTOM of door leaf)
+    cylinder_height_mm: float = 1016.0      # cylinder/MS lock centerline
+    strike_offset_mm: float = 19.05         # strike is 3/4" lower than cylinder on jamb
+    handle_height_mm: float = 876.3         # 34½" — pull/paddle handle centerline
+    hinge_top_flush: bool = True            # continuous hinge flush at top
+    hinge_bottom_undercut_mm: float = 6.35  # 1/4" cut at bottom of continuous hinge
 
 
 class CutListIn(BaseModel):
