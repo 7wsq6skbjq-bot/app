@@ -10,6 +10,7 @@ import {
     Package,
     ShoppingCart,
     Send,
+    Wallet,
     X,
     Inbox,
 } from "lucide-react";
@@ -18,7 +19,7 @@ const PRIMARY = [
     { to: "/admin/gestion/tableau-de-bord", label: "Bord",     icon: LayoutDashboard, testid: "mtab-dashboard" },
     { to: "/admin/gestion/calendrier",       label: "RDV",      icon: Calendar,         testid: "mtab-calendar" },
     { to: "/admin/gestion/factures",         label: "Factures", icon: FileText,         testid: "mtab-invoices" },
-    { to: "/admin/gestion/prospection",      label: "Prospect", icon: Send,             testid: "mtab-prospection" },
+    { to: "/admin/gestion/depenses",         label: "Dépenses", icon: Wallet,           testid: "mtab-expenses" },
 ];
 
 const SECONDARY = [
@@ -28,6 +29,7 @@ const SECONDARY = [
     { to: "/admin/gestion/produits",           label: "Produits",            icon: Package },
     { to: "/admin/gestion/bons-commande",      label: "Bons de commande",    icon: ShoppingCart },
     { to: "/admin/gestion/connaissements",     label: "Connaissements",      icon: Truck },
+    { to: "/admin/gestion/prospection",        label: "Prospection",         icon: Send },
 ];
 
 /**

@@ -315,7 +315,26 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 - [ ] Bouton flottant « Appelez maintenant » / WhatsApp sur mobile
 - [ ] Page « Soumission Express » (calculateur de coûts)
 
-### 2026-05 — Iter 25 (Prospection multi-catégories + scraping Pages Jaunes)
+### 2026-05 — Iter 26 (Module Dépenses + Comptabilité Québec)
+**Nouveau module Dépenses** (`/admin/gestion/depenses`) pour suivre tous les achats business avec calcul automatique des taxes québécoises :
+
+- **Backend** :
+  - `erp_models_expense.py` : modèle `Expense` (date, fournisseur, description, catégorie, sous-total, TPS 5%, TVQ 9.975%, total, mode paiement, statut, réf. facture, notes)
+  - `erp_routes_expenses.py` : CRUD + endpoint `/summary` (totaux par mois + répartition par catégorie) + endpoint `/export.csv` (UTF-8 avec BOM pour Excel, prêt pour le comptable)
+  - **14 catégories** : Matériaux · Carburant · Outils · Véhicule · Sous-traitance · Bureau · Marketing · Abonnements logiciels · Repas/Représentation · Téléphonie/Internet · Loyer · Assurances · Formation · Autre
+  - **Tableau de bord enrichi** : tuiles Dépenses du mois, Profit net (Revenus − Dépenses), TPS récupérable, TVQ récupérable
+
+- **Frontend** (`ExpensesPanel.jsx`) :
+  - Mobile cards + desktop table (responsive)
+  - **Calcul automatique des taxes** : tape le sous-total → TPS+TVQ+total calculés ; tape le total → sous-total calculé à rebours
+  - Sélecteur de mois (12 mois)
+  - Filtres catégorie + statut
+  - Export CSV en un clic
+  - **Barre de progression par catégorie** (visualisation de la répartition des dépenses)
+  - FAB mobile pour ajout rapide
+
+- **Mobile** : « Dépenses » remplace « Prospect » dans les onglets primaires (Prospect déplacé dans le sheet « Plus »).
+- **Tests** : 92/92 pytest ✅.
 **Refonte majeure du moteur de prospection** suite à la demande de l'utilisateur (« seulement 3 emails sur 27 résultats ») :
 
 - **Nouveau scraper Pages Jaunes Canada** comme source principale (`prospection_scraper.py`) — extrait JSON-LD de yellowpages.ca, visite chaque fiche, crawle les pages de contact des sites web pour récupérer le courriel.

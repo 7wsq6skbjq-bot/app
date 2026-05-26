@@ -83,6 +83,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
         now = datetime.now(timezone.utc)
         first_day_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_key = first_day_month.strftime("%Y-%m")
 
         kpi = _kpis(invoices, now=now, first_day_month=first_day_month)
         kpi["customers_count"] = await db.erp_parties.count_documents({"kind": "customer"})
@@ -90,6 +91,21 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         kpi["products_count"] = await db.erp_products.count_documents({})
         kpi["po_count"] = await db.erp_purchase_orders.count_documents({})
         kpi["bol_count"] = await db.erp_bills_of_lading.count_documents({})
+
+        # Expenses for current month + profit net
+        expenses_month_cur = db.erp_expenses.find(
+            {"date": {"$gte": f"{month_key}-01", "$lt": f"{month_key}-32"}},
+            {"_id": 0},
+        )
+        expenses_month = [e async for e in expenses_month_cur]
+        expenses_total_month = sum(float(e.get("total", 0)) for e in expenses_month)
+        expenses_tps_recoverable = sum(float(e.get("tps", 0)) for e in expenses_month)
+        expenses_tvq_recoverable = sum(float(e.get("tvq", 0)) for e in expenses_month)
+        kpi["expenses_this_month"] = round(expenses_total_month, 2)
+        kpi["profit_this_month"] = round(kpi["revenue_this_month"] - expenses_total_month, 2)
+        kpi["tps_recoverable_month"] = round(expenses_tps_recoverable, 2)
+        kpi["tvq_recoverable_month"] = round(expenses_tvq_recoverable, 2)
+        kpi["expenses_count_month"] = len(expenses_month)
 
         return {
             "kpi": kpi,

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     Banknote, FileText, Hourglass, Calendar, Users,
-    Truck, ShoppingCart, Inbox, AlertCircle,
+    Truck, ShoppingCart, Inbox, AlertCircle, TrendingUp, TrendingDown, Wallet,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatCurrency, formatDate, STATUS_BADGE } from "../utils";
@@ -50,14 +50,40 @@ export const DashboardPanel = () => {
                     {formatCurrency(kpi.revenue_this_month)}
                 </div>
                 <div className="text-xs text-[#9bb6d8] mt-2">{kpi.invoices_count} factures payées · {formatCurrency(kpi.paid_total)} encaissés</div>
+                {/* Profit net mini-bar */}
+                <div className="mt-4 pt-4 border-t border-[#1e3457] flex items-center justify-between">
+                    <div>
+                        <div className="tech-stamp text-[#9bb6d8] flex items-center gap-1">
+                            {(kpi.profit_this_month || 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />} Profit net
+                        </div>
+                        <div className={`font-display font-bold text-2xl ${(kpi.profit_this_month || 0) >= 0 ? "text-[#7bd1a0]" : "text-[#ff8a8a]"}`}>
+                            {formatCurrency(kpi.profit_this_month || 0)}
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <div className="tech-stamp text-[#9bb6d8]">Dépenses</div>
+                        <div className="font-display font-bold text-lg text-[#ffcc7b]">{formatCurrency(kpi.expenses_this_month || 0)}</div>
+                    </div>
+                </div>
             </div>
 
             {/* KPI tiles */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#dde5f0] border border-[#dde5f0] mb-6 md:mb-8">
                 <KpiTile icon={Banknote}  label="Revenus du mois"   value={formatCurrency(kpi.revenue_this_month)} accent="text-[#0b6b2f]" testid="kpi-revenue" hideMobile />
+                <KpiTile icon={Wallet}    label="Dépenses du mois"  value={formatCurrency(kpi.expenses_this_month || 0)} accent="text-[#925800]" testid="kpi-expenses" hideMobile />
+                <KpiTile
+                    icon={(kpi.profit_this_month || 0) >= 0 ? TrendingUp : TrendingDown}
+                    label="Profit net"
+                    value={formatCurrency(kpi.profit_this_month || 0)}
+                    accent={(kpi.profit_this_month || 0) >= 0 ? "text-[#0b6b2f]" : "text-[#8a1f1f]"}
+                    testid="kpi-profit"
+                    hideMobile
+                />
                 <KpiTile icon={Hourglass} label="En attente"         value={formatCurrency(kpi.outstanding_total)} accent="text-[#925800]" testid="kpi-outstanding" />
                 <KpiTile icon={FileText}  label="Total facturé"      value={formatCurrency(kpi.invoiced_total)} testid="kpi-invoiced" />
                 <KpiTile icon={Calendar}  label="Payées"             value={`${kpi.invoices_count}`} sub={formatCurrency(kpi.paid_total)} testid="kpi-paid" />
+                <KpiTile icon={Wallet}    label="TPS récupérable"    value={formatCurrency(kpi.tps_recoverable_month || 0)} sub="ce mois" accent="text-[#0b6b2f]" testid="kpi-tps" />
+                <KpiTile icon={Wallet}    label="TVQ récupérable"    value={formatCurrency(kpi.tvq_recoverable_month || 0)} sub="ce mois" accent="text-[#0b6b2f]" testid="kpi-tvq" />
             </div>
 
             {/* Sub-counts */}
