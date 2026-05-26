@@ -147,11 +147,17 @@ export const CutListPanel = () => {
                 ...prev,
                 source_filename: data.source_filename,
                 source_type: data.source_type,
+                frame_specs: data.frame_specs || prev.frame_specs || null,
                 items: [...(prev.items || []), ...(data.items || [])],
             }));
             const warn = (data.warnings || []).length ? ` — ${data.warnings.join(" / ")}` : "";
+            const specsParts = [];
+            if (data.frame_specs?.mullion_thickness_mm) specsParts.push(`meneau ${data.frame_specs.mullion_thickness_mm}mm`);
+            if (data.frame_specs?.side_clearance_mm) specsParts.push(`lousse ${data.frame_specs.side_clearance_mm}mm`);
+            if (data.frame_specs?.undercut_clearance_mm) specsParts.push(`sous-porte ${data.frame_specs.undercut_clearance_mm}mm`);
+            const specsStr = specsParts.length ? ` · ${specsParts.join(" / ")}` : "";
             setExtractMsg(
-                `🪄 ${data.items.length} élément(s) extrait(s) du plan via IA · confiance ${Math.round((data.confidence || 0) * 100)}%${warn}`,
+                `🪄 ${data.items.length} élément(s) extrait(s) du plan via IA · confiance ${Math.round((data.confidence || 0) * 100)}%${specsStr}${warn}`,
             );
         } catch (e) {
             alert(e?.response?.data?.detail || "Erreur OCR du plan");
@@ -308,6 +314,15 @@ export const CutListPanel = () => {
                         primary={`${c.items_count || 0} él.`}
                         secondary={`Modifié ${formatDate(c.updated_at)}`}
                         onTap={() => openEdit(c)}
+                        actions={[
+                            {
+                                icon: Trash2,
+                                onClick: () => remove(c),
+                                label: "Supprimer",
+                                testid: `cuts-delete-${c.id}`,
+                                color: "border-red-300 text-red-600 active:bg-red-50",
+                            },
+                        ]}
                     />
                 ))}
             </div>
@@ -369,6 +384,24 @@ export const CutListPanel = () => {
                     wide
                     footer={
                         <>
+                            {editing.id && (
+                                <button
+                                    onClick={async () => {
+                                        if (!window.confirm(`Supprimer la liste "${editing.name}" ? Cette action est définitive.`)) return;
+                                        try {
+                                            await http.delete(`/admin/cuts/${editing.id}`);
+                                            await load();
+                                            closeEdit();
+                                        } catch (e) {
+                                            alert(e?.response?.data?.detail || "Erreur de suppression");
+                                        }
+                                    }}
+                                    data-testid="cuts-modal-delete"
+                                    className="px-4 py-2 border border-red-300 text-red-700 tech-stamp hover:bg-red-50 flex items-center gap-1"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" /> Supprimer
+                                </button>
+                            )}
                             <button onClick={closeEdit} className="px-4 py-2 border border-[#dde5f0] tech-stamp">Fermer</button>
                             <button data-testid="cuts-save" onClick={save} className="px-4 py-2 bg-[#0c182b] text-white tech-stamp">
                                 Enregistrer

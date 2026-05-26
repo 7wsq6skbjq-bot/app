@@ -49,10 +49,30 @@ class CutItem(BaseModel):
     width_mm: Optional[float] = None  # only for 2D items (glass/panel)
     thickness_mm: Optional[float] = None  # glass thickness
     qty: int = 1
+    # Raw rough-opening dimensions (BEFORE subtracting mullions + clearances).
+    # Populated by the OCR when it reads a plan with both opening and detail cards.
+    # Kept alongside length_mm/width_mm (the FINAL cut dims) so the workshop can
+    # double-check the math on the printed PDF.
+    opening_length_mm: Optional[float] = None
+    opening_width_mm: Optional[float] = None
     position_x: Optional[float] = None   # for hardware/holes
     position_y: Optional[float] = None
     notes: Optional[str] = None
     source: str = "manual"           # "manual" | "ocr" | "dxf"
+
+
+class FrameSpecs(BaseModel):
+    """Extracted profile + clearance specs from the plan's detail cartouche.
+
+    Stored on the CutList so the workshop can see the assumptions used by the
+    AI when it computed the final cut dimensions from the rough opening.
+    """
+    mullion_thickness_mm: Optional[float] = None
+    jamb_thickness_mm: Optional[float] = None
+    head_thickness_mm: Optional[float] = None
+    side_clearance_mm: Optional[float] = None
+    head_clearance_mm: Optional[float] = None
+    undercut_clearance_mm: Optional[float] = None
 
 
 class CutListIn(BaseModel):
@@ -63,6 +83,7 @@ class CutListIn(BaseModel):
     items: List[CutItem] = Field(default_factory=list)
     stock_lengths_mm: List[int] = Field(default_factory=lambda: list(DEFAULT_ALU_STOCK_LENGTHS_MM))
     saw_kerf_mm: int = DEFAULT_SAW_KERF_MM
+    frame_specs: Optional[FrameSpecs] = None
     notes: Optional[str] = None
 
 

@@ -63,18 +63,53 @@ MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 OCR_SYSTEM = (
     "Tu es un assistant expert en quincaillerie de portes commerciales "
     "(Portech, Grand Montréal). Tu analyses des plans d'architectes / "
-    "ingénieurs ou des croquis cotés pour en extraire la liste des éléments "
-    "à fabriquer ou installer. Tu retournes UNIQUEMENT du JSON valide."
+    "ingénieurs ou des croquis cotés pour produire une LISTE DE COUPE "
+    "PRÊTE À FABRIQUER. Tu sais lire les CARTOUCHES de détails techniques "
+    "où sont indiquées les épaisseurs de profilés (meneaux, montants, "
+    "linteaux) et les jeux/lousses (clearances) entre les éléments. "
+    "Tu retournes UNIQUEMENT du JSON valide."
 )
 
 OCR_USER = (
-    "Analyse le plan/dessin ci-joint et extrais TOUS les éléments cotés "
-    "qui correspondent à de la quincaillerie de porte commerciale.\n"
+    "Analyse le plan/dessin commercial ci-joint et produis la LISTE DE COUPE "
+    "réelle des éléments à fabriquer — PAS l'ouverture brute, mais les "
+    "dimensions FINALES après soustraction des profilés et des jeux.\n"
     "\n"
-    "Retourne un objet JSON STRICT avec :\n"
+    "ÉTAPE 1 — Lis le cartouche de détails / le détail des sections :\n"
+    "- Repère l'ÉPAISSEUR des profilés (meneaux, montants, linteaux). Termes "
+    "  fréquents : 'meneau 2\"', 'montant 1¾\"', 'profile 50 mm', 'tube alu 2x4'.\n"
+    "- Repère les JEUX / LOUSSES indiqués entre la porte et son cadre :\n"
+    "  • lousse latérale (entre montant et porte, typiquement 1/8\" ou 3 mm)\n"
+    "  • lousse haut (typiquement 1/8\" ou 3 mm)\n"
+    "  • lousse BAS / dégagement sous-porte (typiquement 11/16\" ≈ 17.5 mm)\n"
+    "- Repère les LARGEURS de paneaux verriers et leur épaisseur (6 mm simple, "
+    "  25.4 mm = 1\" thermos).\n"
+    "\n"
+    "ÉTAPE 2 — Pour chaque ouverture détectée, calcule les dimensions FINALES :\n"
+    "- Porte (panneau ou cadre porte) :\n"
+    "    width_mm = ouverture_largeur - 2×lousse_latérale - 2×épaisseur_montant\n"
+    "    height_mm = ouverture_hauteur - lousse_haut - lousse_sous_porte\n"
+    "- Vitrage adjacent (sidelite) :\n"
+    "    width_mm = largeur_sidelite - 2×épaisseur_montant_verre\n"
+    "    height_mm = ouverture_hauteur - 2×épaisseur_traverse\n"
+    "- Linteaux / traverses / montants : longueurs réelles selon les détails du plan.\n"
+    "\n"
+    "Si un détail manque, n'invente PAS — laisse la cote au mieux et ajoute un "
+    "warning du genre 'lousse sous-porte non indiquée — 11/16\" supposé'.\n"
+    "\n"
+    "Retourne un objet JSON STRICT :\n"
     "{\n"
-    '  "items": [ {item_type, label, profile?, material?, length_mm, '
-    'width_mm?, thickness_mm?, qty, notes?}, ... ],\n'
+    '  "items": [ { item_type, label, profile?, material?, '
+    'length_mm, width_mm?, thickness_mm?, qty, '
+    'opening_length_mm?, opening_width_mm?, notes? }, ... ],\n'
+    '  "frame_specs": {\n'
+    '    "mullion_thickness_mm"?: number,    // épaisseur du meneau\n'
+    '    "jamb_thickness_mm"?: number,        // épaisseur des montants latéraux\n'
+    '    "head_thickness_mm"?: number,        // épaisseur du linteau\n'
+    '    "side_clearance_mm"?: number,        // lousse latérale\n'
+    '    "head_clearance_mm"?: number,        // lousse haut\n'
+    '    "undercut_clearance_mm"?: number     // lousse sous-porte (11/16\" si non indiquée)\n'
+    "  },\n"
     '  "unit_detected": "mm" | "in" | "cm" | "ft" | "unknown",\n'
     '  "confidence": 0..1,\n'
     '  "warnings": ["..."]\n'
@@ -82,19 +117,23 @@ OCR_USER = (
     "\n"
     "Règles d'extraction :\n"
     "- item_type : un de {frame, glass, panel, hardware, hole, other}\n"
-    "  • frame = cadre/profilé aluminium linéaire (linteau, montant, traverse)\n"
+    "  • frame = cadre/profilé aluminium linéaire (linteau, montant, traverse, meneau)\n"
     "  • glass = vitrage rectangle (longueur × largeur)\n"
-    "  • panel = panneau plein (acier, composite)\n"
+    "  • panel = panneau de porte plein (acier, composite)\n"
     "  • hardware = serrure / charnière / ferme-porte / barre antipanique\n"
     "  • hole = perçage / trou Ø\n"
-    "- Toutes dimensions en MILLIMÈTRES. Convertis si tu vois des pouces "
-    "  (1 in = 25.4 mm) ou pieds (1 ft = 304.8 mm).\n"
-    "- Si la même cote apparaît N fois (qty visible), incrémente `qty`.\n"
-    "- profile : si tu vois une référence de profilé (Reynaers CS68, "
-    "  Kawneer 451, Sapa 5500, etc.), mets-la ici.\n"
-    "- material : type de matériau si visible (Alu anodisé, Verre trempé 6mm, etc.)\n"
-    "- label : court, ex. 'Linteau haut', 'Vitrage gauche', 'Charnière 3'.\n"
-    "- Si tu doutes d'une cote, mets-la quand même mais ajoute un warning.\n"
+    "- Toutes dimensions en MILLIMÈTRES. Convertis pouces (1 in = 25.4 mm), "
+    "  fractions ('11/16\"' = 17.46 mm), pieds (1 ft = 304.8 mm).\n"
+    "- Si la même pièce apparaît N fois (qty visible OU symétrie évidente), incrémente `qty`.\n"
+    "- profile : référence du profilé si visible (Reynaers CS68, Kawneer 451, Sapa 5500…).\n"
+    "- material : type si visible (Alu anodisé clair, Verre trempé 6mm, Thermos 25.4mm, etc.).\n"
+    "- label : court, atelier-friendly. Ex. 'Porte gauche', 'Sidelite gauche', "
+    "  'Linteau haut', 'Meneau central', 'Vitrage SL1 6mm'.\n"
+    "- opening_length_mm / opening_width_mm = cote BRUTE lue sur le plan, AVANT "
+    "  soustraction des profilés et lousses. À fournir pour les portes et vitrages "
+    "  pour permettre la vérification atelier.\n"
+    "- length_mm / width_mm = cote FINALE de coupe, APRÈS soustractions.\n"
+    "- notes : indique le calcul appliqué, ex. 'Brut 914 - 2×3 lousse - 2×50 montants = 808'.\n"
     "- AUCUN texte hors du JSON. Pas de ```json. Pas d'explication."
 )
 
@@ -148,11 +187,14 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
             "width_mm": float(it.get("width_mm")) if it.get("width_mm") not in (None, "") else None,
             "thickness_mm": float(it.get("thickness_mm")) if it.get("thickness_mm") not in (None, "") else None,
             "qty": int(it.get("qty") or 1) if str(it.get("qty") or "").replace(".", "").isdigit() else 1,
+            "opening_length_mm": float(it.get("opening_length_mm")) if it.get("opening_length_mm") not in (None, "") else None,
+            "opening_width_mm": float(it.get("opening_width_mm")) if it.get("opening_width_mm") not in (None, "") else None,
             "notes": (it.get("notes") or None) or None,
             "source": "ocr",
         })
     return {
         "items": items,
+        "frame_specs": data.get("frame_specs") or {},
         "unit_detected": data.get("unit_detected", "unknown"),
         "confidence": float(data.get("confidence") or 0),
         "warnings": data.get("warnings", []) or [],
