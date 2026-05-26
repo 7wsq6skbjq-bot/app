@@ -21,6 +21,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from erp import build_erp_router
 from erp_reminders import start_scheduler
+from erp_monthly_recap import start_recap_scheduler
 
 # ==============================================================
 # Configuration
@@ -346,8 +347,10 @@ async def startup_event():
     # (e.g. inside pytest runs where scheduler side-effects are unwanted).
     if os.environ.get("DISABLE_SCHEDULER", "").lower() not in ("1", "true", "yes"):
         app.state.scheduler = start_scheduler(db)
+        app.state.recap_scheduler = start_recap_scheduler(db)
     else:
         app.state.scheduler = None
+        app.state.recap_scheduler = None
 
 
 @app.on_event("shutdown")
@@ -355,4 +358,7 @@ async def shutdown_db_client():
     sched = getattr(app.state, "scheduler", None)
     if sched is not None:
         sched.shutdown(wait=False)
+    recap_sched = getattr(app.state, "recap_scheduler", None)
+    if recap_sched is not None:
+        recap_sched.shutdown(wait=False)
     client.close()

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Pencil, Trash2, RefreshCw, Download, Wallet, TrendingDown, Receipt, FileText, Camera, Paperclip, X as XIcon, Sparkles, ScanLine } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Download, Wallet, TrendingDown, Receipt, FileText, Camera, Paperclip, X as XIcon, Sparkles, ScanLine, Mail } from "lucide-react";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { DataCard } from "../../../components/mobile/DataCard";
 import { FAB } from "../../../components/mobile/FAB";
@@ -331,6 +331,23 @@ export const ExpensesPanel = () => {
         link.click();
     };
 
+    const sendRecapToAccountant = async () => {
+        try {
+            const { data: preview } = await http.get(`/admin/expenses/recap/preview?month=${month}`);
+            const target = window.prompt(
+                `Envoyer le récap de ${month} (${preview.count} dépense(s), ${preview.total.toFixed(2)} $) au comptable ?\n\nCourriel destinataire :`,
+                preview.default_recipient || "",
+            );
+            if (!target) return;
+            const { data } = await http.post(
+                `/admin/expenses/recap/send?month=${month}&to=${encodeURIComponent(target)}`,
+            );
+            alert(`✅ Récap envoyé à ${data.to}\nResend ID : ${data.resend_id || "n/a"}`);
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur lors de l'envoi du récap");
+        }
+    };
+
     const monthOptions = useMemo(() => {
         const out = [];
         const now = new Date();
@@ -388,6 +405,9 @@ export const ExpensesPanel = () => {
                 </select>
                 <button onClick={exportCsv} data-testid="exp-export-csv" className="btn-secondary !py-2 !px-3 !text-xs">
                     <Download className="w-3.5 h-3.5" /> CSV
+                </button>
+                <button onClick={sendRecapToAccountant} data-testid="exp-send-recap" className="btn-secondary !py-2 !px-3 !text-xs" title="Envoyer le récap mensuel au comptable">
+                    <Mail className="w-3.5 h-3.5" /> Comptable
                 </button>
                 <button onClick={load} className="btn-secondary !py-2 !px-3 !text-xs">
                     <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />

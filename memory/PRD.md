@@ -393,6 +393,25 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 
 ## Backlog / P1
 
+### 2026-05 — Iter 29 (Récap mensuel automatique des dépenses)
+**Email mensuel automatique au comptable** avec résumé HTML + CSV en pièce jointe :
+
+- **Backend** (`erp_monthly_recap.py`) :
+  - Scheduler APScheduler : **dernier vendredi de chaque mois à 9h America/Montréal** (`day='last fri'`)
+  - `build_recap(db, month)` : calcule count, sous-total, TPS, TVQ, total + répartition par catégorie + génère le CSV (UTF-8 BOM Excel-ready)
+  - `render_recap_html(recap)` : email HTML brandé Portech (navy header, tuiles montants, tableau catégories) en français
+  - `send_recap(db, month, to_email)` : Resend avec PDF... pardon, CSV en pièce jointe
+  - **Idempotence** : skip si un envoi a déjà eu lieu dans les 6 derniers jours pour le même mois (anti-double-trigger)
+  - **Audit log** : collection `erp_monthly_recap_log` (month, to, montants, resend_id, sent_at)
+  - **3 endpoints admin** : `GET /admin/expenses/recap/preview` (résumé sans email), `POST /admin/expenses/recap/send?month=&to=` (envoi manuel), `GET /admin/expenses/recap/log` (historique)
+  - Nouvelle env var **`ACCOUNTANT_EMAIL`** (default = `LEADS_RECIPIENT_EMAIL` = portech.infos@gmail.com)
+
+- **Frontend** : bouton **« 📨 Comptable »** dans la toolbar `ExpensesPanel` (data-testid `exp-send-recap`) — confirme le destinataire via prompt, affiche le résumé avant envoi, montre le Resend ID après succès.
+
+- **Tests** : 7 nouveaux pytest (`test_monthly_recap.py`) — auth guards, preview avec données réelles (math vérifiée), preview vide, build_recap pure function, render HTML contract, skip-if-recent du scheduler, log endpoint. **108/108 pytest ✅**
+- **Validation live** : envoi réel à `portech.infos@gmail.com` via Resend OK (resend_id `f1bde3c6-d06f-46ed-b95a-319e920b8787`).
+
+
 ### 2026-05 — Iter 28 (Scan OCR IA pour reçus de dépenses)
 **Reçus de dépenses analysés par IA en 1 clic** via Gemini Vision 3 Flash Preview (`gemini-3-flash-preview`) :
 
@@ -414,6 +433,7 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 - **Tests** : 9 nouveaux cas pytest (`tests/test_expenses_ocr.py`) — auth guards x3, contrat OCR, extraction de valeurs réelles (Gemini parse une image synthétique BOUTIQUE TEST avec confidence=1.0), flow complet create→attach-temp→GET→rescan, regex anti-traversée, regression upload direct. **101/101 pytest ✅**. Testing agent v3 100% end-to-end OK (frontend Playwright + backend curl).
 
 
+## Backlog / P2
 - [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
 - [ ] Blog SEO (barres antipaniques, codes du bâtiment QC)
 - [ ] Upload de photos dans le formulaire de contact
