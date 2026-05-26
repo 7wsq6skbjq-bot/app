@@ -100,22 +100,26 @@ export const CutListPanel = () => {
     const save = async () => {
         if (!editing.name?.trim()) {
             alert("Donnez un nom au projet de coupe.");
-            return;
+            return null;
         }
         try {
             const payload = { ...editing };
             ["project_ref", "customer_name", "notes"].forEach((k) => {
                 if (payload[k] === "") payload[k] = null;
             });
-            if (editing.id) {
-                await http.put(`/admin/cuts/${editing.id}`, payload);
+            let cutId = editing.id;
+            if (cutId) {
+                await http.put(`/admin/cuts/${cutId}`, payload);
             } else {
                 const { data: created } = await http.post("/admin/cuts", payload);
-                setEditing({ ...editing, id: created.id });
+                cutId = created.id;
+                setEditing((prev) => ({ ...prev, id: cutId }));
             }
             await load();
+            return cutId;
         } catch (e) {
             alert(e?.response?.data?.detail || "Erreur de sauvegarde");
+            return null;
         }
     };
 
@@ -232,22 +236,33 @@ export const CutListPanel = () => {
     };
 
     const exportCsv = async () => {
-        if (!editing.id) { await save(); }
-        const url = `/admin/cuts/${editing.id}/export.csv`;
-        const { data } = await http.get(url, { responseType: "blob" });
+        const cutId = editing.id || (await save());
+        if (!cutId) return;
+        const { data } = await http.get(`/admin/cuts/${cutId}/export.csv`, { responseType: "blob" });
         const blob = new Blob([data], { type: "text/csv;charset=utf-8" });
+        const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = objectUrl;
         link.download = `coupes-${(editing.name || "liste").replace(/[^a-z0-9]+/gi, "-")}.csv`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
     };
 
     const exportPdf = async () => {
-        if (!editing.id) { await save(); }
-        const url = `/admin/cuts/${editing.id}/export.pdf`;
-        const { data } = await http.get(url, { responseType: "blob" });
+        const cutId = editing.id || (await save());
+        if (!cutId) return;
+        const { data } = await http.get(`/admin/cuts/${cutId}/export.pdf`, { responseType: "blob" });
         const blob = new Blob([data], { type: "application/pdf" });
-        window.open(URL.createObjectURL(blob), "_blank");
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = `coupes-${(editing.name || "liste").replace(/[^a-z0-9]+/gi, "-")}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
     };
 
     return (
