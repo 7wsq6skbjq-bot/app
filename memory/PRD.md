@@ -393,7 +393,27 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 
 ## Backlog / P1
 
-## Backlog / P2
+### 2026-05 — Iter 28 (Scan OCR IA pour reçus de dépenses)
+**Reçus de dépenses analysés par IA en 1 clic** via Gemini Vision 3 Flash Preview (`gemini-3-flash-preview`) :
+
+- **Backend** (`erp_routes_expenses.py`, `emergentintegrations`) :
+  - `POST /admin/expenses/ocr-scan` — workflow "snap-first" : upload une image/PDF brut, retourne `temp_filename` + champs extraits (merchant_name, date YYYY-MM-DD, subtotal, tps, tvq, total, suggested_category, invoice_ref, confidence 0-1).
+  - `POST /admin/expenses/{id}/receipt/ocr` — re-scan d'un reçu déjà attaché à une dépense.
+  - `POST /admin/expenses/{id}/receipt/attach-temp?temp_filename=…` — déplace un fichier temporaire (du flux snap-first) vers le slot permanent de la dépense.
+  - Validation stricte du nom de fichier temp (`_tmp_<32 hex>.<ext>`) + check de path résolu pour bloquer toute traversée `../`.
+  - Prompt système québécois — catégorisation auto (Canadian Tire → Matériaux, station-service → Carburant, etc.) + back-solve des taxes TPS/TVQ si le reçu n'a qu'un total.
+
+- **Frontend** (`ExpensesPanel.jsx`) :
+  - Nouveau bouton primaire **« Scanner reçu (IA auto-remplit) »** (data-testid `exp-ocr-scan`) — ouvre la caméra arrière sur mobile, envoie l'image, auto-remplit le formulaire.
+  - Bandeau de feedback "Scan IA appliqué · confiance XX%" après extraction.
+  - **Non-trample sur input manuel** : `supplier_name`, `invoice_ref`, `description` ne sont écrasés que s'ils sont vides.
+  - Bouton **« Re-scanner »** (data-testid `exp-rescan-ocr`) sur les dépenses existantes avec reçu attaché.
+  - Boutons secondaires « Photo sans IA » et « Galerie / PDF » conservés pour les utilisateurs qui ne veulent pas l'IA.
+  - Le fichier temp est attaché à la dépense après le `POST /expenses` (workflow nouveau → save → attach-temp transparent).
+
+- **Tests** : 9 nouveaux cas pytest (`tests/test_expenses_ocr.py`) — auth guards x3, contrat OCR, extraction de valeurs réelles (Gemini parse une image synthétique BOUTIQUE TEST avec confidence=1.0), flow complet create→attach-temp→GET→rescan, regex anti-traversée, regression upload direct. **101/101 pytest ✅**. Testing agent v3 100% end-to-end OK (frontend Playwright + backend curl).
+
+
 - [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
 - [ ] Blog SEO (barres antipaniques, codes du bâtiment QC)
 - [ ] Upload de photos dans le formulaire de contact

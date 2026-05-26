@@ -366,9 +366,13 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         _: dict = Depends(auth_dep),
     ):
         """Move a temp receipt (from /ocr-scan) onto an existing expense."""
-        if not temp_filename.startswith("_tmp_"):
+        # Strict format: _tmp_<32 hex>.<ext>  — prevents ../ traversal
+        if not re.fullmatch(r"_tmp_[a-f0-9]{32}\.[a-z0-9]+", temp_filename):
             raise HTTPException(400, "Nom de fichier temporaire invalide")
-        temp_path = RECEIPTS_DIR / temp_filename
+        temp_path = (RECEIPTS_DIR / temp_filename).resolve()
+        # Defense in depth: ensure the resolved path is inside RECEIPTS_DIR
+        if RECEIPTS_DIR.resolve() not in temp_path.parents:
+            raise HTTPException(400, "Chemin invalide")
         if not temp_path.exists():
             raise HTTPException(404, "Fichier temporaire introuvable")
         exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})

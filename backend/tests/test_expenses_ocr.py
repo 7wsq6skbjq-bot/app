@@ -191,7 +191,7 @@ class TestOcrFlow:
         # Nonexistent temp_filename (valid prefix)
         missing = requests.post(
             f"{API}/admin/expenses/{exp_id}/receipt/attach-temp",
-            headers=auth_headers, params={"temp_filename": "_tmp_doesnotexist.png"})
+            headers=auth_headers, params={"temp_filename": "_tmp_" + "0" * 32 + ".png"})
         assert missing.status_code == 404
         requests.delete(f"{API}/admin/expenses/{exp_id}", headers=auth_headers)
 
