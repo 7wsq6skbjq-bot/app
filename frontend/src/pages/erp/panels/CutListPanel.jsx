@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import {
+import { useAuth } from "@/context/AuthContext";import {
     Plus, Pencil, Trash2, RefreshCw, Download, FileText, Scissors,
     Upload, Sparkles, Layers, FileDown, X as XIcon,
 } from "lucide-react";
@@ -51,7 +50,7 @@ const emptyItem = () => ({
 });
 
 export const CutListPanel = () => {
-    const { http } = useAuth();
+    const { http, getToken } = useAuth();
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editOpen, setEditOpen] = useState(false);
@@ -235,34 +234,41 @@ export const CutListPanel = () => {
         }
     };
 
+    /** Build the absolute export URL with auth token in the query string.
+     *  This lets the browser handle the download natively (no blob/popup
+     *  acrobatics, no popup blocker, no iOS WebKit quirks). The backend
+     *  accepts ?token= as an alternative to the Bearer header. */
+    const buildExportUrl = (cutId, format) => {
+        const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+        const token = encodeURIComponent(getToken() || "");
+        return `${base}/api/admin/cuts/${cutId}/export.${format}?token=${token}`;
+    };
+
     const exportCsv = async () => {
         const cutId = editing.id || (await save());
         if (!cutId) return;
-        const { data } = await http.get(`/admin/cuts/${cutId}/export.csv`, { responseType: "blob" });
-        const blob = new Blob([data], { type: "text/csv;charset=utf-8" });
-        const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = `coupes-${(editing.name || "liste").replace(/[^a-z0-9]+/gi, "-")}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+        // Direct URL navigation — browser triggers a native download because the
+        // backend sets Content-Disposition: attachment.
+        const url = buildExportUrl(cutId, "csv");
+        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            // Same-tab navigation works reliably on iOS Safari for downloads.
+            window.location.href = url;
+        } else {
+            window.open(url, "_blank");
+        }
     };
 
     const exportPdf = async () => {
         const cutId = editing.id || (await save());
         if (!cutId) return;
-        const { data } = await http.get(`/admin/cuts/${cutId}/export.pdf`, { responseType: "blob" });
-        const blob = new Blob([data], { type: "application/pdf" });
-        const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = `coupes-${(editing.name || "liste").replace(/[^a-z0-9]+/gi, "-")}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+        const url = buildExportUrl(cutId, "pdf");
+        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            window.location.href = url;
+        } else {
+            window.open(url, "_blank");
+        }
     };
 
     return (

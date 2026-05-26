@@ -126,6 +126,12 @@ async def get_current_admin(request: Request) -> AdminUser:
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]
     if not token:
+        # Allow ?token= in the URL for native browser downloads where setting a
+        # Bearer header is impossible (e.g., <a href> or window.location.href).
+        # Same JWT — short-lived, scoped to access tokens. Acceptable trade-off
+        # because the URL is over HTTPS and the token is already in localStorage.
+        token = request.query_params.get("token")
+    if not token:
         raise HTTPException(status_code=401, detail="Non authentifié")
     try:
         payload = jwt.decode(token, os.environ["JWT_SECRET"], algorithms=[JWT_ALGORITHM])
