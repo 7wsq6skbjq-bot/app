@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Pencil, Trash2, RefreshCw, Download, Wallet, TrendingDown, Receipt, FileText, Camera, Paperclip, X as XIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Download, Wallet, TrendingDown, Receipt, FileText, Camera, Paperclip, X as XIcon, Sparkles, ScanLine } from "lucide-react";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { DataCard } from "../../../components/mobile/DataCard";
 import { FAB } from "../../../components/mobile/FAB";
@@ -58,8 +58,12 @@ export const ExpensesPanel = () => {
     const [editing, setEditing] = useState(null);
     const [receiptPreview, setReceiptPreview] = useState(null);  // blob URL for preview
     const [uploadBusy, setUploadBusy] = useState(false);
+    const [ocrBusy, setOcrBusy] = useState(false);
+    const [ocrResult, setOcrResult] = useState(null);  // { confidence, error?, merchant_name?, ... }
+    const [pendingTempReceipt, setPendingTempReceipt] = useState(null);  // {temp_filename, ext}
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
+    const ocrInputRef = useRef(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -85,11 +89,15 @@ export const ExpensesPanel = () => {
     const openNew = () => {
         setEditing(emptyExpense());
         setReceiptPreview(null);
+        setOcrResult(null);
+        setPendingTempReceipt(null);
         setEditOpen(true);
     };
     const openEdit = async (e) => {
         setEditing({ ...e });
         setReceiptPreview(null);
+        setOcrResult(null);
+        setPendingTempReceipt(null);
         setEditOpen(true);
         if (e.receipt_filename && e.id) {
             // Fetch preview as blob (auth header carries the token)
@@ -152,6 +160,103 @@ export const ExpensesPanel = () => {
         }
     };
 
+    /** Apply OCR extracted fields onto the form, only filling fields the user
+     *  hasn't already filled (so we don't trample manual input). */
+    const applyOcrToForm = (data) => {
+        setEditing((prev) => {
+            const next = { ...prev };
+            if (data.merchant_name && !prev.supplier_name) {
+                next.supplier_name = data.merchant_name;
+            }
+            if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+                next.date = data.date;
+            }
+            if (data.suggested_category && meta.categories.includes(data.suggested_category)) {
+                next.category = data.suggested_category;
+            }
+            if (data.invoice_ref && !prev.invoice_ref) {
+                next.invoice_ref = data.invoice_ref;
+            }
+            // Auto-fill description if empty (so the row isn't blank)
+            if (!prev.description && data.merchant_name) {
+                next.description = `Achat ${data.merchant_name}`;
+            }
+            // Money: prefer subtotal+taxes if returned, else back-solve from total
+            const sub = typeof data.subtotal === "number" ? data.subtotal : null;
+            const tps = typeof data.tps === "number" ? data.tps : null;
+            const tvq = typeof data.tvq === "number" ? data.tvq : null;
+            const tot = typeof data.total === "number" ? data.total : null;
+            if (sub !== null && tps !== null && tvq !== null) {
+                next.subtotal = sub;
+                next.tps = tps;
+                next.tvq = tvq;
+                next.total = tot !== null ? tot : Math.round((sub + tps + tvq) * 100) / 100;
+            } else if (tot !== null) {
+                const subBack = Math.round((tot / (1 + TPS_RATE + TVQ_RATE)) * 100) / 100;
+                next.subtotal = subBack;
+                next.tps = Math.round(subBack * TPS_RATE * 100) / 100;
+                next.tvq = Math.round(subBack * TVQ_RATE * 100) / 100;
+                next.total = tot;
+            }
+            return next;
+        });
+    };
+
+    /** Snap-first OCR: upload a photo, run OCR, auto-fill the form.
+     *  The image is held in a temp slot until the expense is saved. */
+    const handleOcrScan = async (file) => {
+        if (!file) return;
+        if (file.size > 8 * 1024 * 1024) {
+            alert("Fichier trop volumineux (max 8 MB).");
+            return;
+        }
+        setOcrBusy(true);
+        setOcrResult(null);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const { data } = await http.post("/admin/expenses/ocr-scan", fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+                timeout: 60000,
+            });
+            // Even if confidence==0, we still keep the temp file so user can attach
+            setOcrResult(data);
+            if (data.temp_filename) {
+                setPendingTempReceipt({ temp_filename: data.temp_filename });
+                // Show the local image as preview right away
+                const objectUrl = URL.createObjectURL(file);
+                setReceiptPreview(objectUrl);
+            }
+            if (!data.error) {
+                applyOcrToForm(data);
+            }
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur lors du scan OCR");
+        } finally {
+            setOcrBusy(false);
+        }
+    };
+
+    /** Re-scan a receipt that's already attached to an existing expense. */
+    const reScanAttachedReceipt = async () => {
+        if (!editing?.id || !editing.receipt_filename) return;
+        setOcrBusy(true);
+        setOcrResult(null);
+        try {
+            const { data } = await http.post(
+                `/admin/expenses/${editing.id}/receipt/ocr`,
+                null,
+                { timeout: 60000 },
+            );
+            setOcrResult(data);
+            applyOcrToForm(data);
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur lors du scan OCR");
+        } finally {
+            setOcrBusy(false);
+        }
+    };
+
     /** Auto-compute taxes from subtotal */
     const recomputeFromSubtotal = (sub) => {
         const subF = parseFloat(sub) || 0;
@@ -176,10 +281,22 @@ export const ExpensesPanel = () => {
             ["supplier_id", "supplier_name", "invoice_ref", "notes"].forEach((k) => {
                 if (payload[k] === "") payload[k] = null;
             });
-            if (editing.id) {
-                await http.put(`/admin/expenses/${editing.id}`, payload);
+            let expId = editing.id;
+            if (expId) {
+                await http.put(`/admin/expenses/${expId}`, payload);
             } else {
-                await http.post("/admin/expenses", payload);
+                const { data: created } = await http.post("/admin/expenses", payload);
+                expId = created.id;
+            }
+            // If we have a temp receipt from OCR scan, attach it now
+            if (pendingTempReceipt?.temp_filename && expId) {
+                try {
+                    await http.post(
+                        `/admin/expenses/${expId}/receipt/attach-temp?temp_filename=${encodeURIComponent(pendingTempReceipt.temp_filename)}`,
+                    );
+                } catch (err) {
+                    console.warn("Attach temp receipt failed", err);
+                }
             }
             closeEdit();
             await load();
@@ -193,6 +310,8 @@ export const ExpensesPanel = () => {
             URL.revokeObjectURL(receiptPreview);
         }
         setReceiptPreview(null);
+        setOcrResult(null);
+        setPendingTempReceipt(null);
         setEditOpen(false);
     };
 
@@ -445,13 +564,50 @@ export const ExpensesPanel = () => {
 
                         {/* Receipt photo / PDF */}
                         <div className="col-span-2">
-                            <div className="tech-stamp text-[#4b5d7a] mb-2 flex items-center gap-1">
-                                <Receipt className="w-3.5 h-3.5" /> Photo du reçu (optionnel)
+                            <div className="tech-stamp text-[#4b5d7a] mb-2 flex items-center justify-between">
+                                <span className="flex items-center gap-1">
+                                    <Receipt className="w-3.5 h-3.5" /> Photo du reçu (optionnel)
+                                </span>
+                                {editing.receipt_filename && editing.id && (
+                                    <button
+                                        type="button"
+                                        data-testid="exp-rescan-ocr"
+                                        onClick={reScanAttachedReceipt}
+                                        disabled={ocrBusy}
+                                        className="px-2 py-1 border border-[#0c182b] text-[#0c182b] tech-stamp text-[10px] hover:bg-[#f3f6fb] flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        <ScanLine className={`w-3 h-3 ${ocrBusy ? "animate-pulse" : ""}`} />
+                                        {ocrBusy ? "Scan…" : "Re-scanner"}
+                                    </button>
+                                )}
                             </div>
-                            {editing.receipt_filename ? (
+
+                            {/* OCR result banner */}
+                            {ocrResult && !ocrResult.error && (
+                                <div
+                                    data-testid="exp-ocr-result"
+                                    className="mb-2 p-2 border border-[#8ec79d] bg-[#e6f4ea] text-[#0b6b2f] text-xs flex items-start gap-2"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <strong>Scan IA appliqué</strong>
+                                        {typeof ocrResult.confidence === "number" && (
+                                            <span> · confiance {Math.round((ocrResult.confidence || 0) * 100)}%</span>
+                                        )}
+                                        . Vérifiez et corrigez les champs si besoin.
+                                    </div>
+                                </div>
+                            )}
+                            {ocrResult?.error && (
+                                <div className="mb-2 p-2 border border-[#d4be7a] bg-[#fff7e0] text-[#7a5a00] text-xs">
+                                    Scan OCR indisponible. Vous pouvez remplir les champs manuellement.
+                                </div>
+                            )}
+
+                            {editing.receipt_filename || pendingTempReceipt ? (
                                 <div className="border border-[#dde5f0] bg-[#f3f6fb] p-3">
                                     {receiptPreview ? (
-                                        receiptPreview.endsWith(".pdf") || editing.receipt_filename.endsWith(".pdf") ? (
+                                        receiptPreview.endsWith(".pdf") || (editing.receipt_filename || "").endsWith(".pdf") ? (
                                             <a href={receiptPreview} target="_blank" rel="noreferrer" className="block text-center py-8 hover:bg-white">
                                                 <FileText className="w-10 h-10 inline text-[#2f4f7f]" />
                                                 <div className="text-sm text-[#2f4f7f] mt-2">Ouvrir le PDF</div>
@@ -465,41 +621,67 @@ export const ExpensesPanel = () => {
                                         <div className="text-center py-6 text-[#4b5d7a] text-sm">Chargement de l'aperçu…</div>
                                     )}
                                     <div className="mt-3 flex justify-between items-center">
-                                        <div className="text-xs text-[#4b5d7a] truncate">{editing.receipt_filename}</div>
-                                        <button
-                                            type="button"
-                                            data-testid="exp-remove-receipt"
-                                            onClick={removeReceipt}
-                                            className="px-3 py-1.5 border border-red-300 text-red-700 tech-stamp text-xs hover:bg-red-50 flex items-center gap-1"
-                                        >
-                                            <XIcon className="w-3 h-3" /> Retirer
-                                        </button>
+                                        <div className="text-xs text-[#4b5d7a] truncate">
+                                            {editing.receipt_filename || "Reçu en attente — sera attaché à l'enregistrement"}
+                                        </div>
+                                        {editing.receipt_filename && (
+                                            <button
+                                                type="button"
+                                                data-testid="exp-remove-receipt"
+                                                onClick={removeReceipt}
+                                                className="px-3 py-1.5 border border-red-300 text-red-700 tech-stamp text-xs hover:bg-red-50 flex items-center gap-1"
+                                            >
+                                                <XIcon className="w-3 h-3" /> Retirer
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-2">
+                                    {/* Primary AI scan button — wide */}
                                     <button
                                         type="button"
-                                        data-testid="exp-take-photo"
-                                        onClick={() => cameraInputRef.current?.click()}
-                                        disabled={uploadBusy}
-                                        className="px-4 py-3 border border-[#0c182b] text-[#0c182b] tech-stamp hover:bg-[#f3f6fb] flex items-center justify-center gap-2 disabled:opacity-50"
+                                        data-testid="exp-ocr-scan"
+                                        onClick={() => ocrInputRef.current?.click()}
+                                        disabled={ocrBusy || uploadBusy}
+                                        className="w-full px-4 py-3 border-2 border-[#0c182b] bg-[#0c182b] text-white tech-stamp hover:bg-[#1d3557] flex items-center justify-center gap-2 disabled:opacity-50"
                                     >
-                                        <Camera className="w-4 h-4" /> Prendre photo
+                                        <Sparkles className={`w-4 h-4 ${ocrBusy ? "animate-pulse" : ""}`} />
+                                        {ocrBusy ? "Analyse IA en cours…" : "Scanner reçu (IA auto-remplit)"}
                                     </button>
-                                    <button
-                                        type="button"
-                                        data-testid="exp-pick-file"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        disabled={uploadBusy}
-                                        className="px-4 py-3 border border-[#dde5f0] text-[#4b5d7a] tech-stamp hover:bg-[#f3f6fb] flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        <Paperclip className="w-4 h-4" /> Galerie / PDF
-                                    </button>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            data-testid="exp-take-photo"
+                                            onClick={() => cameraInputRef.current?.click()}
+                                            disabled={uploadBusy || ocrBusy}
+                                            className="px-3 py-2 border border-[#dde5f0] text-[#4b5d7a] tech-stamp text-xs hover:bg-[#f3f6fb] flex items-center justify-center gap-1 disabled:opacity-50"
+                                        >
+                                            <Camera className="w-3.5 h-3.5" /> Photo sans IA
+                                        </button>
+                                        <button
+                                            type="button"
+                                            data-testid="exp-pick-file"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={uploadBusy || ocrBusy}
+                                            className="px-3 py-2 border border-[#dde5f0] text-[#4b5d7a] tech-stamp text-xs hover:bg-[#f3f6fb] flex items-center justify-center gap-1 disabled:opacity-50"
+                                        >
+                                            <Paperclip className="w-3.5 h-3.5" /> Galerie / PDF
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                             {uploadBusy && <div className="text-xs text-[#4b5d7a] mt-2 text-center">Upload en cours…</div>}
                             {/* Hidden inputs */}
+                            <input
+                                ref={ocrInputRef}
+                                type="file"
+                                accept="image/*,application/pdf"
+                                capture="environment"
+                                className="hidden"
+                                data-testid="exp-ocr-input"
+                                onChange={(e) => { handleOcrScan(e.target.files?.[0]); e.target.value = ""; }}
+                            />
                             <input
                                 ref={cameraInputRef}
                                 type="file"
@@ -507,7 +689,7 @@ export const ExpensesPanel = () => {
                                 capture="environment"
                                 className="hidden"
                                 data-testid="exp-camera-input"
-                                onChange={(e) => handleReceiptFile(e.target.files?.[0])}
+                                onChange={(e) => { handleReceiptFile(e.target.files?.[0]); e.target.value = ""; }}
                             />
                             <input
                                 ref={fileInputRef}
@@ -515,7 +697,7 @@ export const ExpensesPanel = () => {
                                 accept="image/*,application/pdf"
                                 className="hidden"
                                 data-testid="exp-file-input"
-                                onChange={(e) => handleReceiptFile(e.target.files?.[0])}
+                                onChange={(e) => { handleReceiptFile(e.target.files?.[0]); e.target.value = ""; }}
                             />
                         </div>
 
@@ -523,7 +705,7 @@ export const ExpensesPanel = () => {
                             <textarea rows={2} value={editing.notes || ""} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} className={inputClass} />
                         </Field>
                         <div className="col-span-2 p-3 bg-[#f3f6fb] border border-[#dde5f0] text-xs text-[#4b5d7a]">
-                            💡 Astuce : tapez votre sous-total → les taxes (TPS 5% + TVQ 9.975%) se calculent automatiquement. Vous pouvez aussi taper le total — le sous-total se calcule à rebours.
+                            💡 Astuce : prenez le reçu en photo avec « Scanner reçu (IA) » — l'IA remplit automatiquement marchand, date, sous-total, TPS, TVQ, total et catégorie. Vous pouvez aussi taper le sous-total ou le total — les taxes se calculent à rebours.
                         </div>
                     </div>
                 </Modal>

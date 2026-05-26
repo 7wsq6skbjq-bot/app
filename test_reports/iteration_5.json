@@ -1,0 +1,34 @@
+{
+  "summary": "End-to-end testing of the new Portech ERP AI OCR receipt scan flow (Gemini Vision wired into ExpensesPanel.jsx). Backend: 9/9 pytest cases pass in /app/backend/tests/test_expenses_ocr.py — auth guards on all three OCR endpoints (ocr-scan, attach-temp, receipt/ocr); POST /api/admin/expenses/ocr-scan with a synthetic PIL receipt returned temp_filename + merchant_name=BOUTIQUE TEST, date=2026-01-15, subtotal=100.0, tps=5.0, tvq=9.98, total=114.98, invoice_ref=TEST-0001, suggested_category=Autre, confidence=1.0 (Gemini parsed the synthetic PNG perfectly); POST /api/admin/expenses/{id}/receipt/attach-temp moves the _tmp_ file onto the expense and sets receipt_filename={expense_id}_{hash}.png; POST /api/admin/expenses/{id}/receipt/ocr re-scans an attached receipt and returns same field contract; bad temp_filename → 400, non-existent temp → 404, .exe extension → 400; legacy direct /receipt upload still works. Frontend: full Playwright flow — login at /admin/login → /admin/gestion/depenses → Nouvelle dépense → click data-testid=exp-ocr-scan → set_input_files on exp-ocr-input → exp-ocr-result banner appears with 'Scan IA appliqué · confiance 100%' → all form fields auto-fill (supplier=BOUTIQUE TEST, desc='Achat BOUTIQUE TEST', subtotal=100, total=114.98, date=2026-01-15, invoice_ref=TEST-9999) → image preview visible → Enregistrer → modal closes → row appears in janvier-2026 filter with '📎 Reçu' badge, total 114,98 $, status Payée, category Autre, and summary cards updated (Dépenses du mois 114,98 $, Sous-total HT 100,00 $, TPS 5,00 $, TVQ 9,98 $). The save() handler correctly called POST /api/admin/expenses (201) then POST /api/admin/expenses/{id}/receipt/attach-temp?temp_filename=_tmp_... (verified via GET listing: receipt_filename persisted in Mongo). All test data cleaned up.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_expenses_ocr.py",
+    "/app/test_reports/pytest/iteration_5_ocr.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "erp_routes_expenses.py /expenses/ocr-scan: the temp file is never auto-purged. If a user clicks 'Scanner reçu (IA)' then abandons the modal without saving, the _tmp_* file lingers in /app/backend/receipts forever. Recommend a periodic janitor (e.g., delete _tmp_* older than 24h) or unlink the temp on modal close in the frontend.",
+    "erp_routes_expenses.py /expenses/{id}/receipt/attach-temp: temp_filename comes from a query string (?temp_filename=...) and is validated only by the prefix check 'startswith _tmp_'. A crafted name like '_tmp_../../../etc/passwd' would still pass the prefix check; Path('/app/backend/receipts') / '_tmp_../../etc/passwd' resolves outside the receipts dir. Add a strict regex (e.g., r'^_tmp_[a-f0-9]{32}\\.[a-z0-9]+$') or validate the resolved path is under RECEIPTS_DIR.",
+    "ExpensesPanel.jsx handleOcrScan: file size limit is hard-coded to 8*1024*1024 in the frontend but the backend also enforces 8 MB. Fine, but the user gets a generic browser-alert; consider a styled toast and progress indicator for big uploads on mobile data.",
+    "applyOcrToForm only overwrites form fields when previous value is empty (supplier_name, invoice_ref, description) BUT it always overwrites date/category/subtotal/tps/tvq/total even if the user already typed them. If the user starts filling fields manually then snaps a receipt, their typed amounts get clobbered. Either symmetric 'don't trample manual input' rule, or warn the user.",
+    "On Re-scan (existing receipt), applyOcrToForm() unconditionally overwrites the currently-saved subtotal/tps/tvq/total. If a previous OCR was wrong and the user corrected, re-scanning silently re-corrupts the row. Consider a confirm dialog or a diff preview."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_expenses_ocr.py (NEW — 9 cases: auth guards x3, ocr-scan contract, ocr-scan value extraction, full create→attach-temp→GET→rescan flow, bad temp_filename, bad extension, legacy direct upload regression)"
+  ],
+  "success_rate": {"backend": "100% (9/9 new OCR tests)", "frontend": "100% — OCR scan → auto-fill → save → attach-temp end-to-end verified visually + via API; re-scan endpoint verified at API level"},
+  "test_credentials": "PortechAdmin / Portech2026! (verified working)",
+  "seed_data_creation": "One BOUTIQUE TEST expense (date 2026-01-15, total 114.98 $) was created via the UI to verify the full OCR→save→attach-temp flow, then deleted via API. Synthetic receipt PNG at /tmp/synth_receipt.png left on disk for any rerun. No leftover DB data, no leftover _tmp_* files (attach-temp moved them to permanent then DELETE expense cascaded the file unlink).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "OCR flow is fully working. Gemini Vision returns confidence=1.0 on the synthetic PIL PNG (BOUTIQUE TEST / Sous-total 100.00 / TPS 5.00 / TVQ 9.98 / Total 114.98). The frontend modal correctly stages a pendingTempReceipt via /ocr-scan, then attaches it via /receipt/attach-temp after the expense POST returns its id. Edit modal exposes [data-testid=exp-rescan-ocr] only when editing.receipt_filename is present, and reScanAttachedReceipt() unconditionally overwrites form fields — see code-review note about user-input trample on re-scan. The only minor weaknesses worth fixing are the path-traversal exposure on attach-temp's temp_filename param and the lack of a janitor for orphan _tmp_* files. test_expenses_ocr.py is the canonical regression file for this feature.",
+  "rca of the issue": "No defects found. Backend endpoints behave per contract, frontend wiring (handleOcrScan → applyOcrToForm → save → attach-temp) is correct, and the 📎 Reçu badge renders on the saved row. Code-review notes above are forward-looking hardening suggestions, not bugs."
+}
