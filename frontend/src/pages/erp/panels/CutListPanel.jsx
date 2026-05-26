@@ -207,6 +207,13 @@ export const CutListPanel = () => {
     };
 
     const optimize = async () => {
+        const hasValidFrame = (editing.items || []).some(
+            (it) => it.item_type === "frame" && Number(it.length_mm) > 0,
+        );
+        if (!hasValidFrame) {
+            alert("Ajoutez au moins un élément 'Cadre' avec une longueur > 0 mm avant d'optimiser.");
+            return;
+        }
         try {
             // Ensure saved before optimizing (so we have an id + persisted items)
             if (!editing.id) {

@@ -228,6 +228,12 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         except Exception as exc:
             logger.warning("OCR plan failed: %s", exc)
             raise HTTPException(502, f"Échec de l'extraction OCR : {exc}")
+        finally:
+            # Remove uploaded file after parsing — we keep only the structured items
+            try:
+                out_path.unlink(missing_ok=True)
+            except Exception:
+                pass
         return {
             "source_filename": fname,
             "source_type": "pdf" if ext == ".pdf" else "image",
@@ -248,7 +254,13 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         fname = f"plan_{uuid.uuid4().hex}{ext}"
         out_path = UPLOADS_DIR / fname
         out_path.write_bytes(contents)
-        result = parse_dxf(str(out_path))
+        try:
+            result = parse_dxf(str(out_path))
+        finally:
+            try:
+                out_path.unlink(missing_ok=True)
+            except Exception:
+                pass
         # Attach UUIDs to items
         for it in result.get("items", []):
             it["id"] = str(uuid.uuid4())

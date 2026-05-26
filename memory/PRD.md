@@ -393,7 +393,36 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 
 ## Backlog / P1
 
-### 2026-05 — Iter 29 (Récap mensuel automatique des dépenses)
+### 2026-05 — Iter 30 (Listes de coupe — extraction IA/DXF + optimisation 1D)
+**Nouveau module ERP « Listes de coupe »** (`/admin/gestion/coupes`) pour générer des plans de coupe d'atelier depuis :
+- 📄 **PDF d'architecte ou photo de plan** → Gemini Vision (`gemini-3-flash-preview`) extrait éléments + dimensions
+- 📐 **Fichier DXF** → `ezdxf` parse LINE / LWPOLYLINE / CIRCLE → frame / glass / hole
+- ✍️ **Saisie manuelle** dans tableau éditable
+
+**Backend** (5 nouveaux fichiers) :
+- `cut_models.py` — Pydantic `CutList` / `CutItem` (6 types : frame, glass, panel, hardware, hole, other). Defaults Portech : barres **6800/7000/7315 mm**, saignée **10 mm**, verres 6/25.4 mm.
+- `cut_optimizer.py` — algorithme **FFD 1D bin-packing avec saignée** ; pour chaque candidat de stock, lance FFD et choisit le min-waste. Regroupe les `frame` par (profilé, matériau).
+- `cut_dxf.py` — parse `$INSUNITS` (mm/in/cm/ft), extrait LINE → frame, LWPOLYLINE fermée 4-coins → glass (si calque contient "verre"/"glass") ou panel, CIRCLE → hole.
+- `cut_pdf.py` — feuille A4 atelier (ReportLab) : header projet, tuiles barres/chute/efficacité, layout des coupes par profilé, table vitrages, checklist quincaillerie avec cases ☐.
+- `cut_routes.py` — 10 endpoints :
+  - `GET/POST/PUT/DELETE /admin/cuts` + `GET /admin/cuts/{id}` (CRUD)
+  - `POST /admin/cuts/extract` (PDF/image → Gemini Vision)
+  - `POST /admin/cuts/extract-dxf` (DXF → ezdxf)
+  - `POST /admin/cuts/{id}/optimize` + `POST /admin/cuts/optimize-preview` (inline)
+  - `GET /admin/cuts/{id}/export.csv` + `export.pdf`
+  - `GET /admin/cuts/meta` (stock lengths, kerf, item types)
+  - Cleanup automatique des uploads temp après parsing.
+
+**Frontend** (`CutListPanel.jsx` + intégration AdminErp + MobileTabBar) :
+- Modal large avec : champs projet/réf/client, zone import (2 boutons IA/DXF), config barres+saignée, tableau éditable d'éléments, bouton vert « Optimiser les coupes », exports CSV + PDF atelier.
+- Affichage du résultat d'optimisation : tuiles barres/chute/efficacité/verres + layout détaillé bar par bar avec mention de la chute par barre.
+- Validation client : "Optimiser" désactivé si aucun élément cadre avec longueur > 0.
+
+**Tests** : 14 tests pytest (`test_cuts.py` 11 + `test_cuts_extract.py` 3) — math FFD avec saignée vérifiée sur cas concret [2400,2400,2150,2150,1100] / stock 6800 → 2 barres, chute 3370 mm. **121/122 pytest ✅** (1 skip réseau pré-existant). Testing agent v3 100% end-to-end OK (Playwright complet incluant DXF upload + PDF export).
+
+**Limitation connue** : DWG non supporté (nécessiterait conversion cloud, exclu par l'utilisateur). Optimisation 2D du verre non implémentée (Phase 3 future).
+
+
 **Email mensuel automatique au comptable** avec résumé HTML + CSV en pièce jointe :
 
 - **Backend** (`erp_monthly_recap.py`) :
