@@ -1,12 +1,20 @@
-"""Expense CRUD + monthly summary + CSV export + receipt photo upload."""
+"""Expense CRUD + monthly summary + CSV export + receipt photo upload + OCR."""
 import csv
 import io
+import json
+import logging
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from emergentintegrations.llm.chat import (
+    FileContentWithMimeType,
+    LlmChat,
+    UserMessage,
+)
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -19,6 +27,8 @@ from erp_models_expense import (
     ExpenseIn,
 )
 
+logger = logging.getLogger("portech.expenses")
+
 RECEIPTS_DIR = Path(os.environ.get("EXPENSE_RECEIPTS_DIR", "/app/backend/receipts"))
 RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -28,6 +38,103 @@ ALLOWED_RECEIPT_MIME = {
     "application/pdf",
 }
 MAX_RECEIPT_BYTES = 8 * 1024 * 1024  # 8 MB
+
+# ---------------------------------------------------------------------------
+# OCR — Gemini multimodal
+# ---------------------------------------------------------------------------
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+OCR_MODEL = os.environ.get("EXPENSE_OCR_MODEL", "gemini-3-flash-preview")
+
+# Mime types Gemini handles directly via file path
+GEMINI_MIME_BY_EXT = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".heic": "image/heic", ".heif": "image/heif",
+    ".pdf": "application/pdf",
+}
+
+OCR_SYSTEM_PROMPT = (
+    "Tu es un assistant de comptabilité qui analyse les reçus de dépenses d'une "
+    "entreprise québécoise (Portech, quincaillerie de portes commerciales). "
+    "Tu retournes UNIQUEMENT du JSON valide, sans aucun texte avant ou après, "
+    "sans bloc de code markdown."
+)
+
+OCR_USER_PROMPT = (
+    "Analyse l'image du reçu/facture ci-jointe et retourne un objet JSON avec "
+    "exactement ces champs :\n"
+    "- merchant_name (string ou null) : nom du commerce/fournisseur sur le reçu\n"
+    "- date (string YYYY-MM-DD ou null) : date du reçu\n"
+    "- subtotal (number ou null) : montant avant taxes (sous-total HT)\n"
+    "- tps (number ou null) : montant de la TPS (GST, taxe fédérale 5%)\n"
+    "- tvq (number ou null) : montant de la TVQ (taxe Québec 9.975%)\n"
+    "- total (number ou null) : montant total payé\n"
+    "- suggested_category (string) : une seule valeur parmi : "
+    f"{', '.join(EXPENSE_CATEGORIES)}\n"
+    "- invoice_ref (string ou null) : numéro de facture/reçu visible\n"
+    "- confidence (number 0 à 1) : ta confiance globale dans l'extraction\n"
+    "\n"
+    "Règles :\n"
+    "- Si le reçu n'a qu'un montant total (sans détail des taxes), "
+    "  calcule subtotal/tps/tvq à rebours avec les taux 5% et 9.975%.\n"
+    "- Pour la catégorie, déduis-la du commerce : Canadian Tire/Rona/Home Depot → "
+    "Matériaux ; station-service → Carburant ; restaurant → Repas/Représentation ; "
+    "logiciel SaaS → Abonnements logiciels ; etc.\n"
+    "- Si tu ne peux pas lire le reçu, retourne tous les champs à null mais "
+    "  garde confidence à 0.\n"
+    "- AUCUN texte hors du JSON. Pas de ```json ... ```."
+)
+
+
+def _strip_json_fence(s: str) -> str:
+    s = s.strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```(?:json)?\s*", "", s)
+        s = re.sub(r"\s*```$", "", s)
+    return s.strip()
+
+
+async def _ocr_receipt(file_path: Path, mime_type: str) -> dict:
+    """Call Gemini multimodal to extract structured data from a receipt image."""
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(503, "EMERGENT_LLM_KEY non configurée — OCR indisponible.")
+    chat = (
+        LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=f"ocr-receipt-{uuid.uuid4().hex[:8]}",
+            system_message=OCR_SYSTEM_PROMPT,
+        )
+        .with_model("gemini", OCR_MODEL)
+    )
+    file_content = FileContentWithMimeType(
+        file_path=str(file_path),
+        mime_type=mime_type,
+    )
+    msg = UserMessage(text=OCR_USER_PROMPT, file_contents=[file_content])
+    raw = await chat.send_message(msg)
+    raw_text = raw if isinstance(raw, str) else str(raw)
+    try:
+        data = json.loads(_strip_json_fence(raw_text))
+    except json.JSONDecodeError:
+        logger.warning("OCR non-JSON response: %s", raw_text[:300])
+        # Sometimes the model wraps in extra text — find the first { … } block
+        match = re.search(r"\{[\s\S]*\}", raw_text)
+        if not match:
+            raise HTTPException(502, "Réponse OCR invalide")
+        data = json.loads(match.group(0))
+    # Sanitize numeric fields
+    for k in ("subtotal", "tps", "tvq", "total", "confidence"):
+        v = data.get(k)
+        if v in ("", None):
+            data[k] = None
+        else:
+            try:
+                data[k] = float(v)
+            except (TypeError, ValueError):
+                data[k] = None
+    # Validate category
+    if data.get("suggested_category") not in EXPENSE_CATEGORIES:
+        data["suggested_category"] = "Autre"
+    return data
 
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
@@ -212,6 +319,77 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             {"$set": {"receipt_filename": None, "updated_at": datetime.now(timezone.utc).isoformat()}},
         )
         return {"deleted": True}
+
+    @router.post("/expenses/{expense_id}/receipt/ocr")
+    async def ocr_existing_receipt(expense_id: str, _: dict = Depends(auth_dep)):
+        """Run OCR on a receipt already attached to an expense."""
+        exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
+        if not exp or not exp.get("receipt_filename"):
+            raise HTTPException(404, "Aucun reçu pour cette dépense")
+        fp = RECEIPTS_DIR / exp["receipt_filename"]
+        if not fp.exists():
+            raise HTTPException(404, "Fichier introuvable")
+        mime = GEMINI_MIME_BY_EXT.get(fp.suffix.lower(), "image/jpeg")
+        return await _ocr_receipt(fp, mime)
+
+    @router.post("/expenses/ocr-scan")
+    async def ocr_scan(file: UploadFile = File(...), _: dict = Depends(auth_dep)):
+        """Scan a raw image upload (snap-first workflow).
+
+        Saves the file to a temp slot, runs OCR, returns the extracted fields
+        plus a `temp_filename` the frontend can pass to /expenses + then call
+        /expenses/{id}/receipt/attach-temp to move it permanently.
+        """
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in ALLOWED_RECEIPT_EXTS:
+            raise HTTPException(400, f"Format non supporté. Acceptés : {', '.join(sorted(ALLOWED_RECEIPT_EXTS))}")
+        contents = await file.read(MAX_RECEIPT_BYTES + 1)
+        if len(contents) > MAX_RECEIPT_BYTES:
+            raise HTTPException(413, f"Fichier trop volumineux (max {MAX_RECEIPT_BYTES // 1024 // 1024} MB)")
+        # Save to temp slot (will be moved to permanent when attach-temp is called)
+        temp_fname = f"_tmp_{uuid.uuid4().hex}{ext}"
+        out_path = RECEIPTS_DIR / temp_fname
+        out_path.write_bytes(contents)
+        mime = GEMINI_MIME_BY_EXT.get(ext, "image/jpeg")
+        try:
+            extracted = await _ocr_receipt(out_path, mime)
+        except Exception as exc:
+            # Don't delete the temp file — user might still want to keep it without OCR
+            logger.warning("OCR failed: %s", exc)
+            extracted = {"confidence": 0, "error": str(exc)}
+        return {"temp_filename": temp_fname, **extracted}
+
+    @router.post("/expenses/{expense_id}/receipt/attach-temp")
+    async def attach_temp_receipt(
+        expense_id: str,
+        temp_filename: str = Query(...),
+        _: dict = Depends(auth_dep),
+    ):
+        """Move a temp receipt (from /ocr-scan) onto an existing expense."""
+        if not temp_filename.startswith("_tmp_"):
+            raise HTTPException(400, "Nom de fichier temporaire invalide")
+        temp_path = RECEIPTS_DIR / temp_filename
+        if not temp_path.exists():
+            raise HTTPException(404, "Fichier temporaire introuvable")
+        exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
+        if not exp:
+            raise HTTPException(404, "Dépense introuvable")
+        # Remove previous receipt if any
+        if exp.get("receipt_filename"):
+            old = RECEIPTS_DIR / exp["receipt_filename"]
+            if old.exists():
+                try:
+                    old.unlink()
+                except Exception:
+                    pass
+        ext = temp_path.suffix
+        new_name = f"{expense_id}_{uuid.uuid4().hex[:8]}{ext}"
+        temp_path.rename(RECEIPTS_DIR / new_name)
+        await db.erp_expenses.update_one(
+            {"id": expense_id},
+            {"$set": {"receipt_filename": new_name, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return {"receipt_filename": new_name}
 
     @router.get("/expenses/export.csv")
     async def export_csv(
