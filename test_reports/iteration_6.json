@@ -1,0 +1,44 @@
+{
+  "summary": "Validated the new Cut List (Listes de coupe) feature end-to-end. Backend: full pytest run 121 passed / 1 skipped — includes the existing 11 cuts tests (optimizer FFD math, DXF parser, CRUD + CSV + PDF, auth guards) plus 3 NEW cases I added in /app/backend/tests/test_cuts_extract.py covering the Gemini Vision /extract endpoint (auth guard, bad-extension rejection, happy-path with a synthetic PIL PNG plan — response keys items/unit_detected/confidence/warnings/source_filename/source_type all present, HTTP 200). No regressions on auth, expenses (OCR), invoices, POs, BOLs, prospection, monthly recap, ERP CRUD. Frontend Playwright e2e on /admin/gestion/coupes: login → [data-testid=cuts-panel] renders → Coupes link present in nav → [data-testid=cuts-new] opens modal → fill cuts-name + 2 add-item clicks → fill items (CS68/2400mm/qty2, CS68/2150mm/qty2) → cuts-optimize → cuts-optimization block shows 2 barres, chute 4480 mm, efficacité 67.1% with bar layout #1 2400+2400 (chute 1990mm) and #2 2150+2150 (chute 2490mm) — matches optimizer math exactly. cuts-save persists the list (verified via DELETE roundtrip). DXF upload via expect_file_chooser on cuts-import-dxf → cuts-extract-result shows '📐 3 entité(s) extraite(s) du DXF' and the items table grows from 2 to 5 rows (Cadre line 2000mm, Verre rectangle 1500×800, Perçage Ø25mm). cuts-export-pdf triggers a download (cut_list_id.pdf, valid bytes). All happy-path flows green.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Cut List modal (/admin/gestion/coupes new)", "issues": ["After clicking 'Enregistrer' (cuts-save) the modal stays open. This is likely intentional (so user can continue exporting CSV/PDF without re-opening), but the user gets no visible toast confirming the save — a small 'Liste enregistrée ✓' badge or auto-collapse with toast would improve UX feedback.", "Item rows in the editable table have no data-testid on inputs — selectors must rely on positional input nth-of-type. Adding e.g. data-testid=cuts-item-{idx}-length / -qty / -profile would harden future regression tests."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_cuts.py",
+    "/app/backend/tests/test_cuts_extract.py",
+    "/app/test_reports/pytest/iteration_6_full.xml"
+  ],
+  "action_items": [
+    "(Optional, non-blocking) Add data-testid attributes to the row inputs inside the cuts items table (e.g., cuts-item-{idx}-length, -profile, -qty) so Playwright doesn't have to rely on positional locators.",
+    "(Optional) Add a toast/banner confirming save after cuts-save success, and consider auto-closing the modal or showing a checkmark on the save button for ~1s.",
+    "(Optional) Janitor for /app/backend/cut_uploads — same orphan-temp-file concern as the receipts dir flagged in iteration 5: uploaded DXF/PDF/PNG files never get auto-purged if the user abandons the modal."
+  ],
+  "critical_code_review_comments": [
+    "cut_routes.py /extract: file is saved to UPLOADS_DIR/{uuid}{ext} but is never deleted after Gemini parses it. Long-running deployments will accumulate plan PDFs/PNGs forever. Recommend either unlink after parsing or a cron-style cleanup.",
+    "cut_routes.py /extract-dxf: same lifecycle issue — the uploaded .dxf is parsed in place and never removed.",
+    "cut_routes.py: MAX_UPLOAD_BYTES = 20 MB but FastAPI's UploadFile streams to a SpooledTemporaryFile so the request can stage the full file before the size check fires. For production-grade behavior, enforce size via the Content-Length header or stream-bounded read; otherwise a malicious 2 GB upload still gets buffered locally before being rejected.",
+    "cut_optimizer.py optimize_group: FFD is correct but when a cut exceeds every candidate stock the function returns it as a separate bar with stock=max(candidate_stocks) — the bar 'used' length goes negative in waste math. Verified in test_optimizer_handles_oversize_cut that it doesn't crash, but consider returning warnings=['oversize: 7500mm'] so the UI surfaces it (currently the user just sees a bar with weird chute).",
+    "CutListPanel.jsx (frontend): the editable items table does not validate that length_mm > 0 before allowing 'Optimiser'. A row with L=0 silently contributes nothing and inflates 'efficacité' rather than warning. Add client-side validation + disable cuts-optimize when no valid frame item exists."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_cuts_extract.py (NEW — 3 cases: /extract auth guard, bad extension rejection, happy-path Gemini Vision contract validation on a synthetic PIL PNG)"
+  ],
+  "success_rate": {
+    "backend": "100% — 121/122 passed, 1 skipped (test_scrape_montreal is network-gated, pre-existing skip). New /extract cases: 3/3 PASS.",
+    "frontend": "100% — full /admin/gestion/coupes flow (panel render, nav tab, modal open, items fill, optimize, save, DXF upload, PDF export) all green."
+  },
+  "test_credentials": "PortechAdmin / Portech2026! (verified working via /api/auth/login + UI login)",
+  "seed_data_creation": "Created 1 cut list 'PLAYWRIGHT_TEST_PROJ' via the UI to exercise the full flow, then deleted it via API. One pre-existing 'Test smoke' cut list remains in the collection (was already there before this run). No leftover temp files in /app/backend/cut_uploads from this run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Cut List feature is fully working. Canonical regression files: test_cuts.py (11 cases: optimizer/DXF/CRUD) + test_cuts_extract.py (3 cases: Gemini Vision plan OCR). All cuts endpoints are under /api/admin/cuts and require Bearer auth. New Mongo collection: erp_cut_lists. Upload temp dir: /app/backend/cut_uploads (auto-created, but never auto-purged — see action items). The Gemini Vision /extract endpoint uses EMERGENT_LLM_KEY and model gemini-3-flash-preview (env-configurable via EXPENSE_OCR_MODEL). On synthetic PIL PNG plans Gemini may return items=[] with low confidence — tests assert only the response contract, not the extracted content. For the optimizer math reference test, the canonical example [2400,2400,2150,2150,1100] / stock [6800,7000,7315] / kerf 10 → 2 bars on 6800mm, total_waste=3370mm is verified in test_optimizer_ffd_kerf_math.",
+  "rca of the issue": "No defects found. Feature works as specified. Code-review comments above are forward-looking hardening suggestions (file lifecycle, oversize-cut UX warnings, client-side validation), not blocking bugs."
+}

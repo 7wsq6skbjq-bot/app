@@ -11,6 +11,7 @@ import { CalendarPanel } from "./erp/panels/CalendarPanel";
 import { DashboardPanel } from "./erp/panels/DashboardPanel";
 import { ProspectionPanel } from "./erp/panels/ProspectionPanel";
 import { ExpensesPanel } from "./erp/panels/ExpensesPanel";
+import { CutListPanel } from "./erp/panels/CutListPanel";
 import { MobileTabBar } from "../components/mobile/MobileTabBar";
 
 const TABS = [
@@ -23,6 +24,7 @@ const TABS = [
     { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
     { slug: "connaissements",  label: "Connaissements",  panel: "bills-of-lading" },
     { slug: "depenses",        label: "Dépenses",        panel: "expenses" },
+    { slug: "coupes",          label: "Coupes",          panel: "cuts" },
     { slug: "prospection",     label: "Prospection",     panel: "prospection" },
 ];
 
@@ -88,6 +90,7 @@ const AdminErp = () => {
                 {activeTab.panel === "purchase-orders" && <PurchaseOrdersPanel />}
                 {activeTab.panel === "bills-of-lading" && <BolPanel />}
                 {activeTab.panel === "expenses" && <ExpensesPanel />}
+                {activeTab.panel === "cuts" && <CutListPanel />}
                 {activeTab.panel === "prospection" && <ProspectionPanel />}
             </main>
 
