@@ -1,14 +1,16 @@
-"""Expense CRUD + monthly summary + CSV export for accountant."""
+"""Expense CRUD + monthly summary + CSV export + receipt photo upload."""
 import csv
 import io
+import os
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from erp_helpers import parse_date_safe
 from erp_models_expense import (
     EXPENSE_CATEGORIES,
     PAYMENT_METHODS,
@@ -16,6 +18,16 @@ from erp_models_expense import (
     Expense,
     ExpenseIn,
 )
+
+RECEIPTS_DIR = Path(os.environ.get("EXPENSE_RECEIPTS_DIR", "/app/backend/receipts"))
+RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_RECEIPT_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".pdf"}
+ALLOWED_RECEIPT_MIME = {
+    "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
+    "application/pdf",
+}
+MAX_RECEIPT_BYTES = 8 * 1024 * 1024  # 8 MB
 
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
@@ -66,6 +78,15 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
     @router.delete("/expenses/{expense_id}")
     async def delete_expense(expense_id: str, _: dict = Depends(auth_dep)):
+        # Delete receipt file too
+        exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
+        if exp and exp.get("receipt_filename"):
+            fp = RECEIPTS_DIR / exp["receipt_filename"]
+            if fp.exists():
+                try:
+                    fp.unlink()
+                except Exception:
+                    pass
         res = await db.erp_expenses.delete_one({"id": expense_id})
         if res.deleted_count == 0:
             raise HTTPException(404, "Dépense introuvable")
@@ -106,6 +127,92 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             "by_category": by_category,
         }
 
+    @router.post("/expenses/{expense_id}/receipt", status_code=201)
+    async def upload_receipt(
+        expense_id: str,
+        file: UploadFile = File(...),
+        _: dict = Depends(auth_dep),
+    ):
+        """Upload a receipt photo (or PDF) for an expense.
+
+        Replaces any existing receipt. Returns the new filename.
+        """
+        # Validate
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in ALLOWED_RECEIPT_EXTS:
+            raise HTTPException(400, f"Format non supporté. Formats acceptés : {', '.join(sorted(ALLOWED_RECEIPT_EXTS))}")
+        if file.content_type and file.content_type not in ALLOWED_RECEIPT_MIME:
+            # Some browsers send `application/octet-stream`; only block if it's a known bad type
+            if file.content_type.startswith("text/") or "script" in file.content_type:
+                raise HTTPException(400, "Type de fichier non autorisé")
+
+        # Check the expense exists
+        exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
+        if not exp:
+            raise HTTPException(404, "Dépense introuvable")
+
+        # Read with size cap
+        contents = await file.read(MAX_RECEIPT_BYTES + 1)
+        if len(contents) > MAX_RECEIPT_BYTES:
+            raise HTTPException(413, f"Fichier trop volumineux (max {MAX_RECEIPT_BYTES // 1024 // 1024} MB)")
+
+        # Remove previous file if any
+        if exp.get("receipt_filename"):
+            old = RECEIPTS_DIR / exp["receipt_filename"]
+            if old.exists():
+                try:
+                    old.unlink()
+                except Exception:
+                    pass
+
+        # Save with a fresh UUID name to avoid collisions
+        fname = f"{expense_id}_{uuid.uuid4().hex[:8]}{ext}"
+        out_path = RECEIPTS_DIR / fname
+        out_path.write_bytes(contents)
+
+        await db.erp_expenses.update_one(
+            {"id": expense_id},
+            {"$set": {"receipt_filename": fname, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return {"receipt_filename": fname, "size": len(contents)}
+
+    @router.get("/expenses/{expense_id}/receipt")
+    async def download_receipt(expense_id: str, _: dict = Depends(auth_dep)):
+        """Stream the receipt file. Authenticated only."""
+        exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
+        if not exp or not exp.get("receipt_filename"):
+            raise HTTPException(404, "Aucun reçu pour cette dépense")
+        fp = RECEIPTS_DIR / exp["receipt_filename"]
+        if not fp.exists():
+            raise HTTPException(404, "Fichier introuvable")
+        # Pick mime by extension
+        mime_by_ext = {
+            ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+            ".webp": "image/webp", ".heic": "image/heic", ".heif": "image/heif",
+            ".pdf": "application/pdf",
+        }
+        mime = mime_by_ext.get(fp.suffix.lower(), "application/octet-stream")
+        return FileResponse(fp, media_type=mime, filename=fp.name)
+
+    @router.delete("/expenses/{expense_id}/receipt")
+    async def delete_receipt(expense_id: str, _: dict = Depends(auth_dep)):
+        exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
+        if not exp:
+            raise HTTPException(404, "Dépense introuvable")
+        fname = exp.get("receipt_filename")
+        if fname:
+            fp = RECEIPTS_DIR / fname
+            if fp.exists():
+                try:
+                    fp.unlink()
+                except Exception:
+                    pass
+        await db.erp_expenses.update_one(
+            {"id": expense_id},
+            {"$set": {"receipt_filename": None, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        return {"deleted": True}
+
     @router.get("/expenses/export.csv")
     async def export_csv(
         month: Optional[str] = None,
@@ -124,7 +231,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         writer.writerow([
             "Date", "Fournisseur", "Description", "Catégorie",
             "Sous-total", "TPS", "TVQ", "Total",
-            "Mode paiement", "Statut", "Réf. facture", "Notes",
+            "Mode paiement", "Statut", "Réf. facture", "Reçu", "Notes",
         ])
         for r in rows:
             writer.writerow([
@@ -139,6 +246,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
                 r.get("payment_method", ""),
                 r.get("status", ""),
                 r.get("invoice_ref", ""),
+                "Oui" if r.get("receipt_filename") else "",
                 (r.get("notes") or "").replace("\n", " "),
             ])
         buf.seek(0)

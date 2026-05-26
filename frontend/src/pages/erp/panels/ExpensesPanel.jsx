@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Pencil, Trash2, RefreshCw, Download, Wallet, TrendingDown, Receipt, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, Download, Wallet, TrendingDown, Receipt, FileText, Camera, Paperclip, X as XIcon } from "lucide-react";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { DataCard } from "../../../components/mobile/DataCard";
 import { FAB } from "../../../components/mobile/FAB";
@@ -56,6 +56,10 @@ export const ExpensesPanel = () => {
     const [filterStatus, setFilterStatus] = useState("");
     const [editOpen, setEditOpen] = useState(false);
     const [editing, setEditing] = useState(null);
+    const [receiptPreview, setReceiptPreview] = useState(null);  // blob URL for preview
+    const [uploadBusy, setUploadBusy] = useState(false);
+    const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -78,8 +82,75 @@ export const ExpensesPanel = () => {
 
     useEffect(() => { load(); }, [load]);
 
-    const openNew = () => { setEditing(emptyExpense()); setEditOpen(true); };
-    const openEdit = (e) => { setEditing({ ...e }); setEditOpen(true); };
+    const openNew = () => {
+        setEditing(emptyExpense());
+        setReceiptPreview(null);
+        setEditOpen(true);
+    };
+    const openEdit = async (e) => {
+        setEditing({ ...e });
+        setReceiptPreview(null);
+        setEditOpen(true);
+        if (e.receipt_filename && e.id) {
+            // Fetch preview as blob (auth header carries the token)
+            try {
+                const { data } = await http.get(`/admin/expenses/${e.id}/receipt`, { responseType: "blob" });
+                setReceiptPreview(URL.createObjectURL(data));
+            } catch {
+                /* ignore — file maybe deleted */
+            }
+        }
+    };
+
+    /** Upload a freshly-picked file. Saves the expense first if it's new. */
+    const handleReceiptFile = async (file) => {
+        if (!file) return;
+        if (file.size > 8 * 1024 * 1024) {
+            alert("Fichier trop volumineux (max 8 MB). Reprenez la photo en qualité plus basse.");
+            return;
+        }
+        setUploadBusy(true);
+        try {
+            let expId = editing.id;
+            // If brand-new expense, save it first so we have an id
+            if (!expId) {
+                const payload = { ...editing };
+                ["supplier_id", "supplier_name", "invoice_ref", "notes"].forEach((k) => {
+                    if (payload[k] === "") payload[k] = null;
+                });
+                const { data: created } = await http.post("/admin/expenses", payload);
+                expId = created.id;
+                setEditing({ ...editing, id: expId });
+            }
+            const fd = new FormData();
+            fd.append("file", file);
+            const { data } = await http.post(`/admin/expenses/${expId}/receipt`, fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            setEditing((prev) => ({ ...prev, receipt_filename: data.receipt_filename }));
+            // Show preview
+            const objectUrl = URL.createObjectURL(file);
+            setReceiptPreview(objectUrl);
+            await load();
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur lors de l'upload du reçu");
+        } finally {
+            setUploadBusy(false);
+        }
+    };
+
+    const removeReceipt = async () => {
+        if (!editing?.id || !editing.receipt_filename) return;
+        if (!window.confirm("Supprimer la photo de reçu ?")) return;
+        try {
+            await http.delete(`/admin/expenses/${editing.id}/receipt`);
+            setEditing((prev) => ({ ...prev, receipt_filename: null }));
+            setReceiptPreview(null);
+            await load();
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur");
+        }
+    };
 
     /** Auto-compute taxes from subtotal */
     const recomputeFromSubtotal = (sub) => {
@@ -110,11 +181,19 @@ export const ExpensesPanel = () => {
             } else {
                 await http.post("/admin/expenses", payload);
             }
-            setEditOpen(false);
+            closeEdit();
             await load();
         } catch (e) {
             alert(e?.response?.data?.detail || "Erreur");
         }
+    };
+
+    const closeEdit = () => {
+        if (receiptPreview && receiptPreview.startsWith("blob:")) {
+            URL.revokeObjectURL(receiptPreview);
+        }
+        setReceiptPreview(null);
+        setEditOpen(false);
     };
 
     const remove = async (e) => {
@@ -214,7 +293,11 @@ export const ExpensesPanel = () => {
                         title={e.description}
                         subtitle={e.supplier_name || "—"}
                         badge={{ label: e.category, className: CATEGORY_BADGE[e.category] || "border-[#dde5f0]" }}
-                        extraBadge={e.status === "à payer" ? { label: "à payer", className: "bg-[#fff7e0] text-[#7a5a00] border-[#d4be7a]" } : null}
+                        extraBadge={
+                            e.receipt_filename
+                                ? { label: "📎 Reçu", className: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]" }
+                                : (e.status === "à payer" ? { label: "à payer", className: "bg-[#fff7e0] text-[#7a5a00] border-[#d4be7a]" } : null)
+                        }
                         primary={formatCurrency(e.total)}
                         secondary={`HT ${formatCurrency(e.subtotal)} · TPS ${formatCurrency(e.tps)} · TVQ ${formatCurrency(e.tvq)}`}
                         onTap={() => openEdit(e)}
@@ -247,7 +330,10 @@ export const ExpensesPanel = () => {
                                     <button onClick={() => openEdit(e)} className="hover:underline text-left font-medium text-[#0c182b]">
                                         {e.description}
                                     </button>
-                                    {e.invoice_ref && <div className="text-xs text-[#4b5d7a]">Réf : {e.invoice_ref}</div>}
+                                    <div className="flex items-center gap-3 mt-0.5 text-xs text-[#4b5d7a]">
+                                        {e.invoice_ref && <span>Réf : {e.invoice_ref}</span>}
+                                        {e.receipt_filename && <span className="text-[#0b6b2f] flex items-center gap-1"><Paperclip className="w-3 h-3" /> Reçu</span>}
+                                    </div>
                                 </div>
                                 <div className="col-span-2">
                                     <span className={`tech-stamp px-2 py-0.5 border text-[10px] ${CATEGORY_BADGE[e.category] || "border-[#dde5f0]"}`}>
@@ -306,12 +392,12 @@ export const ExpensesPanel = () => {
             {editing && (
                 <Modal
                     open={editOpen}
-                    onClose={() => setEditOpen(false)}
+                    onClose={closeEdit}
                     title={editing.id ? "Modifier la dépense" : "Nouvelle dépense"}
                     testId="exp-modal"
                     footer={
                         <>
-                            <button onClick={() => setEditOpen(false)} className="px-4 py-2 border border-[#dde5f0] tech-stamp">Annuler</button>
+                            <button onClick={closeEdit} className="px-4 py-2 border border-[#dde5f0] tech-stamp">Annuler</button>
                             <button data-testid="exp-save" onClick={save} className="px-4 py-2 bg-[#0c182b] text-white tech-stamp">Enregistrer</button>
                         </>
                     }
@@ -356,6 +442,83 @@ export const ExpensesPanel = () => {
                         <Field label="Réf. facture fournisseur" className="col-span-2">
                             <input value={editing.invoice_ref || ""} placeholder="Ex : QR-2026-1234" onChange={(e) => setEditing({ ...editing, invoice_ref: e.target.value })} className={inputClass} />
                         </Field>
+
+                        {/* Receipt photo / PDF */}
+                        <div className="col-span-2">
+                            <div className="tech-stamp text-[#4b5d7a] mb-2 flex items-center gap-1">
+                                <Receipt className="w-3.5 h-3.5" /> Photo du reçu (optionnel)
+                            </div>
+                            {editing.receipt_filename ? (
+                                <div className="border border-[#dde5f0] bg-[#f3f6fb] p-3">
+                                    {receiptPreview ? (
+                                        receiptPreview.endsWith(".pdf") || editing.receipt_filename.endsWith(".pdf") ? (
+                                            <a href={receiptPreview} target="_blank" rel="noreferrer" className="block text-center py-8 hover:bg-white">
+                                                <FileText className="w-10 h-10 inline text-[#2f4f7f]" />
+                                                <div className="text-sm text-[#2f4f7f] mt-2">Ouvrir le PDF</div>
+                                            </a>
+                                        ) : (
+                                            <a href={receiptPreview} target="_blank" rel="noreferrer">
+                                                <img src={receiptPreview} alt="Reçu" className="max-h-64 mx-auto object-contain" />
+                                            </a>
+                                        )
+                                    ) : (
+                                        <div className="text-center py-6 text-[#4b5d7a] text-sm">Chargement de l'aperçu…</div>
+                                    )}
+                                    <div className="mt-3 flex justify-between items-center">
+                                        <div className="text-xs text-[#4b5d7a] truncate">{editing.receipt_filename}</div>
+                                        <button
+                                            type="button"
+                                            data-testid="exp-remove-receipt"
+                                            onClick={removeReceipt}
+                                            className="px-3 py-1.5 border border-red-300 text-red-700 tech-stamp text-xs hover:bg-red-50 flex items-center gap-1"
+                                        >
+                                            <XIcon className="w-3 h-3" /> Retirer
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        data-testid="exp-take-photo"
+                                        onClick={() => cameraInputRef.current?.click()}
+                                        disabled={uploadBusy}
+                                        className="px-4 py-3 border border-[#0c182b] text-[#0c182b] tech-stamp hover:bg-[#f3f6fb] flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        <Camera className="w-4 h-4" /> Prendre photo
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-testid="exp-pick-file"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploadBusy}
+                                        className="px-4 py-3 border border-[#dde5f0] text-[#4b5d7a] tech-stamp hover:bg-[#f3f6fb] flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        <Paperclip className="w-4 h-4" /> Galerie / PDF
+                                    </button>
+                                </div>
+                            )}
+                            {uploadBusy && <div className="text-xs text-[#4b5d7a] mt-2 text-center">Upload en cours…</div>}
+                            {/* Hidden inputs */}
+                            <input
+                                ref={cameraInputRef}
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                className="hidden"
+                                data-testid="exp-camera-input"
+                                onChange={(e) => handleReceiptFile(e.target.files?.[0])}
+                            />
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                data-testid="exp-file-input"
+                                onChange={(e) => handleReceiptFile(e.target.files?.[0])}
+                            />
+                        </div>
+
                         <Field label="Notes" className="col-span-2">
                             <textarea rows={2} value={editing.notes || ""} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} className={inputClass} />
                         </Field>

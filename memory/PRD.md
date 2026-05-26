@@ -315,6 +315,17 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 - [ ] Bouton flottant « Appelez maintenant » / WhatsApp sur mobile
 - [ ] Page « Soumission Express » (calculateur de coûts)
 
+### 2026-05 — Iter 27 (Photos de reçus sur les dépenses)
+**Upload de photos/PDF de reçus** sur chaque dépense :
+- **Backend** : 3 endpoints (`POST /admin/expenses/{id}/receipt`, `GET …/receipt`, `DELETE …/receipt`). Stockage disque sous `/app/backend/receipts/`. Authentification requise (fichiers servis via FastAPI auth, pas statique). Formats acceptés : jpg/jpeg/png/webp/heic/heif/pdf. Limite 8 MB.
+- **Frontend** : section « Photo du reçu » dans la modale d'édition de dépense avec 2 boutons :
+  - **« Prendre photo »** — utilise `capture="environment"` pour ouvrir directement la caméra arrière sur mobile (iOS/Android)
+  - **« Galerie / PDF »** — file picker classique pour images + PDF
+- Aperçu de la photo dans la modale + bouton « Retirer ». Sur les listes mobile + desktop : indicateur **📎 Reçu** à côté des dépenses qui en ont un.
+- Cleanup automatique du fichier sur le disque quand on supprime une dépense ou un reçu.
+- CSV export inclut maintenant une colonne « Reçu » (Oui/vide).
+- 92/92 pytest ✅, lint clean.
+
 ### 2026-05 — Iter 26 (Module Dépenses + Comptabilité Québec)
 **Nouveau module Dépenses** (`/admin/gestion/depenses`) pour suivre tous les achats business avec calcul automatique des taxes québécoises :
 

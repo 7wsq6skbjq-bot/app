@@ -52,6 +52,7 @@ class Expense(BaseModel):
     payment_method: str = Field(default="Carte")
     status: str = Field(default="payée")
     invoice_ref: Optional[str] = None  # supplier invoice number for accountant
+    receipt_filename: Optional[str] = None  # stored under /app/backend/receipts/
     notes: Optional[str] = None
     created_at: str = Field(default_factory=now_iso)
     updated_at: str = Field(default_factory=now_iso)
@@ -71,4 +72,5 @@ class ExpenseIn(BaseModel):
     payment_method: str = "Carte"
     status: str = "payée"
     invoice_ref: Optional[str] = None
+    receipt_filename: Optional[str] = None
     notes: Optional[str] = None
