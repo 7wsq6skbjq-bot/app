@@ -18,6 +18,8 @@ from datetime import date, datetime, timezone
 from typing import Optional
 
 import resend
+
+from erp_helpers import wrap_branded_email
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -186,12 +188,16 @@ async def send_recap(
 
     recap = await build_recap(db, month)
     subject, html = render_recap_html(recap)
+    branded_html = wrap_branded_email(
+        html,
+        footer_note=f"Récapitulatif dépenses {month} · Portech ERP",
+    )
     fn = f"depenses-portech-{month}.csv"
     params = {
         "from": f"Portech <{SENDER_EMAIL}>",
         "to": [target_email],
         "subject": subject,
-        "html": html,
+        "html": branded_html,
         "attachments": [{
             "filename": fn,
             "content": base64.b64encode(recap["csv_bytes"]).decode("ascii"),

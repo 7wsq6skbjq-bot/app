@@ -110,11 +110,11 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             f"<p>Vous trouverez en pièce jointe notre bon de commande <b>{number}</b> "
             f"d'un total de <b>{doc.get('total', 0):.2f} $ CAD</b>.</p>"
             "<p>Merci de bien vouloir confirmer la disponibilité et la date de livraison.</p>"
-            "<p>Cordialement,<br/>Portech</p>"
         )
         await send_pdf_email(
             to_email=payload.to_email, subject=subject,
             html=message_html, pdf_bytes=pdf_bytes, filename=f"{number}.pdf",
+            footer_note=f"Bon de commande {number} · Portech ERP",
         )
         if doc.get("status") == "brouillon":
             await db.erp_purchase_orders.update_one(

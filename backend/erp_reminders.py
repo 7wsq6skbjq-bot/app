@@ -55,7 +55,7 @@ def _friendly_message(invoice: dict, number: str, days: int) -> tuple[str, str]:
         "<p>Vous trouverez en pièce jointe une copie de la facture. "
         "Si le paiement a déjà été effectué, merci d'ignorer ce courriel.</p>"
         "<p>Pour toute question, répondez simplement à ce message.</p>"
-        "<p>Cordialement,<br/>Portech</p>"
+        "<p>Cordialement,</p>"
     )
     return subject, html
 
@@ -74,7 +74,7 @@ def _firm_message(invoice: dict, number: str, days: int) -> tuple[str, str]:
         "compter de ce jour.</p>"
         "<p>Merci de régulariser la situation dans les meilleurs délais, "
         "ou de nous contacter pour convenir d'un arrangement.</p>"
-        "<p>Cordialement,<br/>Portech</p>"
+        "<p>Cordialement,</p>"
     )
     return subject, html
 

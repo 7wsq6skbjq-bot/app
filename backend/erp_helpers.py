@@ -21,6 +21,43 @@ logger = logging.getLogger("portech.erp")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
 
+# ---------- Branded email wrapper (matches prospection campaigns) ----------
+def wrap_branded_email(body_html: str, footer_note: str = "") -> str:
+    """Wrap a transactional email body with the same banner header/footer that
+    the prospection campaign uses. Keeps look-and-feel consistent across ALL
+    Portech outbound emails (POs, BOLs, invoices, reminders, expense recaps).
+
+    `body_html` is the actual message content (Bonjour ... + paragraphs).
+    `footer_note` is the small grey text under the bottom banner (e.g.,
+    a unsubscribe hint or document number for traceability).
+    """
+    return (
+        '<table width="100%" cellpadding="0" cellspacing="0" '
+        'style="font-family: Arial, Helvetica, sans-serif; background:#f4f4f5; padding:0; margin:0;">'
+        '<tr><td align="center">'
+        '<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; max-width:600px;">'
+        '<tr><td><img src="https://portech.info/email/email-header.png" alt="Portech" '
+        'style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>'
+        '<tr><td style="padding:32px 32px 16px 32px; color:#0c182b; font-size:15px; line-height:1.6;">'
+        + body_html
+        + '<p style="margin:24px 0 4px 0;"><b><a href="tel:+14383764177" '
+          'style="color:#0c182b; text-decoration:none;">438-376-4177</a></b></p>'
+        + '<p style="margin:0 0 24px 0;"><a href="https://www.portech.info" '
+          'style="color:#1d4ed8;">www.portech.info</a></p>'
+        + '<p style="margin:16px 0 0 0;"><b>Cédrick Pimparé</b><br/>'
+          'Portech — Quincaillerie de porte commerciale</p>'
+        + '</td></tr>'
+        + '<tr><td><img src="https://portech.info/email/email-footer.png" alt="Portech" '
+          'style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>'
+        + (
+            '<tr><td style="padding:16px 32px; color:#71717a; font-size:11px; text-align:center;">'
+            + footer_note + '</td></tr>'
+            if footer_note else ''
+        )
+        + '</table></td></tr></table>'
+    )
+
+
 # ---------- Tax math ----------
 def compute_totals(items: List[LineItem], taxable: bool = True):
     """Mutate items in place to set .total, then return (subtotal, tps, tvq, total)."""
@@ -72,15 +109,23 @@ def csv_response(rows: list[dict], filename: str) -> StreamingResponse:
 
 # ---------- Email ----------
 async def send_pdf_email(*, to_email: str, subject: str, html: str,
-                        pdf_bytes: bytes, filename: str) -> None:
-    """Send a transactional email with a PDF attachment via Resend."""
+                        pdf_bytes: bytes, filename: str,
+                        branded: bool = True,
+                        footer_note: str = "") -> None:
+    """Send a transactional email with a PDF attachment via Resend.
+
+    If `branded=True` (default), the message HTML is wrapped with the Portech
+    header/footer banners — same look-and-feel as the prospection campaign.
+    Set `branded=False` to send raw HTML (used by tests or low-level callers).
+    """
     if not resend.api_key:
         raise HTTPException(503, "Service courriel non configuré (RESEND_API_KEY manquante)")
+    final_html = wrap_branded_email(html, footer_note=footer_note) if branded else html
     params = {
         "from": f"Portech <{SENDER_EMAIL}>",
         "to": [to_email],
         "subject": subject,
-        "html": html,
+        "html": final_html,
         "attachments": [{
             "filename": filename,
             "content": base64.b64encode(pdf_bytes).decode("ascii"),

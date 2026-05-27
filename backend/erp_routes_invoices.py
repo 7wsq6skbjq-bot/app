@@ -135,11 +135,11 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             f"d'un total de <b>{doc.get('total', 0):.2f} $ CAD</b>.</p>"
             "<p>Modalités : paiement net 30 jours.<br/>"
             "Pour toute question, répondez simplement à ce courriel.</p>"
-            "<p>Cordialement,<br/>Portech</p>"
         )
         await send_pdf_email(
             to_email=payload.to_email, subject=subject,
             html=message_html, pdf_bytes=pdf_bytes, filename=f"{number}.pdf",
+            footer_note=f"Facture {number} · Portech ERP",
         )
         if doc.get("status") == "brouillon":
             await db.erp_invoices.update_one(

@@ -113,11 +113,11 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             f"<p>Bonjour {consignee},</p>"
             f"<p>Vous trouverez en pièce jointe le connaissement <b>{number}</b> "
             "couvrant l'expédition à venir.</p>"
-            "<p>Cordialement,<br/>Portech</p>"
         )
         await send_pdf_email(
             to_email=payload.to_email, subject=subject,
             html=message_html, pdf_bytes=pdf_bytes, filename=f"{number}.pdf",
+            footer_note=f"Connaissement {number} · Portech ERP",
         )
         if doc.get("status") == "brouillon":
             await db.erp_bills_of_lading.update_one(
