@@ -6,7 +6,7 @@
 // any HTML/CSS pinned by the install step — forces all installed PWAs to
 // purge their old cache and reload the current shell on next launch.
 
-const CACHE = "portech-shell-v3";
+const CACHE = "portech-shell-v4";
 
 const PRECACHE = [
     "/",
@@ -30,6 +30,14 @@ self.addEventListener("activate", (event) => {
         ),
     );
     self.clients.claim();
+});
+
+// Allow the page (UpdatePrompt component) to ask us to swap in immediately
+// instead of waiting until all tabs are closed.
+self.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SKIP_WAITING") {
+        self.skipWaiting();
+    }
 });
 
 // Network-first for everything (so admin data is fresh), fallback to cache
