@@ -99,6 +99,48 @@ def test_optimizer_empty():
     assert out["efficiency_pct"] == 0
 
 
+def test_optimizer_merges_synonym_profiles():
+    """'Tube à ailette 1¾"x4"' + 'Tube de tête 1¾x4' + 'Tube 1.75 x 4'
+       must all collapse into ONE cutting group (same canonical dimensions)."""
+    from cut_optimizer import optimize_cut_list
+    items = [
+        {"item_type": "frame", "profile": 'Tube à ailette 1¾" x 4"',
+         "material": "Aluminium anodisé bronze",
+         "length_mm": 2721, "qty": 2},
+        {"item_type": "frame", "profile": "Tube de tête 1 3/4 x 4",
+         "material": "Aluminium anodisé bronze",
+         "length_mm": 914, "qty": 1},
+        {"item_type": "frame", "profile": "Tube 1.75 x 4",
+         "material": "Aluminium anodisé bronze",
+         "length_mm": 600, "qty": 1},
+    ]
+    out = optimize_cut_list(items, [6800, 7000, 7315], 10)
+    # All 3 synonyms must merge → exactly ONE group
+    assert len(out["groups"]) == 1, f"Expected 1 merged group, got {[g['profile'] for g in out['groups']]}"
+
+
+def test_optimizer_keeps_distinct_profiles_separate():
+    """Different dimensions stay in different groups."""
+    from cut_optimizer import optimize_cut_list
+    items = [
+        {"item_type": "frame", "profile": "Tube 1¾ x 4", "material": "Alu",
+         "length_mm": 2000, "qty": 2},
+        {"item_type": "frame", "profile": "Tube 2 x 4", "material": "Alu",
+         "length_mm": 2000, "qty": 2},
+    ]
+    out = optimize_cut_list(items, [6800], 10)
+    assert len(out["groups"]) == 2
+
+
+def test_normalize_profile_handles_unicode_fractions():
+    from cut_optimizer import normalize_profile_key
+    a = normalize_profile_key('tube à ailette 1¾" x 4"', "alu bronze")
+    b = normalize_profile_key("tube de tête 1 3/4 x 4", "alu bronze")
+    c = normalize_profile_key("Tube 1.75x4", "Alu Bronze")
+    # All three should produce the same normalized key
+    assert a == b == c
+
+
 # ---------------------------------------------------------------------------
 # DXF parser
 # ---------------------------------------------------------------------------

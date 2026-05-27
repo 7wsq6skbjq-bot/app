@@ -15,7 +15,72 @@ that minimizes total waste. The user can also force a specific stock length.
 Returns a JSON-serializable dict that the frontend renders as a cutting layout
 and the PDF generator turns into a workshop sheet.
 """
+import re
 from typing import List, Optional
+
+
+def _parse_dim(token: str) -> float | None:
+    """Parse '1.75', '1 3/4', '1-3/4', '44.5' into a float. Returns None if unparsable."""
+    s = token.strip().replace("-", " ")
+    # Mixed fraction: "1 3/4"
+    m = re.fullmatch(r"(\d+)\s+(\d+)/(\d+)", s)
+    if m:
+        whole, num, denom = (int(x) for x in m.groups())
+        return whole + num / denom if denom else None
+    # Pure fraction: "3/4" or "13/4" — ambiguous, but we assume proper fraction
+    m = re.fullmatch(r"(\d+)/(\d+)", s)
+    if m:
+        num, denom = int(m.group(1)), int(m.group(2))
+        return num / denom if denom else None
+    # Decimal: "1.75", "44.5", "4"
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def normalize_profile_key(profile: str | None, material: str | None) -> tuple[str, str]:
+    """Collapse synonym profile names so identical extrusions end up in the
+    same cutting group.
+
+    At Portech, 'tube à ailettes 1¾" x 4"', 'tube de tête 1¾" x 4"', and
+    'tube 1¾ x 4' all describe the SAME aluminum extrusion. The optimizer
+    must group them together — otherwise the user gets two separate plans
+    when they should share bars.
+
+    Strategy: extract the dimensions as numeric values, format them consistently
+    (e.g. "1.75x4"), and use those + material as the canonical key. Falls back
+    to the raw string if no dimensions are detected.
+    """
+    raw_profile = (profile or "—").strip()
+    raw_material = (material or "—").strip()
+
+    p_low = raw_profile.lower()
+    frac_map = {"¼": " 1/4", "½": " 1/2", "¾": " 3/4", "⅛": " 1/8", "⅜": " 3/8", "⅝": " 5/8", "⅞": " 7/8"}
+    for k, v in frac_map.items():
+        p_low = p_low.replace(k, v)
+    p_clean = re.sub(r"[\"'']", " ", p_low)
+    p_clean = re.sub(r"\s+", " ", p_clean).strip()
+
+    # Capture dimension pair: "1 3/4 x 4", "1.75x4", "44.5 x 101.6"
+    m = re.search(
+        r"(\d+(?:\s+\d+/\d+)?|\d+/\d+|\d+\.\d+|\d+)\s*[x×]\s*(\d+(?:\s+\d+/\d+)?|\d+/\d+|\d+\.\d+|\d+)",
+        p_clean,
+    )
+    if m:
+        a = _parse_dim(m.group(1))
+        b = _parse_dim(m.group(2))
+        if a is not None and b is not None:
+            # Normalize to mm for matching: if a value < 10 it's almost certainly
+            # inches, so convert to mm (1 in = 25.4 mm).
+            def to_mm(v):
+                return v * 25.4 if v < 10 else v
+            a_mm = round(to_mm(a), 1)
+            b_mm = round(to_mm(b), 1)
+            dim_key = f"{a_mm}x{b_mm}mm"
+            return (f"tube {dim_key}", raw_material.lower())
+
+    return (p_clean or "—", raw_material.lower())
 
 
 def _ffd_pack_one(
@@ -126,19 +191,27 @@ def optimize_cut_list(
           "efficiency_pct": float,    # 100 - waste/total_stock_used * 100
         }
     """
-    # Expand qty into individual cuts per group
-    groups_map: dict[tuple, List[float]] = {}
+    # Expand qty into individual cuts per group.
+    # The key is a NORMALIZED tuple so synonym profile names ('tube à ailettes',
+    # 'tube de tête', 'tube 1¾x4') all land in the same group. We remember the
+    # first human-readable profile/material seen for display purposes.
+    groups_map: dict[tuple, dict] = {}
     glass_panels: list[dict] = []
     hardware_count = 0
     for it in items:
         t = it.get("item_type", "frame")
         qty = max(1, int(it.get("qty", 1) or 1))
         if t == "frame":
-            key = (it.get("profile") or "—", it.get("material") or "—")
+            key = normalize_profile_key(it.get("profile"), it.get("material"))
+            bucket = groups_map.setdefault(key, {
+                "cuts": [],
+                "display_profile": it.get("profile") or "—",
+                "display_material": it.get("material") or "—",
+            })
             for _ in range(qty):
                 length = float(it.get("length_mm") or 0)
                 if length > 0:
-                    groups_map.setdefault(key, []).append(length)
+                    bucket["cuts"].append(length)
         elif t in ("glass", "panel"):
             length = float(it.get("length_mm") or 0)
             width = float(it.get("width_mm") or 0)
@@ -158,10 +231,11 @@ def optimize_cut_list(
     total_bars = 0
     total_waste = 0
     total_stock = 0
-    for (profile, material), cuts in groups_map.items():
-        plan = optimize_group(cuts, [float(s) for s in stock_lengths_mm], float(kerf_mm))
+    for key, bucket in groups_map.items():
+        plan = optimize_group(bucket["cuts"], [float(s) for s in stock_lengths_mm], float(kerf_mm))
         groups_out.append({
-            "profile": profile, "material": material,
+            "profile": bucket["display_profile"],
+            "material": bucket["display_material"],
             "plan": plan,
         })
         total_bars += plan.get("bars_count", 0) or 0

@@ -325,10 +325,53 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
                 out_path.unlink(missing_ok=True)
             except Exception:
                 pass
+
+        # AUTO-DECOMPOSE any AT door panel the OCR detected. This was previously
+        # a manual click ("Décomposer porte AT") — users want it to happen
+        # automatically on import (#1 from feedback session).
+        items = result.get("items") or []
+        door_info = result.get("door_info") or {}
+        decomposed_notes: list[str] = []
+        if door_info:
+            # Use door_info if present, else look for a panel matching AT*
+            series = door_info.get("series") or ""
+            leaf_w = door_info.get("leaf_width_mm")
+            leaf_h = door_info.get("leaf_height_mm")
+            glass_t = door_info.get("glass_thickness_mm") or 6.0
+            finish = door_info.get("door_finish") or door_info.get("frame_finish") \
+                or "Aluminium anodisé bronze"
+            if series and leaf_w and leaf_h:
+                br = decompose_at_door(
+                    door_width_mm=float(leaf_w),
+                    door_height_mm=float(leaf_h),
+                    series=str(series),
+                    glass_thickness_mm=float(glass_t),
+                    material=str(finish),
+                    label_prefix="Porte",
+                    qty=1,
+                )
+                # Remove any panel item the OCR added for the door (so we don't double-count)
+                items = [
+                    it for it in items
+                    if not (it.get("item_type") == "panel"
+                            and re.search(r"AT\s*1?2?000", (it.get("profile") or "") + (it.get("label") or ""), re.I))
+                ]
+                items.extend(br.items + br.hardware)
+                decomposed_notes.extend(br.notes)
+                decomposed_notes.append(
+                    f"Porte AT décomposée automatiquement à l'import (série {series})."
+                )
+
+        warnings = list(result.get("warnings") or []) + decomposed_notes
         return {
             "source_filename": fname,
             "source_type": "pdf" if ext == ".pdf" else "image",
-            **result,
+            "items": items,
+            "frame_specs": result.get("frame_specs") or {},
+            "door_info": door_info,
+            "unit_detected": result.get("unit_detected", "unknown"),
+            "confidence": result.get("confidence", 0),
+            "warnings": warnings,
         }
 
     @router.post("/cuts/extract-dxf")
