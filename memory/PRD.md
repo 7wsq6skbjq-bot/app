@@ -512,6 +512,19 @@ Refonte profonde du prompt OCR suite au retour utilisateur sur le PDF BMO :
 
 **Post-processing OCR déterministe** (`cut_routes.py`) :
 - Classification forcée par préfixe du code : `FG*` → flush_glaze (ou mixed si porte), `MR*` → curtain_wall (ou mixed si porte).
+
+### 2026-05 — Iter 33 (Édition + ajout manuel d'élévations dans le picker OCR)
+
+Le picker OCR (après extraction Gemini) permet maintenant de **corriger les erreurs de l'IA avant import** :
+
+- **Bouton « Modifier »** sur chaque élévation détectée → ouvre un éditeur inline (composant `ElevationEditor` dans `CutListPanel.jsx`) avec : code, type d'élévation (dropdown Porte/FG/MR/Mixte), largeur/hauteur totales, system_label, finis ext/int, série porte (dropdown), battant W×H, épaisseur verre, sens d'ouverture (MD/MG/MDR/MGR), n° de porte.
+- **Bouton ✕** sur chaque élévation → retirer du picker (avec confirmation).
+- **Bouton « + Ajouter une élévation manquante »** en bas du picker → ouvre `TemplateBuilderModal` en mode "embedded" qui pousse l'élévation construite directement dans le picker au lieu de l'ajouter aux items.
+- L'élévation ajoutée manuellement est pré-cochée (importée par défaut).
+- État local préservé : un patch sur `door_info` met à jour `elevationPicker.elevations[id].door_info` sans toucher au reste.
+- Workflow : OCR → l'IA détecte 2/3 élévations → user voit le picker → user clique « + Ajouter manquante » → choisit type, remplit géométrie → « Calculer » → l'élévation MR2 manquante apparaît cochée dans la liste → user clique « Importer la sélection » → toutes les élévations (détectées + manuelle) sont importées dans la liste de coupe.
+
+
 - Conversion automatique ouverture → battant : si Gemini renvoie 914.4×2133.6 pour leaf_w/h (= ouverture standard 36×84) et série AT*, on applique automatiquement les offsets AT (191.30 / 22.20) pour obtenir le battant réel.
 
 

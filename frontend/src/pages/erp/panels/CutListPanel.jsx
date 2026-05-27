@@ -63,6 +63,8 @@ export const CutListPanel = () => {
     const dxfInputRef = useRef(null);
     const [elevationPicker, setElevationPicker] = useState(null);   // { elevations, frame_specs, source_filename, source_type, confidence, warnings }
     const [selectedElevations, setSelectedElevations] = useState({}); // { [id]: true }
+    const [editingElevId, setEditingElevId] = useState(null);
+    const [addMissingOpen, setAddMissingOpen] = useState(false);
     const [templateOpen, setTemplateOpen] = useState(false);
 
     const load = useCallback(async () => {
@@ -214,6 +216,45 @@ export const CutListPanel = () => {
     const cancelElevationPicker = () => {
         setElevationPicker(null);
         setSelectedElevations({});
+        setEditingElevId(null);
+    };
+
+    /** Patch a single elevation inside the picker. */
+    const updateElevation = (id, patch) => {
+        setElevationPicker((prev) => ({
+            ...prev,
+            elevations: prev.elevations.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+        }));
+    };
+    /** Patch a nested door_info field on a specific elevation. */
+    const updateElevationDoor = (id, patch) => {
+        setElevationPicker((prev) => ({
+            ...prev,
+            elevations: prev.elevations.map((e) =>
+                e.id === id ? { ...e, door_info: { ...(e.door_info || {}), ...patch } } : e,
+            ),
+        }));
+    };
+    /** Remove an elevation from the picker entirely. */
+    const removeElevation = (id) => {
+        setElevationPicker((prev) => ({
+            ...prev,
+            elevations: prev.elevations.filter((e) => e.id !== id),
+        }));
+        setSelectedElevations((prev) => { const c = { ...prev }; delete c[id]; return c; });
+        if (editingElevId === id) setEditingElevId(null);
+    };
+    /** Append a new elevation built from TemplateBuilderModal into the picker. */
+    const appendBuiltElevation = (built) => {
+        const id = `manual_${Date.now()}`;
+        const newEv = {
+            ...built,
+            id,
+            code: built.code || `M${(elevationPicker?.elevations || []).length + 1}`,
+        };
+        setElevationPicker((prev) => ({ ...prev, elevations: [...prev.elevations, newEv] }));
+        setSelectedElevations((prev) => ({ ...prev, [id]: true }));
+        setAddMissingOpen(false);
     };
 
     const handleExtractDxf = async (file) => {
@@ -834,8 +875,8 @@ export const CutListPanel = () => {
                                             ? "Mixte"
                                             : "Flush Glaze";
                                 return (
-                                    <li key={ev.id}>
-                                        <label className={`flex items-start gap-3 p-3 border ${checked ? "border-[#0c182b] bg-[#f3f6fb]" : "border-[#dde5f0] bg-white"} cursor-pointer`}>
+                                    <li key={ev.id} className={`border ${checked ? "border-[#0c182b] bg-[#f3f6fb]" : "border-[#dde5f0] bg-white"}`}>
+                                        <div className="flex items-start gap-3 p-3">
                                             <input
                                                 type="checkbox"
                                                 checked={checked}
@@ -845,12 +886,8 @@ export const CutListPanel = () => {
                                             />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                    <span className="font-display font-bold text-sm text-[#0c182b]">
-                                                        {ev.code}
-                                                    </span>
-                                                    <span className={`tech-stamp text-[10px] px-2 py-0.5 border ${typeBadge}`}>
-                                                        {typeLabel}
-                                                    </span>
+                                                    <span className="font-display font-bold text-sm text-[#0c182b]">{ev.code}</span>
+                                                    <span className={`tech-stamp text-[10px] px-2 py-0.5 border ${typeBadge}`}>{typeLabel}</span>
                                                     {ev.total_width_mm && ev.total_height_mm && (
                                                         <span className="text-[11px] text-[#4b5d7a]">
                                                             {ev.total_width_mm.toFixed(0)} × {ev.total_height_mm.toFixed(0)} mm
@@ -859,11 +896,25 @@ export const CutListPanel = () => {
                                                     <span className="text-[11px] text-[#4b5d7a] ml-auto">
                                                         {(ev.items || []).length} élément(s)
                                                     </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingElevId(editingElevId === ev.id ? null : ev.id)}
+                                                        data-testid={`cuts-elevation-edit-${ev.code}`}
+                                                        className="px-2 py-0.5 border border-[#dde5f0] text-[10px] tech-stamp hover:bg-[#eaf1fb]"
+                                                    >
+                                                        {editingElevId === ev.id ? "Fermer" : "Modifier"}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { if (window.confirm(`Retirer l'élévation ${ev.code} du sélecteur ?`)) removeElevation(ev.id); }}
+                                                        className="px-2 py-0.5 border border-red-300 text-red-600 text-[10px] tech-stamp hover:bg-red-50"
+                                                        aria-label="Retirer"
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                                 {ev.system_label && (
-                                                    <div className="text-[11px] text-[#0c182b] font-medium mb-1 leading-snug">
-                                                        {ev.system_label}
-                                                    </div>
+                                                    <div className="text-[11px] text-[#0c182b] font-medium mb-1 leading-snug">{ev.system_label}</div>
                                                 )}
                                                 {(ev.finish_ext || ev.finish_int) && (
                                                     <div className="text-[11px] text-[#4b5d7a] mb-1">
@@ -888,14 +939,34 @@ export const CutListPanel = () => {
                                                     </ul>
                                                 )}
                                             </div>
-                                        </label>
+                                        </div>
+                                        {editingElevId === ev.id && (
+                                            <ElevationEditor ev={ev} onPatch={updateElevation} onPatchDoor={updateElevationDoor} />
+                                        )}
                                     </li>
                                 );
                             })}
                         </ul>
+                        <div className="pt-2 border-t border-[#dde5f0]">
+                            <button
+                                type="button"
+                                onClick={() => setAddMissingOpen(true)}
+                                data-testid="cuts-elevation-add-missing"
+                                className="w-full px-3 py-2 border-2 border-dashed border-[#0b6b2f] text-[#0b6b2f] tech-stamp text-xs hover:bg-[#e6f4ea] flex items-center justify-center gap-2"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Ajouter une élévation manquante (gabarit guidé)
+                            </button>
+                        </div>
                     </div>
                 </Modal>
             )}
+
+            {/* Embedded TemplateBuilder — when triggered from the picker, append into the picker list. */}
+            <TemplateBuilderModal
+                open={addMissingOpen}
+                onClose={() => setAddMissingOpen(false)}
+                onItemsBuilt={appendBuiltElevation}
+            />
 
             <TemplateBuilderModal
                 open={templateOpen}
@@ -921,3 +992,100 @@ const Tile = ({ label, value, accent }) => (
         <div className={`font-display font-bold text-lg md:text-xl tracking-tight ${accent || ""}`}>{value}</div>
     </div>
 );
+
+const ELEV_TYPES = [
+    { v: "door", label: "Porte" },
+    { v: "flush_glaze", label: "Flush Glaze" },
+    { v: "curtain_wall", label: "Mur-rideau" },
+    { v: "mixed", label: "Mixte" },
+];
+const SERIES_OPTIONS = ["", "AT1000", "AT2000", "ATi1000", "ATi2000", "AT1000-base-AT2000"];
+const HANDING_OPTIONS = ["", "MD", "MG", "MDR", "MGR"];
+
+/** Inline form to correct an OCR-detected elevation before importing it. */
+const ElevationEditor = ({ ev, onPatch, onPatchDoor }) => {
+    const di = ev.door_info || {};
+    const ic = "px-2 py-1 border border-[#dde5f0] w-full text-sm";
+    const num = (v) => (v === "" ? null : parseFloat(v) || 0);
+    return (
+        <div className="px-3 pb-3 pt-1 bg-[#f9fbfd] border-t border-[#dde5f0] space-y-3">
+            <div className="tech-stamp text-[#4b5d7a] text-[10px]">Correction de l'élévation</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Code</div>
+                    <input value={ev.code || ""} onChange={(e) => onPatch(ev.id, { code: e.target.value })} className={ic} />
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Type</div>
+                    <select value={ev.elevation_type} onChange={(e) => onPatch(ev.id, { elevation_type: e.target.value })} className={ic}
+                        data-testid={`cuts-elev-type-${ev.code}`}>
+                        {ELEV_TYPES.map((t) => <option key={t.v} value={t.v}>{t.label}</option>)}
+                    </select>
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Largeur totale (mm)</div>
+                    <input type="number" step="0.1" value={ev.total_width_mm ?? ""}
+                        onChange={(e) => onPatch(ev.id, { total_width_mm: num(e.target.value) })} className={ic} />
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Hauteur totale (mm)</div>
+                    <input type="number" step="0.1" value={ev.total_height_mm ?? ""}
+                        onChange={(e) => onPatch(ev.id, { total_height_mm: num(e.target.value) })} className={ic} />
+                </label>
+                <label className="space-y-0.5 md:col-span-2">
+                    <div className="text-[#4b5d7a]">Système (haut à droite du plan)</div>
+                    <input value={ev.system_label || ""} onChange={(e) => onPatch(ev.id, { system_label: e.target.value })} className={ic}
+                        placeholder="ex. MUR-RIDEAU SÉRIE KAWNEER 1620" />
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Fini extérieur</div>
+                    <input value={ev.finish_ext || ""} onChange={(e) => onPatch(ev.id, { finish_ext: e.target.value })} className={ic} />
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Fini intérieur</div>
+                    <input value={ev.finish_int || ""} onChange={(e) => onPatch(ev.id, { finish_int: e.target.value })} className={ic} />
+                </label>
+            </div>
+            <div className="tech-stamp text-[#4b5d7a] text-[10px] mt-2">Porte (si présente)</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Série</div>
+                    <select value={di.series || ""} onChange={(e) => onPatchDoor(ev.id, { series: e.target.value })} className={ic}>
+                        {SERIES_OPTIONS.map((s) => <option key={s} value={s}>{s || "—"}</option>)}
+                    </select>
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Battant largeur (mm)</div>
+                    <input type="number" step="0.1" value={di.leaf_width_mm ?? ""}
+                        onChange={(e) => onPatchDoor(ev.id, { leaf_width_mm: num(e.target.value) })} className={ic}
+                        data-testid={`cuts-elev-leaf-w-${ev.code}`} />
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Battant hauteur (mm)</div>
+                    <input type="number" step="0.1" value={di.leaf_height_mm ?? ""}
+                        onChange={(e) => onPatchDoor(ev.id, { leaf_height_mm: num(e.target.value) })} className={ic} />
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Verre (mm)</div>
+                    <input type="number" step="0.1" value={di.glass_thickness_mm ?? ""}
+                        onChange={(e) => onPatchDoor(ev.id, { glass_thickness_mm: num(e.target.value) })} className={ic} />
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">Sens d'ouverture</div>
+                    <select value={di.handing || ""} onChange={(e) => onPatchDoor(ev.id, { handing: e.target.value || null })} className={ic}>
+                        {HANDING_OPTIONS.map((h) => <option key={h} value={h}>{h || "—"}</option>)}
+                    </select>
+                </label>
+                <label className="space-y-0.5">
+                    <div className="text-[#4b5d7a]">N° porte</div>
+                    <input value={di.door_number || ""} onChange={(e) => onPatchDoor(ev.id, { door_number: e.target.value || null })} className={ic}
+                        placeholder="ex. P-101" />
+                </label>
+            </div>
+            <div className="text-[10px] text-[#4b5d7a] italic">
+                Vos corrections sont appliquées lors de l'import (mais la décomposition AT s'est déjà faite : si vous changez les dimensions du battant après l'OCR,
+                supprimez l'élévation et re-créez-la via « Ajouter une élévation manquante » pour relancer le calcul.)
+            </div>
+        </div>
+    );
+};
