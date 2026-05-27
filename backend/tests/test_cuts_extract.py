@@ -89,7 +89,7 @@ def test_extract_plan_synthetic_png(auth_headers):
     for ev in body["elevations"]:
         assert ev.get("id")
         assert ev.get("code")
-        assert ev.get("elevation_type") in ("door", "flush_glaze", "mixed")
+        assert ev.get("elevation_type") in ("door", "flush_glaze", "curtain_wall", "mixed")
         assert isinstance(ev.get("items"), list)
         for it in ev["items"]:
             assert it.get("id")

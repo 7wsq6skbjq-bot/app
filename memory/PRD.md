@@ -475,6 +475,24 @@ Trois améliorations majeures du module **Listes de coupe (Cut List)** :
 - **Tests** : 137/137 pytest ✅ (mise à jour de `test_cuts_extract.py` pour le nouveau schéma). Testing agent v3 100% OK end-to-end (curl + Playwright).
 
 
+### 2026-05 — Iter 30 (Mur-rideau Kawneer 1620, encadré technique, quincaillerie exhaustive)
+Refonte profonde du prompt OCR suite au retour utilisateur sur le PDF BMO :
+
+- **Nouveau type `curtain_wall`** (code commence par `MR` → Kawneer 1620/1600), distinct de `flush_glaze` (code `FG` → Trifab VG450) et `door` / `mixed`. La distinction est CRUCIALE : MR ≠ FG.
+- **Lecture obligatoire de l'encadré technique haut-à-droite** (texte rouge sur les plans BMO/Uniprix) comme **source de vérité absolue** des profilés + numéros de pièce. Nouveaux champs par élévation : `system_label` (ex `MUR-RIDEAU SÉRIE KAWNEER 1620`), `finish_ext`, `finish_int`.
+- **Détection du sens d'ouverture (MD/MG/MDR/MGR)** et du **n° de porte** (ex `P.-101`, `BMO-01`) ajoutés à `door_info`. Affichés dans le picker d'élévations frontend.
+- **Calculs automatiques de garnitures et bris thermique** demandés dans le prompt :
+  - FG → Garniture de vitrage 6mm `#027074` = (somme périmètres thermos) × 2.
+  - MR → Bris thermique `#162-310` = somme linéaire de TOUS les meneaux V+H ; Garniture ext+int `#027-850` = (somme périmètres thermos) × 2.
+- **Quincaillerie exhaustive des portes** : le prompt force désormais l'extraction de tous les items présents dans l'encadré : charnière continue, serrure MS Adams Rite, **cylindre EXT + INT**, gâche, **poignée à tirer extérieure (ladder pull)**, push paddle intérieur, barre anti-panique, ferme-porte, **astragale (porte double)**, seuil, joint balai, butoir. Ces items doivent figurer même si certains n'ont pas de numéro de pièce.
+- **2 hauteurs de meneaux verticaux** quand une porte est intégrée : le prompt indique explicitement que les meneaux côté porte sont plus courts que les meneaux pleine hauteur. Exemple BMO : 2 × 3029 mm (côté porte) + 2 × 3023 mm (côté libre).
+- **Tube à poche / Tube escabeau** : règles précises par position (linteau = poche, intermédiaires entre 2 vitrages superposés = poche, bas de chaque vitrage = escalier, même sous le verre au-dessus d'une porte).
+- **Fallback robuste** : si `door_info` est incomplet mais qu'un item `type=panel` avec profil AT* existe, on extrait series + leaf_w + leaf_h depuis ce panel pour quand même générer les 4 frame pieces + 8 parcloses + vitrage. Plus de porte AT silencieusement ignorée.
+- **Sanitization _coerce_item_type** : les `item_type` libres renvoyés par Gemini (`other`, `tube`, etc.) sont remappés intelligemment vers `frame`/`glass`/`hardware`/`hole`/`panel` en analysant label+profile. Plus de "Tube 2 poches" classé en `other` (mauvais pour le groupement de l'optimiseur).
+- **Frontend** : badge "Mur-rideau" (couleur bleu indigo), affichage `system_label` + finis ext/int + handing + n° de porte dans le picker.
+- **Tests** : 137/137 pytest ✅. Tests OCR mis à jour pour accepter `curtain_wall`.
+
+
 ## Backlog / P2
 - [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
 - [ ] Blog SEO (barres antipaniques, codes du bâtiment QC)

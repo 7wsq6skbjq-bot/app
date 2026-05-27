@@ -76,95 +76,169 @@ OCR_SYSTEM = (
 OCR_USER = (
     "Analyse ce plan d'atelier commercial et produis une LISTE DE COUPE EXHAUSTIVE.\n"
     "\n"
-    "IMPORTANT — DÉTECTION D'ÉLÉVATIONS MULTIPLES :\n"
-    "Un plan contient SOUVENT plusieurs élévations (E1, E2, FG01, FG02, etc.). "
-    "Pour CHAQUE élévation distincte que tu identifies, crée une entrée dans "
-    "le tableau `elevations` (voir JSON ci-dessous). Si une seule élévation, "
-    "renvoie quand même un tableau d'1 élément.\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 0 — LIRE L'ENCADRÉ TECHNIQUE EN HAUT À DROITE (PRIORITÉ ABSOLUE)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "Chaque plan contient en HAUT-À-DROITE un encadré (souvent texte rouge) qui\n"
+    "décrit PRÉCISÉMENT pour chaque élévation (FG01, MR2, E1…) :\n"
+    "- LE SYSTÈME exact (ex: 'ENCADREMENT À POCHE NON-ISOLÉ SÉRIE TRIFAB VG450',\n"
+    "  'MUR-RIDEAU SÉRIE KAWNEER 1620', 'PORTE NON-ISOLÉE SÉRIE AT2000 DE AT FABRICATION')\n"
+    "- LE FINI EXT / FINI INT (souvent différents : ex 'Champagne' / 'Clair classe II 10µ')\n"
+    "- LA LISTE DES PROFILÉS avec leur NUMÉRO DE PIÈCE exact et leurs dimensions\n"
+    "  Ex (Trifab VG450) : '·Tube 2 poches 1¾ × 4½ #450CG005', "
+    "'·Tube escalier 1¾ × 4½ #450CG011', '·Garniture de vitrage 6mm #027074'\n"
+    "  Ex (Kawneer 1620) : '·Meneau 2 × 3¾ #178-001', '·Couvercle 2 × ¾ #178-006', "
+    "'·Plaque à pression 2 #178-300', '·Bris thermique #162-310', "
+    "'·Garniture ext et int #027-850'\n"
+    "  Ex (AT2000)       : '·tête 3⅞', '·jambage 3⅝', "
+    "'·jambage côté charnière 3½', '·base 6⅞', '·épaisseur 1¾', "
+    "'·parclose carrée pour vitrage simple ¼'\n"
     "\n"
-    "TYPES D'ÉLÉVATIONS :\n"
-    "- 'door' = élévation centrée sur une porte (battant AT1000/AT2000/ATi). "
-    "  Il peut y avoir des vitrages latéraux (sidelites) ou un transom (vitrage "
-    "  au-dessus de la porte).\n"
-    "- 'flush_glaze' (FG) = mur-rideau / vitrage encadré uniquement (PAS de "
-    "  porte battante). Plusieurs cellules vitrées séparées par des meneaux.\n"
-    "- 'mixed' = combinaison (ex. FG avec une porte intégrée au centre).\n"
+    "Tu DOIS recopier ces numéros de pièce EXACTEMENT dans `part_number` et\n"
+    "renseigner `manufacturer` (Trifab/Kawneer/AT Fabrication/Adams Rite/etc).\n"
+    "Si un profilé est listé dans l'encadré, il DOIT apparaître dans `items`.\n"
     "\n"
-    "ÉTAPE 1 — Lis SOIGNEUSEMENT le cartouche / les blocs de détails :\n"
-    "- COULEUR / FINI du cadre ET de la porte (souvent différents) : "
-    "  'Anodisé bronze architectural', 'Anodisé noir', 'Anodisé clair', etc.\n"
-    "- SÉRIE de la porte (si présente) : AT1000, AT2000, ATi1000 (isolée), "
-    "  ATi2000 (isolée), ou hybride 'AT1000-base-AT2000' (corps AT1000 avec "
-    "  base 6⅞\" type AT2000 — fréquent sur portes commerciales lourdes).\n"
-    "- Épaisseurs des PROFILÉS du cadre (montants, linteau, traverses). "
-    "  N'invente PAS de nom commercial : utilise des noms NEUTRES "
-    "  ('tube cadre 1¾\" × 4\"', 'profilé 50 mm', etc.).\n"
-    "- LOUSSES (clearances) : lousse latérale, lousse haut, lousse sous-porte.\n"
-    "- SEUIL (threshold) : présent ou non, épaisseur (typiquement 12.7 mm = ½\").\n"
-    "- VITRAGE : type (trempé / thermos), épaisseur (6 mm simple ou 25.4 mm thermos).\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 1 — IDENTIFIER LE TYPE D'ÉLÉVATION (CODE → TYPE)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "- Code commence par 'MR'  → elevation_type = 'curtain_wall' "
+    "(MR = MUR-RIDEAU, ex: Kawneer 1620 ou 1600). PAS de porte battante.\n"
+    "- Code commence par 'FG'  → elevation_type = 'flush_glaze' "
+    "(Trifab VG450, encadrement à poche non isolé). PAS de porte battante.\n"
+    "- Code commence par 'E', 'P' ou contient une porte battante "
+    "→ elevation_type = 'door' (porte AT1000/AT2000/ATi avec sidelites/transoms).\n"
+    "- Élévation contenant à la fois MR/FG ET une porte intégrée → 'mixed'.\n"
+    "Ne JAMAIS classer une MR en 'flush_glaze' ou inversement.\n"
     "\n"
-    "ÉTAPE 2 — Pour chaque élévation, liste TOUS les éléments de QUINCAILLERIE "
-    "associés (charnière, serrure, gâche, cylindre, ferme-porte, etc.). "
-    "Pour CHACUN :\n"
-    "- label (court, ex. 'Serrure MS Adams Rite')\n"
-    "- part_number (ex. 'ADAM-MS1853S320', 'UH-120-DA', 'UNIQ-AC4-36') — "
-    "  RECOPIE le numéro EXACTEMENT comme écrit\n"
-    "- manufacturer (ex. 'AT Fabrication', 'ASSA ABLOY Adams Rite', 'ILCO Kaba')\n"
-    "- qty (1 par défaut)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 2 — DÉTECTER LES PORTES (symboles MD/MG/MDR/MGR + n° de porte)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "Sur chaque porte battante, le plan indique :\n"
+    "- Le SENS D'OUVERTURE : MD (main droite), MG (main gauche), "
+    "MDR (main droite renversée), MGR (main gauche renversée).\n"
+    "- Le NUMÉRO DE PORTE (ex: P.-101, P-202) — pas toujours présent.\n"
+    "Renseigne ces 2 champs dans `door_info` : `handing` ('MD'|'MG'|'MDR'|'MGR') "
+    "et `door_number` (ex 'P.-101').\n"
     "\n"
-    "ÉTAPE 3 — RÈGLES DE FABRICATION SPÉCIFIQUES FLUSH GLAZE (type 'flush_glaze'):\n"
-    "- LINTEAU (horizontal supérieur) = TOUJOURS 'Tube à poche' "
-    "  → profile = 'Tube à poche (linteau)'\n"
-    "- BAS DE CHAQUE VITRAGE (horizontal sous chaque cellule de verre) = "
-    "  'Tube escabeau' → profile = 'Tube escabeau'\n"
-    "  ⚠ Y COMPRIS le verre qui se trouve AU-DESSUS d'une porte : la traverse "
-    "  immédiatement sous ce vitrage (au-dessus de la porte) reste un "
-    "  'Tube escabeau'.\n"
-    "- MONTANTS verticaux : profilé neutre ('Tube cadre 1¾\" × 4\"' "
-    "  ou ce que le plan indique).\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 3 — COUPES DES MENEAUX VERTICAUX (PIÈGE FRÉQUENT)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "Quand une élévation contient une porte battante intégrée (type 'mixed' ou 'door'),\n"
+    "les MENEAUX VERTICAUX ont SOUVENT 2 HAUTEURS DIFFÉRENTES :\n"
+    "- 2 meneaux pleine hauteur (côté libre)  → longueur = hauteur totale de l'élévation\n"
+    "- 2 meneaux côté porte → longueur plus courte (= hauteur porte + transom)\n"
+    "Liste-les comme DEUX items distincts avec qty=2 chacun. Ne JAMAIS regrouper\n"
+    "4 meneaux à la même longueur quand la porte coupe la hauteur.\n"
     "\n"
-    "ÉTAPE 4 — Pour les CADRES (encadrement), règle de coupe :\n"
-    "- Montants verticaux = hauteur totale du cadre\n"
-    "- Linteau / traverse horizontale = largeur entre montants = largeur cadre "
-    "  - 2 × épaisseur_montant\n"
-    "- Renseigne opening_length_mm (cote brute) ET length_mm (cote finale).\n"
+    "Exemple BMO: 2 meneaux verticaux de 3029 mm (côté porte) + 2 meneaux verticaux\n"
+    "de 3023 mm (côté libre) = 4 meneaux TOTAL avec 2 longueurs différentes.\n"
     "\n"
-    "ÉTAPE 5 — Pour la PORTE elle-même (le cas échéant), NE LA DÉCOMPOSE PAS "
-    "(le backend le fait). Renvoie UN SEUL item type='panel' avec :\n"
-    "- label = 'Porte AT1000' (ou série détectée)\n"
-    "- profile = la série exacte (incl. 'AT1000-base-AT2000' si hybride)\n"
-    "- length_mm = hauteur finale du battant (après lousses)\n"
-    "- width_mm = largeur finale du battant\n"
-    "- thickness_mm = 44.5 (1¾\")\n"
-    "- opening_length_mm / opening_width_mm = ouverture libre brute\n"
-    "- material = couleur anodisée exacte\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 4 — TRAVERSES HORIZONTALES (TUBE À POCHE / TUBE ESCALIER)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "Pour les FG (Trifab VG450) :\n"
+    "- LINTEAU (horizontal supérieur) = TOUJOURS Tube à poche (#450CG005)\n"
+    "- BAS DE CHAQUE VITRAGE = Tube escalier (#450CG011)\n"
+    "  Y COMPRIS la traverse sous le verre AU-DESSUS d'une porte\n"
+    "- Toute traverse INTERMÉDIAIRE entre 2 vitrages superposés = Tube à poche\n"
+    "  (#450CG005) — c'est le 'haut' du vitrage inférieur ET le 'bas' du suivant.\n"
+    "Compte rigoureusement : si l'élévation a N cellules superposées avec 1 porte,\n"
+    "tu auras typiquement (N-1) tube à poche + N tube escalier intermédiaires.\n"
     "\n"
-    "Retourne ce JSON STRICT :\n"
+    "Pour les MR (Kawneer 1620) : les profilés sont les meneaux + couvercles\n"
+    "(pas tube à poche/escalier).\n"
+    "\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 5 — CALCULS DES GARNITURES ET BRIS THERMIQUE (CRUCIAL)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "A) Pour les FG (Trifab VG450) :\n"
+    "   GARNITURE DE VITRAGE 6mm (#027074) = (somme des PÉRIMÈTRES de chaque\n"
+    "   vitre thermos) × 2.\n"
+    "   Exemple : 4 vitres de 2000×800 mm → périmètre par vitre = 2(2000+800) = 5600 mm\n"
+    "   → 4 vitres × 5600 × 2 = 44 800 mm de garniture.\n"
+    "   Liste cet item : item_type='hardware', label='Garniture de vitrage 6mm',\n"
+    "   part_number='#027074', length_mm = total calculé, qty=1.\n"
+    "\n"
+    "B) Pour les MR (Kawneer 1620) :\n"
+    "   1) BRIS THERMIQUE (#162-310) = somme LINÉAIRE de TOUS les meneaux\n"
+    "      verticaux ET horizontaux du MR (additionnés en mm).\n"
+    "      Liste : item_type='hardware', label='Bris thermique',\n"
+    "      part_number='#162-310', length_mm=total, qty=1.\n"
+    "   2) GARNITURE EXT + INT (#027-850) = (somme des périmètres des thermos) × 2.\n"
+    "      Idem #027074 mais sur les MR.\n"
+    "      Liste : item_type='hardware', label='Garniture ext+int',\n"
+    "      part_number='#027-850', length_mm=total, qty=1.\n"
+    "\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 6 — QUINCAILLERIE COMPLÈTE DES PORTES (ne RIEN OUBLIER)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "Pour CHAQUE porte battante, EXTRAIS du plan/encadré TOUS les éléments\n"
+    "présents — ne te limite PAS à la charnière. Inclus systématiquement\n"
+    "(si visibles ou listés) :\n"
+    "  • Charnière continue (ex UH-120-DA, UH83-CL)\n"
+    "  • Serrure MS Adams Rite (ex ADAM-MS1853S320)\n"
+    "  • CYLINDRE EXTÉRIEUR (ex ILCO-7165SC229KD)\n"
+    "  • Cylindre intérieur / tourniquet (ex ADAM-4066)\n"
+    "  • Gâche / strike (ex ADAM-4906)\n"
+    "  • POIGNÉE À TIRER extérieure / ladder pull (ex UNIQ-AC4-36)\n"
+    "  • Poignée intérieure / push paddle\n"
+    "  • Barre anti-panique (ex ADAM-8400)\n"
+    "  • Ferme-porte / door closer (ex LCN 4040XP, NORTON 1601)\n"
+    "  • ASTRAGALE (ex pour porte double — séparation entre 2 vantaux)\n"
+    "  • Seuil / threshold (ex Pemko 252 série)\n"
+    "  • Joint balai / bottom sweep\n"
+    "  • Butoir mural\n"
+    "Pour chaque : `label`, `part_number` (EXACT, recopié), `manufacturer`, "
+    "`qty` (par défaut 1).\n"
+    "Si l'encadré liste un item sans n° de pièce, mets quand même le label "
+    "avec part_number=null. NE JAMAIS l'omettre.\n"
+    "\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "ÉTAPE 7 — PORTE AT (renseigner door_info pour la décomposition backend)\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "Pour la porte battante elle-même (s'il y en a une) :\n"
+    "- NE PAS la décomposer (le backend Portech génère les 4 pièces du cadre\n"
+    "  + 8 moulures parclose + charnière).\n"
+    "- Renvoie 1 SEUL item type='panel' avec dimensions du battant + "
+    "renseigne `door_info` complet : series, leaf_width_mm, leaf_height_mm,\n"
+    "is_insulated, glass_thickness_mm, frame_finish, door_finish, "
+    "handing, door_number.\n"
+    "\n"
+    "════════════════════════════════════════════════════════════════════════\n"
+    "RETOUR JSON STRICT\n"
+    "════════════════════════════════════════════════════════════════════════\n"
     "{\n"
     '  "elevations": [\n'
     "    {\n"
-    '      "code": "FG01" | "E1" | ... ,\n'
-    '      "elevation_type": "door" | "flush_glaze" | "mixed",\n'
+    '      "code": "FG01" | "MR2" | "E1" | ...,\n'
+    '      "elevation_type": "door" | "flush_glaze" | "curtain_wall" | "mixed",\n'
+    '      "system_label"?: "ENCADREMENT À POCHE NON-ISOLÉ SÉRIE TRIFAB VG450" | ...,\n'
+    '      "finish_ext"?: "Anodisé champagne" | ...,\n'
+    '      "finish_int"?: "Anodisé clair classe II 10µ" | ...,\n'
     '      "total_width_mm"?: number,\n'
     '      "total_height_mm"?: number,\n'
     '      "items": [ { item_type, label, profile?, material?, part_number?, '
     'manufacturer?, length_mm, width_mm?, thickness_mm?, qty, '
     'opening_length_mm?, opening_width_mm?, notes? }, ... ],\n'
     '      "door_info"?: { series?, leaf_width_mm?, leaf_height_mm?, '
-    'is_insulated?, glass_thickness_mm?, frame_finish?, door_finish? }\n'
+    'is_insulated?, glass_thickness_mm?, frame_finish?, door_finish?, '
+    'handing?, door_number? }\n'
     "    }\n"
     "  ],\n"
-    '  "frame_specs": { ... mêmes champs que précédemment ... },\n'
+    '  "frame_specs": { ... },\n'
     '  "unit_detected": "mm" | "in" | "cm" | "ft" | "unknown",\n'
     '  "confidence": 0..1,\n'
     '  "warnings": ["..."]\n'
     "}\n"
     "\n"
-    "Règles :\n"
-    "- Toutes dimensions en MILLIMÈTRES (1 in = 25.4 mm, 11/16\" = 17.46 mm, 3/4\" = 19.05 mm, 1¾\" = 44.45 mm).\n"
-    "- Si TU ne vois qu'une seule élévation et aucun code (ex: 'FG01'), nomme-la 'E1'.\n"
-    "- NE pas écrire 'tube à ailettes' dans les profilés sauf si le cartouche "
-    "  le mentionne EXPLICITEMENT par ce nom.\n"
+    "Règles finales :\n"
+    "- Toutes dimensions en MILLIMÈTRES (1 in = 25.4 mm, 11/16\" = 17.46 mm, "
+    "3/4\" = 19.05 mm, 1¾\" = 44.45 mm).\n"
+    "- Toujours recopier EXACTEMENT le format du numéro de pièce (#450CG005, "
+    "#162-310, etc.) tel qu'écrit sur le plan.\n"
+    "- Si tu n'es PAS SÛR d'un classement (FG vs MR), regarde l'encadré "
+    "haut-à-droite : le mot 'MUR-RIDEAU' → curtain_wall, 'ENCADREMENT À POCHE' "
+    "→ flush_glaze.\n"
     "- AUCUN texte hors du JSON. Pas de ```json. Pas d'explication."
 )
 
@@ -202,19 +276,43 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
             raise HTTPException(502, "Réponse OCR invalide")
         data = json.loads(m.group(0))
 
+    def _coerce_item_type(raw_type: str, label: str, profile: str) -> str:
+        if raw_type in ITEM_TYPES:
+            return raw_type
+        # Heuristic remap from Gemini's free-text type values.
+        text = f"{raw_type} {label} {profile}".lower()
+        if any(k in text for k in ("verre", "vitrage", "thermos", "glass")):
+            return "glass"
+        if any(k in text for k in ("perçage", "percage", "trou", "hole", "machinage")):
+            return "hole"
+        if any(k in text for k in ("charnière", "charniere", "serrure", "cylindre",
+                                    "gâche", "gache", "poignée", "poignee", "ferme-porte",
+                                    "barre", "panique", "garniture", "bris thermique",
+                                    "astragale", "seuil", "joint", "butoir", "quincaillerie")):
+            return "hardware"
+        if any(k in text for k in ("porte", "panneau", "panel")):
+            return "panel"
+        # Default: any tube/meneau/couvercle/horizontal/vertical/linteau/parclose/moulure → frame
+        return "frame"
+
     def _sanitize_items(raw_items: list) -> list:
         out = []
         for it in raw_items or []:
-            item_type = it.get("item_type", "frame")
-            if item_type not in ITEM_TYPES:
-                item_type = "other"
+            raw_type = (it.get("item_type") or "").strip().lower()
+            label = str(it.get("label") or "")
+            profile = str(it.get("profile") or "")
+            item_type = _coerce_item_type(raw_type, label, profile)
+            # Strip leading '#' from part_number so we don't double-hash on display
+            pn = (it.get("part_number") or None) or None
+            if isinstance(pn, str):
+                pn = pn.lstrip("#").strip() or None
             out.append({
                 "id": str(uuid.uuid4()),
                 "item_type": item_type,
-                "label": str(it.get("label") or "")[:140],
+                "label": label[:140],
                 "profile": (it.get("profile") or None) or None,
                 "material": (it.get("material") or None) or None,
-                "part_number": (it.get("part_number") or None) or None,
+                "part_number": pn,
                 "manufacturer": (it.get("manufacturer") or None) or None,
                 "length_mm": float(it.get("length_mm") or 0),
                 "width_mm": float(it.get("width_mm")) if it.get("width_mm") not in (None, "") else None,
@@ -240,14 +338,28 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
 
     elevations = []
     for idx, ev in enumerate(raw_elevations):
+        ev_type = ev.get("elevation_type")
+        if ev_type not in ("door", "flush_glaze", "curtain_wall", "mixed"):
+            ev_type = "flush_glaze"
+        di = ev.get("door_info") or {}
+        # Normalize handing & door_number (free-text, kept short)
+        if di:
+            if di.get("handing"):
+                h = str(di["handing"]).upper().strip()
+                di["handing"] = h if h in ("MD", "MG", "MDR", "MGR") else None
+            if di.get("door_number"):
+                di["door_number"] = str(di["door_number"])[:24]
         elevations.append({
             "id": str(uuid.uuid4()),
             "code": str(ev.get("code") or f"E{idx + 1}")[:32],
-            "elevation_type": ev.get("elevation_type") if ev.get("elevation_type") in ("door", "flush_glaze", "mixed") else "flush_glaze",
+            "elevation_type": ev_type,
+            "system_label": (ev.get("system_label") or None) or None,
+            "finish_ext": (ev.get("finish_ext") or None) or None,
+            "finish_int": (ev.get("finish_int") or None) or None,
             "total_width_mm": float(ev["total_width_mm"]) if ev.get("total_width_mm") not in (None, "") else None,
             "total_height_mm": float(ev["total_height_mm"]) if ev.get("total_height_mm") not in (None, "") else None,
             "items": _sanitize_items(ev.get("items") or []),
-            "door_info": ev.get("door_info") or {},
+            "door_info": di,
         })
 
     return {
@@ -373,34 +485,68 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             items = list(ev.get("items") or [])
             door_info = ev.get("door_info") or {}
             ev_notes: list[str] = []
-            if door_info:
-                series = door_info.get("series") or ""
-                leaf_w = door_info.get("leaf_width_mm")
-                leaf_h = door_info.get("leaf_height_mm")
+
+            # FALLBACK: if door_info is missing key dims but a 'panel' item with
+            # an AT* profile is in items, harvest the dims from it. This avoids
+            # silently dropping the AT door's frame pieces + parcloses + glass
+            # when the OCR failed to fill door_info correctly.
+            series = (door_info.get("series") or "").strip()
+            leaf_w = door_info.get("leaf_width_mm")
+            leaf_h = door_info.get("leaf_height_mm")
+            if not (series and leaf_w and leaf_h):
+                for it in items:
+                    if it.get("item_type") != "panel":
+                        continue
+                    text = ((it.get("profile") or "") + " " + (it.get("label") or "")).upper().replace(" ", "")
+                    if not re.search(r"AT[I]?[12]000", text):
+                        continue
+                    # Build canonical series from the panel item itself
+                    if not series:
+                        if "ATI2000" in text:
+                            series = "ATI2000"
+                        elif "ATI1000" in text:
+                            series = "ATI1000"
+                        elif "AT1000" in text and "AT2000" in text and "BASE" in text:
+                            series = "AT1000-base-AT2000"
+                        elif "AT2000" in text:
+                            series = "AT2000"
+                        else:
+                            series = "AT1000"
+                    # length_mm = leaf height, width_mm = leaf width (per OCR_USER step 7)
+                    leaf_h = leaf_h or it.get("length_mm")
+                    leaf_w = leaf_w or it.get("width_mm")
+                    door_info = dict(door_info)
+                    door_info["series"] = series
+                    door_info["leaf_width_mm"] = leaf_w
+                    door_info["leaf_height_mm"] = leaf_h
+                    door_info["glass_thickness_mm"] = door_info.get("glass_thickness_mm") or it.get("thickness_mm") or 6.0
+                    break
+
+            if series and leaf_w and leaf_h:
                 glass_t = door_info.get("glass_thickness_mm") or 6.0
                 finish = door_info.get("door_finish") or door_info.get("frame_finish") \
                     or "Aluminium anodisé bronze"
-                if series and leaf_w and leaf_h:
-                    br = decompose_at_door(
-                        door_width_mm=float(leaf_w),
-                        door_height_mm=float(leaf_h),
-                        series=str(series),
-                        glass_thickness_mm=float(glass_t),
-                        material=str(finish),
-                        label_prefix=f"Porte {ev.get('code') or ''}".strip(),
-                        qty=1,
-                    )
-                    # Remove any panel item the OCR added for the door
-                    items = [
-                        it for it in items
-                        if not (it.get("item_type") == "panel"
-                                and re.search(r"AT\s*1?2?000", (it.get("profile") or "") + (it.get("label") or ""), re.I))
-                    ]
-                    items.extend(br.items + br.hardware)
-                    ev_notes.extend(br.notes)
-                    ev_notes.append(
-                        f"Porte AT décomposée automatiquement (série {series})."
-                    )
+                br = decompose_at_door(
+                    door_width_mm=float(leaf_w),
+                    door_height_mm=float(leaf_h),
+                    series=str(series),
+                    glass_thickness_mm=float(glass_t),
+                    material=str(finish),
+                    label_prefix=f"Porte {ev.get('code') or ''}".strip(),
+                    qty=1,
+                )
+                # Remove any panel item the OCR added for the door
+                items = [
+                    it for it in items
+                    if not (it.get("item_type") == "panel"
+                            and re.search(r"AT\s*1?2?000", (it.get("profile") or "") + (it.get("label") or ""), re.I))
+                ]
+                items.extend(br.items + br.hardware)
+                ev_notes.extend(br.notes)
+                handing = door_info.get("handing")
+                door_number = door_info.get("door_number")
+                tag = " — ".join(filter(None, [series, door_number, handing]))
+                ev_notes.append(f"Porte AT décomposée automatiquement ({tag}).")
             out_elevations.append({
                 **ev,
                 "items": items,

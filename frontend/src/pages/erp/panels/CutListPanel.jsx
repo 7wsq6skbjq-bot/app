@@ -810,14 +810,18 @@ export const CutListPanel = () => {
                                 const checked = !!selectedElevations[ev.id];
                                 const typeBadge = ev.elevation_type === "door"
                                     ? "bg-[#fdf2e0] text-[#8a4f1f] border-[#e8b87b]"
-                                    : ev.elevation_type === "mixed"
-                                        ? "bg-[#f3e8fd] text-[#5b1f8a] border-[#c8a5e8]"
-                                        : "bg-[#e0f7f5] text-[#0a6b6b] border-[#7bd1cf]";
+                                    : ev.elevation_type === "curtain_wall"
+                                        ? "bg-[#e0e8fd] text-[#1d2f8a] border-[#a5b5e8]"
+                                        : ev.elevation_type === "mixed"
+                                            ? "bg-[#f3e8fd] text-[#5b1f8a] border-[#c8a5e8]"
+                                            : "bg-[#e0f7f5] text-[#0a6b6b] border-[#7bd1cf]";
                                 const typeLabel = ev.elevation_type === "door"
                                     ? "Porte"
-                                    : ev.elevation_type === "mixed"
-                                        ? "Mixte"
-                                        : "Flush Glaze";
+                                    : ev.elevation_type === "curtain_wall"
+                                        ? "Mur-rideau"
+                                        : ev.elevation_type === "mixed"
+                                            ? "Mixte"
+                                            : "Flush Glaze";
                                 return (
                                     <li key={ev.id}>
                                         <label className={`flex items-start gap-3 p-3 border ${checked ? "border-[#0c182b] bg-[#f3f6fb]" : "border-[#dde5f0] bg-white"} cursor-pointer`}>
@@ -845,12 +849,26 @@ export const CutListPanel = () => {
                                                         {(ev.items || []).length} élément(s)
                                                     </span>
                                                 </div>
+                                                {ev.system_label && (
+                                                    <div className="text-[11px] text-[#0c182b] font-medium mb-1 leading-snug">
+                                                        {ev.system_label}
+                                                    </div>
+                                                )}
+                                                {(ev.finish_ext || ev.finish_int) && (
+                                                    <div className="text-[11px] text-[#4b5d7a] mb-1">
+                                                        {ev.finish_ext && <>Ext: <b>{ev.finish_ext}</b></>}
+                                                        {ev.finish_ext && ev.finish_int && " · "}
+                                                        {ev.finish_int && <>Int: <b>{ev.finish_int}</b></>}
+                                                    </div>
+                                                )}
                                                 {ev.door_info?.series && (
                                                     <div className="text-[11px] text-[#4b5d7a]">
                                                         Série porte : <b>{ev.door_info.series}</b>
                                                         {ev.door_info.leaf_width_mm && ev.door_info.leaf_height_mm
                                                             ? ` · ${ev.door_info.leaf_width_mm.toFixed(0)}×${ev.door_info.leaf_height_mm.toFixed(0)} mm`
                                                             : ""}
+                                                        {ev.door_info.handing ? ` · ${ev.door_info.handing}` : ""}
+                                                        {ev.door_info.door_number ? ` · n° ${ev.door_info.door_number}` : ""}
                                                     </div>
                                                 )}
                                                 {(ev.notes || []).length > 0 && (
