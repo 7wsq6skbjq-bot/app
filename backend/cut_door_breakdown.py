@@ -33,6 +33,14 @@ SECTION_HEIGHT_MM = {
     "AT2000": 93.85,
     "ATI1000": 55.5,
     "ATI2000": 93.85,
+    # Hybrid: AT1000 frame (top rail + stiles = 2¼"), with AT2000-style 6⅞" base.
+    "AT1000-BASE-AT2000": 55.5,
+}
+
+# ----- Bottom rail height (default = same as section_h, hybrid uses 6⅞" base) -----
+# 6⅞" = 174.625 mm — AT Fabrication "base 6⅞" substituée".
+BOTTOM_RAIL_HEIGHT_MM = {
+    "AT1000-BASE-AT2000": 174.625,
 }
 
 # ----- Width offset: opening_width - rail_cut_length -----
@@ -41,6 +49,8 @@ WIDTH_OFFSET_MM = {
     "AT2000": 191.30,
     "ATI1000": 115.10,
     "ATI2000": 191.30,
+    # Hybrid keeps AT1000 stile width (top/bottom rail cut = AT1000)
+    "AT1000-BASE-AT2000": 115.10,
 }
 
 # ----- Height offset: opening_height - stile_cut_length -----
@@ -51,6 +61,7 @@ HEIGHT_OFFSET_MM = {
     "AT2000": 22.20,
     "ATI1000": 22.20,
     "ATI2000": 22.20,
+    "AT1000-BASE-AT2000": 22.20,
 }
 
 # ----- Cladding offset: door_leaf_dim - cladding_dim -----
@@ -158,14 +169,18 @@ def decompose_at_door(
     moulure_h = rail_cut - 2 * MOULURE_H_OFFSET_MM
 
     is_insulated = series_key.startswith("ATI")
-    # Stile widths (hinge vs lock differ by 4mm in AT std; symmetric in AT2000)
-    hinge_stile = 50.8 if not series_key.endswith("2000") else section_h
-    lock_stile = 53.975 if not series_key.endswith("2000") else section_h
+    is_hybrid = series_key == "AT1000-BASE-AT2000"
+    # Stile widths (hinge vs lock differ by 4mm in AT std; symmetric in AT2000).
+    # Hybrid follows AT1000 stile width (frame is AT1000).
+    is_at2000_frame = series_key.endswith("2000") and not is_hybrid
+    hinge_stile = section_h if is_at2000_frame else 50.8
+    lock_stile = section_h if is_at2000_frame else 53.975
 
     # Profile labels — top vs bottom can differ (hybrid AT1000-base-AT2000)
     bottom_rail_h = BOTTOM_RAIL_HEIGHT_MM.get(series_key, section_h)
     bottom_rail_is_hybrid = bottom_rail_h != section_h
-    if section_h < 70:
+    # Hybrid uses the AT1000 top profile (2¼") even though its key ends in "2000".
+    if is_hybrid or section_h < 70:
         profile_top = f'{series_key} — tube 1¾" × 4" (rail 2¼")'
     else:
         profile_top = f'{series_key} — tube 3-11/16" × 4"'
@@ -319,10 +334,6 @@ def decompose_at_door(
     if is_insulated:
         summary_parts.append(
             f"+ 2 cladding V {stile_cut - CLADDING_OFFSET_MM:.0f} + 2 cladding H {rail_cut - CLADDING_OFFSET_MM:.0f}"
-        )
-    notes.append(" — ".join(summary_parts))
-    return DoorBreakdown(items=items, hardware=hardware, notes=notes)
-         f"+ 2 cladding V {stile_cut - CLADDING_OFFSET_MM:.0f} + 2 cladding H {rail_cut - CLADDING_OFFSET_MM:.0f}"
         )
     notes.append(" — ".join(summary_parts))
     return DoorBreakdown(items=items, hardware=hardware, notes=notes)

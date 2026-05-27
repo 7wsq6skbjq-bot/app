@@ -77,17 +77,23 @@ def test_extract_plan_synthetic_png(auth_headers):
     # Gemini may rate-limit or partial-respond, but on success must be 200
     assert r.status_code == 200, f"status={r.status_code} body={r.text[:500]}"
     body = r.json()
-    # Documented contract
-    for key in ("items", "unit_detected", "confidence", "warnings",
+    # Documented contract (new multi-elevation schema)
+    for key in ("elevations", "unit_detected", "confidence", "warnings",
                 "source_filename", "source_type"):
         assert key in body, f"missing key '{key}' in response: {body.keys()}"
-    assert isinstance(body["items"], list)
+    assert isinstance(body["elevations"], list)
+    assert len(body["elevations"]) >= 1, "must always return at least 1 elevation"
     assert body["source_type"] in ("image", "pdf")
     assert isinstance(body["warnings"], list)
-    # If Gemini did extract any items, every one must have a generated id and item_type
-    for it in body["items"]:
-        assert it.get("id")
-        assert it.get("item_type") in (
-            "frame", "glass", "hardware", "hole", "other",
-        )
-        assert isinstance(it.get("qty", 1), int)
+    # Each elevation must have an id, code, type, and a list of items.
+    for ev in body["elevations"]:
+        assert ev.get("id")
+        assert ev.get("code")
+        assert ev.get("elevation_type") in ("door", "flush_glaze", "mixed")
+        assert isinstance(ev.get("items"), list)
+        for it in ev["items"]:
+            assert it.get("id")
+            assert it.get("item_type") in (
+                "frame", "glass", "panel", "hardware", "hole", "other",
+            )
+            assert isinstance(it.get("qty", 1), int)

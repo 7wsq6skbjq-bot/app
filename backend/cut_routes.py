@@ -76,83 +76,95 @@ OCR_SYSTEM = (
 OCR_USER = (
     "Analyse ce plan d'atelier commercial et produis une LISTE DE COUPE EXHAUSTIVE.\n"
     "\n"
+    "IMPORTANT — DÉTECTION D'ÉLÉVATIONS MULTIPLES :\n"
+    "Un plan contient SOUVENT plusieurs élévations (E1, E2, FG01, FG02, etc.). "
+    "Pour CHAQUE élévation distincte que tu identifies, crée une entrée dans "
+    "le tableau `elevations` (voir JSON ci-dessous). Si une seule élévation, "
+    "renvoie quand même un tableau d'1 élément.\n"
+    "\n"
+    "TYPES D'ÉLÉVATIONS :\n"
+    "- 'door' = élévation centrée sur une porte (battant AT1000/AT2000/ATi). "
+    "  Il peut y avoir des vitrages latéraux (sidelites) ou un transom (vitrage "
+    "  au-dessus de la porte).\n"
+    "- 'flush_glaze' (FG) = mur-rideau / vitrage encadré uniquement (PAS de "
+    "  porte battante). Plusieurs cellules vitrées séparées par des meneaux.\n"
+    "- 'mixed' = combinaison (ex. FG avec une porte intégrée au centre).\n"
+    "\n"
     "ÉTAPE 1 — Lis SOIGNEUSEMENT le cartouche / les blocs de détails :\n"
     "- COULEUR / FINI du cadre ET de la porte (souvent différents) : "
     "  'Anodisé bronze architectural', 'Anodisé noir', 'Anodisé clair', etc.\n"
-    "- SÉRIE de la porte : AT1000, AT2000, ATi1000 (isolée), ATi2000 (isolée). "
-    "  C'est UN de ces 4 modèles — pas d'hybride 'AT1000-AT2000-base'.\n"
-    "- Épaisseurs des PROFILÉS du cadre (montants, linteau) — souvent un même "
-    "  tube à ailettes 1¾\" × 4\" pour tous les côtés.\n"
-    "- Épaisseurs des PROFILÉS de la porte : traverse haute (top rail), "
-    "  traverse basse (bottom rail), montant charnière, montant serrure.\n"
+    "- SÉRIE de la porte (si présente) : AT1000, AT2000, ATi1000 (isolée), "
+    "  ATi2000 (isolée), ou hybride 'AT1000-base-AT2000' (corps AT1000 avec "
+    "  base 6⅞\" type AT2000 — fréquent sur portes commerciales lourdes).\n"
+    "- Épaisseurs des PROFILÉS du cadre (montants, linteau, traverses). "
+    "  N'invente PAS de nom commercial : utilise des noms NEUTRES "
+    "  ('tube cadre 1¾\" × 4\"', 'profilé 50 mm', etc.).\n"
     "- LOUSSES (clearances) : lousse latérale, lousse haut, lousse sous-porte.\n"
     "- SEUIL (threshold) : présent ou non, épaisseur (typiquement 12.7 mm = ½\").\n"
     "- VITRAGE : type (trempé / thermos), épaisseur (6 mm simple ou 25.4 mm thermos).\n"
     "\n"
-    "ÉTAPE 2 — Liste TOUS les éléments de QUINCAILLERIE du cartouche, MÊME "
-    "ceux qui semblent anodins. Pour CHACUN, donne :\n"
+    "ÉTAPE 2 — Pour chaque élévation, liste TOUS les éléments de QUINCAILLERIE "
+    "associés (charnière, serrure, gâche, cylindre, ferme-porte, etc.). "
+    "Pour CHACUN :\n"
     "- label (court, ex. 'Serrure MS Adams Rite')\n"
-    "- part_number (ex. 'ADAM-MS1853S320', 'UH-120-DA', 'UNIQ-AC4-36', "
-    "  'ILCO-7165SC229KD') — RECOPIE le numéro EXACTEMENT comme écrit\n"
-    "- manufacturer (ex. 'AT Fabrication', 'ASSA ABLOY Adams Rite', 'ILCO Kaba', "
-    "  'Unique', 'LCN', 'Norton')\n"
-    "- qty (1 par défaut si non indiqué)\n"
-    "Inclus : charnière, serrure, têtière, cylindre extérieur, tourniquet "
-    "intérieur, collets, gâche, ferme-porte, barre anti-panique, paddle, "
-    "poignée, butoir, seuil, joints, etc.\n"
+    "- part_number (ex. 'ADAM-MS1853S320', 'UH-120-DA', 'UNIQ-AC4-36') — "
+    "  RECOPIE le numéro EXACTEMENT comme écrit\n"
+    "- manufacturer (ex. 'AT Fabrication', 'ASSA ABLOY Adams Rite', 'ILCO Kaba')\n"
+    "- qty (1 par défaut)\n"
     "\n"
-    "ÉTAPE 3 — Pour les CADRES (encadrement), liste les coupes avec règle :\n"
-    "- Montants verticaux = hauteur totale du cadre (fabrication height brute)\n"
-    "- Linteau / seuil horizontal = largeur du cadre - 2 × épaisseur_montant "
-    "  (toujours ! Le linteau passe ENTRE les montants verticaux)\n"
-    "- Renseigne opening_length_mm (cote brute du plan) ET length_mm (cote finale après soustraction).\n"
+    "ÉTAPE 3 — RÈGLES DE FABRICATION SPÉCIFIQUES FLUSH GLAZE (type 'flush_glaze'):\n"
+    "- LINTEAU (horizontal supérieur) = TOUJOURS 'Tube à poche' "
+    "  → profile = 'Tube à poche (linteau)'\n"
+    "- BAS DE CHAQUE VITRAGE (horizontal sous chaque cellule de verre) = "
+    "  'Tube escabeau' → profile = 'Tube escabeau'\n"
+    "  ⚠ Y COMPRIS le verre qui se trouve AU-DESSUS d'une porte : la traverse "
+    "  immédiatement sous ce vitrage (au-dessus de la porte) reste un "
+    "  'Tube escabeau'.\n"
+    "- MONTANTS verticaux : profilé neutre ('Tube cadre 1¾\" × 4\"' "
+    "  ou ce que le plan indique).\n"
     "\n"
-    "ÉTAPE 4 — Pour les VITRAGES adjacents (sidelites, transoms), donne "
-    "dimensions finales (après lousses).\n"
+    "ÉTAPE 4 — Pour les CADRES (encadrement), règle de coupe :\n"
+    "- Montants verticaux = hauteur totale du cadre\n"
+    "- Linteau / traverse horizontale = largeur entre montants = largeur cadre "
+    "  - 2 × épaisseur_montant\n"
+    "- Renseigne opening_length_mm (cote brute) ET length_mm (cote finale).\n"
     "\n"
-    "ÉTAPE 5 — Pour la PORTE elle-même, NE LA DÉCOMPOSE PAS en 4 pièces "
-    "(le backend Portech le fait automatiquement). Liste-la comme UN SEUL "
-    "item type='panel' avec :\n"
-    "- label = 'Porte AT1000' (ou AT2000 selon la série détectée)\n"
-    "- profile = la série exacte (ex. 'AT1000 avec base AT2000')\n"
-    "- length_mm = hauteur finale de la PORTE LEAF (après lousses haut+bas+seuil)\n"
-    "- width_mm = largeur finale de la PORTE LEAF (après lousses latérales)\n"
+    "ÉTAPE 5 — Pour la PORTE elle-même (le cas échéant), NE LA DÉCOMPOSE PAS "
+    "(le backend le fait). Renvoie UN SEUL item type='panel' avec :\n"
+    "- label = 'Porte AT1000' (ou série détectée)\n"
+    "- profile = la série exacte (incl. 'AT1000-base-AT2000' si hybride)\n"
+    "- length_mm = hauteur finale du battant (après lousses)\n"
+    "- width_mm = largeur finale du battant\n"
     "- thickness_mm = 44.5 (1¾\")\n"
-    "- opening_length_mm / opening_width_mm = ouverture libre brute (avant lousses)\n"
+    "- opening_length_mm / opening_width_mm = ouverture libre brute\n"
     "- material = couleur anodisée exacte\n"
     "\n"
     "Retourne ce JSON STRICT :\n"
     "{\n"
-    '  "items": [ { item_type, label, profile?, material?, part_number?, '
+    '  "elevations": [\n'
+    "    {\n"
+    '      "code": "FG01" | "E1" | ... ,\n'
+    '      "elevation_type": "door" | "flush_glaze" | "mixed",\n'
+    '      "total_width_mm"?: number,\n'
+    '      "total_height_mm"?: number,\n'
+    '      "items": [ { item_type, label, profile?, material?, part_number?, '
     'manufacturer?, length_mm, width_mm?, thickness_mm?, qty, '
     'opening_length_mm?, opening_width_mm?, notes? }, ... ],\n'
-    '  "frame_specs": {\n'
-    '    "mullion_thickness_mm"?: number,\n'
-    '    "jamb_thickness_mm"?: number,\n'
-    '    "head_thickness_mm"?: number,\n'
-    '    "profile_depth_mm"?: number,\n'
-    '    "side_clearance_mm"?: number,\n'
-    '    "head_clearance_mm"?: number,\n'
-    '    "undercut_clearance_mm"?: number,\n'
-    '    "threshold_thickness_mm"?: number,\n'
-    '    "has_threshold"?: boolean\n'
-    "  },\n"
-    '  "door_info": {\n'
-    '    "series"?: "AT1000" | "AT2000" | "ATi1000" | "ATi2000",\n'
-    '    "leaf_width_mm"?: number,\n'
-    '    "leaf_height_mm"?: number,\n'
-    '    "is_insulated"?: boolean,\n'
-    '    "glass_thickness_mm"?: number,\n'
-    '    "frame_finish"?: "Anodisé bronze" | "Anodisé noir" | ...,\n'
-    '    "door_finish"?: "..."\n'
-    "  },\n"
+    '      "door_info"?: { series?, leaf_width_mm?, leaf_height_mm?, '
+    'is_insulated?, glass_thickness_mm?, frame_finish?, door_finish? }\n'
+    "    }\n"
+    "  ],\n"
+    '  "frame_specs": { ... mêmes champs que précédemment ... },\n'
     '  "unit_detected": "mm" | "in" | "cm" | "ft" | "unknown",\n'
     '  "confidence": 0..1,\n'
     '  "warnings": ["..."]\n'
     "}\n"
     "\n"
     "Règles :\n"
-    "- Toutes dimensions en MILLIMÈTRES (1 in = 25.4 mm, fractions: 11/16\" = 17.46 mm, 3/4\" = 19.05 mm, 1¾\" = 44.45 mm).\n"
+    "- Toutes dimensions en MILLIMÈTRES (1 in = 25.4 mm, 11/16\" = 17.46 mm, 3/4\" = 19.05 mm, 1¾\" = 44.45 mm).\n"
+    "- Si TU ne vois qu'une seule élévation et aucun code (ex: 'FG01'), nomme-la 'E1'.\n"
+    "- NE pas écrire 'tube à ailettes' dans les profilés sauf si le cartouche "
+    "  le mentionne EXPLICITEMENT par ce nom.\n"
     "- AUCUN texte hors du JSON. Pas de ```json. Pas d'explication."
 )
 
@@ -190,33 +202,57 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
             raise HTTPException(502, "Réponse OCR invalide")
         data = json.loads(m.group(0))
 
-    # Sanitize
-    items = []
-    for it in data.get("items", []) or []:
-        item_type = it.get("item_type", "frame")
-        if item_type not in ITEM_TYPES:
-            item_type = "other"
-        items.append({
+    def _sanitize_items(raw_items: list) -> list:
+        out = []
+        for it in raw_items or []:
+            item_type = it.get("item_type", "frame")
+            if item_type not in ITEM_TYPES:
+                item_type = "other"
+            out.append({
+                "id": str(uuid.uuid4()),
+                "item_type": item_type,
+                "label": str(it.get("label") or "")[:140],
+                "profile": (it.get("profile") or None) or None,
+                "material": (it.get("material") or None) or None,
+                "part_number": (it.get("part_number") or None) or None,
+                "manufacturer": (it.get("manufacturer") or None) or None,
+                "length_mm": float(it.get("length_mm") or 0),
+                "width_mm": float(it.get("width_mm")) if it.get("width_mm") not in (None, "") else None,
+                "thickness_mm": float(it.get("thickness_mm")) if it.get("thickness_mm") not in (None, "") else None,
+                "qty": int(it.get("qty") or 1) if str(it.get("qty") or "").replace(".", "").isdigit() else 1,
+                "opening_length_mm": float(it.get("opening_length_mm")) if it.get("opening_length_mm") not in (None, "") else None,
+                "opening_width_mm": float(it.get("opening_width_mm")) if it.get("opening_width_mm") not in (None, "") else None,
+                "notes": (it.get("notes") or None) or None,
+                "source": "ocr",
+            })
+        return out
+
+    # New format: data has "elevations": [...]
+    # Backward-compat: data has "items": [...] at top-level → wrap into 1 elevation.
+    raw_elevations = data.get("elevations")
+    if not raw_elevations:
+        raw_elevations = [{
+            "code": "E1",
+            "elevation_type": "door" if data.get("door_info") else "flush_glaze",
+            "items": data.get("items") or [],
+            "door_info": data.get("door_info") or {},
+        }]
+
+    elevations = []
+    for idx, ev in enumerate(raw_elevations):
+        elevations.append({
             "id": str(uuid.uuid4()),
-            "item_type": item_type,
-            "label": str(it.get("label") or "")[:140],
-            "profile": (it.get("profile") or None) or None,
-            "material": (it.get("material") or None) or None,
-            "part_number": (it.get("part_number") or None) or None,
-            "manufacturer": (it.get("manufacturer") or None) or None,
-            "length_mm": float(it.get("length_mm") or 0),
-            "width_mm": float(it.get("width_mm")) if it.get("width_mm") not in (None, "") else None,
-            "thickness_mm": float(it.get("thickness_mm")) if it.get("thickness_mm") not in (None, "") else None,
-            "qty": int(it.get("qty") or 1) if str(it.get("qty") or "").replace(".", "").isdigit() else 1,
-            "opening_length_mm": float(it.get("opening_length_mm")) if it.get("opening_length_mm") not in (None, "") else None,
-            "opening_width_mm": float(it.get("opening_width_mm")) if it.get("opening_width_mm") not in (None, "") else None,
-            "notes": (it.get("notes") or None) or None,
-            "source": "ocr",
+            "code": str(ev.get("code") or f"E{idx + 1}")[:32],
+            "elevation_type": ev.get("elevation_type") if ev.get("elevation_type") in ("door", "flush_glaze", "mixed") else "flush_glaze",
+            "total_width_mm": float(ev["total_width_mm"]) if ev.get("total_width_mm") not in (None, "") else None,
+            "total_height_mm": float(ev["total_height_mm"]) if ev.get("total_height_mm") not in (None, "") else None,
+            "items": _sanitize_items(ev.get("items") or []),
+            "door_info": ev.get("door_info") or {},
         })
+
     return {
-        "items": items,
+        "elevations": elevations,
         "frame_specs": data.get("frame_specs") or {},
-        "door_info": data.get("door_info") or {},
         "unit_detected": data.get("unit_detected", "unknown"),
         "confidence": float(data.get("confidence") or 0),
         "warnings": data.get("warnings", []) or [],
@@ -327,52 +363,60 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             except Exception:
                 pass
 
-        # AUTO-DECOMPOSE any AT door panel the OCR detected. This was previously
-        # a manual click ("Décomposer porte AT") — users want it to happen
-        # automatically on import (#1 from feedback session).
-        items = result.get("items") or []
-        door_info = result.get("door_info") or {}
-        decomposed_notes: list[str] = []
-        if door_info:
-            # Use door_info if present, else look for a panel matching AT*
-            series = door_info.get("series") or ""
-            leaf_w = door_info.get("leaf_width_mm")
-            leaf_h = door_info.get("leaf_height_mm")
-            glass_t = door_info.get("glass_thickness_mm") or 6.0
-            finish = door_info.get("door_finish") or door_info.get("frame_finish") \
-                or "Aluminium anodisé bronze"
-            if series and leaf_w and leaf_h:
-                br = decompose_at_door(
-                    door_width_mm=float(leaf_w),
-                    door_height_mm=float(leaf_h),
-                    series=str(series),
-                    glass_thickness_mm=float(glass_t),
-                    material=str(finish),
-                    label_prefix="Porte",
-                    qty=1,
-                )
-                # Remove any panel item the OCR added for the door (so we don't double-count)
-                items = [
-                    it for it in items
-                    if not (it.get("item_type") == "panel"
-                            and re.search(r"AT\s*1?2?000", (it.get("profile") or "") + (it.get("label") or ""), re.I))
-                ]
-                items.extend(br.items + br.hardware)
-                decomposed_notes.extend(br.notes)
-                decomposed_notes.append(
-                    f"Porte AT décomposée automatiquement à l'import (série {series})."
-                )
+        # AUTO-DECOMPOSE any AT door panel the OCR detected per elevation.
+        # Previously this was a manual click; users want it automatic on import.
+        elevations_in = result.get("elevations") or []
+        out_elevations = []
+        all_warnings = list(result.get("warnings") or [])
 
-        warnings = list(result.get("warnings") or []) + decomposed_notes
+        for ev in elevations_in:
+            items = list(ev.get("items") or [])
+            door_info = ev.get("door_info") or {}
+            ev_notes: list[str] = []
+            if door_info:
+                series = door_info.get("series") or ""
+                leaf_w = door_info.get("leaf_width_mm")
+                leaf_h = door_info.get("leaf_height_mm")
+                glass_t = door_info.get("glass_thickness_mm") or 6.0
+                finish = door_info.get("door_finish") or door_info.get("frame_finish") \
+                    or "Aluminium anodisé bronze"
+                if series and leaf_w and leaf_h:
+                    br = decompose_at_door(
+                        door_width_mm=float(leaf_w),
+                        door_height_mm=float(leaf_h),
+                        series=str(series),
+                        glass_thickness_mm=float(glass_t),
+                        material=str(finish),
+                        label_prefix=f"Porte {ev.get('code') or ''}".strip(),
+                        qty=1,
+                    )
+                    # Remove any panel item the OCR added for the door
+                    items = [
+                        it for it in items
+                        if not (it.get("item_type") == "panel"
+                                and re.search(r"AT\s*1?2?000", (it.get("profile") or "") + (it.get("label") or ""), re.I))
+                    ]
+                    items.extend(br.items + br.hardware)
+                    ev_notes.extend(br.notes)
+                    ev_notes.append(
+                        f"Porte AT décomposée automatiquement (série {series})."
+                    )
+            out_elevations.append({
+                **ev,
+                "items": items,
+                "notes": ev_notes,
+            })
+            if ev_notes:
+                all_warnings.extend([f"[{ev.get('code')}] {n}" for n in ev_notes])
+
         return {
             "source_filename": fname,
             "source_type": "pdf" if ext == ".pdf" else "image",
-            "items": items,
+            "elevations": out_elevations,
             "frame_specs": result.get("frame_specs") or {},
-            "door_info": door_info,
             "unit_detected": result.get("unit_detected", "unknown"),
             "confidence": result.get("confidence", 0),
-            "warnings": warnings,
+            "warnings": all_warnings,
         }
 
     @router.post("/cuts/extract-dxf")

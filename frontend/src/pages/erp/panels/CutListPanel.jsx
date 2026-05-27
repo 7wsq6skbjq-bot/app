@@ -60,6 +60,8 @@ export const CutListPanel = () => {
     const [extractMsg, setExtractMsg] = useState("");
     const planInputRef = useRef(null);
     const dxfInputRef = useRef(null);
+    const [elevationPicker, setElevationPicker] = useState(null);   // { elevations, frame_specs, source_filename, source_type, confidence, warnings }
+    const [selectedElevations, setSelectedElevations] = useState({}); // { [id]: true }
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -143,27 +145,73 @@ export const CutListPanel = () => {
                 headers: { "Content-Type": "multipart/form-data" },
                 timeout: 120000,
             });
-            setEditing((prev) => ({
-                ...prev,
-                source_filename: data.source_filename,
-                source_type: data.source_type,
-                frame_specs: data.frame_specs || prev.frame_specs || null,
-                items: [...(prev.items || []), ...(data.items || [])],
-            }));
-            const warn = (data.warnings || []).length ? ` — ${data.warnings.join(" / ")}` : "";
-            const specsParts = [];
-            if (data.frame_specs?.mullion_thickness_mm) specsParts.push(`meneau ${data.frame_specs.mullion_thickness_mm}mm`);
-            if (data.frame_specs?.side_clearance_mm) specsParts.push(`lousse ${data.frame_specs.side_clearance_mm}mm`);
-            if (data.frame_specs?.undercut_clearance_mm) specsParts.push(`sous-porte ${data.frame_specs.undercut_clearance_mm}mm`);
-            const specsStr = specsParts.length ? ` · ${specsParts.join(" / ")}` : "";
-            setExtractMsg(
-                `🪄 ${data.items.length} élément(s) extrait(s) du plan via IA · confiance ${Math.round((data.confidence || 0) * 100)}%${specsStr}${warn}`,
-            );
+            const elevs = data.elevations || [];
+            if (elevs.length === 0) {
+                setExtractMsg("Aucune élévation détectée par l'IA.");
+                return;
+            }
+            // Single elevation: import directly. Multiple: open the picker.
+            if (elevs.length === 1) {
+                applyImportedElevations([elevs[0]], data);
+                const ev0 = elevs[0];
+                const warn = (data.warnings || []).length ? ` — ${data.warnings.join(" / ")}` : "";
+                setExtractMsg(
+                    `🪄 Élévation « ${ev0.code} » : ${(ev0.items || []).length} élément(s) importé(s) · confiance ${Math.round((data.confidence || 0) * 100)}%${warn}`,
+                );
+            } else {
+                // Pre-select all by default
+                const init = {};
+                elevs.forEach((e) => { init[e.id] = true; });
+                setSelectedElevations(init);
+                setElevationPicker(data);
+            }
         } catch (e) {
             alert(e?.response?.data?.detail || "Erreur OCR du plan");
         } finally {
             setExtractBusy(false);
         }
+    };
+
+    /** Add the items from the given elevations into the current cut list. */
+    const applyImportedElevations = (elevs, data) => {
+        const newItems = [];
+        elevs.forEach((ev) => {
+            (ev.items || []).forEach((it) => {
+                // Prefix label with elevation code when there are multiple, for traceability.
+                const prefixed = (elevs.length > 1 && ev.code && !(it.label || "").startsWith(`[${ev.code}]`))
+                    ? { ...it, label: `[${ev.code}] ${it.label || ""}`.trim() }
+                    : it;
+                newItems.push(prefixed);
+            });
+        });
+        setEditing((prev) => ({
+            ...prev,
+            source_filename: data.source_filename,
+            source_type: data.source_type,
+            frame_specs: data.frame_specs || prev.frame_specs || null,
+            items: [...(prev.items || []), ...newItems],
+        }));
+    };
+
+    const confirmElevationPicker = () => {
+        if (!elevationPicker) return;
+        const chosen = (elevationPicker.elevations || []).filter((e) => selectedElevations[e.id]);
+        if (chosen.length === 0) {
+            alert("Cochez au moins une élévation à importer.");
+            return;
+        }
+        applyImportedElevations(chosen, elevationPicker);
+        const count = chosen.reduce((acc, ev) => acc + (ev.items || []).length, 0);
+        setExtractMsg(
+            `🪄 ${chosen.length} élévation(s) importée(s) (${chosen.map((c) => c.code).join(", ")}) · ${count} élément(s) ajouté(s).`,
+        );
+        setElevationPicker(null);
+        setSelectedElevations({});
+    };
+
+    const cancelElevationPicker = () => {
+        setElevationPicker(null);
+        setSelectedElevations({});
     };
 
     const handleExtractDxf = async (file) => {
@@ -436,8 +484,7 @@ export const CutListPanel = () => {
                     onClose={closeEdit}
                     title={editing.id ? `Liste : ${editing.name || "Sans titre"}` : "Nouvelle liste de coupe"}
                     testId="cuts-modal"
-                    wide
-                    footer={
+                    wide                    footer={
                         <>
                             {editing.id && (
                                 <button
@@ -710,6 +757,113 @@ export const CutListPanel = () => {
                         <div className="p-3 bg-[#f3f6fb] border border-[#dde5f0] text-xs text-[#4b5d7a]">
                             💡 Astuce : importez un plan PDF avec cotes — l'IA extrait automatiquement linteau, montants, vitrages avec leurs dimensions exactes. Vérifiez le tableau et cliquez « Optimiser » pour obtenir le plan de coupe sur barres standards avec saignée {editing.saw_kerf_mm} mm.
                         </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* ─── Elevation picker modal (after PDF OCR returns multiple elevations) ─── */}
+            {elevationPicker && (
+                <Modal
+                    open={!!elevationPicker}
+                    onClose={cancelElevationPicker}
+                    title={`Choisir les élévations à importer (${(elevationPicker.elevations || []).length} détectées)`}
+                    testId="cuts-elevation-picker"
+                    footer={
+                        <>
+                            <button onClick={cancelElevationPicker} className="px-4 py-2 border border-[#dde5f0] tech-stamp">
+                                Annuler
+                            </button>
+                            <button
+                                data-testid="cuts-elevation-picker-confirm"
+                                onClick={confirmElevationPicker}
+                                className="px-4 py-2 bg-[#0c182b] text-white tech-stamp"
+                            >
+                                Importer la sélection
+                            </button>
+                        </>
+                    }
+                >
+                    <div className="space-y-3">
+                        <p className="text-xs text-[#4b5d7a]">
+                            L'IA a détecté plusieurs élévations dans ce plan. Cochez celles que vous voulez importer dans la liste de coupe en cours.
+                        </p>
+                        <div className="flex gap-2 text-[11px]">
+                            <button
+                                onClick={() => {
+                                    const all = {};
+                                    (elevationPicker.elevations || []).forEach((e) => { all[e.id] = true; });
+                                    setSelectedElevations(all);
+                                }}
+                                className="px-2 py-1 border border-[#dde5f0] hover:bg-[#f3f6fb] tech-stamp"
+                            >
+                                Tout cocher
+                            </button>
+                            <button
+                                onClick={() => setSelectedElevations({})}
+                                className="px-2 py-1 border border-[#dde5f0] hover:bg-[#f3f6fb] tech-stamp"
+                            >
+                                Tout décocher
+                            </button>
+                        </div>
+                        <ul className="space-y-2">
+                            {(elevationPicker.elevations || []).map((ev) => {
+                                const checked = !!selectedElevations[ev.id];
+                                const typeBadge = ev.elevation_type === "door"
+                                    ? "bg-[#fdf2e0] text-[#8a4f1f] border-[#e8b87b]"
+                                    : ev.elevation_type === "mixed"
+                                        ? "bg-[#f3e8fd] text-[#5b1f8a] border-[#c8a5e8]"
+                                        : "bg-[#e0f7f5] text-[#0a6b6b] border-[#7bd1cf]";
+                                const typeLabel = ev.elevation_type === "door"
+                                    ? "Porte"
+                                    : ev.elevation_type === "mixed"
+                                        ? "Mixte"
+                                        : "Flush Glaze";
+                                return (
+                                    <li key={ev.id}>
+                                        <label className={`flex items-start gap-3 p-3 border ${checked ? "border-[#0c182b] bg-[#f3f6fb]" : "border-[#dde5f0] bg-white"} cursor-pointer`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={(e) => setSelectedElevations({ ...selectedElevations, [ev.id]: e.target.checked })}
+                                                data-testid={`cuts-elevation-cb-${ev.code}`}
+                                                className="mt-1 w-4 h-4"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                    <span className="font-display font-bold text-sm text-[#0c182b]">
+                                                        {ev.code}
+                                                    </span>
+                                                    <span className={`tech-stamp text-[10px] px-2 py-0.5 border ${typeBadge}`}>
+                                                        {typeLabel}
+                                                    </span>
+                                                    {ev.total_width_mm && ev.total_height_mm && (
+                                                        <span className="text-[11px] text-[#4b5d7a]">
+                                                            {ev.total_width_mm.toFixed(0)} × {ev.total_height_mm.toFixed(0)} mm
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[11px] text-[#4b5d7a] ml-auto">
+                                                        {(ev.items || []).length} élément(s)
+                                                    </span>
+                                                </div>
+                                                {ev.door_info?.series && (
+                                                    <div className="text-[11px] text-[#4b5d7a]">
+                                                        Série porte : <b>{ev.door_info.series}</b>
+                                                        {ev.door_info.leaf_width_mm && ev.door_info.leaf_height_mm
+                                                            ? ` · ${ev.door_info.leaf_width_mm.toFixed(0)}×${ev.door_info.leaf_height_mm.toFixed(0)} mm`
+                                                            : ""}
+                                                    </div>
+                                                )}
+                                                {(ev.notes || []).length > 0 && (
+                                                    <ul className="text-[11px] text-[#4b5d7a] mt-1 list-disc pl-4">
+                                                        {ev.notes.slice(0, 2).map((n, i) => <li key={i}>{n}</li>)}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        </label>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     </div>
                 </Modal>
             )}

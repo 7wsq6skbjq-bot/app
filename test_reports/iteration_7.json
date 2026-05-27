@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 7 — Multi-elevation /extract contract + hybrid AT1000-base-AT2000 door breakdown verified end-to-end. BACKEND: full pytest suite 137 passed / 0 failed / 0 skipped in 34.7s (includes 8 test_door_breakdown.py cases — AT1000 36x84 standard, AT2000, ATi2000 with cladding, no-cladding for non-insulated, _normalize_series user variants incl. 'AT1000-base-AT2000'/'AT1000 AT2000', hybrid math 799.3/2111.4/MV=1809.8 + bottom profile string contains '6⅞' or 'AT2000', hardware positions cyl 1016 strike +19.05 handle 876.3, /decompose-door auth guard + happy path returning 6 frame + 1 glass + 'notes', ATi cladding via endpoint, invalid input 400 — and 3 test_cuts_extract.py cases asserting NEW multi-elevation schema). Direct curl smokes confirmed: /api/admin/cuts/meta → 200 with item_types/default_stock_lengths_mm/default_saw_kerf_mm; /api/admin/cuts/decompose-door series='AT1000-base-AT2000' → 200, 6 frame + 1 glass, bottom profile='AT1000-BASE-AT2000 — base 6⅞\" (substitution AT2000)', no KeyError; series='AT1000' → rail 799.3 / stile 2111.4 (matches DXF spec). /api/admin/cuts/extract on synthetic PNG → 200 with NEW top-level keys {source_filename, source_type, elevations, frame_specs, unit_detected, confidence, warnings}; elevations=[{id, code='FG01', elevation_type='flush_glaze', items=[4 items], door_info=dict}]; warnings populated (3 french warnings); source_type='image'. FRONTEND: Playwright PortechAdmin/Portech2026! login → /admin/gestion/coupes → [data-testid=cuts-panel] renders → cuts-new opens cuts-modal → all 7 required testids present (cuts-import-plan, cuts-import-dxf, cuts-decompose-door, cuts-add-item, cuts-optimize, cuts-save, cuts-name); cuts-elevation-picker correctly NOT rendered before extraction (conditional Modal). Zero JS page errors and zero non-network console errors on the panel. The previously reported syntax-error / KeyError on cut_door_breakdown.py is fully resolved.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CutList modal (/admin/gestion/coupes new)", "issues": ["Same UX nits as iteration 6 (still open): no toast after cuts-save success; item-row inputs lack data-testid (cuts-item-{idx}-length/-qty/-profile would harden tests). Both non-blocking."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_door_breakdown.py",
+    "/app/backend/tests/test_cuts_extract.py",
+    "/app/backend/tests/test_cuts.py",
+    "/app/test_reports/pytest/iteration_7_full.xml"
+  ],
+  "action_items": [
+    "(No blocking issues this iteration.)",
+    "(Forward-looking, non-blocking) Add row-level data-testid on item table inputs to ease elevation-picker regression tests.",
+    "(Forward-looking, non-blocking) Add a success toast / auto-close on cuts-save.",
+    "(Forward-looking, non-blocking) Add automated cleanup of /app/backend/cut_uploads/ (orphan PDF/PNG/DXF accumulate as noted in iteration 6 review)."
+  ],
+  "critical_code_review_comments": [
+    "cut_door_breakdown.py is now 339 lines, still readable — but the hybrid-substitution math (MOULURE_V_OFFSET_MM 301.60 for 6mm glass case) deserves a unit test that PROVES the derivation '182.50 + (174.625 − 55.5) = 301.60' rather than relying on the hardcoded constant. If someone later changes BOTTOM_RAIL_HEIGHT_MM, the offset will silently drift.",
+    "/extract contract change is a BREAKING change (top-level 'items' replaced by 'elevations'). Any external consumer (mobile, integrations) must be updated. Suggest documenting the migration in /app/memory/PRD.md and bumping an API version header.",
+    "OCR_USER prompt no longer suggests 'tube à ailettes' — verified by reading cut_routes.py. ✓",
+    "Per-elevation door_info object is always emitted even when elevation_type != 'door' (e.g., flush_glaze) — frontend should not blindly trust door_info fields; defensive nil-checks recommended in CutListPanel.applyImportedElevations()."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% — 137/137 passed", "frontend": "100% — all cuts-panel testids present + 0 JS errors"},
+  "test_credentials": "PortechAdmin / Portech2026! (verified via /api/auth/login and UI)",
+  "seed_data_creation": "None — no cut lists persisted this iteration (modal opened but not saved). Pre-existing test data from iteration 6 untouched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All cuts feature endpoints stable. New /extract response contract: top-level {elevations[], frame_specs{}, unit_detected, confidence, warnings[], source_filename, source_type}. Each elevation: {id, code, elevation_type ∈ {door|flush_glaze|mixed}, items[], door_info{}}. Hybrid series key in _normalize_series is 'AT1000-BASE-AT2000' (UPPER). Decompose endpoint at POST /api/admin/cuts/decompose-door returns items list only (hardware is fused into items list as item_type='frame' for 6-item count); the dataclass hardware list isn't exposed on this endpoint — that's by design. Frontend route: /admin/gestion/coupes. Pytest entry: cd /app/backend && python -m pytest tests/ -q. JUnit at /app/test_reports/pytest/iteration_7_full.xml.",
+  "rca of the issue": "No defects this iteration. Previous fork's syntax error in cut_door_breakdown.py is fully resolved — both _normalize_series('AT1000-base-AT2000') and decompose_at_door(..., series='AT1000-base-AT2000', glass=6.0) now succeed without KeyError, returning the expected 6-frame breakdown with bottom rail profile labelled 'base 6⅞\" (substitution AT2000)'. The new multi-elevation /extract contract is wired correctly: a synthetic PNG with only 'FG01' text yielded one elevation of type flush_glaze with appropriate French warnings, confidence 0.3, and the full set of documented keys."
+}
