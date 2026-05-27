@@ -42,12 +42,12 @@ const AdminErp = () => {
     return (
         <div
             data-testid="page-admin-erp"
-            className="min-h-screen bg-[#f3f6fb] text-[#0c182b] pb-[80px] md:pb-0"
+            className="min-h-screen bg-[#f3f6fb] text-[#0c182b] pb-[80px] sm:pb-0"
         >
             <AdminHeader user={user} onLogout={logout} />
 
-            {/* Secondary nav — hidden on mobile (replaced by MobileTabBar) */}
-            <div className="hidden md:block bg-white border-b border-[#dde5f0]">
+            {/* Secondary nav — desktop / PWA Windows / tablet (sm+) */}
+            <div className="hidden sm:block bg-white border-b border-[#dde5f0]">
                 <div className="container-portech flex items-center gap-2 overflow-x-auto py-3">
                     <Link
                         to="/admin"
@@ -74,8 +74,8 @@ const AdminErp = () => {
                 </div>
             </div>
 
-            {/* Mobile-only current section title bar */}
-            <div className="md:hidden bg-white border-b border-[#dde5f0] px-4 py-3">
+            {/* Phone-only current section title bar (< sm) */}
+            <div className="sm:hidden bg-white border-b border-[#dde5f0] px-4 py-3">
                 <div className="tech-stamp text-[#4b5d7a]">Gestion</div>
                 <div className="font-display font-bold uppercase text-xl tracking-tight text-[#0c182b]">{activeTab.label}</div>
             </div>

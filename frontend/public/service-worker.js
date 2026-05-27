@@ -1,8 +1,12 @@
 // Portech PWA — minimal service worker.
 // We register it for the offline shell + Add-to-Home-Screen install criteria.
 // We deliberately keep caching strategy minimal so admin data stays fresh.
+//
+// CACHE VERSION: bump this on every deploy that changes navigation, layout, or
+// any HTML/CSS pinned by the install step — forces all installed PWAs to
+// purge their old cache and reload the current shell on next launch.
 
-const CACHE = "portech-shell-v1";
+const CACHE = "portech-shell-v3";
 
 const PRECACHE = [
     "/",

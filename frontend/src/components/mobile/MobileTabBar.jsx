@@ -47,7 +47,7 @@ export const MobileTabBar = () => {
         <>
             <nav
                 data-testid="mobile-tab-bar"
-                className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0c182b] border-t border-[#1e3457] flex justify-around items-stretch"
+                className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0c182b] border-t border-[#1e3457] flex justify-around items-stretch"
                 style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
             >
                 {PRIMARY.map((t) => {
@@ -81,7 +81,7 @@ export const MobileTabBar = () => {
             {moreOpen && (
                 <div
                     data-testid="mtab-more-sheet"
-                    className="md:hidden fixed inset-0 z-[60]"
+                    className="sm:hidden fixed inset-0 z-[60]"
                     onClick={() => setMoreOpen(false)}
                 >
                     <div className="absolute inset-0 bg-[#0c182b]/70 backdrop-blur-sm" />
