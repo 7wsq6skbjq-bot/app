@@ -39,21 +39,27 @@ def _parse_dim(token: str) -> float | None:
         return None
 
 
-def normalize_profile_key(profile: str | None, material: str | None) -> tuple[str, str]:
+def normalize_profile_key(profile: str | None, material: str | None,
+                          part_number: str | None = None) -> tuple[str, str]:
     """Collapse synonym profile names so identical extrusions end up in the
     same cutting group.
 
-    At Portech, 'tube à ailettes 1¾" x 4"', 'tube de tête 1¾" x 4"', and
-    'tube 1¾ x 4' all describe the SAME aluminum extrusion. The optimizer
-    must group them together — otherwise the user gets two separate plans
-    when they should share bars.
+    Priority (most → least specific):
+      1. `part_number` if present (Trifab '450CG005' vs '450CG011' vs Kawneer
+         '178-001' are unambiguous and authoritative).
+      2. dimensions extracted from the `profile` string (handles synonyms like
+         'tube à ailettes 1¾"×4"' vs 'tube 1.75x4').
+      3. raw `profile` string.
 
-    Strategy: extract the dimensions as numeric values, format them consistently
-    (e.g. "1.75x4"), and use those + material as the canonical key. Falls back
-    to the raw string if no dimensions are detected.
+    `material` is always part of the key so different finishes don't share bars.
     """
     raw_profile = (profile or "—").strip()
     raw_material = (material or "—").strip()
+    pn = (part_number or "").strip().lstrip("#").strip()
+
+    # 1) Part number takes precedence — unambiguous manufacturer reference.
+    if pn:
+        return (f"pn:{pn.lower()}", raw_material.lower())
 
     p_low = raw_profile.lower()
     frac_map = {"¼": " 1/4", "½": " 1/2", "¾": " 3/4", "⅛": " 1/8", "⅜": " 3/8", "⅝": " 5/8", "⅞": " 7/8"}
@@ -202,10 +208,28 @@ def optimize_cut_list(
         t = it.get("item_type", "frame")
         qty = max(1, int(it.get("qty", 1) or 1))
         if t == "frame":
-            key = normalize_profile_key(it.get("profile"), it.get("material"))
+            key = normalize_profile_key(
+                it.get("profile"), it.get("material"), it.get("part_number"),
+            )
+            # Display profile: prefer the explicit profile string, else fall back
+            # to a label built from manufacturer + part_number so the workshop
+            # PDF never shows an empty "PROFILÉ :" header.
+            disp_profile = (it.get("profile") or "").strip()
+            if not disp_profile:
+                pn = (it.get("part_number") or "").strip()
+                manuf = (it.get("manufacturer") or "").strip()
+                lbl = (it.get("label") or "").strip()
+                if pn and manuf:
+                    disp_profile = f"{manuf} #{pn}"
+                elif pn:
+                    disp_profile = f"#{pn}"
+                elif lbl:
+                    disp_profile = lbl
+                else:
+                    disp_profile = "—"
             bucket = groups_map.setdefault(key, {
                 "cuts": [],
-                "display_profile": it.get("profile") or "—",
+                "display_profile": disp_profile,
                 "display_material": it.get("material") or "—",
             })
             for _ in range(qty):
