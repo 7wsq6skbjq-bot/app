@@ -338,20 +338,72 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
 
     elevations = []
     for idx, ev in enumerate(raw_elevations):
-        ev_type = ev.get("elevation_type")
-        if ev_type not in ("door", "flush_glaze", "curtain_wall", "mixed"):
-            ev_type = "flush_glaze"
+        code = str(ev.get("code") or f"E{idx + 1}")[:32]
+        code_upper = code.upper().strip()
+
+        # ---- DETERMINISTIC classification by code prefix (overrides LLM guess) ----
+        # FG* = Flush Glaze always (no door even if LLM thought there was one).
+        # MR* = Mur-rideau (curtain wall). If the elevation has a door integrated,
+        #       classify as 'mixed' (door inside curtain wall). Else 'curtain_wall'.
+        # E*, P* = porte (door elevation).
         di = ev.get("door_info") or {}
-        # Normalize handing & door_number (free-text, kept short)
+        has_door = bool(di.get("series") or di.get("leaf_width_mm") or di.get("leaf_height_mm")) \
+            or any((it.get("item_type") == "panel"
+                    and re.search(r"AT[I]?[12]000", ((it.get("profile") or "") + " " + (it.get("label") or "")).upper()))
+                   for it in (ev.get("items") or []))
+        if code_upper.startswith("FG"):
+            # FG = Flush Glaze (Trifab). With door integrated → mixed (FG mixte).
+            # Without door → pure flush_glaze.
+            ev_type = "mixed" if has_door else "flush_glaze"
+        elif code_upper.startswith("MR"):
+            # MR = Mur-rideau (Kawneer). With door integrated → mixed.
+            # Without door → pure curtain_wall.
+            ev_type = "mixed" if has_door else "curtain_wall"
+        elif code_upper.startswith(("E", "P")):
+            ev_type = "door" if has_door else "flush_glaze"
+        else:
+            # Fallback to LLM-provided type if no code prefix matched
+            ev_type = ev.get("elevation_type")
+            if ev_type not in ("door", "flush_glaze", "curtain_wall", "mixed"):
+                ev_type = "door" if has_door else "flush_glaze"
+
+        # ---- AUTO-CONVERT opening → leaf dims if LLM returned the opening by mistake ----
+        # AT series standard 36"×84" opening = 914.4 × 2133.6 mm → leaf = various per series.
+        # If leaf_w/h match the OPENING within 5mm tolerance, the LLM almost certainly returned
+        # the opening instead of the leaf. Convert using known AT offsets.
         if di:
-            if di.get("handing"):
-                h = str(di["handing"]).upper().strip()
-                di["handing"] = h if h in ("MD", "MG", "MDR", "MGR") else None
-            if di.get("door_number"):
-                di["door_number"] = str(di["door_number"])[:24]
+            lw = di.get("leaf_width_mm")
+            lh = di.get("leaf_height_mm")
+            series_norm = str(di.get("series") or "").upper().replace(" ", "").replace("-", "")
+            if isinstance(lw, (int, float)) and isinstance(lh, (int, float)):
+                # Standard rough openings AT uses
+                opening_w = round(float(lw))
+                opening_h = round(float(lh))
+                # Detect known openings; convert to leaf
+                width_off = None
+                if "AT2000" in series_norm or "ATI2000" in series_norm:
+                    width_off = 191.30
+                elif "AT1000" in series_norm or "ATI1000" in series_norm:
+                    width_off = 115.10
+                height_off = 22.20 if "ATI" not in series_norm else 22.20  # both =22.20 now
+                # Heuristic: if width is suspiciously close to 914 (=36"), 1219 (=48"), 1828 (=72") -- common openings
+                common_openings_w = {914, 1219, 1524, 1828, 2438}
+                common_openings_h = {2032, 2134, 2438, 2540}  # 80", 84", 96", 100"
+                if width_off and opening_w in common_openings_w and opening_h in common_openings_h:
+                    di = dict(di)
+                    di["leaf_width_mm"] = round(float(lw) - width_off, 2)
+                    di["leaf_height_mm"] = round(float(lh) - height_off, 2)
+                    di["_converted_from_opening"] = {"width": float(lw), "height": float(lh)}
+
+        # Normalize handing & door_number (free-text, kept short)
+        if di.get("handing"):
+            h = str(di["handing"]).upper().strip()
+            di["handing"] = h if h in ("MD", "MG", "MDR", "MGR") else None
+        if di.get("door_number"):
+            di["door_number"] = str(di["door_number"])[:24]
         elevations.append({
             "id": str(uuid.uuid4()),
-            "code": str(ev.get("code") or f"E{idx + 1}")[:32],
+            "code": code,
             "elevation_type": ev_type,
             "system_label": (ev.get("system_label") or None) or None,
             "finish_ext": (ev.get("finish_ext") or None) or None,
