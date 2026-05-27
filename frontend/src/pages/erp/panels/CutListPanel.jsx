@@ -2,12 +2,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";import {
     Plus, Pencil, Trash2, RefreshCw, Download, FileText, Scissors,
-    Upload, Sparkles, Layers, FileDown, X as XIcon,
+    Upload, Sparkles, Layers, FileDown, X as XIcon, Ruler,
 } from "lucide-react";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { DataCard } from "../../../components/mobile/DataCard";
 import { FAB } from "../../../components/mobile/FAB";
 import { formatDate } from "../utils";
+import { TemplateBuilderModal } from "./TemplateBuilderModal";
 
 const TYPE_LABELS = {
     frame: "Cadre",
@@ -62,6 +63,7 @@ export const CutListPanel = () => {
     const dxfInputRef = useRef(null);
     const [elevationPicker, setElevationPicker] = useState(null);   // { elevations, frame_specs, source_filename, source_type, confidence, warnings }
     const [selectedElevations, setSelectedElevations] = useState({}); // { [id]: true }
+    const [templateOpen, setTemplateOpen] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -528,9 +530,9 @@ export const CutListPanel = () => {
                         {/* Import zone */}
                         <div className="border-2 border-dashed border-[#c5d4e7] bg-[#f9fbfd] p-4">
                             <div className="tech-stamp text-[#4b5d7a] mb-3 flex items-center gap-2">
-                                <Upload className="w-3.5 h-3.5" /> Importer un plan
+                                <Upload className="w-3.5 h-3.5" /> Importer un plan ou utiliser un gabarit
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                 <button
                                     type="button"
                                     data-testid="cuts-import-plan"
@@ -539,7 +541,7 @@ export const CutListPanel = () => {
                                     className="w-full px-4 py-3 border-2 border-[#0c182b] bg-[#0c182b] text-white tech-stamp hover:bg-[#1d3557] flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     <Sparkles className={`w-4 h-4 ${extractBusy ? "animate-pulse" : ""}`} />
-                                    {extractBusy ? "Analyse IA…" : "PDF / Photo de plan (IA)"}
+                                    {extractBusy ? "Analyse IA…" : "PDF / Photo (IA)"}
                                 </button>
                                 <button
                                     type="button"
@@ -550,6 +552,15 @@ export const CutListPanel = () => {
                                 >
                                     <Layers className="w-4 h-4" />
                                     Fichier DXF (exact)
+                                </button>
+                                <button
+                                    type="button"
+                                    data-testid="cuts-template-open"
+                                    onClick={() => setTemplateOpen(true)}
+                                    className="w-full px-4 py-3 border-2 border-[#0b6b2f] text-[#0b6b2f] tech-stamp hover:bg-[#e6f4ea] flex items-center justify-center gap-2"
+                                >
+                                    <Ruler className="w-4 h-4" />
+                                    Gabarit guidé (100% fiable)
                                 </button>
                             </div>
                             {extractMsg && (
@@ -885,6 +896,21 @@ export const CutListPanel = () => {
                     </div>
                 </Modal>
             )}
+
+            <TemplateBuilderModal
+                open={templateOpen}
+                onClose={() => setTemplateOpen(false)}
+                onItemsBuilt={(ev) => {
+                    // Append the deterministic items to the current editing cut list.
+                    setEditing((prev) => ({
+                        ...prev,
+                        frame_specs: prev.frame_specs || null,
+                        items: [...(prev.items || []), ...(ev.items || [])],
+                    }));
+                    const lbl = ev.system_label || "Gabarit";
+                    setExtractMsg(`📐 ${ev.items.length} élément(s) ajouté(s) depuis « ${lbl} » (calcul déterministe).`);
+                }}
+            />
         </div>
     );
 };

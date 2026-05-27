@@ -493,6 +493,28 @@ Refonte profonde du prompt OCR suite au retour utilisateur sur le PDF BMO :
 - **Tests** : 137/137 pytest ✅. Tests OCR mis à jour pour accepter `curtain_wall`.
 
 
+### 2026-05 — Iter 31-32 (Gabarit déterministe + refactor battant fini)
+
+**Refactor battant fini** (Iter 31, `cut_door_breakdown.py`) :
+- Le module accepte maintenant **leaf_width_mm × leaf_height_mm** (= dimensions du battant fini) au lieu de l'ouverture brute. C'est ce que les plans AT Fabrication écrivent et ce que l'OCR renvoie.
+- Dimensions exactes AT2000 : tête 98.43mm (3⅞"), base 174.625mm (6⅞"), jambage charnière 88.9mm (3½"), jambage serrure 92.075mm (3⅝").
+- Parclose carrée ¼" face = 13.48mm.
+- Formules : `parclose_V = leaf_h − tête − base − 2×13.48` ; `parclose_H = leaf_w` (mitré 45°).
+- Validé sur l'exemple BMO : porte 723.1×2114.5 → parclose V = 1814.49, parclose H = 723.10. ✅
+
+**Gabarit guidé déterministe** (Iter 32, `cut_templates.py` + `TemplateBuilderModal.jsx`) :
+- L'IA Gemini étant non-déterministe (donne des résultats différents à chaque appel, manque parfois MR2), on offre une alternative 100% fiable.
+- **Backend** : nouveau module `cut_templates.py` avec 3 builders : `build_at_door`, `build_flush_glaze`, `build_curtain_wall`. L'utilisateur fournit la géométrie (verticaux, horizontaux, vitrages, porte optionnelle) ; le backend calcule tout avec les bons numéros de pièce Trifab VG450 (#450CG005/011/027074) et Kawneer 1620 (#178-001/006/300, #162-310 bris thermique, #027-850 garniture).
+- **Bris thermique Kawneer** auto-calculé = Σ(meneaux V + H). Validé : 2×3029 + 2×2200 + 3×900 = 13158 mm linéaire ✅.
+- **Garniture vitrage** auto-calculée = Σ(périmètres) × 2.
+- **Endpoint** : `POST /api/admin/cuts/template-build`.
+- **Frontend** : nouveau bouton vert « Gabarit guidé (100% fiable) » dans la zone d'import, à côté de PDF/IA et DXF. Ouvre un modal avec sélection du type (Porte AT seule / Flush Glaze / Mur-rideau), formulaire dynamique, et ajout de porte intégrée.
+
+**Post-processing OCR déterministe** (`cut_routes.py`) :
+- Classification forcée par préfixe du code : `FG*` → flush_glaze (ou mixed si porte), `MR*` → curtain_wall (ou mixed si porte).
+- Conversion automatique ouverture → battant : si Gemini renvoie 914.4×2133.6 pour leaf_w/h (= ouverture standard 36×84) et série AT*, on applique automatiquement les offsets AT (191.30 / 22.20) pour obtenir le battant réel.
+
+
 ## Backlog / P2
 - [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
 - [ ] Blog SEO (barres antipaniques, codes du bâtiment QC)

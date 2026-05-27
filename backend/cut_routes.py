@@ -45,6 +45,7 @@ from cut_models import (
 )
 from cut_optimizer import optimize_cut_list
 from cut_pdf import render_cut_list_pdf
+from cut_templates import build_elevation_from_template
 
 logger = logging.getLogger("portech.cuts")
 
@@ -454,6 +455,26 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             "items": result.items + result.hardware,
             "notes": result.notes,
         }
+
+    @router.post("/cuts/template-build")
+    async def template_build(payload: dict, _: dict = Depends(auth_dep)):
+        """Build a DETERMINISTIC elevation from a user-filled template form.
+
+        Bypasses Gemini OCR. The user supplies geometry (verticals, horizontals,
+        glasses, optional integrated door) and we compute every cut item with
+        the correct profile names + manufacturer part numbers (Trifab VG450,
+        Kawneer 1620, AT Fabrication) and the auto-calculated garniture /
+        bris-thermique totals.
+
+        Payload shape: see cut_templates.build_elevation_from_template.
+        """
+        try:
+            result = build_elevation_from_template(payload)
+        except KeyError as exc:
+            raise HTTPException(400, f"Champ requis manquant : {exc}")
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(400, str(exc))
+        return result
 
     @router.get("/cuts/meta")
     async def cuts_meta(_: dict = Depends(auth_dep)):
