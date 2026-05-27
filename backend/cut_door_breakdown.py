@@ -65,10 +65,16 @@ CLADDING_OFFSET_MM = 5.7
 MOULURE_V_OFFSET_MM = {
     ("AT1000", 6):    182.50,    # 2111.4 - 1928.9
     ("AT1000", 25):   184.10,    # 2111.4 - 1927.3
-    ("AT2000", 6):    299.70,    # 2111.4 - 1811.7
-    ("AT2000", 25):   301.60,    # 2111.4 - 1809.8
-    ("ATI1000", 25):  184.10,    # 2111.4 - 1927.3 (same as AT1000 1" — moulure offset is per profile)
-    ("ATI2000", 25):  301.60,    # 2111.4 - 1809.8 (same as AT2000 1")
+    ("AT2000", 6):    299.70,
+    ("AT2000", 25):   301.60,
+    ("ATI1000", 25):  184.10,
+    ("ATI2000", 25):  301.60,
+    # Hybrid AT1000 with AT2000 base: top rail = 55.5, bottom rail = 174.6
+    # Combined offset = (top moulure offset 91.25) + (bottom moulure offset 210.35)
+    # → for 6mm glass : (2111.4 − 1928.9) = 182.50 plus extra (174.6−55.5) = 119.1
+    # = 182.50 + 119.1 = 301.60 (mathematically matches AT2000 6mm case!)
+    ("AT1000-BASE-AT2000", 6):    301.60,
+    ("AT1000-BASE-AT2000", 25):   303.20,
 }
 
 # Square moulure offset (rebate from rail inside edge to glass edge)
@@ -90,14 +96,19 @@ class DoorBreakdown:
 
 def _normalize_series(raw: str) -> str:
     """Map any user-supplied series string to a canonical key in our spec tables."""
-    s = (raw or "").upper().replace(" ", "").replace("-", "").replace("_", "")
-    if "ATI2000" in s or "AT-I2000" in s or "AT_I2000" in s:
+    s = (raw or "").upper().replace(" ", "").replace("_", "")
+    # Hybrid first (must check BEFORE plain AT1000/AT2000 matches)
+    if ("AT1000" in s.replace("-", "") and "AT2000" in s.replace("-", "")) \
+            or "BASEAT2000" in s.replace("-", ""):
+        return "AT1000-BASE-AT2000"
+    s = s.replace("-", "")
+    if "ATI2000" in s:
         return "ATI2000"
     if "ATI1000" in s:
         return "ATI1000"
     if "AT2000" in s:
         return "AT2000"
-    return "AT1000"  # default
+    return "AT1000"
 
 
 def decompose_at_door(
@@ -151,24 +162,37 @@ def decompose_at_door(
     hinge_stile = 50.8 if not series_key.endswith("2000") else section_h
     lock_stile = 53.975 if not series_key.endswith("2000") else section_h
 
-    # Profile name shown to the workshop (also normalized by the optimizer)
-    profile = f'{series_key} — tube 1¾" × 4"' if section_h < 70 \
-        else f'{series_key} — tube 3-11/16" × 4"'
+    # Profile labels — top vs bottom can differ (hybrid AT1000-base-AT2000)
+    bottom_rail_h = BOTTOM_RAIL_HEIGHT_MM.get(series_key, section_h)
+    bottom_rail_is_hybrid = bottom_rail_h != section_h
+    if section_h < 70:
+        profile_top = f'{series_key} — tube 1¾" × 4" (rail 2¼")'
+    else:
+        profile_top = f'{series_key} — tube 3-11/16" × 4"'
+    if bottom_rail_is_hybrid:
+        profile_bottom = f'{series_key} — base 6⅞" (substitution AT2000)'
+    else:
+        profile_bottom = profile_top
+    profile = profile_top  # for stiles + general use
 
     items = [
         {
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Traverse haute",
-            "profile": profile, "material": material,
+            "profile": profile_top, "material": material,
             "length_mm": round(rail_cut, 1), "qty": qty, "source": "computed",
             "notes": f"Ouverture {door_width_mm:.1f} − {width_off} (offset {series_key}) = {rail_cut:.1f}",
         },
         {
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Traverse basse",
-            "profile": profile, "material": material,
+            "profile": profile_bottom, "material": material,
             "length_mm": round(rail_cut, 1), "qty": qty, "source": "computed",
-            "notes": "Identique traverse haute (sections symétriques sur AT).",
+            "notes": (
+                f"Base AT2000 substituée (6⅞\" = {bottom_rail_h:.1f} mm)."
+                if bottom_rail_is_hybrid else
+                "Identique traverse haute (sections symétriques)."
+            ),
         },
         {
             "id": str(uuid4()), "item_type": "frame",
@@ -295,6 +319,10 @@ def decompose_at_door(
     if is_insulated:
         summary_parts.append(
             f"+ 2 cladding V {stile_cut - CLADDING_OFFSET_MM:.0f} + 2 cladding H {rail_cut - CLADDING_OFFSET_MM:.0f}"
+        )
+    notes.append(" — ".join(summary_parts))
+    return DoorBreakdown(items=items, hardware=hardware, notes=notes)
+         f"+ 2 cladding V {stile_cut - CLADDING_OFFSET_MM:.0f} + 2 cladding H {rail_cut - CLADDING_OFFSET_MM:.0f}"
         )
     notes.append(" — ".join(summary_parts))
     return DoorBreakdown(items=items, hardware=hardware, notes=notes)

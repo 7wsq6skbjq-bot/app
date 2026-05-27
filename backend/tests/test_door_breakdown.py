@@ -96,7 +96,30 @@ def test_series_normalization_handles_user_variants():
     assert _normalize_series("at i 2000") == "ATI2000"
     assert _normalize_series("AT 2000") == "AT2000"
     assert _normalize_series("at1000") == "AT1000"
-    assert _normalize_series("unknown junk") == "AT1000"  # safe fallback
+    assert _normalize_series("unknown junk") == "AT1000"
+    # Hybrid base
+    assert _normalize_series("AT1000-base-AT2000") == "AT1000-BASE-AT2000"
+    assert _normalize_series("AT1000 AT2000") == "AT1000-BASE-AT2000"
+    assert _normalize_series("at1000-base-at2000") == "AT1000-BASE-AT2000"
+
+
+def test_decompose_hybrid_at1000_base_at2000():
+    """Uniprix-style hybrid: AT1000 door body with AT2000 bottom rail (6⅞")."""
+    from cut_door_breakdown import decompose_at_door
+    result = decompose_at_door(914.4, 2133.6,
+                                series="AT1000-base-AT2000",
+                                glass_thickness_mm=6.0)
+    # Rail cut length unchanged (frame is AT1000)
+    top = next(i for i in result.items if "Traverse haute" in i["label"])
+    bottom = next(i for i in result.items if "Traverse basse" in i["label"])
+    assert abs(top["length_mm"] - 799.3) < 0.1
+    assert abs(bottom["length_mm"] - 799.3) < 0.1
+    # But the bottom profile name shows the AT2000 substitution
+    assert "6⅞" in bottom["profile"] or "AT2000" in bottom["profile"]
+    # Moulure V is shorter than pure AT1000 because the bottom rail is taller
+    mv = next(i for i in result.items if "Moulure verticale" in i["label"])
+    # 2111.4 - 301.60 (combined offset) = 1809.80
+    assert abs(mv["length_mm"] - 1809.8) < 0.5
 
 
 def test_decompose_hardware_positions():

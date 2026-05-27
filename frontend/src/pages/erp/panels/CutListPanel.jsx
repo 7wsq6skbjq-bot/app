@@ -566,7 +566,7 @@ export const CutListPanel = () => {
                                             className={inputClass} data-testid="cuts-spec-threshold" />
                                     </Field>
                                 </div>
-                                <div className="tech-stamp text-[#4b5d7a] text-[11px] mt-3 mb-1">Profilés du cadre (tube à ailettes)</div>
+                                <div className="tech-stamp text-[#4b5d7a] text-[11px] mt-3 mb-1">Profilés du cadre</div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <Field label="Largeur montant (mm)">
                                         <input type="number" step="0.1" value={editing.frame_specs?.jamb_thickness_mm ?? 44.5}
