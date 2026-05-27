@@ -286,10 +286,14 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
             return "glass"
         if any(k in text for k in ("perçage", "percage", "trou", "hole", "machinage")):
             return "hole"
+        if any(k in text for k in ("gasket", "joint", "weatherseal", "weather seal",
+                                    "boudin", "calfeutrage", "garniture vitrage",
+                                    "garniture de vitrage", "garniture ext", "garniture int")):
+            return "gasket"
         if any(k in text for k in ("charnière", "charniere", "serrure", "cylindre",
                                     "gâche", "gache", "poignée", "poignee", "ferme-porte",
-                                    "barre", "panique", "garniture", "bris thermique",
-                                    "astragale", "seuil", "joint", "butoir", "quincaillerie")):
+                                    "barre", "panique", "bris thermique",
+                                    "astragale", "seuil", "butoir", "quincaillerie")):
             return "hardware"
         if any(k in text for k in ("porte", "panneau", "panel")):
             return "panel"

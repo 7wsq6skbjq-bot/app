@@ -150,8 +150,9 @@ def _build_test_dxf() -> str:
     doc = ezdxf.new(dxfversion="R2010")
     doc.header["$INSUNITS"] = 4  # millimeters
     msp = doc.modelspace()
-    # 1 horizontal line 2000mm long
-    msp.add_line((0, 0), (2000, 0))
+    # 1 horizontal line 2000mm long — on a real frame layer (the parser now
+    # filters out lines on layer "0" / DIM / COTE / etc. as annotations).
+    msp.add_line((0, 0), (2000, 0), dxfattribs={"layer": "CADRE"})
     # 1 closed rectangle 1500 × 800 (glass)
     msp.add_lwpolyline([(0, 100), (1500, 100), (1500, 900), (0, 900)],
                        close=True, dxfattribs={"layer": "VERRE"})
@@ -182,6 +183,39 @@ def test_dxf_parser_extracts_line_rectangle_circle():
         # The circle Ø 25mm
         hole = next(i for i in items if i["item_type"] == "hole")
         assert math.isclose(hole["length_mm"], 25, abs_tol=0.5)
+    finally:
+        os.unlink(path)
+
+
+def test_dxf_parser_filters_annotation_layers_and_short_segments():
+    """Regression test for the 400-pieces bug: the parser must skip lines on
+    annotation/dimension layers and tiny segments (< 50mm)."""
+    import ezdxf
+    from cut_dxf import parse_dxf
+    doc = ezdxf.new(dxfversion="R2010")
+    doc.header["$INSUNITS"] = 4
+    msp = doc.modelspace()
+    # 1 real frame piece
+    msp.add_line((0, 0), (2114.5, 0), dxfattribs={"layer": "PORTE_CADRE"})
+    # 50 cote arrows of 15mm each on DIMENSIONS layer
+    for i in range(50):
+        msp.add_line((i, 0), (i + 15, 0), dxfattribs={"layer": "DIMENSIONS"})
+    # 30 hatch ticks of 8mm on HATCH layer
+    for i in range(30):
+        msp.add_line((i, 100), (i + 8, 100), dxfattribs={"layer": "HATCH_PATTERN"})
+    # 20 ultra-short segments < 50mm on a real layer (should still be filtered)
+    for i in range(20):
+        msp.add_line((i, 200), (i + 20, 200), dxfattribs={"layer": "MENEAU"})
+    # 1 cote line at 1000mm on COTE layer (skipped — annotation layer)
+    msp.add_line((0, 300), (1000, 300), dxfattribs={"layer": "COTE_X"})
+    path = tempfile.NamedTemporaryFile(suffix=".dxf", delete=False).name
+    doc.saveas(path)
+    try:
+        items = parse_dxf(path)["items"]
+        # Only ONE real piece should remain.
+        assert len(items) == 1, f"Expected 1 real piece, got {len(items)}: {items}"
+        assert math.isclose(items[0]["length_mm"], 2114.5, abs_tol=0.5)
+        assert items[0]["profile"] == "PORTE_CADRE"
     finally:
         os.unlink(path)
 

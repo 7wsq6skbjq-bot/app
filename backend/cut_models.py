@@ -23,6 +23,7 @@ ITEM_TYPES = [
     "frame",      # aluminum extrusion (linear cut)
     "glass",      # glass panel (rectangle)
     "panel",      # other panel (steel/composite)
+    "gasket",     # joint / gasket / weatherseal — measured in mm linear
     "hardware",   # bracket / hinge / lock — position, not a cut
     "hole",       # drilling position
     "other",
@@ -32,6 +33,7 @@ ITEM_TYPE_LABELS_FR = {
     "frame": "Cadre/Profilé",
     "glass": "Verre/Vitrage",
     "panel": "Panneau",
+    "gasket": "Gasket/Joint",
     "hardware": "Quincaillerie",
     "hole": "Perçage",
     "other": "Autre",

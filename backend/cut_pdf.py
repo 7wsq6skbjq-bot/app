@@ -5,6 +5,7 @@ optimized bar-cutting plan grouped by profile, glass panels table,
 hardware checklist. ReportLab, deterministic, no browser.
 """
 import io
+import re
 from datetime import datetime
 from typing import Iterable
 
@@ -30,6 +31,51 @@ GREEN = colors.HexColor("#0b6b2f")
 RED_WARN = colors.HexColor("#a83a2f")
 TEXT_MUTED = colors.HexColor("#4b5d7a")
 
+# ─── Unicode → ASCII for ReportLab Helvetica (black-square fix) ───────────
+# Helvetica (the default) doesn't have glyphs for vulgar fractions, em-dashes,
+# checkboxes, super/subscript digits — they render as ▢. We replace every such
+# char with a printable ASCII equivalent before passing to Paragraph().
+_UNICODE_REPLACE = {
+    # Vulgar fractions → decimal (mm-friendly)
+    "¼": ".25", "½": ".5", "¾": ".75",
+    "⅛": ".125", "⅜": ".375", "⅝": ".625", "⅞": ".875",
+    "⅓": ".333", "⅔": ".667", "⅕": ".2", "⅖": ".4", "⅗": ".6", "⅘": ".8",
+    "⅙": ".167", "⅚": ".833",
+    # Quotes, dashes, prime
+    "—": " - ", "–": "-", "…": "...",
+    "«": "\"", "»": "\"", "“": "\"", "”": "\"", "‘": "'", "’": "'",
+    "″": "\"", "′": "'",
+    # Checkboxes
+    "☐": "[ ]", "☑": "[X]", "✓": "[X]", "✗": "[X]",
+    # Superscripts / subscripts (²×³ are common in m² etc.)
+    "²": "2", "³": "3", "¹": "1", "⁰": "0",
+    # Misc that Helvetica also lacks
+    "•": "*", "·": "-", "→": "->", "←": "<-", "×": "x",
+}
+_UNICODE_REPLACE_RE = re.compile("|".join(re.escape(k) for k in _UNICODE_REPLACE))
+
+
+def _sanitize(text) -> str:
+    """Strip / replace any non-Helvetica-safe character so the PDF never shows
+    black squares. Inputs `None` or non-str values are coerced to str safely."""
+    if text is None:
+        return ""
+    s = str(text)
+    if not s:
+        return s
+    s = _UNICODE_REPLACE_RE.sub(lambda m: _UNICODE_REPLACE[m.group(0)], s)
+    # Catch any remaining char outside basic latin + extended-A (Helvetica safe)
+    # by replacing it with '?'. Preserve HTML markup ('<', '>', '&') though.
+    out = []
+    for ch in s:
+        cp = ord(ch)
+        # ASCII printable + Latin-1 + Latin Extended-A
+        if cp < 0x250 or ch in ("\n", "\t"):
+            out.append(ch)
+        else:
+            out.append("?")
+    return "".join(out)
+
 
 def _para(text: str, **kw) -> Paragraph:
     style = ParagraphStyle("p", fontName=kw.get("font", "Helvetica"),
@@ -37,7 +83,7 @@ def _para(text: str, **kw) -> Paragraph:
                            textColor=kw.get("color", colors.black),
                            leading=kw.get("leading", 11),
                            alignment=kw.get("align", 0))
-    return Paragraph(text, style)
+    return Paragraph(_sanitize(text), style)
 
 
 def render_cut_list_pdf(cut_list: dict, optimization: dict) -> bytes:
@@ -223,6 +269,53 @@ def render_cut_list_pdf(cut_list: dict, optimization: dict) -> bytes:
             ("RIGHTPADDING", (0, 0), (-1, -1), 3),
         ]))
         elements.append(h_table)
+        elements.append(Spacer(1, 4 * mm))
+
+    # ===== Gaskets (joints / weatherseals) =====
+    gasket_items = [i for i in cut_list.get("items", []) if i.get("item_type") == "gasket"]
+    if gasket_items:
+        elements.append(_para("GASKETS / JOINTS", font="Helvetica-Bold",
+                              size=10, color=NAVY))
+        elements.append(Spacer(1, 2 * mm))
+        gk_data: list[list] = [[
+            _para("[ ]", font="Helvetica-Bold", size=8, color=colors.white, align=1),
+            _para("DESCRIPTION", font="Helvetica-Bold", size=8, color=colors.white),
+            _para("N° PIECE", font="Helvetica-Bold", size=8, color=colors.white),
+            _para("FABRICANT", font="Helvetica-Bold", size=8, color=colors.white),
+            _para("LONGUEUR (mm)", font="Helvetica-Bold", size=8, color=colors.white, align=2),
+            _para("QTE", font="Helvetica-Bold", size=8, color=colors.white, align=1),
+        ]]
+        total_gasket_mm = 0.0
+        for it in gasket_items:
+            length = float(it.get("length_mm") or 0)
+            qty = int(it.get("qty") or 1)
+            total_gasket_mm += length * qty
+            gk_data.append([
+                _para("[ ]", size=11, align=1),
+                _para(it.get("label") or "-", size=8),
+                _para(it.get("part_number") or "-", size=8, font="Courier"),
+                _para(it.get("manufacturer") or "-", size=8),
+                _para(f"{length:.1f}", size=9, align=2),
+                _para(str(qty), size=9, align=1),
+            ])
+        gk_data.append([
+            _para("", size=9), _para("", size=9),
+            _para("", size=9), _para("TOTAL", font="Helvetica-Bold", size=9, color=NAVY, align=2),
+            _para(f"<b>{total_gasket_mm:.0f} mm</b>", size=9, align=2, color=NAVY),
+            _para("", size=9),
+        ])
+        gk_table = Table(gk_data, colWidths=[8 * mm, 55 * mm, 28 * mm, 32 * mm, 35 * mm, 12 * mm])
+        gk_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+            ("BACKGROUND", (0, -1), (-1, -1), BG_LIGHT),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, BG_LIGHT]),
+            ("BOX", (0, 0), (-1, -1), 0.5, BORDER),
+            ("INNERGRID", (0, 0), (-1, -1), 0.3, BORDER),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ]))
+        elements.append(gk_table)
         elements.append(Spacer(1, 4 * mm))
 
     # ===== Footer =====

@@ -216,12 +216,12 @@ def build_flush_glaze(
     garniture_total = _glass_perimeter_total(glasses) * 2.0
     if garniture_total > 0:
         items.append(_make_item(
-            "hardware",
+            "gasket",
             f"[{code}] Garniture de vitrage 6mm",
             garniture_total, 1,
             profile_def=TRIFAB_VG450["garniture"],
             material=material,
-            notes=f"Calc : Σ(périmètre vitres) × 2 = {garniture_total:.0f} mm.",
+            notes=f"Calc : Σ(perimetre vitres) × 2 = {garniture_total:.0f} mm.",
         ))
 
     # Integrated door (if any)
@@ -361,12 +361,12 @@ def build_curtain_wall(
     garniture_total = _glass_perimeter_total(glasses) * 2.0
     if garniture_total > 0:
         items.append(_make_item(
-            "hardware",
+            "gasket",
             f"[{code}] Garniture ext + int",
             garniture_total, 1,
             profile_def=KAWNEER_1620["garniture"],
             material=material_ext,
-            notes=f"Calc : Σ(périmètre thermos) × 2 = {garniture_total:.0f} mm.",
+            notes=f"Calc : Σ(perimetre thermos) × 2 = {garniture_total:.0f} mm.",
         ))
 
     # Integrated door (if any)
