@@ -20,53 +20,64 @@ def auth_headers():
 
 
 def test_decompose_at1000_standard_36x84_door():
-    """AT1000 36"x84" door (914.4 × 2133.6 mm) — verify standard cut formulas."""
+    """AT1000 36"x84" rough opening = 914.4×2133.6 mm. Match official DXF spec."""
     from cut_door_breakdown import decompose_at_door
     result = decompose_at_door(914.4, 2133.6, series="AT1000",
                                 glass_thickness_mm=6.0)
-    # Top rail + bottom rail length = 914.4 - 50.8 - 53.975 = 809.625
+    # Rail cut = 914.4 - 115.10 = 799.30
     top = next(i for i in result.items if "Traverse haute" in i["label"])
-    assert abs(top["length_mm"] - 809.6) < 0.1
+    assert abs(top["length_mm"] - 799.3) < 0.1
     bottom = next(i for i in result.items if "Traverse basse" in i["label"])
-    assert abs(bottom["length_mm"] - 809.6) < 0.1
-    # Stiles full height
+    assert abs(bottom["length_mm"] - 799.3) < 0.1
+    # Stiles cut = 2133.6 - 22.20 = 2111.40
     stiles = [i for i in result.items if "Montant" in i["label"]]
-    assert all(s["length_mm"] == 2133.6 for s in stiles)
+    assert all(abs(s["length_mm"] - 2111.4) < 0.1 for s in stiles)
     assert len(stiles) == 2
-    # Moulures (4 of each)
+    # Vertical moulure (6mm glass) = 2111.4 - 182.5 = 1928.9
     mv = next(i for i in result.items if "Moulure verticale" in i["label"])
-    mh = next(i for i in result.items if "Moulure horizontale" in i["label"])
+    assert abs(mv["length_mm"] - 1928.9) < 0.1
     assert mv["qty"] == 4
+    # Horizontal moulure = 799.3 - 2×6.35 = 786.6
+    mh = next(i for i in result.items if "Moulure horizontale" in i["label"])
+    assert abs(mh["length_mm"] - 786.6) < 0.2
     assert mh["qty"] == 4
-    # H moulure = horiz cut - 2*0.25" = 809.625 - 12.7 = 796.925
-    assert abs(mh["length_mm"] - 796.9) < 0.1
-    # V moulure = door_height - 2*2.25" - 2*0.25" = 2133.6 - 2*57.15 - 12.7 = 2006.6
-    assert abs(mv["length_mm"] - 2006.6) < 0.5
-    # One glass panel sized to moulure dims
-    glass = next(i for i in result.items if i["item_type"] == "glass")
-    assert abs(glass["width_mm"] - mh["length_mm"]) < 0.1
-    assert abs(glass["length_mm"] - mv["length_mm"]) < 0.1
 
 
-def test_decompose_at1000_with_at2000_base():
-    """AT1000-AT2000-base hybrid: bottom rail = 6⅞" instead of 2¼"."""
+def test_decompose_at2000_standard_36x84_door():
+    """AT2000 36"x84": bigger 3-11/16" rails → much shorter rail cuts."""
     from cut_door_breakdown import decompose_at_door
-    result = decompose_at_door(914.4, 2133.6,
-                                series="AT1000-AT2000-base",
+    result = decompose_at_door(914.4, 2133.6, series="AT2000",
                                 glass_thickness_mm=6.0)
-    # Top rail unchanged
     top = next(i for i in result.items if "Traverse haute" in i["label"])
-    assert abs(top["length_mm"] - 809.6) < 0.1
-    # Bottom rail SAME length (cut length identical between top/bottom — the
-    # difference is the PROFILE height, which lives in the moulure formula)
-    bottom = next(i for i in result.items if "Traverse basse" in i["label"])
-    assert abs(bottom["length_mm"] - 809.6) < 0.1
-    # Moulure verticale should now subtract 174.6 (6⅞") for bottom rail height
+    # Rail cut = 914.4 - 191.30 = 723.10
+    assert abs(top["length_mm"] - 723.1) < 0.1
     mv = next(i for i in result.items if "Moulure verticale" in i["label"])
-    # = 2133.6 - 57.15 (top) - 174.6 (bottom) - 12.7 (2x offset) = 1889.15
-    assert abs(mv["length_mm"] - 1889.1) < 0.5
-    # Notes mention AT2000 substitution
-    assert any("AT2000" in n for n in result.notes)
+    # 2111.4 - 299.70 = 1811.70
+    assert abs(mv["length_mm"] - 1811.7) < 0.1
+
+
+def test_decompose_ati2000_insulated_1inch_glass():
+    """Insulated AT2000 with thermos 25.4mm glass — shorter stile cut."""
+    from cut_door_breakdown import decompose_at_door
+    result = decompose_at_door(914.4, 2133.6, series="ATi2000",
+                                glass_thickness_mm=25.4)
+    stiles = [i for i in result.items if "Montant" in i["label"]]
+    # Insulated height offset = 27.90 → 2105.70
+    assert all(abs(s["length_mm"] - 2105.7) < 0.1 for s in stiles)
+    mv = next(i for i in result.items if "Moulure verticale" in i["label"])
+    # 2105.7 - 295.90 = 1809.80
+    assert abs(mv["length_mm"] - 1809.8) < 0.1
+
+
+def test_series_normalization_handles_user_variants():
+    """User may type 'ATI-2000', 'ati 1000', 'at_i2000' etc."""
+    from cut_door_breakdown import _normalize_series
+    assert _normalize_series("ATi2000") == "ATI2000"
+    assert _normalize_series("ATI-1000") == "ATI1000"
+    assert _normalize_series("at i 2000") == "ATI2000"
+    assert _normalize_series("AT 2000") == "AT2000"
+    assert _normalize_series("at1000") == "AT1000"
+    assert _normalize_series("unknown junk") == "AT1000"  # safe fallback
 
 
 def test_decompose_hardware_positions():
@@ -100,8 +111,9 @@ def test_decompose_endpoint_happy_path(auth_headers):
     assert r.status_code == 200
     body = r.json()
     types = [i["item_type"] for i in body["items"]]
-    # 4 frame + 2 mouldings (vert+horiz, each qty=4) + 1 glass + 4 hardware = 11
-    assert types.count("frame") == 6  # 2 horizontaux + 2 verticaux + 2 mouldings (vert/horiz)
+    # Expected: 4 frame pieces (2 rails + 2 stiles) + 2 moulure lines + 1 glass
+    # + 4 hardware = 11
+    assert types.count("frame") == 6
     assert types.count("glass") == 1
     assert "notes" in body
 

@@ -79,7 +79,8 @@ OCR_USER = (
     "ÉTAPE 1 — Lis SOIGNEUSEMENT le cartouche / les blocs de détails :\n"
     "- COULEUR / FINI du cadre ET de la porte (souvent différents) : "
     "  'Anodisé bronze architectural', 'Anodisé noir', 'Anodisé clair', etc.\n"
-    "- SÉRIE de la porte : AT1000, AT2000, AT1000 avec base AT2000, Kawneer 350/451, etc.\n"
+    "- SÉRIE de la porte : AT1000, AT2000, ATi1000 (isolée), ATi2000 (isolée). "
+    "  C'est UN de ces 4 modèles — pas d'hybride 'AT1000-AT2000-base'.\n"
     "- Épaisseurs des PROFILÉS du cadre (montants, linteau) — souvent un même "
     "  tube à ailettes 1¾\" × 4\" pour tous les côtés.\n"
     "- Épaisseurs des PROFILÉS de la porte : traverse haute (top rail), "
@@ -137,7 +138,7 @@ OCR_USER = (
     '    "has_threshold"?: boolean\n'
     "  },\n"
     '  "door_info": {\n'
-    '    "series"?: "AT1000" | "AT1000-AT2000-base" | "AT2000" | ...,\n'
+    '    "series"?: "AT1000" | "AT2000" | "ATi1000" | "ATi2000",\n'
     '    "leaf_width_mm"?: number,\n'
     '    "leaf_height_mm"?: number,\n'
     '    "is_insulated"?: boolean,\n'

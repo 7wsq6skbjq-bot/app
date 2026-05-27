@@ -233,13 +233,14 @@ export const CutListPanel = () => {
             );
             return;
         }
-        // Detect series — "AT1000-AT2000-base" is the special hybrid
-        const text = ((door.profile || "") + " " + (door.label || "")).toLowerCase();
+        // Detect series — 4 production models from AT spec
+        const text = ((door.profile || "") + " " + (door.label || "")).toUpperCase().replace(/[\s-_]/g, "");
         let series = "AT1000";
-        if (text.includes("at2000") && text.includes("at1000")) series = "AT1000-AT2000-base";
-        else if (text.includes("at2000")) series = "AT2000";
+        if (text.includes("ATI2000")) series = "ATi2000";
+        else if (text.includes("ATI1000")) series = "ATi1000";
+        else if (text.includes("AT2000")) series = "AT2000";
         const customSeries = window.prompt(
-            "Série détectée : " + series + "\n\nValidez ou modifiez (ex. 'AT1000', 'AT1000-AT2000-base', 'AT2000') :",
+            "Série détectée : " + series + "\n\nValidez ou modifiez (AT1000, AT2000, ATi1000, ATi2000) :",
             series,
         );
         if (!customSeries) return;
