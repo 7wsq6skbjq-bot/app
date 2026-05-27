@@ -462,6 +462,19 @@ Résultat : l'authentification est maintenant **indépendante des cookies**. Peu
 - **Tests** : 9 nouveaux cas pytest (`tests/test_expenses_ocr.py`) — auth guards x3, contrat OCR, extraction de valeurs réelles (Gemini parse une image synthétique BOUTIQUE TEST avec confidence=1.0), flow complet create→attach-temp→GET→rescan, regex anti-traversée, regression upload direct. **101/101 pytest ✅**. Testing agent v3 100% end-to-end OK (frontend Playwright + backend curl).
 
 
+### 2026-05 — Iter 29 (Hybride AT1000-base-AT2000 + Sélecteur d'élévations OCR)
+Trois améliorations majeures du module **Listes de coupe (Cut List)** :
+
+- **Fix P0 — `cut_door_breakdown.py`** : correction de l'erreur de syntaxe (code dupliqué après `return`) qui bloquait l'import du module ; ajout des constantes manquantes (`SECTION_HEIGHT_MM`, `WIDTH_OFFSET_MM`, `HEIGHT_OFFSET_MM`, `BOTTOM_RAIL_HEIGHT_MM` pour la série hybride) ; détection `is_hybrid` séparée de `endswith("2000")` pour que la porte AT1000-BASE-AT2000 utilise les bonnes largeurs de montants (AT1000) avec la base 6⅞" (AT2000).
+- **OCR multi-élévations** (`cut_routes.py`) : nouveau contrat de réponse `POST /api/admin/cuts/extract` → `{elevations: [{id, code, elevation_type ∈ {door, flush_glaze, mixed}, items, door_info, ...}], frame_specs, ...}` au lieu de `items` à plat. Le prompt Gemini :
+  - Détecte plusieurs élévations dans un même plan (FG01, E1, E2…)
+  - Applique les **règles Flush Glaze** : linteau = `Tube à poche`, bas de chaque vitrage (y compris au-dessus d'une porte) = `Tube escabeau`
+  - N'utilise plus le nom commercial "tube à ailettes" par défaut (terme neutre `Tube cadre 1¾" × 4"`)
+  - Auto-décompose la porte AT par élévation (et non plus globalement) avec un label préfixé `Porte [code]`
+- **Sélecteur d'élévations (`CutListPanel.jsx`)** : si l'OCR retourne plus d'une élévation, ouverture d'un Modal (testid `cuts-elevation-picker`) avec checkboxes par élévation, badges de type (Porte / Flush Glaze / Mixte), dimensions affichées si disponibles, série de porte détectée. L'utilisateur coche celles à importer ; les labels des items sont préfixés `[code]` pour la traçabilité.
+- **Tests** : 137/137 pytest ✅ (mise à jour de `test_cuts_extract.py` pour le nouveau schéma). Testing agent v3 100% OK end-to-end (curl + Playwright).
+
+
 ## Backlog / P2
 - [ ] Notification SMS Twilio en plus du courriel (alerte lead <30s)
 - [ ] Blog SEO (barres antipaniques, codes du bâtiment QC)
