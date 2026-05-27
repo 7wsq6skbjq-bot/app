@@ -1,4 +1,14 @@
-"""Tests for the door breakdown module (AT1000/AT2000 → 4 frame pieces + mouldings)."""
+"""Tests for the door breakdown module — INPUT = leaf dimensions (battant fini).
+
+Reference values (Portech 2026-05, AT Fabrication shop drawings) :
+  - AT1000 standard leaf (36"×84" opening) = 799.30 × 2111.40 mm
+  - AT2000 standard leaf                  = 723.10 × 2111.40 mm
+  - AT2000 with user-supplied leaf        = 723.10 × 2114.50 mm (user's BMO example)
+
+Parclose carrée ¼" face width = 13.48 mm.
+Moulures mitred 45° at corners → moulure_H = leaf_width (full width).
+Moulure_V = leaf_height - top_rail - base - 2 × 13.48.
+"""
 import os
 
 import pytest
@@ -19,61 +29,66 @@ def auth_headers():
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
-def test_decompose_at1000_standard_36x84_door():
-    """AT1000 36"x84" rough opening = 914.4×2133.6 mm. Match official DXF spec."""
+def test_decompose_at1000_standard_leaf():
+    """AT1000 leaf 799.30 × 2111.40 (= rough opening 36"×84" → leaf)."""
     from cut_door_breakdown import decompose_at_door
-    result = decompose_at_door(914.4, 2133.6, series="AT1000",
+    result = decompose_at_door(799.30, 2111.40, series="AT1000",
                                 glass_thickness_mm=6.0)
-    # Rail cut = 914.4 - 115.10 = 799.30
     top = next(i for i in result.items if "Traverse haute" in i["label"])
-    assert abs(top["length_mm"] - 799.3) < 0.1
+    assert abs(top["length_mm"] - 799.30) < 0.1
     bottom = next(i for i in result.items if "Traverse basse" in i["label"])
-    assert abs(bottom["length_mm"] - 799.3) < 0.1
-    # Stiles cut = 2133.6 - 22.20 = 2111.40
+    assert abs(bottom["length_mm"] - 799.30) < 0.1
+    # Stiles = leaf height directly
     stiles = [i for i in result.items if "Montant" in i["label"]]
-    assert all(abs(s["length_mm"] - 2111.4) < 0.1 for s in stiles)
+    assert all(abs(s["length_mm"] - 2111.40) < 0.1 for s in stiles)
     assert len(stiles) == 2
-    # Vertical moulure (6mm glass) = 2111.4 - 182.5 = 1928.9
-    mv = next(i for i in result.items if "Moulure verticale" in i["label"])
-    assert abs(mv["length_mm"] - 1928.9) < 0.1
-    assert mv["qty"] == 4
-    # Horizontal moulure = 799.3 - 2×6.35 = 786.6
-    mh = next(i for i in result.items if "Moulure horizontale" in i["label"])
-    assert abs(mh["length_mm"] - 786.6) < 0.2
-    assert mh["qty"] == 4
+    # Parclose V = 2111.40 - 55.5 (top) - 55.5 (base) - 2×13.48 = 1973.44
+    pv = next(i for i in result.items if "Parclose verticale" in i["label"])
+    assert abs(pv["length_mm"] - 1973.44) < 0.05
+    assert pv["qty"] == 4
+    # Parclose H = leaf width (mitred)
+    ph = next(i for i in result.items if "Parclose horizontale" in i["label"])
+    assert abs(ph["length_mm"] - 799.30) < 0.1
+    assert ph["qty"] == 4
 
 
-def test_decompose_at2000_standard_36x84_door():
-    """AT2000 36"x84": bigger 3-11/16" rails → much shorter rail cuts."""
+def test_decompose_at2000_user_supplied_leaf_bmo():
+    """User's exact BMO example : AT2000 leaf 723.1 × 2114.5 must give
+    parclose V ≈ 1814.49 and parclose H = 723.10 (mitred)."""
     from cut_door_breakdown import decompose_at_door
-    result = decompose_at_door(914.4, 2133.6, series="AT2000",
+    result = decompose_at_door(723.10, 2114.50, series="AT2000",
                                 glass_thickness_mm=6.0)
     top = next(i for i in result.items if "Traverse haute" in i["label"])
-    # Rail cut = 914.4 - 191.30 = 723.10
-    assert abs(top["length_mm"] - 723.1) < 0.1
-    mv = next(i for i in result.items if "Moulure verticale" in i["label"])
-    # 2111.4 - 299.70 = 1811.70
-    assert abs(mv["length_mm"] - 1811.7) < 0.1
+    assert abs(top["length_mm"] - 723.10) < 0.1
+    bottom = next(i for i in result.items if "Traverse basse" in i["label"])
+    assert abs(bottom["length_mm"] - 723.10) < 0.1
+    # AT2000 stile widths
+    hinge = next(i for i in result.items if "charnière" in i["label"].lower())
+    lock = next(i for i in result.items if "serrure" in i["label"].lower() and "Montant" in i["label"])
+    assert abs(hinge["length_mm"] - 2114.50) < 0.1
+    assert abs(lock["length_mm"] - 2114.50) < 0.1
+    # Parclose V = 2114.5 - 98.425 - 174.625 - 2 × 13.48 = 1814.49
+    pv = next(i for i in result.items if "Parclose verticale" in i["label"])
+    assert abs(pv["length_mm"] - 1814.49) < 0.05
+    # Parclose H = leaf width directly
+    ph = next(i for i in result.items if "Parclose horizontale" in i["label"])
+    assert abs(ph["length_mm"] - 723.10) < 0.1
 
 
-def test_decompose_ati2000_insulated_1inch_glass():
-    """ATi2000 — same door leaf as AT2000 + cladding pieces (5.7mm shorter)."""
+def test_decompose_ati2000_insulated_with_cladding():
+    """ATi2000 leaf 723.10 × 2111.40 + cladding pieces (5.7 mm shorter)."""
     from cut_door_breakdown import decompose_at_door
-    result = decompose_at_door(914.4, 2133.6, series="ATi2000",
+    result = decompose_at_door(723.10, 2111.40, series="ATi2000",
                                 glass_thickness_mm=25.4)
     stiles = [i for i in result.items if "Montant" in i["label"]]
-    # Door leaf SAME as AT2000 — 2111.40, NOT 2105.70
-    assert all(abs(s["length_mm"] - 2111.4) < 0.1 for s in stiles)
-    mv = next(i for i in result.items if "Moulure verticale" in i["label"])
-    # 2111.4 - 301.60 = 1809.80
-    assert abs(mv["length_mm"] - 1809.8) < 0.1
-    # CLADDING pieces — present only on ATi
+    assert all(abs(s["length_mm"] - 2111.40) < 0.1 for s in stiles)
+    # Cladding present (ATi only)
     cladding_v = next(i for i in result.items if "Cladding vertical" in i["label"])
     cladding_h = next(i for i in result.items if "Cladding horizontal" in i["label"])
-    # Cladding V = stile - 5.7 = 2105.70
-    assert abs(cladding_v["length_mm"] - 2105.7) < 0.1
-    # Cladding H = rail - 5.7 = 723.10 - 5.7 = 717.4
-    assert abs(cladding_h["length_mm"] - 717.4) < 0.1
+    # Cladding V = stile - 5.7
+    assert abs(cladding_v["length_mm"] - (2111.40 - 5.7)) < 0.1
+    # Cladding H = rail - 5.7
+    assert abs(cladding_h["length_mm"] - (723.10 - 5.7)) < 0.1
     assert cladding_v["qty"] == 2
     assert cladding_h["qty"] == 2
 
@@ -82,14 +97,14 @@ def test_non_insulated_at_has_no_cladding():
     """Standard AT1000/AT2000 must NOT produce cladding pieces."""
     from cut_door_breakdown import decompose_at_door
     for series in ("AT1000", "AT2000"):
-        result = decompose_at_door(914.4, 2133.6, series=series,
+        result = decompose_at_door(799.30 if series == "AT1000" else 723.10,
+                                    2111.40, series=series,
                                     glass_thickness_mm=6.0)
         cladding = [i for i in result.items if "Cladding" in i["label"]]
         assert len(cladding) == 0, f"{series} should not have cladding"
 
 
 def test_series_normalization_handles_user_variants():
-    """User may type 'ATI-2000', 'ati 1000', 'at_i2000' etc."""
     from cut_door_breakdown import _normalize_series
     assert _normalize_series("ATi2000") == "ATI2000"
     assert _normalize_series("ATI-1000") == "ATI1000"
@@ -97,35 +112,29 @@ def test_series_normalization_handles_user_variants():
     assert _normalize_series("AT 2000") == "AT2000"
     assert _normalize_series("at1000") == "AT1000"
     assert _normalize_series("unknown junk") == "AT1000"
-    # Hybrid base
+    # Hybrid
     assert _normalize_series("AT1000-base-AT2000") == "AT1000-BASE-AT2000"
     assert _normalize_series("AT1000 AT2000") == "AT1000-BASE-AT2000"
-    assert _normalize_series("at1000-base-at2000") == "AT1000-BASE-AT2000"
 
 
 def test_decompose_hybrid_at1000_base_at2000():
-    """Uniprix-style hybrid: AT1000 door body with AT2000 bottom rail (6⅞")."""
+    """Hybrid : AT1000 body + AT2000 base 6⅞". Leaf = 799.30 × 2111.40."""
     from cut_door_breakdown import decompose_at_door
-    result = decompose_at_door(914.4, 2133.6,
-                                series="AT1000-base-AT2000",
+    result = decompose_at_door(799.30, 2111.40, series="AT1000-base-AT2000",
                                 glass_thickness_mm=6.0)
-    # Rail cut length unchanged (frame is AT1000)
     top = next(i for i in result.items if "Traverse haute" in i["label"])
     bottom = next(i for i in result.items if "Traverse basse" in i["label"])
-    assert abs(top["length_mm"] - 799.3) < 0.1
-    assert abs(bottom["length_mm"] - 799.3) < 0.1
-    # But the bottom profile name shows the AT2000 substitution
+    assert abs(top["length_mm"] - 799.30) < 0.1
+    assert abs(bottom["length_mm"] - 799.30) < 0.1
     assert "6⅞" in bottom["profile"] or "AT2000" in bottom["profile"]
-    # Moulure V is shorter than pure AT1000 because the bottom rail is taller
-    mv = next(i for i in result.items if "Moulure verticale" in i["label"])
-    # 2111.4 - 301.60 (combined offset) = 1809.80
-    assert abs(mv["length_mm"] - 1809.8) < 0.5
+    # Parclose V = 2111.40 - 55.5 (AT1000 top) - 174.625 (AT2000 base) - 26.96 = 1854.315
+    pv = next(i for i in result.items if "Parclose verticale" in i["label"])
+    assert abs(pv["length_mm"] - 1854.32) < 0.05
 
 
 def test_decompose_hardware_positions():
-    """Hardware positions follow Portech defaults unless overridden."""
     from cut_door_breakdown import decompose_at_door
-    result = decompose_at_door(914.4, 2133.6, series="AT1000")
+    result = decompose_at_door(799.30, 2111.40, series="AT1000")
     cyl = next(i for i in result.hardware if "cylindre" in i["label"].lower())
     assert cyl["position_y"] == 1016.0
     strike = next(i for i in result.hardware if "gâche" in i["label"].lower())
@@ -144,8 +153,8 @@ def test_decompose_endpoint_happy_path(auth_headers):
         f"{API}/admin/cuts/decompose-door",
         headers=auth_headers,
         json={
-            "door_width_mm": 914.4,
-            "door_height_mm": 2133.6,
+            "door_width_mm": 799.30,    # LEAF dims now
+            "door_height_mm": 2111.40,
             "series": "AT1000",
             "glass_thickness_mm": 6.0,
         },
@@ -153,7 +162,7 @@ def test_decompose_endpoint_happy_path(auth_headers):
     assert r.status_code == 200
     body = r.json()
     types = [i["item_type"] for i in body["items"]]
-    # AT1000 non-insulated: 4 frame (rails + stiles) + 2 moulures + 1 glass + 4 hw
+    # AT1000 non-insulated: 6 frame (2 rails + 2 stiles + V+H parcloses) + 1 glass + 4 hw
     assert types.count("frame") == 6
     assert types.count("glass") == 1
     assert "notes" in body
@@ -164,15 +173,14 @@ def test_decompose_endpoint_includes_cladding_for_ati(auth_headers):
         f"{API}/admin/cuts/decompose-door",
         headers=auth_headers,
         json={
-            "door_width_mm": 914.4,
-            "door_height_mm": 2133.6,
+            "door_width_mm": 799.30,
+            "door_height_mm": 2111.40,
             "series": "ATi1000",
             "glass_thickness_mm": 25.4,
         },
     )
     assert r.status_code == 200
     labels = [i.get("label", "") for i in r.json()["items"]]
-    # ATi adds 2 cladding frame pieces (vertical + horizontal)
     assert sum(1 for L in labels if "Cladding" in L) == 2
 
 

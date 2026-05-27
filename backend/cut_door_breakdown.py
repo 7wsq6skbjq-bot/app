@@ -1,97 +1,81 @@
 """Door breakdown — turn a single 'door panel' item into its frame pieces
-+ glazing moulures + hardware positions.
++ glazing moulures (parclose) + hardware positions.
 
-All dimensions are CALIBRATED against the official AT Fabrication shop drawing
-"DÉTAILS DE PORTE AT1000 ET 2000 — REV-04-2026.dxf" (provided by Portech).
-The four production models are:
-  - AT1000  : non-insulated, 2¼" (55.5 mm) rails+stiles, 1/4" or 1" glass
-  - AT2000  : non-insulated, 3-11/16" (93.85 mm) rails+stiles, 1/4" or 1" glass
-  - ATi1000 : insulated (thermal break), 2¼" sections, 1" glass only
-  - ATi2000 : insulated, 3-11/16" sections, 1" glass only
+⚠ IMPORTANT — INPUT SEMANTICS:
+  The two dimensions passed in are the **finished door-leaf (battant fini)**
+  dimensions, i.e. the actual cut length of the rails (= leaf_width) and the
+  actual cut length of the stiles (= leaf_height). NOT the rough opening.
 
-For a STANDARD 36"×84" rough opening (914.4 × 2133.6 mm), the DXF gives:
-                   Rail cut    Stile cut   Moulure-V (6mm)   Moulure-V (25mm)
-  AT1000           799.30      2111.40     1928.90           1927.30
-  AT2000           723.10      2111.40     1811.70           1809.80
-  ATi1000          799.30      2105.70        —              1927.30
-  ATi2000          723.10      2105.70        —              1809.80
+  This matches what AT Fabrication writes on shop drawings ("porte 723.1 × 2114.5")
+  and what the OCR returns in panel.width_mm × panel.length_mm.
 
-The OFFSETS (opening − cut) are CONSTANT — that's how we scale to other
-rough opening sizes :
+Production models (rails / stiles widths confirmed by Portech, 2026-05):
+  - AT1000  : non-insulated, 2¼" (55.5 mm) rails + stiles, 6mm or 25mm glass
+  - AT2000  : non-insulated, asymmetric — tête 3⅞" (98.425), base 6⅞" (174.625),
+              jambage charnière 3½" (88.9), jambage serrure 3⅝" (92.075)
+  - ATi1000 : insulated (thermal break), 2¼" sections, 25mm glass only
+  - ATi2000 : insulated, asymmetric (same as AT2000), 25mm glass only
+  - AT1000-base-AT2000 (hybrid) : AT1000 top + stiles, AT2000 base 6⅞"
 
-  width_offset_mm   = 914.4  − rail_cut    → 115.10 (AT1000/i1000)  / 191.30 (AT2000/i2000)
-  height_offset_mm  = 2133.6 − stile_cut   →  22.20 (AT-non-insulated) / 27.90 (ATi-insulated)
-  moulure_v_offset  = stile_cut − moulure  → varies by glass thickness & section
+Parclose (moulure) for 1/4" carré vitrage : face profile = 13.48 mm.
+Mitred at corners → horizontal moulures span the FULL leaf width
+                  → vertical moulures = leaf_height - top_rail - base - 2 × face
 """
 from dataclasses import dataclass
 from typing import List, Optional
 from uuid import uuid4
 
-# ----- Section profile heights (rail = horizontal, stile = vertical) -----
-SECTION_HEIGHT_MM = {
+# ===========================================================================
+# Per-series profile geometry
+# ===========================================================================
+
+# Top rail height (mm) — "tête" / "traverse haute"
+TOP_RAIL_HEIGHT_MM = {
     "AT1000": 55.5,
-    "AT2000": 93.85,
+    "AT2000": 98.425,   # 3⅞"
     "ATI1000": 55.5,
-    "ATI2000": 93.85,
-    # Hybrid: AT1000 frame (top rail + stiles = 2¼"), with AT2000-style 6⅞" base.
+    "ATI2000": 98.425,
     "AT1000-BASE-AT2000": 55.5,
 }
 
-# ----- Bottom rail height (default = same as section_h, hybrid uses 6⅞" base) -----
-# 6⅞" = 174.625 mm — AT Fabrication "base 6⅞" substituée".
-BOTTOM_RAIL_HEIGHT_MM = {
-    "AT1000-BASE-AT2000": 174.625,
+# Bottom rail height (mm) — "base" / "traverse basse"
+BASE_RAIL_HEIGHT_MM = {
+    "AT1000": 55.5,
+    "AT2000": 174.625,  # 6⅞"
+    "ATI1000": 55.5,
+    "ATI2000": 174.625,
+    "AT1000-BASE-AT2000": 174.625,  # hybrid : AT2000 base on AT1000 body
 }
 
-# ----- Width offset: opening_width - rail_cut_length -----
-WIDTH_OFFSET_MM = {
-    "AT1000": 115.10,
-    "AT2000": 191.30,
-    "ATI1000": 115.10,
-    "ATI2000": 191.30,
-    # Hybrid keeps AT1000 stile width (top/bottom rail cut = AT1000)
-    "AT1000-BASE-AT2000": 115.10,
+# Hinge-side stile width (mm) — "jambage côté charnière"
+HINGE_STILE_WIDTH_MM = {
+    "AT1000": 50.8,
+    "AT2000": 88.9,     # 3½"
+    "ATI1000": 50.8,
+    "ATI2000": 88.9,
+    "AT1000-BASE-AT2000": 50.8,
 }
 
-# ----- Height offset: opening_height - stile_cut_length -----
-# All 4 AT models share the same door leaf height: (top clearance 4.8 + undercut 17.4 = 22.2 mm)
-# Insulated models ALSO have a cladding piece (5.7 mm shorter) — see CLADDING_OFFSET_MM.
-HEIGHT_OFFSET_MM = {
-    "AT1000": 22.20,
-    "AT2000": 22.20,
-    "ATI1000": 22.20,
-    "ATI2000": 22.20,
-    "AT1000-BASE-AT2000": 22.20,
+# Lock-side stile width (mm) — "jambage côté serrure"
+LOCK_STILE_WIDTH_MM = {
+    "AT1000": 53.975,
+    "AT2000": 92.075,   # 3⅝"
+    "ATI1000": 53.975,
+    "ATI2000": 92.075,
+    "AT1000-BASE-AT2000": 53.975,
 }
 
-# ----- Cladding offset: door_leaf_dim - cladding_dim -----
-# ATi models add an external cladding cover on the door leaf. The cladding is
-# cut 5.7 mm shorter than the door leaf on each axis (per official AT DXF).
+# Moulure (parclose) face width — what the user calls "largeur de la moulure".
+# Portech standard for parclose carrée 1/4" = 13.48 mm.
+MOULURE_FACE_WIDTH_MM = 13.48
+
+# Cladding piece (ATi insulated only) — clad pieces are 5.7 mm shorter on each
+# axis than the leaf itself (per official AT DXF).
 CLADDING_OFFSET_MM = 5.7
 
-# ----- Vertical moulure offset: stile_cut - moulure_v_length -----
-# Indexed by (model, glass_thickness_mm_rounded). With unified door height
-# (all stiles = opening - 22.20), insulated moulures sit on slightly DIFFERENT
-# offsets because the insulated rails have a different rebate depth.
-MOULURE_V_OFFSET_MM = {
-    ("AT1000", 6):    182.50,    # 2111.4 - 1928.9
-    ("AT1000", 25):   184.10,    # 2111.4 - 1927.3
-    ("AT2000", 6):    299.70,
-    ("AT2000", 25):   301.60,
-    ("ATI1000", 25):  184.10,
-    ("ATI2000", 25):  301.60,
-    # Hybrid AT1000 with AT2000 base: top rail = 55.5, bottom rail = 174.6
-    # Combined offset = (top moulure offset 91.25) + (bottom moulure offset 210.35)
-    # → for 6mm glass : (2111.4 − 1928.9) = 182.50 plus extra (174.6−55.5) = 119.1
-    # = 182.50 + 119.1 = 301.60 (mathematically matches AT2000 6mm case!)
-    ("AT1000-BASE-AT2000", 6):    301.60,
-    ("AT1000-BASE-AT2000", 25):   303.20,
-}
-
-# Square moulure offset (rebate from rail inside edge to glass edge)
-MOULURE_H_OFFSET_MM = 6.35     # 1/4" rebate — standard AT square stop
-
+# ===========================================================================
 # Hardware position rules (mm from BOTTOM of door leaf)
+# ===========================================================================
 DEFAULT_CYL_HEIGHT_MM = 1016.0       # 40"
 DEFAULT_STRIKE_OFFSET_MM = 19.05     # 3/4" lower than cylinder on jamb
 DEFAULT_HANDLE_HEIGHT_MM = 876.3     # 34½"
@@ -106,7 +90,7 @@ class DoorBreakdown:
 
 
 def _normalize_series(raw: str) -> str:
-    """Map any user-supplied series string to a canonical key in our spec tables."""
+    """Map any user-supplied series string to a canonical key in the spec tables."""
     s = (raw or "").upper().replace(" ", "").replace("_", "")
     # Hybrid first (must check BEFORE plain AT1000/AT2000 matches)
     if ("AT1000" in s.replace("-", "") and "AT2000" in s.replace("-", "")) \
@@ -123,8 +107,8 @@ def _normalize_series(raw: str) -> str:
 
 
 def decompose_at_door(
-    door_width_mm: float,
-    door_height_mm: float,
+    leaf_width_mm: float,
+    leaf_height_mm: float,
     series: str = "AT1000",
     glass_thickness_mm: float = 6.0,
     material: str = "Aluminium anodisé bronze",
@@ -132,127 +116,127 @@ def decompose_at_door(
     qty: int = 1,
     hardware_rules: Optional[dict] = None,
 ) -> DoorBreakdown:
-    """Decompose a door into its actual cut pieces.
+    """Decompose a finished door leaf into its cut pieces.
 
-    ⚠ `door_width_mm` and `door_height_mm` here are the **rough-opening**
-    dimensions (ouverture libre) — same as what the AT detail drawing uses.
-    The function applies the AT-series offsets to derive the cut lengths.
+    Args:
+        leaf_width_mm:  Finished width of the leaf = length of each rail (mm).
+        leaf_height_mm: Finished height of the leaf = length of each stile (mm).
 
-    Example: a 36"×84" opening on AT1000 1/4" gives :
-        rail cut    = 914.4  − 115.10 = 799.30 mm  ×2
-        stile cut   = 2133.6 −  22.20 = 2111.40 mm ×2
-        moulure-V   = 2111.4 − 182.50 = 1928.90 mm ×4
-        moulure-H   = 799.30 − 2×6.35 = 786.60 mm  ×4
+    Formulas (validated by Portech 2026-05):
+        rail_cut    = leaf_width_mm                            (×2: top + bottom)
+        stile_cut   = leaf_height_mm                           (×2: hinge + lock)
+        moulure_V   = leaf_height − top_rail − base − 2 × moulure_face   (×4)
+        moulure_H   = leaf_width                               (×4, mitred 45°)
+        vitrage     = (rail_cut − stiles_widths) × (stile_cut − rails_heights)
+
+    Example (AT2000, leaf 723.1 × 2114.5, 6mm glass) :
+        rail_cut  = 723.10
+        stile_cut = 2114.50
+        moulure_V = 2114.5 − 98.425 − 174.625 − 26.96 = 1814.49
+        moulure_H = 723.10
     """
     notes: list[str] = []
     series_key = _normalize_series(series)
-    section_h = SECTION_HEIGHT_MM[series_key]
-    width_off = WIDTH_OFFSET_MM[series_key]
-    height_off = HEIGHT_OFFSET_MM[series_key]
 
-    glass_key = 6 if glass_thickness_mm < 12 else 25
-    moulure_v_off = MOULURE_V_OFFSET_MM.get((series_key, glass_key))
-    if moulure_v_off is None:
-        # Insulated models with 6mm glass don't exist in production; fall back
-        # to closest available spec and warn.
-        moulure_v_off = MOULURE_V_OFFSET_MM.get((series_key, 25)) \
-            or MOULURE_V_OFFSET_MM[("AT1000", 25)]
-        notes.append(
-            f"Combinaison série/verre non standard ({series_key} + {glass_thickness_mm}mm) — "
-            f"offset moulure verticale estimé."
-        )
+    top_rail = TOP_RAIL_HEIGHT_MM[series_key]
+    base_rail = BASE_RAIL_HEIGHT_MM[series_key]
+    hinge_stile = HINGE_STILE_WIDTH_MM[series_key]
+    lock_stile = LOCK_STILE_WIDTH_MM[series_key]
+    moulure_face = MOULURE_FACE_WIDTH_MM
 
     # ----- Cut lengths -----
-    rail_cut = door_width_mm - width_off
-    stile_cut = door_height_mm - height_off
-    moulure_v = stile_cut - moulure_v_off
-    moulure_h = rail_cut - 2 * MOULURE_H_OFFSET_MM
+    rail_cut = leaf_width_mm
+    stile_cut = leaf_height_mm
+    moulure_v = stile_cut - top_rail - base_rail - 2 * moulure_face
+    moulure_h = leaf_width_mm  # mitred 45° → spans full leaf width
 
     is_insulated = series_key.startswith("ATI")
     is_hybrid = series_key == "AT1000-BASE-AT2000"
-    # Stile widths (hinge vs lock differ by 4mm in AT std; symmetric in AT2000).
-    # Hybrid follows AT1000 stile width (frame is AT1000).
-    is_at2000_frame = series_key.endswith("2000") and not is_hybrid
-    hinge_stile = section_h if is_at2000_frame else 50.8
-    lock_stile = section_h if is_at2000_frame else 53.975
+    is_at2000_family = series_key in ("AT2000", "ATI2000")
 
-    # Profile labels — top vs bottom can differ (hybrid AT1000-base-AT2000)
-    bottom_rail_h = BOTTOM_RAIL_HEIGHT_MM.get(series_key, section_h)
-    bottom_rail_is_hybrid = bottom_rail_h != section_h
-    # Hybrid uses the AT1000 top profile (2¼") even though its key ends in "2000".
-    if is_hybrid or section_h < 70:
-        profile_top = f'{series_key} — tube 1¾" × 4" (rail 2¼")'
-    else:
-        profile_top = f'{series_key} — tube 3-11/16" × 4"'
-    if bottom_rail_is_hybrid:
+    # ----- Profile labels (top vs bottom can differ on hybrid) -----
+    if is_at2000_family:
+        profile_top = f'{series_key} — tête 3⅞" (98.4 mm)'
+        profile_bottom = f'{series_key} — base 6⅞" (174.6 mm)'
+        profile_stile_hinge = f'{series_key} — jambage charnière 3½" (88.9 mm)'
+        profile_stile_lock = f'{series_key} — jambage serrure 3⅝" (92.1 mm)'
+    elif is_hybrid:
+        profile_top = f'{series_key} — tête 2¼" (55.5 mm)'
         profile_bottom = f'{series_key} — base 6⅞" (substitution AT2000)'
-    else:
+        profile_stile_hinge = f'{series_key} — jambage 2¼"'
+        profile_stile_lock = f'{series_key} — jambage 2¼"'
+    else:  # AT1000 / ATi1000
+        profile_top = f'{series_key} — tube 2¼" (55.5 mm)'
         profile_bottom = profile_top
-    profile = profile_top  # for stiles + general use
+        profile_stile_hinge = profile_top
+        profile_stile_lock = profile_top
 
     items = [
         {
             "id": str(uuid4()), "item_type": "frame",
-            "label": f"{label_prefix} — Traverse haute",
+            "label": f"{label_prefix} — Traverse haute (tête)",
             "profile": profile_top, "material": material,
-            "length_mm": round(rail_cut, 1), "qty": qty, "source": "computed",
-            "notes": f"Ouverture {door_width_mm:.1f} − {width_off} (offset {series_key}) = {rail_cut:.1f}",
+            "length_mm": round(rail_cut, 2), "qty": qty, "source": "computed",
+            "notes": f"Largeur battant {leaf_width_mm:.1f} mm.",
         },
         {
             "id": str(uuid4()), "item_type": "frame",
-            "label": f"{label_prefix} — Traverse basse",
+            "label": f"{label_prefix} — Traverse basse (base)",
             "profile": profile_bottom, "material": material,
-            "length_mm": round(rail_cut, 1), "qty": qty, "source": "computed",
+            "length_mm": round(rail_cut, 2), "qty": qty, "source": "computed",
             "notes": (
-                f"Base AT2000 substituée (6⅞\" = {bottom_rail_h:.1f} mm)."
-                if bottom_rail_is_hybrid else
+                f"Base 6⅞\" ({base_rail:.1f} mm)."
+                if is_hybrid or is_at2000_family else
                 "Identique traverse haute (sections symétriques)."
             ),
         },
         {
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Montant côté charnière",
-            "profile": profile, "material": material,
-            "length_mm": round(stile_cut, 1), "qty": qty, "source": "computed",
-            "notes": (
-                f"Hauteur ouverture {door_height_mm:.1f} − {height_off} = {stile_cut:.1f}."
-                f" Largeur montant : {hinge_stile} mm."
-            ),
+            "profile": profile_stile_hinge, "material": material,
+            "length_mm": round(stile_cut, 2), "qty": qty, "source": "computed",
+            "notes": f"Hauteur battant {leaf_height_mm:.1f} mm. Largeur montant : {hinge_stile} mm.",
         },
         {
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Montant côté serrure",
-            "profile": profile, "material": material,
-            "length_mm": round(stile_cut, 1), "qty": qty, "source": "computed",
-            "notes": f"Identique côté charnière. Largeur montant : {lock_stile} mm.",
+            "profile": profile_stile_lock, "material": material,
+            "length_mm": round(stile_cut, 2), "qty": qty, "source": "computed",
+            "notes": f"Largeur montant : {lock_stile} mm.",
         },
         {
             "id": str(uuid4()), "item_type": "frame",
-            "label": f"{label_prefix} — Moulure verticale verre {glass_thickness_mm:.1f}mm",
-            "profile": f"{series_key} — moulure verre {glass_thickness_mm:.1f}mm",
+            "label": f"{label_prefix} — Parclose verticale (vitrage {glass_thickness_mm:.1f}mm)",
+            "profile": f"{series_key} — parclose carrée ¼ ({moulure_face} mm)",
             "material": material,
-            "length_mm": round(moulure_v, 1),
+            "length_mm": round(moulure_v, 2),
             "qty": 4 * qty, "source": "computed",
-            "notes": f"4 par porte. Calc : {stile_cut:.1f} − {moulure_v_off} (offset moulure V) = {moulure_v:.1f}",
+            "notes": (
+                f"4 par porte. Calc : {leaf_height_mm:.1f} − {top_rail} (tête) − "
+                f"{base_rail} (base) − 2 × {moulure_face} = {moulure_v:.2f} mm. Coupes mitrées 45°."
+            ),
         },
         {
             "id": str(uuid4()), "item_type": "frame",
-            "label": f"{label_prefix} — Moulure horizontale verre {glass_thickness_mm:.1f}mm",
-            "profile": f"{series_key} — moulure verre {glass_thickness_mm:.1f}mm",
+            "label": f"{label_prefix} — Parclose horizontale (vitrage {glass_thickness_mm:.1f}mm)",
+            "profile": f"{series_key} — parclose carrée ¼ ({moulure_face} mm)",
             "material": material,
-            "length_mm": round(moulure_h, 1),
+            "length_mm": round(moulure_h, 2),
             "qty": 4 * qty, "source": "computed",
-            "notes": f"4 par porte. Calc : rail {rail_cut:.1f} − 2 × {MOULURE_H_OFFSET_MM} = {moulure_h:.1f}",
+            "notes": (
+                f"4 par porte. Calc : moulure_H = largeur battant = {leaf_width_mm:.1f} mm "
+                "(mitré 45° aux coins → s'étend sur toute la largeur)."
+            ),
         },
         {
             "id": str(uuid4()), "item_type": "glass",
             "label": f"{label_prefix} — Vitrage",
             "material": f"Verre {'thermos' if glass_thickness_mm >= 12 else 'trempé'} {glass_thickness_mm:.1f}mm",
-            "length_mm": round(moulure_v, 1),
-            "width_mm": round(moulure_h, 1),
+            "length_mm": round(moulure_v, 2),
+            "width_mm": round(moulure_h - hinge_stile - lock_stile - 2 * moulure_face, 2),
             "thickness_mm": glass_thickness_mm,
             "qty": qty, "source": "computed",
-            "notes": "Dimensions = aire des moulures (vitrage 6mm trempé ou thermos 25.4mm).",
+            "notes": "Largeur vitrage = largeur battant − 2 montants − 2 parcloses verticales.",
         },
     ]
 
@@ -266,12 +250,11 @@ def decompose_at_door(
                 "label": f"{label_prefix} — Cladding vertical (revêtement)",
                 "profile": f"{series_key} — cladding",
                 "material": material,
-                "length_mm": round(cladding_v, 1),
+                "length_mm": round(cladding_v, 2),
                 "qty": 2 * qty, "source": "computed",
                 "notes": (
-                    f"Revêtement extérieur posé sur la porte isolée. "
                     f"Calc : stile {stile_cut:.1f} − {CLADDING_OFFSET_MM} = {cladding_v:.1f}. "
-                    "2 par porte (faces extérieure et intérieure côté charnière et serrure)."
+                    "2 par porte (extérieur + intérieur)."
                 ),
             },
             {
@@ -279,9 +262,9 @@ def decompose_at_door(
                 "label": f"{label_prefix} — Cladding horizontal (revêtement)",
                 "profile": f"{series_key} — cladding",
                 "material": material,
-                "length_mm": round(cladding_h, 1),
+                "length_mm": round(cladding_h, 2),
                 "qty": 2 * qty, "source": "computed",
-                "notes": f"Calc : rail {rail_cut:.1f} − {CLADDING_OFFSET_MM} = {cladding_h:.1f}. 2 par porte.",
+                "notes": f"Calc : rail {rail_cut:.1f} − {CLADDING_OFFSET_MM} = {cladding_h:.1f}.",
             },
         ])
 
@@ -318,7 +301,7 @@ def decompose_at_door(
         {
             "id": str(uuid4()), "item_type": "hardware",
             "label": "Charnière continue — installation",
-            "length_mm": round(stile_cut - HINGE_BOTTOM_UNDERCUT_MM, 1),
+            "length_mm": round(stile_cut - HINGE_BOTTOM_UNDERCUT_MM, 2),
             "qty": qty,
             "notes": "Flush sommet, coupée à 1/4\" du bas (dégagement seuil).",
             "source": "computed",
@@ -326,9 +309,10 @@ def decompose_at_door(
     ]
 
     summary_parts = [
-        f"Porte {series_key} (verre {glass_thickness_mm:.1f}mm{' — isolée avec cladding' if is_insulated else ''})",
-        f"2 rails {rail_cut:.0f} + 2 montants {stile_cut:.0f}",
-        f"4 mouls V {moulure_v:.0f} + 4 mouls H {moulure_h:.0f}",
+        f"Porte {series_key} (battant {leaf_width_mm:.1f}×{leaf_height_mm:.1f} mm, "
+        f"verre {glass_thickness_mm:.1f}mm{' — isolée avec cladding' if is_insulated else ''})",
+        f"2 rails {rail_cut:.1f} + 2 montants {stile_cut:.1f}",
+        f"4 parcloses V {moulure_v:.1f} + 4 parcloses H {moulure_h:.1f}",
         "1 vitrage",
     ]
     if is_insulated:

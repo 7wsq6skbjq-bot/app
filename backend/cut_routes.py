@@ -374,9 +374,12 @@ async def _ocr_plan(file_path: Path, mime: str) -> dict:
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
     @router.post("/cuts/decompose-door")
     async def decompose_door(payload: dict, _: dict = Depends(auth_dep)):
-        """Take a 'panel'-type door spec and return the 4 frame pieces + 8 mouldings
+        """Take a 'panel'-type door spec and return the 4 frame pieces + 8 parcloses
         + hardware positions. Frontend calls this after the user fills in or
         confirms the door dimensions / series. No persistence.
+
+        Input semantics: door_width_mm / door_height_mm are the LEAF dimensions
+        (battant fini) — what AT shop drawings list (ex 723.1 × 2114.5).
         """
         try:
             door_w = float(payload.get("door_width_mm") or 0)
@@ -386,8 +389,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if door_w <= 0 or door_h <= 0:
             raise HTTPException(400, "door_width_mm et door_height_mm doivent être > 0.")
         result = decompose_at_door(
-            door_width_mm=door_w,
-            door_height_mm=door_h,
+            leaf_width_mm=door_w,
+            leaf_height_mm=door_h,
             series=str(payload.get("series") or "AT1000"),
             glass_thickness_mm=float(payload.get("glass_thickness_mm") or 6.0),
             material=str(payload.get("material") or "Aluminium anodisé bronze"),
@@ -527,8 +530,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
                 finish = door_info.get("door_finish") or door_info.get("frame_finish") \
                     or "Aluminium anodisé bronze"
                 br = decompose_at_door(
-                    door_width_mm=float(leaf_w),
-                    door_height_mm=float(leaf_h),
+                    leaf_width_mm=float(leaf_w),
+                    leaf_height_mm=float(leaf_h),
                     series=str(series),
                     glass_thickness_mm=float(glass_t),
                     material=str(finish),
