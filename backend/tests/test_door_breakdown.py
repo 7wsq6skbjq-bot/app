@@ -57,16 +57,35 @@ def test_decompose_at2000_standard_36x84_door():
 
 
 def test_decompose_ati2000_insulated_1inch_glass():
-    """Insulated AT2000 with thermos 25.4mm glass — shorter stile cut."""
+    """ATi2000 — same door leaf as AT2000 + cladding pieces (5.7mm shorter)."""
     from cut_door_breakdown import decompose_at_door
     result = decompose_at_door(914.4, 2133.6, series="ATi2000",
                                 glass_thickness_mm=25.4)
     stiles = [i for i in result.items if "Montant" in i["label"]]
-    # Insulated height offset = 27.90 → 2105.70
-    assert all(abs(s["length_mm"] - 2105.7) < 0.1 for s in stiles)
+    # Door leaf SAME as AT2000 — 2111.40, NOT 2105.70
+    assert all(abs(s["length_mm"] - 2111.4) < 0.1 for s in stiles)
     mv = next(i for i in result.items if "Moulure verticale" in i["label"])
-    # 2105.7 - 295.90 = 1809.80
+    # 2111.4 - 301.60 = 1809.80
     assert abs(mv["length_mm"] - 1809.8) < 0.1
+    # CLADDING pieces — present only on ATi
+    cladding_v = next(i for i in result.items if "Cladding vertical" in i["label"])
+    cladding_h = next(i for i in result.items if "Cladding horizontal" in i["label"])
+    # Cladding V = stile - 5.7 = 2105.70
+    assert abs(cladding_v["length_mm"] - 2105.7) < 0.1
+    # Cladding H = rail - 5.7 = 723.10 - 5.7 = 717.4
+    assert abs(cladding_h["length_mm"] - 717.4) < 0.1
+    assert cladding_v["qty"] == 2
+    assert cladding_h["qty"] == 2
+
+
+def test_non_insulated_at_has_no_cladding():
+    """Standard AT1000/AT2000 must NOT produce cladding pieces."""
+    from cut_door_breakdown import decompose_at_door
+    for series in ("AT1000", "AT2000"):
+        result = decompose_at_door(914.4, 2133.6, series=series,
+                                    glass_thickness_mm=6.0)
+        cladding = [i for i in result.items if "Cladding" in i["label"]]
+        assert len(cladding) == 0, f"{series} should not have cladding"
 
 
 def test_series_normalization_handles_user_variants():
@@ -111,11 +130,27 @@ def test_decompose_endpoint_happy_path(auth_headers):
     assert r.status_code == 200
     body = r.json()
     types = [i["item_type"] for i in body["items"]]
-    # Expected: 4 frame pieces (2 rails + 2 stiles) + 2 moulure lines + 1 glass
-    # + 4 hardware = 11
+    # AT1000 non-insulated: 4 frame (rails + stiles) + 2 moulures + 1 glass + 4 hw
     assert types.count("frame") == 6
     assert types.count("glass") == 1
     assert "notes" in body
+
+
+def test_decompose_endpoint_includes_cladding_for_ati(auth_headers):
+    r = requests.post(
+        f"{API}/admin/cuts/decompose-door",
+        headers=auth_headers,
+        json={
+            "door_width_mm": 914.4,
+            "door_height_mm": 2133.6,
+            "series": "ATi1000",
+            "glass_thickness_mm": 25.4,
+        },
+    )
+    assert r.status_code == 200
+    labels = [i.get("label", "") for i in r.json()["items"]]
+    # ATi adds 2 cladding frame pieces (vertical + horizontal)
+    assert sum(1 for L in labels if "Cladding" in L) == 2
 
 
 def test_decompose_endpoint_invalid_input(auth_headers):

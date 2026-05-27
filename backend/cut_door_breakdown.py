@@ -44,23 +44,31 @@ WIDTH_OFFSET_MM = {
 }
 
 # ----- Height offset: opening_height - stile_cut_length -----
-# (clearances: top + undercut + threshold/thermal-break adjustments)
+# All 4 AT models share the same door leaf height: (top clearance 4.8 + undercut 17.4 = 22.2 mm)
+# Insulated models ALSO have a cladding piece (5.7 mm shorter) — see CLADDING_OFFSET_MM.
 HEIGHT_OFFSET_MM = {
     "AT1000": 22.20,
     "AT2000": 22.20,
-    "ATI1000": 27.90,
-    "ATI2000": 27.90,
+    "ATI1000": 22.20,
+    "ATI2000": 22.20,
 }
 
+# ----- Cladding offset: door_leaf_dim - cladding_dim -----
+# ATi models add an external cladding cover on the door leaf. The cladding is
+# cut 5.7 mm shorter than the door leaf on each axis (per official AT DXF).
+CLADDING_OFFSET_MM = 5.7
+
 # ----- Vertical moulure offset: stile_cut - moulure_v_length -----
-# Indexed by (model, glass_thickness_mm_rounded)
+# Indexed by (model, glass_thickness_mm_rounded). With unified door height
+# (all stiles = opening - 22.20), insulated moulures sit on slightly DIFFERENT
+# offsets because the insulated rails have a different rebate depth.
 MOULURE_V_OFFSET_MM = {
     ("AT1000", 6):    182.50,    # 2111.4 - 1928.9
     ("AT1000", 25):   184.10,    # 2111.4 - 1927.3
     ("AT2000", 6):    299.70,    # 2111.4 - 1811.7
     ("AT2000", 25):   301.60,    # 2111.4 - 1809.8
-    ("ATI1000", 25):  178.40,    # 2105.7 - 1927.3 (insulated only uses 1" glass)
-    ("ATI2000", 25):  295.90,    # 2105.7 - 1809.8
+    ("ATI1000", 25):  184.10,    # 2111.4 - 1927.3 (same as AT1000 1" — moulure offset is per profile)
+    ("ATI2000", 25):  301.60,    # 2111.4 - 1809.8 (same as AT2000 1")
 }
 
 # Square moulure offset (rebate from rail inside edge to glass edge)
@@ -209,6 +217,35 @@ def decompose_at_door(
         },
     ]
 
+    # ----- ATi cladding (revêtement extérieur posé sur la porte isolée) -----
+    if is_insulated:
+        cladding_v = stile_cut - CLADDING_OFFSET_MM
+        cladding_h = rail_cut - CLADDING_OFFSET_MM
+        items.extend([
+            {
+                "id": str(uuid4()), "item_type": "frame",
+                "label": f"{label_prefix} — Cladding vertical (revêtement)",
+                "profile": f"{series_key} — cladding",
+                "material": material,
+                "length_mm": round(cladding_v, 1),
+                "qty": 2 * qty, "source": "computed",
+                "notes": (
+                    f"Revêtement extérieur posé sur la porte isolée. "
+                    f"Calc : stile {stile_cut:.1f} − {CLADDING_OFFSET_MM} = {cladding_v:.1f}. "
+                    "2 par porte (faces extérieure et intérieure côté charnière et serrure)."
+                ),
+            },
+            {
+                "id": str(uuid4()), "item_type": "frame",
+                "label": f"{label_prefix} — Cladding horizontal (revêtement)",
+                "profile": f"{series_key} — cladding",
+                "material": material,
+                "length_mm": round(cladding_h, 1),
+                "qty": 2 * qty, "source": "computed",
+                "notes": f"Calc : rail {rail_cut:.1f} − {CLADDING_OFFSET_MM} = {cladding_h:.1f}. 2 par porte.",
+            },
+        ])
+
     # ----- Hardware positions (from bottom of door leaf) -----
     rules = hardware_rules or {}
     cyl_h = rules.get("cylinder_height_mm", DEFAULT_CYL_HEIGHT_MM)
@@ -249,9 +286,15 @@ def decompose_at_door(
         },
     ]
 
-    notes.append(
-        f"Porte {series_key} (verre {glass_thickness_mm:.1f}mm{' — isolée' if is_insulated else ''}) "
-        f"décomposée : 2 rails {rail_cut:.0f} mm + 2 montants {stile_cut:.0f} mm "
-        f"+ 4 mouls V {moulure_v:.0f} mm + 4 mouls H {moulure_h:.0f} mm + 1 vitrage."
-    )
+    summary_parts = [
+        f"Porte {series_key} (verre {glass_thickness_mm:.1f}mm{' — isolée avec cladding' if is_insulated else ''})",
+        f"2 rails {rail_cut:.0f} + 2 montants {stile_cut:.0f}",
+        f"4 mouls V {moulure_v:.0f} + 4 mouls H {moulure_h:.0f}",
+        "1 vitrage",
+    ]
+    if is_insulated:
+        summary_parts.append(
+            f"+ 2 cladding V {stile_cut - CLADDING_OFFSET_MM:.0f} + 2 cladding H {rail_cut - CLADDING_OFFSET_MM:.0f}"
+        )
+    notes.append(" — ".join(summary_parts))
     return DoorBreakdown(items=items, hardware=hardware, notes=notes)
