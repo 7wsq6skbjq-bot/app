@@ -46,6 +46,7 @@ from cut_models import (
 from cut_optimizer import optimize_cut_list
 from cut_pdf import render_cut_list_pdf
 from cut_templates import build_elevation_from_template
+from profile_catalog import get_catalog
 
 logger = logging.getLogger("portech.cuts")
 
@@ -479,6 +480,16 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         except (ValueError, TypeError) as exc:
             raise HTTPException(400, str(exc))
         return result
+
+    @router.get("/profile-catalog")
+    async def profile_catalog(_: dict = Depends(auth_dep)):
+        """Read-only catalog of all profile systems Portech tracks.
+
+        Used by the ERP Catalog panel + the cut-list authoring UI to look up
+        part numbers, manufacturer dimensions, and calculation rules.
+        Static data — no DB query, no LLM, no rate limit concerns.
+        """
+        return get_catalog()
 
     @router.get("/cuts/meta")
     async def cuts_meta(_: dict = Depends(auth_dep)):

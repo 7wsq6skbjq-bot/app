@@ -9,6 +9,7 @@ import { DataCard } from "../../../components/mobile/DataCard";
 import { FAB } from "../../../components/mobile/FAB";
 import { formatDate } from "../utils";
 import { TemplateBuilderModal } from "./TemplateBuilderModal";
+import { ProfileCatalogModal } from "./ProfileCatalogModal";
 
 const TYPE_LABELS = {
     frame: "Cadre",
@@ -68,6 +69,7 @@ export const CutListPanel = () => {
     const [editingElevId, setEditingElevId] = useState(null);
     const [addMissingOpen, setAddMissingOpen] = useState(false);
     const [templateOpen, setTemplateOpen] = useState(false);
+    const [catalogOpen, setCatalogOpen] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -439,6 +441,13 @@ export const CutListPanel = () => {
             <div className="flex flex-wrap items-center gap-2">
                 <button onClick={load} className="btn-secondary !py-2 !px-3 !text-xs">
                     <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Rafraîchir
+                </button>
+                <button
+                    onClick={() => setCatalogOpen(true)}
+                    data-testid="cuts-open-catalog"
+                    className="btn-secondary !py-2 !px-3 !text-xs"
+                >
+                    📚 Catalogue profilés
                 </button>
                 <button onClick={openNew} data-testid="cuts-new" className="hidden md:inline-flex btn-primary !py-2 !px-4 !text-xs ml-auto">
                     <Plus className="w-3.5 h-3.5" /> Nouvelle liste
@@ -983,6 +992,11 @@ export const CutListPanel = () => {
                     const lbl = ev.system_label || "Gabarit";
                     setExtractMsg(`📐 ${ev.items.length} élément(s) ajouté(s) depuis « ${lbl} » (calcul déterministe).`);
                 }}
+            />
+
+            <ProfileCatalogModal
+                open={catalogOpen}
+                onClose={() => setCatalogOpen(false)}
             />
         </div>
     );
