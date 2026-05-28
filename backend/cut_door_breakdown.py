@@ -165,7 +165,19 @@ def decompose_at_door(
     base_rail = BASE_RAIL_HEIGHT_MM[series_key]
     hinge_stile = HINGE_STILE_WIDTH_MM[series_key]
     lock_stile = LOCK_STILE_WIDTH_MM[series_key]
-    moulure_face = MOULURE_FACE_WIDTH_MM
+
+    # Parclose face width depends on the glass thickness :
+    #   • verre 6 mm           → moulure carrée 13.48 mm (comble la rainure de 25.4 mm)
+    #   • verre 25.4 mm thermos → moulure plate 14.3 mm (le thermos remplit lui-même la rainure)
+    parclose_spec = PARCLOSE_FACE_BY_GLASS_MM.get(
+        round(glass_thickness_mm, 1),
+        {"face": MOULURE_FACE_WIDTH_MM, "shape": "carrée",
+         "label_suffix": f"carrée vitrage {glass_thickness_mm:.1f}mm"},
+    )
+    moulure_face = parclose_spec["face"]
+    moulure_shape = parclose_spec["shape"]
+    parclose_label_suffix = parclose_spec["label_suffix"]
+    parts = PART_NUMBERS[series_key]
 
     # ----- Cut lengths -----
     rail_cut = leaf_width_mm
@@ -199,56 +211,66 @@ def decompose_at_door(
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Traverse haute (tête)",
             "profile": profile_top, "material": material,
+            "part_number": parts["top"], "manufacturer": "AT Fabrication",
             "length_mm": round(rail_cut, 2), "qty": qty, "source": "computed",
-            "notes": f"Largeur battant {leaf_width_mm:.1f} mm.",
+            "notes": f"Largeur battant {leaf_width_mm:.1f} mm. Pièce {parts['top']}.",
         },
         {
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Traverse basse (base)",
             "profile": profile_bottom, "material": material,
+            "part_number": parts["base"], "manufacturer": "AT Fabrication",
             "length_mm": round(rail_cut, 2), "qty": qty, "source": "computed",
             "notes": (
-                f"Base 6⅞\" ({base_rail:.1f} mm)."
+                f"Base {base_rail:.1f} mm — pièce {parts['base']}."
                 if is_hybrid or is_at2000_family else
-                "Identique traverse haute (sections symétriques)."
+                f"Base 3⅞\" ({base_rail:.1f} mm) — pièce {parts['base']} "
+                "(même extrusion que la tête AT2000)."
             ),
         },
         {
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Montant côté charnière",
             "profile": profile_stile_hinge, "material": material,
+            "part_number": parts["hinge"], "manufacturer": "AT Fabrication",
             "length_mm": round(stile_cut, 2), "qty": qty, "source": "computed",
-            "notes": f"Hauteur battant {leaf_height_mm:.1f} mm. Largeur montant : {hinge_stile} mm.",
+            "notes": (
+                f"Hauteur battant {leaf_height_mm:.1f} mm. Largeur montant {hinge_stile} mm. "
+                f"Pièce {parts['hinge']}."
+            ),
         },
         {
             "id": str(uuid4()), "item_type": "frame",
             "label": f"{label_prefix} — Montant côté serrure",
             "profile": profile_stile_lock, "material": material,
+            "part_number": parts["lock"], "manufacturer": "AT Fabrication",
             "length_mm": round(stile_cut, 2), "qty": qty, "source": "computed",
-            "notes": f"Largeur montant : {lock_stile} mm.",
+            "notes": f"Largeur montant {lock_stile} mm. Pièce {parts['lock']}.",
         },
         {
             "id": str(uuid4()), "item_type": "frame",
-            "label": f"{label_prefix} — Parclose verticale (vitrage {glass_thickness_mm:.1f}mm)",
-            "profile": f"{series_key} — parclose carrée ¼ ({moulure_face} mm)",
+            "label": f"{label_prefix} — Parclose verticale ({parclose_label_suffix})",
+            "profile": f"{series_key} — parclose {moulure_shape} {moulure_face} mm",
             "material": material,
             "length_mm": round(moulure_v, 2),
             "qty": 4 * qty, "source": "computed",
             "notes": (
                 f"4 par porte. Calc : {leaf_height_mm:.1f} − {top_rail} (tête) − "
-                f"{base_rail} (base) − 2 × {moulure_face} = {moulure_v:.2f} mm. Coupes mitrées 45°."
+                f"{base_rail} (base) − 2 × {moulure_face} = {moulure_v:.2f} mm. "
+                f"Moulure {moulure_shape} pour verre {glass_thickness_mm:.1f}mm. Coupes mitrées 45°."
             ),
         },
         {
             "id": str(uuid4()), "item_type": "frame",
-            "label": f"{label_prefix} — Parclose horizontale (vitrage {glass_thickness_mm:.1f}mm)",
-            "profile": f"{series_key} — parclose carrée ¼ ({moulure_face} mm)",
+            "label": f"{label_prefix} — Parclose horizontale ({parclose_label_suffix})",
+            "profile": f"{series_key} — parclose {moulure_shape} {moulure_face} mm",
             "material": material,
             "length_mm": round(moulure_h, 2),
             "qty": 4 * qty, "source": "computed",
             "notes": (
                 f"4 par porte. Calc : moulure_H = largeur battant = {leaf_width_mm:.1f} mm "
-                "(mitré 45° aux coins → s'étend sur toute la largeur)."
+                f"(mitré 45° → s'étend sur toute la largeur). Moulure {moulure_shape} "
+                f"({moulure_face} mm) pour verre {glass_thickness_mm:.1f}mm."
             ),
         },
         {
@@ -271,23 +293,28 @@ def decompose_at_door(
             {
                 "id": str(uuid4()), "item_type": "frame",
                 "label": f"{label_prefix} — Cladding vertical (revêtement)",
-                "profile": f"{series_key} — cladding",
+                "profile": f"{series_key} — cladding vertical",
                 "material": material,
+                "part_number": parts.get("clad_v"), "manufacturer": "AT Fabrication",
                 "length_mm": round(cladding_v, 2),
                 "qty": 2 * qty, "source": "computed",
                 "notes": (
-                    f"Calc : stile {stile_cut:.1f} − {CLADDING_OFFSET_MM} = {cladding_v:.1f}. "
-                    "2 par porte (extérieur + intérieur)."
+                    f"Pièce {parts.get('clad_v')}. Calc : stile {stile_cut:.1f} − "
+                    f"{CLADDING_OFFSET_MM} = {cladding_v:.1f}. 2 par porte (extérieur + intérieur)."
                 ),
             },
             {
                 "id": str(uuid4()), "item_type": "frame",
                 "label": f"{label_prefix} — Cladding horizontal (revêtement)",
-                "profile": f"{series_key} — cladding",
+                "profile": f"{series_key} — cladding horizontal",
                 "material": material,
+                "part_number": parts.get("clad_h"), "manufacturer": "AT Fabrication",
                 "length_mm": round(cladding_h, 2),
                 "qty": 2 * qty, "source": "computed",
-                "notes": f"Calc : rail {rail_cut:.1f} − {CLADDING_OFFSET_MM} = {cladding_h:.1f}.",
+                "notes": (
+                    f"Pièce {parts.get('clad_h')}. Calc : rail {rail_cut:.1f} − "
+                    f"{CLADDING_OFFSET_MM} = {cladding_h:.1f}."
+                ),
             },
         ])
 
