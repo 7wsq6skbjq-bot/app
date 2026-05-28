@@ -400,47 +400,45 @@ export const CutListPanel = () => {
         return `${base}/api/admin/cuts/${cutId}/export.${format}?token=${token}`;
     };
 
-    const exportCsv = async () => {
-        const cutId = editing.id || (await save());
-        if (!cutId) return;
-        // Direct URL navigation — browser triggers a native download because the
-        // backend sets Content-Disposition: attachment.
-        const url = buildExportUrl(cutId, "csv");
+    // Always persist the current edits BEFORE generating any export — otherwise
+    // the backend renders the previously-saved snapshot and the user thinks
+    // their changes were ignored.
+    const openExportUrl = (url) => {
         const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
-            // Same-tab navigation works reliably on iOS Safari for downloads.
             window.location.href = url;
         } else {
             window.open(url, "_blank");
         }
+    };
+
+    const exportCsv = async () => {
+        const cutId = await save();
+        if (!cutId) return;
+        openExportUrl(buildExportUrl(cutId, "csv"));
     };
 
     const exportPdf = async () => {
-        const cutId = editing.id || (await save());
+        const cutId = await save();
         if (!cutId) return;
-        const url = buildExportUrl(cutId, "pdf");
-        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-            window.location.href = url;
-        } else {
-            window.open(url, "_blank");
-        }
+        openExportUrl(buildExportUrl(cutId, "pdf"));
     };
 
-    const exportLabels = () => {
-        if (!editing?.id) return;
+    const exportLabels = async () => {
+        const cutId = await save();
+        if (!cutId) return;
         const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
         const token = encodeURIComponent(getToken() || "");
-        const url = `${base}/api/admin/cuts/${editing.id}/labels.pdf?token=${token}`;
-        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) window.location.href = url; else window.open(url, "_blank");
+        openExportUrl(`${base}/api/admin/cuts/${cutId}/labels.pdf?token=${token}`);
     };
 
     const confirmCut = async () => {
-        if (!editing?.id) return;
+        // Save first so the confirm endpoint reads the latest items / optimization.
+        const cutId = await save();
+        if (!cutId) return;
         if (!window.confirm("Confirmer que les coupes ont été effectuées ?\n\nCette action déduit les barres utilisées du stock et archive les chutes ≥ 600 mm.\n\nAprès confirmation, vous pouvez annuler depuis le détail de la liste.")) return;
         try {
-            const { data } = await http.post(`/admin/cuts/${editing.id}/confirm`, {});
+            const { data } = await http.post(`/admin/cuts/${cutId}/confirm`, {});
             alert(data.message);
             setEditing((prev) => ({ ...prev, cut_status: "cut", cuts_confirmed_at: new Date().toISOString() }));
             await load();
