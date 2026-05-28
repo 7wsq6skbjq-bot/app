@@ -5,19 +5,33 @@ import { Plus, Trash2, Minus, RefreshCw, Boxes, Scissors as ScissorsIcon } from 
 import { Modal, Field, inputClass } from "../components/Modal";
 import { useAuth } from "@/context/AuthContext";
 
+// Each preset has:
+//   - `key`     : the exact `profile_key` saved to inventory. MUST MATCH what the
+//                 optimizer produces in `display_profile` for matching cut groups —
+//                 i.e. `"{manufacturer} #{part_number}"` when a part_number is set,
+//                 so that "Confirmer coupes" can find and deduct the right row.
+//   - `desc`    : human-readable description shown in the dropdown.
+//   - `len`     : default bar length in mm.
 const PRESET_KEYS = [
-    { key: "AT1000 - traverse haute/base 2 1/4\"", len: 6800 },
-    { key: "AT1000 - montant 2\"", len: 6800 },
-    { key: "AT1000 - montant 2 1/8\" (serrure)", len: 6800 },
-    { key: "AT2000 - tête 3 7/8\"", len: 6800 },
-    { key: "AT2000 - base 6 7/8\"", len: 6800 },
-    { key: "AT2000 - jambage 3 1/2\" (charnière)", len: 6800 },
-    { key: "AT2000 - jambage 3 5/8\" (serrure)", len: 6800 },
-    { key: "Trifab VG450 #450CG005 Tube à poche", len: 7315 },
-    { key: "Trifab VG450 #450CG011 Tube escalier", len: 7315 },
-    { key: "Kawneer 1620 #178-001 Meneau", len: 7315 },
-    { key: "Kawneer 1620 #178-006 Couvercle", len: 7315 },
-    { key: "Kawneer 1620 #178-300 Plaque à pression", len: 7315 },
+    // ─── AT Fabrication — séries de portes ───
+    { key: "AT Fabrication #ATT1005", desc: "ATT1005 — Tête 2¼\" (AT1000 / ATi1000)", len: 6800 },
+    { key: "AT Fabrication #AT1000",  desc: "AT1000 — Base 3⅞\" AT1000 / Tête 3⅞\" AT2000 (extrusion partagée)", len: 6800 },
+    { key: "AT Fabrication #AT1025",  desc: "AT1025 — Montant charnière 2\" (AT1000 / ATi1000)", len: 6800 },
+    { key: "AT Fabrication #AT1020",  desc: "AT1020 — Montant serrure 2⅛\" (AT1000 / ATi1000)", len: 6800 },
+    { key: "AT Fabrication #AT2000",  desc: "AT2000 — Base 6⅞\" (AT2000 / ATi2000)", len: 6800 },
+    { key: "AT Fabrication #AT2025",  desc: "AT2025 — Jambage charnière 3½\" (AT2000 / ATi2000)", len: 6800 },
+    { key: "AT Fabrication #AT2020",  desc: "AT2020 — Jambage serrure 3⅝\" (AT2000 / ATi2000)", len: 6800 },
+    { key: "AT Fabrication #ATV1030", desc: "ATV1030 — Cladding vertical ATi1000", len: 6800 },
+    { key: "AT Fabrication #ATCHA1035", desc: "ATCHA1035 — Cladding horizontal ATi1000", len: 6800 },
+    { key: "AT Fabrication #ATV2030", desc: "ATV2030 — Cladding vertical ATi2000", len: 6800 },
+    { key: "AT Fabrication #ATCHA2025", desc: "ATCHA2025 — Cladding horizontal ATi2000", len: 6800 },
+    // ─── Trifab Flush Glaze ───
+    { key: "Trifab #450CG005", desc: "450CG005 — Tube à poche 1¾\" × 4½\"", len: 7315 },
+    { key: "Trifab #450CG011", desc: "450CG011 — Tube escalier 1¾\" × 4½\"", len: 7315 },
+    // ─── Kawneer Mur-rideau 1620 ───
+    { key: "Kawneer #178-001", desc: "178-001 — Meneau 2\" × 3¾\"", len: 7315 },
+    { key: "Kawneer #178-006", desc: "178-006 — Couvercle 2\" × ¾\"", len: 7315 },
+    { key: "Kawneer #178-300", desc: "178-300 — Plaque à pression 2\"", len: 7315 },
 ];
 
 export const InventoryPanel = () => {
@@ -132,6 +146,7 @@ const InventoryTable = ({ title, rows, adjust, del, chute = false }) => (
 const AddInventoryModal = ({ onClose, onAdded }) => {
     const { http } = useAuth();
     const [profileKey, setProfileKey] = useState("");
+    const [label, setLabel] = useState("");
     const [length, setLength] = useState(6800);
     const [qty, setQty] = useState(1);
     const [busy, setBusy] = useState(false);
@@ -145,7 +160,7 @@ const AddInventoryModal = ({ onClose, onAdded }) => {
         try {
             await http.post("/admin/alu-inventory", {
                 profile_key: profileKey.trim(),
-                label: profileKey.trim(),
+                label: (label.trim() || profileKey.trim()),
                 bar_length_mm: length,
                 qty_available: qty,
                 is_chute: false,
@@ -173,22 +188,42 @@ const AddInventoryModal = ({ onClose, onAdded }) => {
             }
         >
             <div className="space-y-3">
-                <Field label="Profil rapide">
+                <Field label="Profil rapide (code AT Fabrication / Trifab / Kawneer)">
                     <select
                         value=""
                         onChange={(e) => {
                             const p = PRESET_KEYS.find(x => x.key === e.target.value);
-                            if (p) { setProfileKey(p.key); setLength(p.len); }
+                            if (p) {
+                                setProfileKey(p.key);
+                                setLabel(p.desc);
+                                setLength(p.len);
+                            }
                         }}
                         className={inputClass}
+                        data-testid="inv-preset-select"
                     >
                         <option value="">— Choisir un préréglage —</option>
-                        {PRESET_KEYS.map((p) => <option key={p.key} value={p.key}>{p.key} ({p.len} mm)</option>)}
+                        <optgroup label="AT Fabrication — séries portes">
+                            {PRESET_KEYS.filter(p => p.key.startsWith("AT Fabrication")).map((p) =>
+                                <option key={p.key} value={p.key}>{p.desc} ({p.len} mm)</option>)}
+                        </optgroup>
+                        <optgroup label="Trifab — Flush Glaze">
+                            {PRESET_KEYS.filter(p => p.key.startsWith("Trifab")).map((p) =>
+                                <option key={p.key} value={p.key}>{p.desc} ({p.len} mm)</option>)}
+                        </optgroup>
+                        <optgroup label="Kawneer — Mur-rideau 1620">
+                            {PRESET_KEYS.filter(p => p.key.startsWith("Kawneer")).map((p) =>
+                                <option key={p.key} value={p.key}>{p.desc} ({p.len} mm)</option>)}
+                        </optgroup>
                     </select>
                 </Field>
-                <Field label="Profil (texte libre, OK)" required>
+                <Field label="Clé inventaire (doit correspondre au format optimiseur)" required>
                     <input value={profileKey} onChange={(e) => setProfileKey(e.target.value)} className={inputClass}
-                        placeholder="ex. AT2000 — tête 3 7/8&quot;" />
+                        placeholder="ex. AT Fabrication #ATT1005" />
+                </Field>
+                <Field label="Description (libre, affichée sous la clé)">
+                    <input value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass}
+                        placeholder="ex. ATT1005 — Tête 2¼ AT1000" />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
                     <Field label="Longueur (mm)" required>
@@ -203,8 +238,9 @@ const AddInventoryModal = ({ onClose, onAdded }) => {
                     </Field>
                 </div>
                 <div className="text-[11px] text-[#4b5d7a]">
-                    Standard Portech : portes en barres de <b>6800 mm</b> · Flush Glaze / Mur-rideau en barres de <b>7315 mm</b>.
+                    Standard Portech : portes AT en barres de <b>6800 mm</b> · Flush Glaze / Mur-rideau en barres de <b>7315 mm</b>.
                     Si une ligne identique existe déjà, la quantité est ajoutée (pas de doublon).
+                    <br /><b>Note :</b> l'extrusion <code>AT1000</code> sert à la fois pour la base AT1000 (3⅞") et la tête AT2000 (3⅞") — une seule ligne d'inventaire pour les deux usages.
                 </div>
             </div>
         </Modal>
