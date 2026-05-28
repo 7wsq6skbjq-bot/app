@@ -29,45 +29,68 @@ from uuid import uuid4
 # Per-series profile geometry
 # ===========================================================================
 
-# Top rail height (mm) — "tête" / "traverse haute"
+# ----- Top rail height (mm) -----
+# AT1000/ATi1000: 2¼" (ATT1005)
+# AT2000/ATi2000: 3⅞" (uses the AT1000 base profile = part "AT1000")
 TOP_RAIL_HEIGHT_MM = {
     "AT1000": 55.5,
-    "AT2000": 98.425,   # 3⅞"
+    "AT2000": 98.425,   # 3⅞" — same physical profile as AT1000 base ("AT1000")
     "ATI1000": 55.5,
     "ATI2000": 98.425,
     "AT1000-BASE-AT2000": 55.5,
 }
 
-# Bottom rail height (mm) — "base" / "traverse basse"
+# ----- Bottom rail height (mm) -----
+# AT1000/ATi1000: 3⅞" (part "AT1000")  ← CORRECTED 2026-05 from 2¼" to 3⅞"
+# AT2000/ATi2000: 6⅞" (part "AT2000")
 BASE_RAIL_HEIGHT_MM = {
-    "AT1000": 55.5,
-    "AT2000": 174.625,  # 6⅞"
-    "ATI1000": 55.5,
+    "AT1000": 98.425,   # 3⅞" — part "AT1000"
+    "AT2000": 174.625,  # 6⅞" — part "AT2000"
+    "ATI1000": 98.425,
     "ATI2000": 174.625,
-    "AT1000-BASE-AT2000": 174.625,  # hybrid : AT2000 base on AT1000 body
+    "AT1000-BASE-AT2000": 174.625,  # hybrid: AT2000 base on AT1000 body
 }
 
-# Hinge-side stile width (mm) — "jambage côté charnière"
+# ----- Hinge-side stile width (mm) — "jambage charnière" -----
 HINGE_STILE_WIDTH_MM = {
-    "AT1000": 50.8,
-    "AT2000": 88.9,     # 3½"
+    "AT1000": 50.8,     # 2" — part AT1025
+    "AT2000": 88.9,     # 3½" — part AT2025
     "ATI1000": 50.8,
     "ATI2000": 88.9,
     "AT1000-BASE-AT2000": 50.8,
 }
 
-# Lock-side stile width (mm) — "jambage côté serrure"
+# ----- Lock-side stile width (mm) — "jambage serrure" -----
 LOCK_STILE_WIDTH_MM = {
-    "AT1000": 53.975,
-    "AT2000": 92.075,   # 3⅝"
+    "AT1000": 53.975,   # 2⅛" — part AT1020
+    "AT2000": 92.075,   # 3⅝" — part AT2020
     "ATI1000": 53.975,
     "ATI2000": 92.075,
     "AT1000-BASE-AT2000": 53.975,
 }
 
-# Moulure (parclose) face width — what the user calls "largeur de la moulure".
-# Portech standard for parclose carrée 1/4" = 13.48 mm.
-MOULURE_FACE_WIDTH_MM = 13.48
+# ----- AT Fabrication part numbers per profile slot per series -----
+# Same profile slot can reference DIFFERENT extrusions depending on series.
+# Example: AT2000 "tête" (3⅞") is the SAME physical extrusion as AT1000 "base"
+# (also 3⅞") → both stamped "AT1000" by the manufacturer.
+PART_NUMBERS = {
+    "AT1000":      {"top": "ATT1005", "base": "AT1000",  "hinge": "AT1025", "lock": "AT1020"},
+    "AT2000":      {"top": "AT1000",  "base": "AT2000",  "hinge": "AT2025", "lock": "AT2020"},
+    "ATI1000":     {"top": "ATT1005", "base": "AT1000",  "hinge": "AT1025", "lock": "AT1020",
+                     "clad_v": "ATV1030", "clad_h": "ATCHA1035"},
+    "ATI2000":     {"top": "AT1000",  "base": "AT2000",  "hinge": "AT2025", "lock": "AT2020",
+                     "clad_v": "ATV2030", "clad_h": "ATCHA2025"},
+    "AT1000-BASE-AT2000": {"top": "ATT1005", "base": "AT2000", "hinge": "AT1025", "lock": "AT1020"},
+}
+
+# ----- Parclose (moulure) face width per glass type -----
+# Verre 6 mm        → moulure carrée 13.48 mm (comble l'écart pour 6mm dans une rainure de 25.4 mm)
+# Thermos 25.4 mm   → moulure plate 14.3 mm (le thermos comble lui-même la rainure)
+PARCLOSE_FACE_BY_GLASS_MM = {
+    6.0:  {"face": 13.48, "shape": "carrée", "label_suffix": "carrée vitrage 6mm"},
+    25.4: {"face": 14.3,  "shape": "plate",  "label_suffix": "plate vitrage thermos 25.4mm"},
+}
+MOULURE_FACE_WIDTH_MM = 13.48  # Legacy default kept for back-compat in tests.
 
 # Cladding piece (ATi insulated only) — clad pieces are 5.7 mm shorter on each
 # axis than the leaf itself (per official AT DXF).
