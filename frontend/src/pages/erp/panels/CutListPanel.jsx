@@ -427,6 +427,28 @@ export const CutListPanel = () => {
         }
     };
 
+    const exportLabels = () => {
+        if (!editing?.id) return;
+        const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+        const token = encodeURIComponent(getToken() || "");
+        const url = `${base}/api/admin/cuts/${editing.id}/labels.pdf?token=${token}`;
+        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) window.location.href = url; else window.open(url, "_blank");
+    };
+
+    const confirmCut = async () => {
+        if (!editing?.id) return;
+        if (!window.confirm("Confirmer que les coupes ont été effectuées ?\n\nCette action déduit les barres utilisées du stock et archive les chutes ≥ 600 mm.\n\nAprès confirmation, vous pouvez annuler depuis le détail de la liste.")) return;
+        try {
+            const { data } = await http.post(`/admin/cuts/${editing.id}/confirm`, {});
+            alert(data.message);
+            setEditing((prev) => ({ ...prev, cut_status: "cut", cuts_confirmed_at: new Date().toISOString() }));
+            await load();
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur lors de la confirmation");
+        }
+    };
+
     return (
         <div data-testid="cuts-panel" className="space-y-6">
             <div className="hidden md:block">
@@ -782,6 +804,23 @@ export const CutListPanel = () => {
                             <button onClick={exportPdf} data-testid="cuts-export-pdf" className="px-4 py-2 border border-[#0c182b] text-[#0c182b] tech-stamp flex items-center gap-2 hover:bg-[#f3f6fb]">
                                 <FileDown className="w-4 h-4" /> PDF atelier
                             </button>
+                            {editing?.id && (
+                                <button onClick={exportLabels} data-testid="cuts-export-labels"
+                                    className="px-4 py-2 border border-[#0c182b] text-[#0c182b] tech-stamp flex items-center gap-2 hover:bg-[#f3f6fb]">
+                                    <FileDown className="w-4 h-4" /> Étiquettes
+                                </button>
+                            )}
+                            {editing?.id && editing?.cut_status !== "cut" && (
+                                <button onClick={confirmCut} data-testid="cuts-confirm"
+                                    className="px-4 py-2 border-2 border-[#0b6b2f] text-[#0b6b2f] tech-stamp flex items-center gap-2 hover:bg-[#e6f4ea] font-bold">
+                                    ✓ Confirmer coupes effectuées
+                                </button>
+                            )}
+                            {editing?.cut_status === "cut" && (
+                                <span data-testid="cuts-confirmed-badge" className="px-3 py-2 bg-[#e6f4ea] text-[#0b6b2f] tech-stamp text-xs border border-[#0b6b2f] font-bold">
+                                    ✓ Coupes confirmées — chutes archivées
+                                </span>
+                            )}
                         </div>
 
                         {/* Optimization result */}

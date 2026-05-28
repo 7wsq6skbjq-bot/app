@@ -330,6 +330,10 @@ async def delete_submission(submission_id: str, _: AdminUser = Depends(get_curre
 # Mount ERP (customers/products/invoices/POs/BOLs) under the /api/admin prefix.
 api_router.include_router(build_erp_router(db, get_current_admin))
 
+# Atelier — inventory + cut confirmation + label sheets.
+from atelier_routes import build_atelier_router  # noqa: E402
+api_router.include_router(build_atelier_router(auth_dep=get_current_admin, get_db=lambda: db))
+
 app.include_router(api_router)
 
 app.add_middleware(
