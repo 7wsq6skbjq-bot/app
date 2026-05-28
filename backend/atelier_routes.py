@@ -156,7 +156,7 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
                            db: AsyncIOMotorDatabase = Depends(get_db)):
         """Mark the cut list as physically cut. Deduct bars used + add reusable
         chutes (≥ 600 mm) back to the inventory."""
-        cl = await db.cut_lists.find_one({"id": cut_id}, {"_id": 0})
+        cl = await db.erp_cut_lists.find_one({"id": cut_id}, {"_id": 0})
         if not cl:
             raise HTTPException(404, "Liste de coupe introuvable.")
         if cl.get("cut_status") == "cut":
@@ -225,7 +225,7 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
                 chutes_added += 1
 
         # Lock the cut list
-        await db.cut_lists.update_one(
+        await db.erp_cut_lists.update_one(
             {"id": cut_id},
             {"$set": {
                 "cut_status": "cut",
@@ -249,10 +249,10 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
         """Mark the cut list as DRAFT again (rollback the lock — does NOT
         re-credit deducted bars or remove created chutes; user can adjust
         inventory manually if needed)."""
-        cl = await db.cut_lists.find_one({"id": cut_id}, {"_id": 0})
+        cl = await db.erp_cut_lists.find_one({"id": cut_id}, {"_id": 0})
         if not cl:
             raise HTTPException(404, "Liste de coupe introuvable.")
-        await db.cut_lists.update_one(
+        await db.erp_cut_lists.update_one(
             {"id": cut_id},
             {"$set": {"cut_status": "draft", "updated_at": _ts()},
              "$unset": {"cuts_confirmed_at": ""}},
@@ -264,7 +264,7 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
     async def labels_pdf(cut_id: str,
                           _: dict = Depends(auth_dep),
                           db: AsyncIOMotorDatabase = Depends(get_db)):
-        cl = await db.cut_lists.find_one({"id": cut_id}, {"_id": 0})
+        cl = await db.erp_cut_lists.find_one({"id": cut_id}, {"_id": 0})
         if not cl:
             raise HTTPException(404, "Liste de coupe introuvable.")
         pdf = _render_labels_pdf(cl)
