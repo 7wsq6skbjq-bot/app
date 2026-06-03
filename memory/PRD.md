@@ -27,7 +27,15 @@ User language: **French**.
 - ✅ Aluminum profile catalog + inventory bars + "Confirm cuts" deduction
 - ✅ PWA auto-update banner (Windows caching fix)
 - ✅ **AT door breakdown : exact AT Fabrication part numbers + glass-dependent
-      parclose** (this session, 2026-02)
+      parclose** (2026-02)
+- ✅ **Inventory finishes (clair/noir) + min/max thresholds + Purchase-Order
+      PDF + filter chips + status badges** (2026-06)
+    - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
+    - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
+      `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`
+    - Cut confirm deducts from `cl.finish` preferred row, falls back to any
+    - `_normalize_row` migrates legacy rows (defaults `finish=clair`)
+    - 13 new pytest cases (test_alu_inventory.py) — 155/155 total green
     - AT1000 base = 3⅞" (extrusion "AT1000", same as AT2000 head)
     - 6 mm glass → parclose carrée 13.48 mm
     - 25.4 mm thermos → parclose plate 14.3 mm
