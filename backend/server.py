@@ -149,8 +149,18 @@ async def get_current_admin(request: Request) -> AdminUser:
 
 
 async def seed_admin() -> None:
-    username = os.environ.get("ADMIN_USERNAME", "PortechAdmin")
-    password = os.environ.get("ADMIN_PASSWORD", "admin")
+    # Strip whitespace defensively — env vars sometimes get a stray space or
+    # newline depending on how they were entered in the deployment dashboard.
+    username = (os.environ.get("ADMIN_USERNAME") or "").strip()
+    password = (os.environ.get("ADMIN_PASSWORD") or "").strip()
+    if not username or not password:
+        # Fail fast instead of seeding an admin with the silent default password.
+        # The previous fallback ("admin") created an admin nobody knew about and
+        # caused recurring 401s on production when the env vars weren't set.
+        raise RuntimeError(
+            "ADMIN_USERNAME and ADMIN_PASSWORD must be set in the environment. "
+            "Refusing to seed an admin with a default password."
+        )
     existing = await db.admin_users.find_one({"username": username})
     if not existing:
         await db.admin_users.insert_one(
@@ -161,13 +171,15 @@ async def seed_admin() -> None:
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
         )
-        logger.info("Seeded admin user: %s", username)
+        logger.info("Seeded admin user %s (new account)", username)
     elif not verify_password(password, existing.get("password_hash", "")):
         await db.admin_users.update_one(
             {"username": username},
             {"$set": {"password_hash": hash_password(password)}},
         )
-        logger.info("Rehashed admin password for: %s", username)
+        logger.info("Admin %s : password rehashed to match ADMIN_PASSWORD env var", username)
+    else:
+        logger.info("Admin %s : ready (password verified)", username)
 
 
 # ==============================================================
