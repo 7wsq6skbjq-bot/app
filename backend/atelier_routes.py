@@ -72,6 +72,22 @@ class InventoryMetaIn(BaseModel):
     profile_key: str | None = Field(default=None, min_length=1, max_length=120)
 
 
+class InventoryBulkThresholdsIn(BaseModel):
+    """Apply restock_min / restock_max to many rows in one shot.
+    Filters control WHICH rows are touched:
+      - finish: 'clair' | 'noir' | None (both)
+      - is_chute: bool (default False → only full bars)
+      - profile_key_prefix: e.g. 'AT Fabrication' to scope to one manufacturer
+    `restock_min` / `restock_max`: set both; pass None to clear that field."""
+    restock_min: int | None = Field(default=None, ge=0)
+    restock_max: int | None = Field(default=None, ge=0)
+    finish: str | None = Field(default=None)
+    is_chute: bool = Field(default=False)
+    profile_key_prefix: str | None = Field(default=None, max_length=120)
+    clear_min: bool = Field(default=False)
+    clear_max: bool = Field(default=False)
+
+
 # ===========================================================================
 # Helpers
 # ===========================================================================
@@ -209,6 +225,51 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
             update["$unset"] = unset_fields
         await coll.update_one({"id": row_id}, update)
         return _normalize_row(await coll.find_one({"id": row_id}, {"_id": 0}))
+
+    @router.patch("/alu-inventory-bulk-thresholds")
+    async def bulk_thresholds(payload: InventoryBulkThresholdsIn,
+                                _: dict = Depends(auth_dep),
+                                db: AsyncIOMotorDatabase = Depends(get_db)):
+        """Apply restock_min and/or restock_max to a slice of rows.
+
+        Useful for "set everything in the noir finish to min=2, max=8" in one
+        click. Returns how many rows were touched + the new normalized rows.
+        Pass `clear_min=True` to wipe restock_min on the slice (same for max).
+        """
+        coll = await _stock_collection(db)
+        query: dict = {"is_chute": payload.is_chute}
+        if payload.finish in FINISHES:
+            query["finish"] = payload.finish
+        if payload.profile_key_prefix:
+            # Regex anchored at the start, escaped for safety
+            import re
+            query["profile_key"] = {"$regex": f"^{re.escape(payload.profile_key_prefix)}"}
+
+        set_fields: dict = {"updated_at": _ts()}
+        unset_fields: dict = {}
+        if payload.clear_min:
+            unset_fields["restock_min"] = ""
+            unset_fields["restock_threshold"] = ""  # legacy
+        elif payload.restock_min is not None:
+            set_fields["restock_min"] = payload.restock_min
+        if payload.clear_max:
+            unset_fields["restock_max"] = ""
+        elif payload.restock_max is not None:
+            set_fields["restock_max"] = payload.restock_max
+
+        # No-op guard: if nothing to change, return early
+        if len(set_fields) == 1 and not unset_fields:
+            raise HTTPException(400, "Aucune modification — fournir min/max ou clear_*.")
+
+        update: dict = {"$set": set_fields}
+        if unset_fields:
+            update["$unset"] = unset_fields
+        result = await coll.update_many(query, update)
+        return {
+            "matched": result.matched_count,
+            "modified": result.modified_count,
+            "filter": query,
+        }
 
     @router.patch("/alu-inventory/{row_id}/meta")
     async def set_meta(row_id: str, payload: InventoryMetaIn,
@@ -387,13 +448,16 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
     @router.get("/alu-inventory/purchase-order.pdf")
     async def purchase_order_pdf(
         finish: str | None = Query(default=None, description="clair | noir | None=both"),
+        stealth: int = Query(default=0, description="1 = remove Portech branding"),
         _: dict = Depends(auth_dep),
         db: AsyncIOMotorDatabase = Depends(get_db),
     ):
         """Generate a supplier-ready PDF listing every inventory row at or
         below its restock_min, with the qty needed to reach restock_max
-        (or the min if no max is set). Groups by manufacturer (parsed from
-        the profile_key prefix)."""
+        (or the min if no max is set). When `stealth=1`, the company branding
+        and any reference to Portech is removed — only the bare purchase-order
+        table remains. Useful when the buyer doesn't want the supplier or a
+        third party to identify the source app."""
         coll = await _stock_collection(db)
         rows = await coll.find({"is_chute": False}, {"_id": 0}).to_list(2000)
         rows = [_normalize_row(r) for r in rows]
@@ -410,11 +474,11 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
             target = r.get("restock_max") if r.get("restock_max") is not None else rmin
             to_order = max(0, int(target) - qty)
             if to_order <= 0:
-                to_order = 1  # always at least 1 if we're at/below min
+                to_order = 1
             items_to_order.append({**r, "to_order": to_order, "target": target})
         items_to_order.sort(key=lambda x: (x.get("profile_key") or "").lower())
-        pdf = _render_purchase_order_pdf(items_to_order, finish_filter=finish)
-        suffix = finish or "tous"
+        pdf = _render_purchase_order_pdf(items_to_order, finish_filter=finish, stealth=bool(stealth))
+        suffix = f"{finish or 'tous'}{'-anon' if stealth else ''}"
         return Response(
             content=pdf,
             media_type="application/pdf",
@@ -528,7 +592,7 @@ def _ascii(s) -> str:
 # ===========================================================================
 # Purchase-order PDF rendering (one printable sheet sent to the supplier)
 # ===========================================================================
-def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = None) -> bytes:
+def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = None, stealth: bool = False) -> bytes:
     """Render a printable purchase-order PDF.
 
     Layout (when no finish filter is applied):
@@ -564,7 +628,8 @@ def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = No
         c.rect(0, page_h - 22 * mm, page_w, 22 * mm, fill=True, stroke=False)
         c.setFillColor(colors.white)
         c.setFont("Helvetica-Bold", 16)
-        c.drawString(15 * mm, page_h - 12 * mm, "PORTECH — Bon de commande aluminium")
+        title = "Bon de commande aluminium" if stealth else "PORTECH — Bon de commande aluminium"
+        c.drawString(15 * mm, page_h - 12 * mm, title)
         c.setFont("Helvetica", 9)
         scope = (finish_filter or "tous").upper()
         c.drawString(15 * mm, page_h - 18 * mm, f"Date : {today}   |   Fini : {scope}")

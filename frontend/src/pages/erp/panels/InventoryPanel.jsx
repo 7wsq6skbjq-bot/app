@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Plus, Trash2, Minus, RefreshCw, Boxes, Scissors as ScissorsIcon,
-    Download, AlertTriangle, Pencil,
+    Download, AlertTriangle, Pencil, EyeOff, SlidersHorizontal,
 } from "lucide-react";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { useAuth } from "@/context/AuthContext";
@@ -65,6 +65,7 @@ export const InventoryPanel = () => {
     const [filterFinish, setFilterFinish] = useState("all"); // all | clair | noir
     const [editingThresholds, setEditingThresholds] = useState(null);
     const [editingMeta, setEditingMeta] = useState(null);
+    const [bulkOpen, setBulkOpen] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -93,11 +94,12 @@ export const InventoryPanel = () => {
         catch (e) { alert(e?.response?.data?.detail || "Erreur"); }
     };
 
-    const downloadPurchaseOrder = () => {
+    const downloadPurchaseOrder = (stealth = false) => {
         const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
         const token = encodeURIComponent(getToken() || "");
         const finishQ = filterFinish !== "all" ? `&finish=${filterFinish}` : "";
-        const url = `${base}/api/admin/alu-inventory/purchase-order.pdf?token=${token}${finishQ}`;
+        const stealthQ = stealth ? "&stealth=1" : "";
+        const url = `${base}/api/admin/alu-inventory/purchase-order.pdf?token=${token}${finishQ}${stealthQ}`;
         const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) window.location.href = url; else window.open(url, "_blank");
     };
@@ -119,10 +121,20 @@ export const InventoryPanel = () => {
                 <button onClick={load} className="ml-auto btn-secondary !py-1.5 !px-3 !text-xs">
                     <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Rafraîchir
                 </button>
-                <button onClick={downloadPurchaseOrder} data-testid="inv-po-pdf"
+                <button onClick={() => setBulkOpen(true)} data-testid="inv-bulk-thresholds"
+                    className="btn-secondary !py-1.5 !px-3 !text-xs"
+                    title="Définir min/max sur plusieurs lignes d'un coup">
+                    <SlidersHorizontal className="w-3.5 h-3.5" /> Min/Max en lot
+                </button>
+                <button onClick={() => downloadPurchaseOrder(false)} data-testid="inv-po-pdf"
                     className="btn-secondary !py-1.5 !px-3 !text-xs"
                     title="Télécharger un bon de commande pour les pièces sous le minimum">
                     <Download className="w-3.5 h-3.5" /> Bon de commande PDF
+                </button>
+                <button onClick={() => downloadPurchaseOrder(true)} data-testid="inv-po-pdf-stealth"
+                    className="btn-secondary !py-1.5 !px-3 !text-xs"
+                    title="PDF anonyme : aucune mention de Portech ni signature, juste le tableau de commande">
+                    <EyeOff className="w-3.5 h-3.5" /> PDF anonymisé
                 </button>
                 <button onClick={() => setAddOpen(true)} data-testid="inv-add" className="btn-primary !py-1.5 !px-3 !text-xs">
                     <Plus className="w-3.5 h-3.5" /> Ajouter
@@ -180,6 +192,11 @@ export const InventoryPanel = () => {
             {editingMeta && (
                 <EditMetaModal row={editingMeta}
                     onClose={() => setEditingMeta(null)}
+                    onSaved={load} />
+            )}
+            {bulkOpen && (
+                <BulkThresholdsModal currentFilter={filterFinish}
+                    onClose={() => setBulkOpen(false)}
                     onSaved={load} />
             )}
         </div>
@@ -616,6 +633,109 @@ const EditMetaModal = ({ row, onClose, onSaved }) => {
                     ⚠ Modifier la clé peut casser la déduction automatique au "Confirmer coupes"
                     si une liste de coupe est en cours et référence l'ancienne clé. La description
                     libre est sans risque — change-la pour corriger une coquille.
+                </div>
+            </div>
+        </Modal>
+    );
+};
+
+
+const BulkThresholdsModal = ({ currentFilter, onClose, onSaved }) => {
+    const { http } = useAuth();
+    const [scope, setScope] = useState(currentFilter === "all" ? "all" : currentFilter);
+    const [prefix, setPrefix] = useState("");
+    const [rmin, setRmin] = useState("");
+    const [rmax, setRmax] = useState("");
+    const [busy, setBusy] = useState(false);
+
+    const apply = async () => {
+        if (rmin === "" && rmax === "") {
+            alert("Renseigne au moins Min ou Max.");
+            return;
+        }
+        const payload = {
+            is_chute: false,
+            restock_min: rmin === "" ? null : parseInt(rmin, 10),
+            restock_max: rmax === "" ? null : parseInt(rmax, 10),
+            finish: scope === "all" ? null : scope,
+            profile_key_prefix: prefix.trim() || null,
+        };
+        setBusy(true);
+        try {
+            const { data } = await http.patch("/admin/alu-inventory-bulk-thresholds", payload);
+            await onSaved();
+            alert(`${data.modified} ligne(s) mise(s) à jour sur ${data.matched} correspondance(s).`);
+            onClose();
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur");
+        } finally { setBusy(false); }
+    };
+
+    return (
+        <Modal
+            open
+            onClose={onClose}
+            title="Min / Max en lot"
+            testId="inv-bulk-modal"
+            footer={
+                <>
+                    <button onClick={onClose} className="px-4 py-2 border border-[#dde5f0] tech-stamp">Annuler</button>
+                    <button onClick={apply} disabled={busy} data-testid="inv-bulk-apply" className="px-4 py-2 bg-[#0c182b] text-white tech-stamp">
+                        {busy ? "Application…" : "Appliquer"}
+                    </button>
+                </>
+            }
+        >
+            <div className="space-y-3">
+                <Field label="Sur quelles lignes appliquer ?">
+                    <div className="flex gap-2 flex-wrap">
+                        {[
+                            { v: "all", label: "Tout" },
+                            { v: "clair", label: "Clair seulement" },
+                            { v: "noir", label: "Noir seulement" },
+                        ].map((opt) => (
+                            <button
+                                key={opt.v}
+                                type="button"
+                                onClick={() => setScope(opt.v)}
+                                data-testid={`inv-bulk-scope-${opt.v}`}
+                                className={`px-3 py-1.5 border tech-stamp text-xs transition-colors ${
+                                    scope === opt.v
+                                        ? "border-[#0c182b] bg-[#0c182b] text-white"
+                                        : "border-[#dde5f0] text-[#4b5d7a] hover:bg-[#f3f6fb]"
+                                }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                </Field>
+                <Field label="Filtrer par fournisseur (optionnel)">
+                    <select value={prefix} onChange={(e) => setPrefix(e.target.value)} className={inputClass}
+                        data-testid="inv-bulk-prefix">
+                        <option value="">— Tous les fournisseurs —</option>
+                        <option value="AT Fabrication">AT Fabrication seulement</option>
+                        <option value="Trifab">Trifab seulement</option>
+                        <option value="Kawneer">Kawneer seulement</option>
+                    </select>
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                    <Field label="Nouveau Min (laisse vide pour ne pas toucher)">
+                        <input type="number" min="0" value={rmin}
+                            onChange={(e) => setRmin(e.target.value)}
+                            data-testid="inv-bulk-min"
+                            className={inputClass} placeholder="ex. 2" />
+                    </Field>
+                    <Field label="Nouveau Max (laisse vide pour ne pas toucher)">
+                        <input type="number" min="0" value={rmax}
+                            onChange={(e) => setRmax(e.target.value)}
+                            data-testid="inv-bulk-max"
+                            className={inputClass} placeholder="ex. 8" />
+                    </Field>
+                </div>
+                <div className="text-[11px] text-[#4b5d7a] bg-[#f3f6fb] border border-[#dde5f0] p-2">
+                    🛈 Cette action écrase les seuils existants sur toutes les lignes sélectionnées.
+                    Tu pourras toujours les ajuster ligne par ligne après avec le crayon dans le tableau.
                 </div>
             </div>
         </Modal>
