@@ -414,15 +414,15 @@ const AddInventoryModal = ({ onClose, onAdded }) => {
                         <option value="">— Choisir un préréglage —</option>
                         <optgroup label="AT Fabrication — séries portes">
                             {PRESET_KEYS.filter(p => p.key.startsWith("AT Fabrication")).map((p) =>
-                                <option key={p.key} value={p.key}>{p.desc} ({p.len} mm)</option>)}
+                                <option key={p.key} value={p.key}>{`${p.desc} (${p.len} mm)`}</option>)}
                         </optgroup>
                         <optgroup label="Trifab — Flush Glaze">
                             {PRESET_KEYS.filter(p => p.key.startsWith("Trifab")).map((p) =>
-                                <option key={p.key} value={p.key}>{p.desc} ({p.len} mm)</option>)}
+                                <option key={p.key} value={p.key}>{`${p.desc} (${p.len} mm)`}</option>)}
                         </optgroup>
                         <optgroup label="Kawneer — Mur-rideau 1620">
                             {PRESET_KEYS.filter(p => p.key.startsWith("Kawneer")).map((p) =>
-                                <option key={p.key} value={p.key}>{p.desc} ({p.len} mm)</option>)}
+                                <option key={p.key} value={p.key}>{`${p.desc} (${p.len} mm)`}</option>)}
                         </optgroup>
                     </select>
                 </Field>
