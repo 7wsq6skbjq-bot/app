@@ -25,7 +25,7 @@ import uuid
 from datetime import datetime, timezone
 from io import BytesIO
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 from reportlab.lib import colors
@@ -38,6 +38,10 @@ logger = logging.getLogger("portech.atelier")
 MIN_USEFUL_CHUTE_MM = 600.0
 
 
+FINISHES = ("clair", "noir")
+DEFAULT_FINISH = "clair"
+
+
 # ===========================================================================
 # Pydantic models
 # ===========================================================================
@@ -47,11 +51,18 @@ class InventoryRowIn(BaseModel):
     bar_length_mm: float = Field(..., gt=0)
     qty_available: int = Field(..., ge=0)
     is_chute: bool = False
-    restock_threshold: int | None = Field(default=None, ge=0)
+    finish: str = Field(default=DEFAULT_FINISH)
+    restock_min: int | None = Field(default=None, ge=0)
+    restock_max: int | None = Field(default=None, ge=0)
 
 
 class InventoryAdjust(BaseModel):
     delta: int  # positive = add, negative = remove
+
+
+class InventoryThresholdsIn(BaseModel):
+    restock_min: int | None = Field(default=None, ge=0)
+    restock_max: int | None = Field(default=None, ge=0)
 
 
 # ===========================================================================
@@ -88,43 +99,70 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
     router = APIRouter(prefix="/admin", tags=["atelier"])
 
     # ─── Inventory CRUD ────────────────────────────────────────────────────
+    def _normalize_row(r: dict) -> dict:
+        """Ensure backward-compat fields exist on every row served to the UI."""
+        r.setdefault("finish", DEFAULT_FINISH)
+        # Legacy field: restock_threshold → restock_min
+        if "restock_min" not in r and r.get("restock_threshold") is not None:
+            r["restock_min"] = r["restock_threshold"]
+        r.setdefault("restock_min", None)
+        r.setdefault("restock_max", None)
+        return r
+
     @router.get("/alu-inventory")
     async def list_inventory(_: dict = Depends(auth_dep),
                               db: AsyncIOMotorDatabase = Depends(get_db)):
         coll = await _stock_collection(db)
         rows = await coll.find({}, {"_id": 0}).sort("profile_key", 1).to_list(2000)
-        # Group: full bars vs chutes for clarity
+        rows = [_normalize_row(r) for r in rows]
         full = [r for r in rows if not r.get("is_chute")]
         chutes = [r for r in rows if r.get("is_chute")]
-        return {"bars": full, "chutes": chutes, "total_rows": len(rows)}
+        # Quick summary counts to feed the "ludique" header in the UI
+        finishes_count = {f: sum(1 for r in full if r.get("finish") == f) for f in FINISHES}
+        below_min = sum(
+            1 for r in full
+            if r.get("restock_min") is not None
+            and (r.get("qty_available", 0) or 0) <= (r.get("restock_min") or 0)
+        )
+        return {
+            "bars": full, "chutes": chutes, "total_rows": len(rows),
+            "finishes_count": finishes_count, "below_min": below_min,
+        }
 
     @router.post("/alu-inventory", status_code=201)
     async def add_inventory(payload: InventoryRowIn,
                              _: dict = Depends(auth_dep),
                              db: AsyncIOMotorDatabase = Depends(get_db)):
         coll = await _stock_collection(db)
-        # Merge with existing identical row (same key + bar length + chute flag)
+        finish = payload.finish if payload.finish in FINISHES else DEFAULT_FINISH
+        # Merge with existing identical row (same key + bar length + chute flag + finish)
         existing = await coll.find_one({
             "profile_key": payload.profile_key,
             "bar_length_mm": payload.bar_length_mm,
             "is_chute": payload.is_chute,
+            "finish": finish,
         }, {"_id": 0})
         if existing:
+            set_fields = {"updated_at": _ts()}
+            if payload.restock_min is not None:
+                set_fields["restock_min"] = payload.restock_min
+            if payload.restock_max is not None:
+                set_fields["restock_max"] = payload.restock_max
             await coll.update_one(
                 {"id": existing["id"]},
                 {"$inc": {"qty_available": payload.qty_available},
-                 "$set": {"updated_at": _ts(),
-                          "restock_threshold": payload.restock_threshold or existing.get("restock_threshold")}},
+                 "$set": set_fields},
             )
-            return await coll.find_one({"id": existing["id"]}, {"_id": 0})
+            return _normalize_row(await coll.find_one({"id": existing["id"]}, {"_id": 0}))
         doc = {
             "id": str(uuid.uuid4()),
             **payload.model_dump(),
+            "finish": finish,
             "created_at": _ts(),
             "updated_at": _ts(),
         }
         await coll.insert_one(doc)
-        return {k: v for k, v in doc.items() if k != "_id"}
+        return _normalize_row({k: v for k, v in doc.items() if k != "_id"})
 
     @router.patch("/alu-inventory/{row_id}")
     async def adjust_inventory(row_id: str, payload: InventoryAdjust,
@@ -137,7 +175,33 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
         new_qty = max(0, int(row.get("qty_available", 0)) + payload.delta)
         await coll.update_one({"id": row_id},
                                {"$set": {"qty_available": new_qty, "updated_at": _ts()}})
-        return await coll.find_one({"id": row_id}, {"_id": 0})
+        return _normalize_row(await coll.find_one({"id": row_id}, {"_id": 0}))
+
+    @router.patch("/alu-inventory/{row_id}/thresholds")
+    async def set_thresholds(row_id: str, payload: InventoryThresholdsIn,
+                              _: dict = Depends(auth_dep),
+                              db: AsyncIOMotorDatabase = Depends(get_db)):
+        """Set / unset the restock min and max for a single inventory row."""
+        coll = await _stock_collection(db)
+        row = await coll.find_one({"id": row_id}, {"_id": 0})
+        if not row:
+            raise HTTPException(404, "Ligne d'inventaire introuvable.")
+        set_fields = {"updated_at": _ts()}
+        unset_fields = {}
+        if payload.restock_min is None:
+            unset_fields["restock_min"] = ""
+            unset_fields["restock_threshold"] = ""  # also clear legacy field
+        else:
+            set_fields["restock_min"] = payload.restock_min
+        if payload.restock_max is None:
+            unset_fields["restock_max"] = ""
+        else:
+            set_fields["restock_max"] = payload.restock_max
+        update = {"$set": set_fields}
+        if unset_fields:
+            update["$unset"] = unset_fields
+        await coll.update_one({"id": row_id}, update)
+        return _normalize_row(await coll.find_one({"id": row_id}, {"_id": 0}))
 
     @router.delete("/alu-inventory/{row_id}", status_code=204)
     async def delete_inventory(row_id: str,
@@ -170,24 +234,40 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
         bars_deducted = 0
         chutes_added = 0
         reports: list[dict] = []
+        # Cut list may carry a default finish — use it to deduct from the right
+        # color stock. Fallback: "clair" (most common).
+        cut_finish = (cl.get("finish") or DEFAULT_FINISH).lower()
+        if cut_finish not in FINISHES:
+            cut_finish = DEFAULT_FINISH
         for grp in groups:
             profile_key = grp.get("profile") or "Inconnu"
             material = grp.get("material") or "—"
             plan = grp.get("plan") or {}
             bars_count = int(plan.get("bars_count") or 0)
             bar_length = float(plan.get("stock_length_mm") or 0)
-            # Try to find matching stock row (same key + length, NOT a chute).
+            # Try to find matching stock row in the requested finish first;
+            # fall back to ANY finish if not found, then ANY length.
             row = await coll.find_one({
                 "profile_key": profile_key,
                 "bar_length_mm": bar_length,
                 "is_chute": False,
+                "finish": cut_finish,
             })
+            if not row:
+                row = await coll.find_one({
+                    "profile_key": profile_key,
+                    "bar_length_mm": bar_length,
+                    "is_chute": False,
+                })
             if row:
                 new_qty = max(0, int(row.get("qty_available", 0)) - bars_count)
                 await coll.update_one({"id": row["id"]},
                                        {"$set": {"qty_available": new_qty, "updated_at": _ts()}})
                 bars_deducted += bars_count
-                reports.append({"profile_key": profile_key, "deducted": bars_count, "remaining": new_qty})
+                reports.append({
+                    "profile_key": profile_key, "finish": row.get("finish"),
+                    "deducted": bars_count, "remaining": new_qty,
+                })
             else:
                 reports.append({"profile_key": profile_key, "deducted": 0,
                                 "warning": f"Stock non trouvé pour barre {bar_length:.0f} mm (déduction ignorée)."})
@@ -205,6 +285,7 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
                     "profile_key": profile_key,
                     "bar_length_mm": chute_len,
                     "is_chute": True,
+                    "finish": cut_finish,
                 })
                 if existing:
                     await coll.update_one({"id": existing["id"]},
@@ -218,6 +299,7 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
                         "bar_length_mm": chute_len,
                         "qty_available": 1,
                         "is_chute": True,
+                        "finish": cut_finish,
                         "parent_cut_list_id": cut_id,
                         "created_at": _ts(),
                         "updated_at": _ts(),
@@ -272,6 +354,44 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
             content=pdf,
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="etiquettes-{cut_id[:8]}.pdf"'},
+        )
+
+    # ─── Purchase-order PDF (inventory restock) ───────────────────────────
+    @router.get("/alu-inventory/purchase-order.pdf")
+    async def purchase_order_pdf(
+        finish: str | None = Query(default=None, description="clair | noir | None=both"),
+        _: dict = Depends(auth_dep),
+        db: AsyncIOMotorDatabase = Depends(get_db),
+    ):
+        """Generate a supplier-ready PDF listing every inventory row at or
+        below its restock_min, with the qty needed to reach restock_max
+        (or the min if no max is set). Groups by manufacturer (parsed from
+        the profile_key prefix)."""
+        coll = await _stock_collection(db)
+        rows = await coll.find({"is_chute": False}, {"_id": 0}).to_list(2000)
+        rows = [_normalize_row(r) for r in rows]
+        if finish in FINISHES:
+            rows = [r for r in rows if r.get("finish") == finish]
+        items_to_order = []
+        for r in rows:
+            rmin = r.get("restock_min")
+            if rmin is None:
+                continue
+            qty = int(r.get("qty_available") or 0)
+            if qty > rmin:
+                continue
+            target = r.get("restock_max") if r.get("restock_max") is not None else rmin
+            to_order = max(0, int(target) - qty)
+            if to_order <= 0:
+                to_order = 1  # always at least 1 if we're at/below min
+            items_to_order.append({**r, "to_order": to_order, "target": target})
+        items_to_order.sort(key=lambda x: (x.get("profile_key") or "").lower())
+        pdf = _render_purchase_order_pdf(items_to_order, finish_filter=finish)
+        suffix = finish or "tous"
+        return Response(
+            content=pdf,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="bon-commande-alu-{suffix}.pdf"'},
         )
 
     return router
@@ -375,3 +495,145 @@ def _ascii(s) -> str:
         out.append(_ASCII_REPLACE.get(ch, ch))
     s2 = "".join(out)
     return "".join(c if ord(c) < 128 else "?" for c in s2)
+
+
+
+# ===========================================================================
+# Purchase-order PDF rendering (one printable sheet sent to the supplier)
+# ===========================================================================
+def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = None) -> bytes:
+    """Render a printable purchase-order PDF grouped by manufacturer.
+
+    `items` already contains only rows at/below their restock_min, each with
+    `to_order` and `target` precomputed. Rows are grouped by the manufacturer
+    parsed from the profile_key (everything before " #" → "AT Fabrication",
+    "Trifab", "Kawneer", or "Divers" if none).
+    """
+    from reportlab.pdfgen import canvas
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=LETTER)
+    page_w, page_h = LETTER
+    today = _ts().strftime("%Y-%m-%d")
+
+    # Group by manufacturer prefix
+    grouped: dict[str, list[dict]] = {}
+    for it in items:
+        key = (it.get("profile_key") or "Divers")
+        manuf = key.split(" #")[0].strip() if " #" in key else "Divers"
+        grouped.setdefault(manuf, []).append(it)
+
+    # ─── Header ─────────────────────────────────────────────────────────
+    def draw_header(c):
+        c.setFillColor(colors.HexColor("#0c182b"))
+        c.rect(0, page_h - 22 * mm, page_w, 22 * mm, fill=True, stroke=False)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(15 * mm, page_h - 12 * mm, "PORTECH — Bon de commande aluminium")
+        c.setFont("Helvetica", 9)
+        c.drawString(15 * mm, page_h - 18 * mm,
+                     f"Date : {today}   |   Fini : {(finish_filter or 'tous').upper()}")
+        c.setFillColor(colors.black)
+
+    draw_header(c)
+
+    if not items:
+        c.setFont("Helvetica", 14)
+        c.setFillColor(colors.HexColor("#22a06b"))
+        c.drawCentredString(page_w / 2, page_h / 2 + 20,
+                            "Aucune commande nécessaire — tout le stock est au-dessus du minimum.")
+        c.showPage()
+        c.save()
+        return buf.getvalue()
+
+    y = page_h - 32 * mm
+    line_h = 7 * mm
+    bottom_margin = 25 * mm
+
+    def new_page():
+        nonlocal y
+        c.showPage()
+        draw_header(c)
+        y = page_h - 32 * mm
+
+    def draw_table_header():
+        nonlocal y
+        c.setFillColor(colors.HexColor("#f3f6fb"))
+        c.rect(15 * mm, y - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
+        c.setFillColor(colors.HexColor("#4b5d7a"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(17 * mm, y + 1.5, "PIECE")
+        c.drawString(95 * mm, y + 1.5, "FINI")
+        c.drawString(115 * mm, y + 1.5, "LONGUEUR")
+        c.drawString(140 * mm, y + 1.5, "QTE STOCK")
+        c.drawString(165 * mm, y + 1.5, "MIN / MAX")
+        c.drawRightString(page_w - 17 * mm, y + 1.5, "A COMMANDER")
+        c.setFillColor(colors.black)
+        y -= line_h
+
+    for manuf, rows in grouped.items():
+        if y < bottom_margin + 40:
+            new_page()
+        # Manufacturer band
+        c.setFillColor(colors.HexColor("#0c182b"))
+        c.rect(15 * mm, y - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(17 * mm, y + 1.5, _ascii(manuf).upper())
+        c.setFillColor(colors.black)
+        y -= line_h
+        draw_table_header()
+
+        for r in rows:
+            if y < bottom_margin:
+                new_page()
+                draw_table_header()
+            # Color dot for finish
+            fin = (r.get("finish") or "clair").lower()
+            dot_color = colors.HexColor("#0c182b") if fin == "noir" else colors.HexColor("#dde5f0")
+            c.setFillColor(dot_color)
+            c.circle(99 * mm, y + 1.5, 1.5 * mm, fill=True, stroke=False)
+            c.setFillColor(colors.HexColor("#4b5d7a"))
+            c.setFont("Helvetica", 7)
+            c.drawString(102 * mm, y + 0.5, _ascii(fin).capitalize())
+            # Row content
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 9)
+            label = r.get("label") or r.get("profile_key") or ""
+            c.drawString(17 * mm, y + 1.5, _ascii(label)[:48])
+            c.drawString(115 * mm, y + 1.5, f"{r.get('bar_length_mm', 0):.0f} mm")
+            qty = int(r.get("qty_available") or 0)
+            rmin = r.get("restock_min")
+            rmax = r.get("restock_max")
+            # Highlight qty in red if 0, amber if < min
+            if qty == 0:
+                c.setFillColor(colors.HexColor("#cc1f1f"))
+            elif rmin is not None and qty <= rmin:
+                c.setFillColor(colors.HexColor("#cc7a1f"))
+            else:
+                c.setFillColor(colors.black)
+            c.setFont("Helvetica-Bold", 9)
+            c.drawString(140 * mm, y + 1.5, str(qty))
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 9)
+            c.drawString(165 * mm, y + 1.5,
+                         f"{rmin if rmin is not None else '—'} / {rmax if rmax is not None else '—'}")
+            c.setFillColor(colors.HexColor("#0c182b"))
+            c.setFont("Helvetica-Bold", 10)
+            c.drawRightString(page_w - 17 * mm, y + 1.5, str(r.get("to_order") or 0))
+            c.setFillColor(colors.black)
+            y -= line_h
+        y -= 4 * mm
+
+    # ─── Footer total ──────────────────────────────────────────────────
+    total = sum(int(r.get("to_order") or 0) for r in items)
+    if y < bottom_margin:
+        new_page()
+    c.setFillColor(colors.HexColor("#0c182b"))
+    c.rect(15 * mm, y - 4, page_w - 30 * mm, 9 * mm, fill=True, stroke=False)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(17 * mm, y + 0.5, f"TOTAL BARRES A COMMANDER : {total}")
+    c.drawRightString(page_w - 17 * mm, y + 0.5, f"{len(items)} reference(s)")
+    c.showPage()
+    c.save()
+    return buf.getvalue()
