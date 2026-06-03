@@ -65,6 +65,13 @@ class InventoryThresholdsIn(BaseModel):
     restock_max: int | None = Field(default=None, ge=0)
 
 
+class InventoryMetaIn(BaseModel):
+    """Editable text metadata. Only `label` and `profile_key` are touched —
+    qty / finish / length / chute flag are immutable via this endpoint."""
+    label: str | None = Field(default=None, max_length=200)
+    profile_key: str | None = Field(default=None, min_length=1, max_length=120)
+
+
 # ===========================================================================
 # Helpers
 # ===========================================================================
@@ -201,6 +208,26 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
         if unset_fields:
             update["$unset"] = unset_fields
         await coll.update_one({"id": row_id}, update)
+        return _normalize_row(await coll.find_one({"id": row_id}, {"_id": 0}))
+
+    @router.patch("/alu-inventory/{row_id}/meta")
+    async def set_meta(row_id: str, payload: InventoryMetaIn,
+                        _: dict = Depends(auth_dep),
+                        db: AsyncIOMotorDatabase = Depends(get_db)):
+        """Edit the human-readable label (and optionally the inventory key)
+        of an existing row. Useful to fix typos without re-creating the row."""
+        coll = await _stock_collection(db)
+        row = await coll.find_one({"id": row_id}, {"_id": 0})
+        if not row:
+            raise HTTPException(404, "Ligne d'inventaire introuvable.")
+        set_fields = {"updated_at": _ts()}
+        if payload.label is not None:
+            set_fields["label"] = payload.label.strip() or row.get("profile_key")
+        if payload.profile_key is not None:
+            new_key = payload.profile_key.strip()
+            if new_key:
+                set_fields["profile_key"] = new_key
+        await coll.update_one({"id": row_id}, {"$set": set_fields})
         return _normalize_row(await coll.find_one({"id": row_id}, {"_id": 0}))
 
     @router.delete("/alu-inventory/{row_id}", status_code=204)
@@ -502,138 +529,242 @@ def _ascii(s) -> str:
 # Purchase-order PDF rendering (one printable sheet sent to the supplier)
 # ===========================================================================
 def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = None) -> bytes:
-    """Render a printable purchase-order PDF grouped by manufacturer.
+    """Render a printable purchase-order PDF.
 
-    `items` already contains only rows at/below their restock_min, each with
-    `to_order` and `target` precomputed. Rows are grouped by the manufacturer
-    parsed from the profile_key (everything before " #" → "AT Fabrication",
-    "Trifab", "Kawneer", or "Divers" if none).
+    Layout (when no finish filter is applied):
+        SECTION 1 — CLAIR : every clair piece below its min (grouped by manuf)
+        SECTION 2 — NOIR  : every noir piece below its min (grouped by manuf)
+        SECTION 3 — MILL FINISH : per-profile total = clair_qty + noir_qty,
+                    the raw mill-finish bar count to order from the supplier
+                    and send to anodization.
+
+    When `finish_filter` is set ("clair" or "noir"), only that section is
+    rendered (no Mill Finish recap — irrelevant to a single-finish order).
     """
     from reportlab.pdfgen import canvas
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=LETTER)
     page_w, page_h = LETTER
     today = _ts().strftime("%Y-%m-%d")
+    bottom_margin = 25 * mm
+    line_h = 7 * mm
 
-    # Group by manufacturer prefix
-    grouped: dict[str, list[dict]] = {}
-    for it in items:
-        key = (it.get("profile_key") or "Divers")
-        manuf = key.split(" #")[0].strip() if " #" in key else "Divers"
-        grouped.setdefault(manuf, []).append(it)
+    # ── Column layout (mm from the left edge of the page) ──────────────
+    # Letter is 215.9 mm wide; usable area = 15..200 mm (185 mm wide).
+    COL_PIECE_X = 17
+    COL_FINI_DOT_X = 92         # finish dot (small circle)
+    COL_FINI_TXT_X = 95         # finish text "Clair / Noir"
+    COL_LEN_X = 112             # bar length
+    COL_QTY_X = 138             # qty stock
+    COL_MM_X = 155              # min / max
+    COL_ORDER_X = page_w - 17 * mm   # right-aligned "A commander"
 
-    # ─── Header ─────────────────────────────────────────────────────────
-    def draw_header(c):
+    def draw_header():
         c.setFillColor(colors.HexColor("#0c182b"))
         c.rect(0, page_h - 22 * mm, page_w, 22 * mm, fill=True, stroke=False)
         c.setFillColor(colors.white)
         c.setFont("Helvetica-Bold", 16)
         c.drawString(15 * mm, page_h - 12 * mm, "PORTECH — Bon de commande aluminium")
         c.setFont("Helvetica", 9)
-        c.drawString(15 * mm, page_h - 18 * mm,
-                     f"Date : {today}   |   Fini : {(finish_filter or 'tous').upper()}")
+        scope = (finish_filter or "tous").upper()
+        c.drawString(15 * mm, page_h - 18 * mm, f"Date : {today}   |   Fini : {scope}")
         c.setFillColor(colors.black)
 
-    draw_header(c)
+    draw_header()
 
     if not items:
         c.setFont("Helvetica", 14)
         c.setFillColor(colors.HexColor("#22a06b"))
-        c.drawCentredString(page_w / 2, page_h / 2 + 20,
-                            "Aucune commande nécessaire — tout le stock est au-dessus du minimum.")
+        c.drawCentredString(page_w / 2, page_h / 2,
+                            "Aucune commande necessaire — tout le stock est au-dessus du minimum.")
         c.showPage()
         c.save()
         return buf.getvalue()
 
-    y = page_h - 32 * mm
-    line_h = 7 * mm
-    bottom_margin = 25 * mm
+    y = [page_h - 32 * mm]  # mutable via list so nested helpers can update it
 
     def new_page():
-        nonlocal y
         c.showPage()
-        draw_header(c)
-        y = page_h - 32 * mm
+        draw_header()
+        y[0] = page_h - 32 * mm
+
+    def ensure_space(min_y: float):
+        if y[0] < min_y:
+            new_page()
+
+    def draw_section_band(title: str, color_hex: str, subtitle: str = ""):
+        ensure_space(bottom_margin + 20)
+        c.setFillColor(colors.HexColor(color_hex))
+        c.rect(15 * mm, y[0] - 1, page_w - 30 * mm, 9 * mm, fill=True, stroke=False)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(17 * mm, y[0] + 1.5, title.upper())
+        if subtitle:
+            c.setFont("Helvetica", 8)
+            c.drawRightString(page_w - 17 * mm, y[0] + 2.5, subtitle)
+        c.setFillColor(colors.black)
+        y[0] -= 9 * mm
+
+    def draw_manuf_band(manuf: str):
+        ensure_space(bottom_margin + 14)
+        c.setFillColor(colors.HexColor("#1f3a66"))
+        c.rect(15 * mm, y[0] - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(17 * mm, y[0] + 1.5, _ascii(manuf).upper())
+        c.setFillColor(colors.black)
+        y[0] -= line_h
 
     def draw_table_header():
-        nonlocal y
+        ensure_space(bottom_margin + line_h)
         c.setFillColor(colors.HexColor("#f3f6fb"))
-        c.rect(15 * mm, y - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
+        c.rect(15 * mm, y[0] - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
         c.setFillColor(colors.HexColor("#4b5d7a"))
-        c.setFont("Helvetica-Bold", 8)
-        c.drawString(17 * mm, y + 1.5, "PIECE")
-        c.drawString(95 * mm, y + 1.5, "FINI")
-        c.drawString(115 * mm, y + 1.5, "LONGUEUR")
-        c.drawString(140 * mm, y + 1.5, "QTE STOCK")
-        c.drawString(165 * mm, y + 1.5, "MIN / MAX")
-        c.drawRightString(page_w - 17 * mm, y + 1.5, "A COMMANDER")
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(COL_PIECE_X * mm, y[0] + 1.5, "PIECE")
+        c.drawString(COL_FINI_TXT_X * mm, y[0] + 1.5, "FINI")
+        c.drawString(COL_LEN_X * mm, y[0] + 1.5, "LONG.")
+        c.drawString(COL_QTY_X * mm, y[0] + 1.5, "QTE")
+        c.drawString(COL_MM_X * mm, y[0] + 1.5, "MIN / MAX")
+        c.drawRightString(COL_ORDER_X, y[0] + 1.5, "A COMMANDER")
         c.setFillColor(colors.black)
-        y -= line_h
+        y[0] -= line_h
 
-    for manuf, rows in grouped.items():
-        if y < bottom_margin + 40:
-            new_page()
-        # Manufacturer band
+    def draw_row(r: dict):
+        ensure_space(bottom_margin)
+        if y[0] == page_h - 32 * mm:
+            # we just turned a page — redraw the column header for context
+            draw_table_header()
+        fin = (r.get("finish") or "clair").lower()
+        # Finish color dot
+        dot_color = colors.HexColor("#0c182b") if fin == "noir" else colors.HexColor("#dde5f0")
+        c.setFillColor(dot_color)
+        c.circle(COL_FINI_DOT_X * mm, y[0] + 1.5, 1.4 * mm, fill=True, stroke=False)
+        c.setFillColor(colors.HexColor("#4b5d7a"))
+        c.setFont("Helvetica", 7)
+        c.drawString(COL_FINI_TXT_X * mm, y[0] + 0.5, _ascii(fin).capitalize())
+        # Label / piece
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica", 8)
+        label = r.get("label") or r.get("profile_key") or ""
+        c.drawString(COL_PIECE_X * mm, y[0] + 1.5, _ascii(label)[:42])
+        # Length
+        c.drawString(COL_LEN_X * mm, y[0] + 1.5, f"{r.get('bar_length_mm', 0):.0f}")
+        # Qty (color-coded)
+        qty = int(r.get("qty_available") or 0)
+        rmin = r.get("restock_min")
+        rmax = r.get("restock_max")
+        if qty == 0:
+            c.setFillColor(colors.HexColor("#cc1f1f"))
+        elif rmin is not None and qty <= rmin:
+            c.setFillColor(colors.HexColor("#cc7a1f"))
+        else:
+            c.setFillColor(colors.black)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(COL_QTY_X * mm, y[0] + 1.5, str(qty))
+        # Min / max
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica", 8)
+        c.drawString(COL_MM_X * mm, y[0] + 1.5,
+                     f"{rmin if rmin is not None else '-'} / {rmax if rmax is not None else '-'}")
+        # A commander (right-aligned, bold)
         c.setFillColor(colors.HexColor("#0c182b"))
-        c.rect(15 * mm, y - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
-        c.setFillColor(colors.white)
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(17 * mm, y + 1.5, _ascii(manuf).upper())
+        c.drawRightString(COL_ORDER_X, y[0] + 1.5, str(r.get("to_order") or 0))
         c.setFillColor(colors.black)
-        y -= line_h
-        draw_table_header()
+        y[0] -= line_h
 
-        for r in rows:
-            if y < bottom_margin:
-                new_page()
-                draw_table_header()
-            # Color dot for finish
+    def render_finish_section(finish: str, color_hex: str):
+        section_items = [r for r in items if (r.get("finish") or "clair") == finish]
+        if not section_items:
+            return 0
+        total_qty = sum(int(r.get("to_order") or 0) for r in section_items)
+        title = f"FINI {finish.upper()}"
+        subtitle = f"{len(section_items)} reference(s) - {total_qty} barre(s) a commander"
+        draw_section_band(title, color_hex, subtitle)
+        # Group by manufacturer
+        grouped: dict[str, list[dict]] = {}
+        for r in section_items:
+            key = r.get("profile_key") or "Divers"
+            manuf = key.split(" #")[0].strip() if " #" in key else "Divers"
+            grouped.setdefault(manuf, []).append(r)
+        for manuf, rows in grouped.items():
+            draw_manuf_band(manuf)
+            draw_table_header()
+            for r in rows:
+                draw_row(r)
+            y[0] -= 3 * mm
+        return total_qty
+
+    # ── SECTION CLAIR / NOIR ────────────────────────────────────────────
+    clair_total = 0
+    noir_total = 0
+    if finish_filter in (None, "clair"):
+        clair_total = render_finish_section("clair", "#7d9ac2")  # bluish band
+    if finish_filter in (None, "noir"):
+        noir_total = render_finish_section("noir", "#0c182b")    # dark band
+
+    # ── SECTION 3 — MILL FINISH RECAP (only when no finish filter) ─────
+    if finish_filter is None:
+        # Aggregate by profile_key + bar_length: sum to_order across finishes
+        recap: dict[tuple, dict] = {}
+        for r in items:
+            k = (r.get("profile_key") or "Divers", r.get("bar_length_mm") or 0)
+            agg = recap.setdefault(k, {
+                "profile_key": k[0], "label": r.get("label") or k[0],
+                "bar_length_mm": k[1], "clair": 0, "noir": 0,
+            })
             fin = (r.get("finish") or "clair").lower()
-            dot_color = colors.HexColor("#0c182b") if fin == "noir" else colors.HexColor("#dde5f0")
-            c.setFillColor(dot_color)
-            c.circle(99 * mm, y + 1.5, 1.5 * mm, fill=True, stroke=False)
-            c.setFillColor(colors.HexColor("#4b5d7a"))
-            c.setFont("Helvetica", 7)
-            c.drawString(102 * mm, y + 0.5, _ascii(fin).capitalize())
-            # Row content
-            c.setFillColor(colors.black)
-            c.setFont("Helvetica", 9)
-            label = r.get("label") or r.get("profile_key") or ""
-            c.drawString(17 * mm, y + 1.5, _ascii(label)[:48])
-            c.drawString(115 * mm, y + 1.5, f"{r.get('bar_length_mm', 0):.0f} mm")
-            qty = int(r.get("qty_available") or 0)
-            rmin = r.get("restock_min")
-            rmax = r.get("restock_max")
-            # Highlight qty in red if 0, amber if < min
-            if qty == 0:
-                c.setFillColor(colors.HexColor("#cc1f1f"))
-            elif rmin is not None and qty <= rmin:
-                c.setFillColor(colors.HexColor("#cc7a1f"))
+            if fin == "noir":
+                agg["noir"] += int(r.get("to_order") or 0)
             else:
-                c.setFillColor(colors.black)
-            c.setFont("Helvetica-Bold", 9)
-            c.drawString(140 * mm, y + 1.5, str(qty))
-            c.setFillColor(colors.black)
-            c.setFont("Helvetica", 9)
-            c.drawString(165 * mm, y + 1.5,
-                         f"{rmin if rmin is not None else '—'} / {rmax if rmax is not None else '—'}")
-            c.setFillColor(colors.HexColor("#0c182b"))
-            c.setFont("Helvetica-Bold", 10)
-            c.drawRightString(page_w - 17 * mm, y + 1.5, str(r.get("to_order") or 0))
-            c.setFillColor(colors.black)
-            y -= line_h
-        y -= 4 * mm
+                agg["clair"] += int(r.get("to_order") or 0)
 
-    # ─── Footer total ──────────────────────────────────────────────────
-    total = sum(int(r.get("to_order") or 0) for r in items)
-    if y < bottom_margin:
-        new_page()
+        if recap:
+            draw_section_band(
+                "MILL FINISH — recap fournisseur",
+                "#22a06b",
+                "Total barres brutes a commander (envoi anodisation)",
+            )
+            # Table header (mill finish view: clair / noir / total)
+            ensure_space(bottom_margin + line_h)
+            c.setFillColor(colors.HexColor("#f3f6fb"))
+            c.rect(15 * mm, y[0] - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
+            c.setFillColor(colors.HexColor("#4b5d7a"))
+            c.setFont("Helvetica-Bold", 7)
+            c.drawString(COL_PIECE_X * mm, y[0] + 1.5, "PIECE")
+            c.drawString(COL_LEN_X * mm, y[0] + 1.5, "LONG.")
+            c.drawString(135 * mm, y[0] + 1.5, "CLAIR")
+            c.drawString(155 * mm, y[0] + 1.5, "NOIR")
+            c.drawRightString(COL_ORDER_X, y[0] + 1.5, "TOTAL MILL")
+            c.setFillColor(colors.black)
+            y[0] -= line_h
+            # Sort by manuf then profile_key
+            for (pkey, blen), agg in sorted(recap.items(), key=lambda x: x[0][0].lower()):
+                ensure_space(bottom_margin)
+                c.setFont("Helvetica", 8)
+                c.drawString(COL_PIECE_X * mm, y[0] + 1.5, _ascii(agg["label"])[:42])
+                c.drawString(COL_LEN_X * mm, y[0] + 1.5, f"{blen:.0f}")
+                c.setFont("Helvetica", 9)
+                c.drawString(135 * mm, y[0] + 1.5, str(agg["clair"]))
+                c.drawString(155 * mm, y[0] + 1.5, str(agg["noir"]))
+                c.setFillColor(colors.HexColor("#0c182b"))
+                c.setFont("Helvetica-Bold", 11)
+                total = agg["clair"] + agg["noir"]
+                c.drawRightString(COL_ORDER_X, y[0] + 1.5, str(total))
+                c.setFillColor(colors.black)
+                y[0] -= line_h
+
+    # ── Final footer total ──────────────────────────────────────────────
+    grand_total = clair_total + noir_total
+    ensure_space(bottom_margin + 12)
     c.setFillColor(colors.HexColor("#0c182b"))
-    c.rect(15 * mm, y - 4, page_w - 30 * mm, 9 * mm, fill=True, stroke=False)
+    c.rect(15 * mm, y[0] - 4, page_w - 30 * mm, 9 * mm, fill=True, stroke=False)
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(17 * mm, y + 0.5, f"TOTAL BARRES A COMMANDER : {total}")
-    c.drawRightString(page_w - 17 * mm, y + 0.5, f"{len(items)} reference(s)")
+    c.drawString(17 * mm, y[0] + 0.5,
+                 f"TOTAL : {grand_total} barre(s)  ({clair_total} clair + {noir_total} noir)")
+    c.drawRightString(page_w - 17 * mm, y[0] + 0.5, f"{len(items)} ligne(s) sous le min")
     c.showPage()
     c.save()
     return buf.getvalue()

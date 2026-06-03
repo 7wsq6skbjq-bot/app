@@ -20,23 +20,27 @@ import { useAuth } from "@/context/AuthContext";
 
 // `key` = inventory profile_key, identical to the optimizer's display key,
 // so "Confirmer coupes" can match and deduct correctly.
+// Description format (uniform): "<CODE> — <rôle> <dimension> — <séries>"
 const PRESET_KEYS = [
-    { key: "AT Fabrication #ATT1005", desc: "ATT1005 — Tête 2¼\" (AT1000 / ATi1000)", len: 6800 },
-    { key: "AT Fabrication #AT1000",  desc: "AT1000 — Base 3⅞\" AT1000 / Tête 3⅞\" AT2000", len: 6800 },
-    { key: "AT Fabrication #AT1025",  desc: "AT1025 — Montant charnière 2\"", len: 6800 },
-    { key: "AT Fabrication #AT1020",  desc: "AT1020 — Montant serrure 2⅛\"", len: 6800 },
-    { key: "AT Fabrication #AT2000",  desc: "AT2000 — Base 6⅞\" (AT2000 / ATi2000)", len: 6800 },
-    { key: "AT Fabrication #AT2025",  desc: "AT2025 — Jambage charnière 3½\"", len: 6800 },
-    { key: "AT Fabrication #AT2020",  desc: "AT2020 — Jambage serrure 3⅝\"", len: 6800 },
-    { key: "AT Fabrication #ATV1030", desc: "ATV1030 — Cladding vertical ATi1000", len: 6800 },
-    { key: "AT Fabrication #ATCHA1035", desc: "ATCHA1035 — Cladding horizontal ATi1000", len: 6800 },
-    { key: "AT Fabrication #ATV2030", desc: "ATV2030 — Cladding vertical ATi2000", len: 6800 },
-    { key: "AT Fabrication #ATCHA2025", desc: "ATCHA2025 — Cladding horizontal ATi2000", len: 6800 },
-    { key: "Trifab #450CG005", desc: "450CG005 — Tube à poche 1¾\" × 4½\"", len: 7315 },
-    { key: "Trifab #450CG011", desc: "450CG011 — Tube escalier 1¾\" × 4½\"", len: 7315 },
-    { key: "Kawneer #178-001", desc: "178-001 — Meneau 2\" × 3¾\"", len: 7315 },
-    { key: "Kawneer #178-006", desc: "178-006 — Couvercle 2\" × ¾\"", len: 7315 },
-    { key: "Kawneer #178-300", desc: "178-300 — Plaque à pression 2\"", len: 7315 },
+    // ─── AT Fabrication — séries de portes ─────────────────────────────
+    { key: "AT Fabrication #ATT1005",   desc: "ATT1005 — Tête / linteau 2¼\" — AT1000 / ATi1000",         len: 6800 },
+    { key: "AT Fabrication #AT1000",    desc: "AT1000 — Traverse 3⅞\" — base AT1000 + tête AT2000 (partagée)", len: 6800 },
+    { key: "AT Fabrication #AT1025",    desc: "AT1025 — Montant charnière 2\" — AT1000 / ATi1000",        len: 6800 },
+    { key: "AT Fabrication #AT1020",    desc: "AT1020 — Montant serrure 2⅛\" — AT1000 / ATi1000",         len: 6800 },
+    { key: "AT Fabrication #AT2000",    desc: "AT2000 — Base lourde 6⅞\" — AT2000 / ATi2000",             len: 6800 },
+    { key: "AT Fabrication #AT2025",    desc: "AT2025 — Jambage charnière 3½\" — AT2000 / ATi2000",       len: 6800 },
+    { key: "AT Fabrication #AT2020",    desc: "AT2020 — Jambage serrure 3⅝\" — AT2000 / ATi2000",         len: 6800 },
+    { key: "AT Fabrication #ATV1030",   desc: "ATV1030 — Cladding vertical — ATi1000",                    len: 6800 },
+    { key: "AT Fabrication #ATCHA1035", desc: "ATCHA1035 — Cladding horizontal — ATi1000",               len: 6800 },
+    { key: "AT Fabrication #ATV2030",   desc: "ATV2030 — Cladding vertical — ATi2000",                    len: 6800 },
+    { key: "AT Fabrication #ATCHA2025", desc: "ATCHA2025 — Cladding horizontal — ATi2000",               len: 6800 },
+    // ─── Trifab — Flush Glaze ──────────────────────────────────────────
+    { key: "Trifab #450CG005", desc: "450CG005 — Tube à poche 1¾\" × 4½\" — Trifab VG450",                len: 7315 },
+    { key: "Trifab #450CG011", desc: "450CG011 — Tube escalier 1¾\" × 4½\" — Trifab VG450",               len: 7315 },
+    // ─── Kawneer — Mur-rideau 1620 ─────────────────────────────────────
+    { key: "Kawneer #178-001", desc: "178-001 — Meneau 2\" × 3¾\" — Kawneer 1620",                        len: 7315 },
+    { key: "Kawneer #178-006", desc: "178-006 — Couvercle 2\" × ¾\" — Kawneer 1620",                      len: 7315 },
+    { key: "Kawneer #178-300", desc: "178-300 — Plaque à pression 2\" — Kawneer 1620",                    len: 7315 },
 ];
 
 const FINISH_LABELS = { clair: "Clair", noir: "Noir" };
@@ -60,6 +64,7 @@ export const InventoryPanel = () => {
     const [addOpen, setAddOpen] = useState(false);
     const [filterFinish, setFilterFinish] = useState("all"); // all | clair | noir
     const [editingThresholds, setEditingThresholds] = useState(null);
+    const [editingMeta, setEditingMeta] = useState(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -156,6 +161,7 @@ export const InventoryPanel = () => {
                 adjust={adjust}
                 del={del}
                 onEditThresholds={(r) => setEditingThresholds(r)}
+                onEditMeta={(r) => setEditingMeta(r)}
             />
 
             {/* ─── Chutes ───────────────────────────────────────── */}
@@ -169,6 +175,11 @@ export const InventoryPanel = () => {
             {editingThresholds && (
                 <ThresholdsModal row={editingThresholds}
                     onClose={() => setEditingThresholds(null)}
+                    onSaved={load} />
+            )}
+            {editingMeta && (
+                <EditMetaModal row={editingMeta}
+                    onClose={() => setEditingMeta(null)}
                     onSaved={load} />
             )}
         </div>
@@ -233,7 +244,7 @@ const QtyProgressBar = ({ qty, min, max }) => {
 };
 
 // ─── Inventory table ───────────────────────────────────────────────────
-const InventoryTable = ({ title, rows, adjust, del, chute = false, onEditThresholds }) => (
+const InventoryTable = ({ title, rows, adjust, del, chute = false, onEditThresholds, onEditMeta }) => (
     <div className="bg-white border border-[#dde5f0]">
         <div className="px-3 py-2 bg-[#f3f6fb] border-b border-[#dde5f0] tech-stamp text-[#0c182b] text-xs flex items-center">
             {title} — {rows.length}
@@ -263,11 +274,25 @@ const InventoryTable = ({ title, rows, adjust, del, chute = false, onEditThresho
                             return (
                                 <tr key={r.id} className={`border-b border-[#dde5f0]/50 ${rowBg}`} data-testid={`inv-row-${r.id}`}>
                                     <td className="px-3 py-1.5">
-                                        <div className="text-[#0c182b]">{r.profile_key}</div>
-                                        {r.label && r.label !== r.profile_key && (
-                                            <div className="text-[10px] text-[#4b5d7a]">{r.label}</div>
-                                        )}
-                                        {!chute && <QtyProgressBar qty={r.qty_available} min={r.restock_min} max={r.restock_max} />}
+                                        <div className="flex items-start gap-1.5">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-[#0c182b]">{r.profile_key}</div>
+                                                {r.label && r.label !== r.profile_key && (
+                                                    <div className="text-[10px] text-[#4b5d7a]">{r.label}</div>
+                                                )}
+                                                {!chute && <QtyProgressBar qty={r.qty_available} min={r.restock_min} max={r.restock_max} />}
+                                            </div>
+                                            {!chute && onEditMeta && (
+                                                <button
+                                                    onClick={() => onEditMeta(r)}
+                                                    className="p-1 text-[#4b5d7a] hover:text-[#0c182b] hover:bg-[#f3f6fb] flex-shrink-0"
+                                                    title="Modifier la description"
+                                                    data-testid={`inv-edit-meta-${r.id}`}
+                                                >
+                                                    <Pencil className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-3 py-1.5">
                                         <span className="inline-flex items-center gap-1.5">
@@ -533,3 +558,66 @@ const ThresholdsModal = ({ row, onClose, onSaved }) => {
 };
 
 export default InventoryPanel;
+
+const EditMetaModal = ({ row, onClose, onSaved }) => {
+    const { http } = useAuth();
+    const [label, setLabel] = useState(row.label || row.profile_key || "");
+    const [profileKey, setProfileKey] = useState(row.profile_key || "");
+    const [busy, setBusy] = useState(false);
+
+    const save = async () => {
+        if (!profileKey.trim()) {
+            alert("La clé inventaire ne peut pas être vide.");
+            return;
+        }
+        setBusy(true);
+        try {
+            await http.patch(`/admin/alu-inventory/${row.id}/meta`, {
+                label: label.trim() || null,
+                profile_key: profileKey.trim(),
+            });
+            await onSaved();
+            onClose();
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Erreur");
+        } finally { setBusy(false); }
+    };
+
+    return (
+        <Modal
+            open
+            onClose={onClose}
+            title="Modifier la description"
+            testId="inv-edit-meta-modal"
+            footer={
+                <>
+                    <button onClick={onClose} className="px-4 py-2 border border-[#dde5f0] tech-stamp">Annuler</button>
+                    <button onClick={save} disabled={busy} data-testid="inv-edit-meta-save" className="px-4 py-2 bg-[#0c182b] text-white tech-stamp">
+                        {busy ? "Sauvegarde…" : "Enregistrer"}
+                    </button>
+                </>
+            }
+        >
+            <div className="space-y-3">
+                <div className="text-xs text-[#4b5d7a] flex items-center gap-1.5">
+                    <FinishDot finish={row.finish || "clair"} /> {FINISH_LABELS[row.finish || "clair"]} · {row.bar_length_mm.toFixed(0)} mm · Qté {row.qty_available}
+                </div>
+                <Field label="Clé inventaire (utilisée par l'optimiseur)" required>
+                    <input value={profileKey} onChange={(e) => setProfileKey(e.target.value)}
+                        className={inputClass} data-testid="inv-edit-meta-key"
+                        placeholder="ex. AT Fabrication #ATT1005" />
+                </Field>
+                <Field label="Description (libre)">
+                    <input value={label} onChange={(e) => setLabel(e.target.value)}
+                        className={inputClass} data-testid="inv-edit-meta-label"
+                        placeholder="ex. ATT1005 — Tête 2¼ AT1000" />
+                </Field>
+                <div className="text-[11px] text-[#4b5d7a]">
+                    ⚠ Modifier la clé peut casser la déduction automatique au "Confirmer coupes"
+                    si une liste de coupe est en cours et référence l'ancienne clé. La description
+                    libre est sans risque — change-la pour corriger une coquille.
+                </div>
+            </div>
+        </Modal>
+    );
+};

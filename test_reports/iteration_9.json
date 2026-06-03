@@ -1,0 +1,35 @@
+{
+  "summary": "Iteration 9 — Aluminum Inventory polish (PATCH /meta + 3-section PO PDF + pencil edit-meta UI) end-to-end PASS. BACKEND: 23/23 pytest cases green in test_alu_inventory.py (10 pre-existing + 5 new for /meta + 4 new for 3-section PDF + 1 empty-inventory + 3 final cleanup). New tests cover (1) PATCH /admin/alu-inventory/{id}/meta updates label only and preserves qty/finish/length/profile_key; (2) PATCH meta updates profile_key + restores original key; (3) empty profile_key kept (not wiped); (4) 404 on unknown id; (5) 401/403 on unauth; (6) PO PDF with finish_filter=None contains literal markers 'FINI CLAIR', 'FINI NOIR', 'MILL FINISH', 'TOTAL' and both 'clair'/'noir' tokens (extracted via pypdf — installed pypdf 6.12.2); (7) ?finish=clair returns PDF with FINI CLAIR header but NO 'FINI NOIR' nor 'MILL FINISH'; (8) ?finish=noir mirror; (9) PDF size ordering full >= each filter; (10) empty-inventory (rows above min) returns 200 with 'Aucune commande' message. FRONTEND: PortechAdmin login → /admin/gestion/inventaire-alu — preset Add modal creates row with qty=2, then pencil button data-testid='inv-edit-meta-<id>' opens EditMetaModal (data-testid='inv-edit-meta-modal'), label updated to 'TEST_UI_RENAMED_LABEL_123' via inv-edit-meta-label + saved via inv-edit-meta-save → modal closes and new label appears in row. Thresholds pencil (inv-thresholds-<id>) still opens inv-thresholds-modal and saves via inv-thresholds-save. PO PDF button (inv-po-pdf) is visible. Row cleanup verified (0 rows after delete). Inventory state preserved at 0/0/0.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "InventoryPanel — Add modal preset <select>", "issues": ["Pre-existing React hydration warning: '<span> cannot be a child of <option>' (still present, carries over from iteration 8). Caused by dev-mode dynamic-content wrapper spans injected automatically inside <option> by the dev build. Not blocking; cosmetic console noise only."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_alu_inventory.py",
+    "/app/test_reports/pytest/iteration_9_alu_inventory.xml"
+  ],
+  "action_items": [
+    "(Optional, pre-existing) Investigate the React dev-mode wrapper that injects <span style={display:'contents'}> children inside <option> elements (PRESET_KEYS map → <option>{p.desc}</option>). One fix is to render preset.desc via a join (string concat) so no JSX expression is interpolated under <option>: e.g. `<option value={p.key}>{`${p.desc}`}</option>` or pre-compute the string outside JSX. Affects only dev console; production build is clean."
+  ],
+  "critical_code_review_comments": [
+    "Backend (atelier_routes.py set_meta): InventoryMetaIn enforces min_length=1 for profile_key → empty strings → 422 from Pydantic BEFORE reaching the handler. The handler additionally strips & no-ops empty values. Both layers behave safely. Confirmed via test_meta_empty_profile_key_kept.",
+    "PDF renderer (_render_purchase_order_pdf) is well-structured: section bands draw with distinct colors (CLAIR #7d9ac2, NOIR #0c182b, MILL FINISH #22a06b), columns COL_PIECE_X=17 / COL_FINI_DOT_X=92 / COL_FINI_TXT_X=95 / COL_LEN_X=112 / COL_QTY_X=138 / COL_MM_X=155 / COL_ORDER_X right-aligned → no overlap between MIN/MAX and 'A COMMANDER' confirmed in extracted text. Grand-total footer prints 'TOTAL : X barre(s) (Y clair + Z noir)' as specified.",
+    "Frontend EditMetaModal sanitizes profile_key with `.trim()` and shows a clear warning about cascading cut-list breakage when changing the key — good UX safeguard.",
+    "All new pencil buttons carry data-testid attributes (inv-edit-meta-<id>, inv-edit-meta-modal, inv-edit-meta-key, inv-edit-meta-label, inv-edit-meta-save) — fully testable.",
+    "No file size violations: atelier_routes.py at 771 lines is borderline (above the 700-line soft cap). Future iteration could split the PDF rendering into a dedicated module (pdf_purchase_order.py) for clarity. Not blocking."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_alu_inventory.py (extended from 13 to 23 cases: added TestInventoryMetaEdit, TestPurchaseOrderPDFSections, TestPurchaseOrderEmpty)"
+  ],
+  "success_rate": {"backend": "100% (23/23)", "frontend": "100% (all required flows verified)"},
+  "test_credentials": "PortechAdmin / Portech2026!",
+  "seed_data_creation": "Temporary backend rows under profile_key='TEST_AT_Fab #ZZTEST001' (and brief re-key to 'TEST_META_AT #ZZMETA001') created and cleaned via TestCleanup.test_zzz_cleanup_created_rows. UI test created and deleted 1 row (AT Fabrication #ATT1005 preset). Final inventory state: 0 bars / 0 chutes (matches prior).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Inventory feature with edit-meta + 3-section PDF is fully verified. Run: pytest /app/backend/tests/test_alu_inventory.py -v (requires pypdf — install with `pip install pypdf` if not already present). UI testid contract for next iteration: inv-add / inv-add-modal / inv-add-submit / inv-preset-select / inv-finish-clair|noir / inv-row-<id> / inv-edit-meta-<id> / inv-edit-meta-modal / inv-edit-meta-key / inv-edit-meta-label / inv-edit-meta-save / inv-thresholds-<id> / inv-thresholds-modal / inv-thresholds-save / inv-filter-all|clair|noir / inv-po-pdf / inv-del-<id>. The benign <span> in <option> dev hydration warning is a known carry-over — fixing it requires changing the preset <option>{p.desc}</option> JSX expression and is out of scope for testing.",
+  "rca of the issue": "N/A — no bugs found in this iteration."
+}

@@ -219,6 +219,208 @@ class TestPurchaseOrderPDF:
         assert r.status_code == 401
 
 
+# =================================================================
+# Iteration 9 — PATCH /meta + 3-section purchase-order PDF
+# =================================================================
+
+META_KEY = "TEST_META_AT #ZZMETA001"
+
+
+class TestInventoryMetaEdit:
+    """PATCH /admin/alu-inventory/{id}/meta — label/profile_key editing only.
+    Must NOT touch qty / finish / length / chute. 404 on unknown id, 401 unauth."""
+
+    def test_meta_unauth_blocked(self, client, created_ids):
+        # need an existing row to target
+        if not created_ids:
+            pytest.skip("no row to target")
+        rid = created_ids[0]
+        r = requests.patch(
+            f"{BASE_URL}/api/admin/alu-inventory/{rid}/meta",
+            json={"label": "hack"}, timeout=10)
+        # FastAPI returns 401 or 403 when no token; both are acceptable
+        assert r.status_code in (401, 403), r.status_code
+
+    def test_meta_404_on_unknown_id(self, client):
+        r = client.patch(
+            f"{BASE_URL}/api/admin/alu-inventory/nonexistent-id-12345/meta",
+            json={"label": "doesnt matter"}, timeout=15)
+        assert r.status_code == 404
+
+    def test_meta_updates_label_only(self, client, created_ids):
+        rid = created_ids[0]  # clair row, qty=8 from earlier merge test
+        # Snapshot state before
+        before_list = client.get(f"{BASE_URL}/api/admin/alu-inventory", timeout=15).json()["bars"]
+        before = next(b for b in before_list if b["id"] == rid)
+        new_label = "TEST clair RENAMED"
+        r = client.patch(
+            f"{BASE_URL}/api/admin/alu-inventory/{rid}/meta",
+            json={"label": new_label}, timeout=15)
+        assert r.status_code == 200, r.text
+        body = r.json()
+        # label updated
+        assert body["label"] == new_label
+        # immutable fields preserved
+        assert body["qty_available"] == before["qty_available"]
+        assert body["finish"] == before["finish"]
+        assert body["bar_length_mm"] == before["bar_length_mm"]
+        assert body["profile_key"] == before["profile_key"]
+        # normalized fields present
+        assert "restock_min" in body
+        assert "restock_max" in body
+        # Verify persisted
+        again = client.get(f"{BASE_URL}/api/admin/alu-inventory", timeout=15).json()["bars"]
+        row = next(b for b in again if b["id"] == rid)
+        assert row["label"] == new_label
+
+    def test_meta_updates_profile_key(self, client, created_ids):
+        rid = created_ids[0]
+        before = next(b for b in client.get(
+            f"{BASE_URL}/api/admin/alu-inventory", timeout=15
+        ).json()["bars"] if b["id"] == rid)
+        old_key = before["profile_key"]
+        r = client.patch(
+            f"{BASE_URL}/api/admin/alu-inventory/{rid}/meta",
+            json={"profile_key": META_KEY}, timeout=15)
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["profile_key"] == META_KEY
+        # immutable
+        assert body["qty_available"] == before["qty_available"]
+        assert body["finish"] == before["finish"]
+        # Restore the old key so subsequent tests / cleanup keep working
+        client.patch(
+            f"{BASE_URL}/api/admin/alu-inventory/{rid}/meta",
+            json={"profile_key": old_key}, timeout=15)
+
+    def test_meta_empty_profile_key_kept(self, client, created_ids):
+        """Empty profile_key string must NOT wipe the existing key (kept or rejected)."""
+        rid = created_ids[0]
+        before = next(b for b in client.get(
+            f"{BASE_URL}/api/admin/alu-inventory", timeout=15
+        ).json()["bars"] if b["id"] == rid)
+        old_key = before["profile_key"]
+        r = client.patch(
+            f"{BASE_URL}/api/admin/alu-inventory/{rid}/meta",
+            json={"profile_key": ""}, timeout=15)
+        # Either rejected (422) or accepted but old key preserved (200)
+        assert r.status_code in (200, 422), r.status_code
+        if r.status_code == 200:
+            assert r.json()["profile_key"] == old_key
+
+
+# -----------------------------------------------------------------
+# Purchase-order PDF — 3 sections layout
+# -----------------------------------------------------------------
+
+def _pdf_text(content: bytes) -> str:
+    """Extract text from a PDF byte buffer with pypdf (graceful fallback)."""
+    try:
+        from io import BytesIO
+        from pypdf import PdfReader
+        reader = PdfReader(BytesIO(content))
+        return "\n".join((p.extract_text() or "") for p in reader.pages)
+    except Exception as e:
+        return f"__PDF_EXTRACT_ERR__:{e}"
+
+
+class TestPurchaseOrderPDFSections:
+    """Verify the 3-section layout (FINI CLAIR / FINI NOIR / MILL FINISH recap)
+    via text extraction. Also check filtered scope hides the other sections."""
+
+    @pytest.fixture(scope="class")
+    def below_min_setup(self, client, auth_token):
+        """Make BOTH the clair and noir test rows be below their restock_min so
+        they appear in the PO and trigger the MILL FINISH recap line."""
+        # Get the current rows for our PROFILE_KEY
+        bars = client.get(f"{BASE_URL}/api/admin/alu-inventory", timeout=15).json()["bars"]
+        rows = [b for b in bars if b["profile_key"] == PROFILE_KEY]
+        clair = next((b for b in rows if b["finish"] == "clair"), None)
+        noir = next((b for b in rows if b["finish"] == "noir"), None)
+        if not (clair and noir):
+            pytest.skip("Setup rows missing — earlier tests skipped/failed.")
+        # Set qty=0 for noir (test_patch_delta_clamps_zero already did this)
+        # Force clair qty low (1) and very high min so it's below
+        client.patch(f"{BASE_URL}/api/admin/alu-inventory/{clair['id']}",
+                     json={"delta": -clair["qty_available"] + 1}, timeout=15)
+        client.patch(f"{BASE_URL}/api/admin/alu-inventory/{clair['id']}/thresholds",
+                     json={"restock_min": 10, "restock_max": 20}, timeout=15)
+        client.patch(f"{BASE_URL}/api/admin/alu-inventory/{noir['id']}/thresholds",
+                     json={"restock_min": 5, "restock_max": 10}, timeout=15)
+        return {"clair_id": clair["id"], "noir_id": noir["id"]}
+
+    def test_pdf_full_has_3_sections(self, auth_token, below_min_setup):
+        url = f"{BASE_URL}/api/admin/alu-inventory/purchase-order.pdf?token={auth_token}"
+        r = requests.get(url, timeout=30)
+        assert r.status_code == 200
+        assert r.content[:5] == b"%PDF-"
+        text = _pdf_text(r.content)
+        # Headers must show the 3 distinct sections + grand total
+        assert "FINI CLAIR" in text, f"Missing FINI CLAIR; got: {text[:500]!r}"
+        assert "FINI NOIR" in text, f"Missing FINI NOIR; got: {text[:500]!r}"
+        assert "MILL FINISH" in text, f"Missing MILL FINISH; got: {text[:500]!r}"
+        # Grand total footer mentions clair + noir = total
+        assert "clair" in text.lower() and "noir" in text.lower()
+        assert "TOTAL" in text
+
+    def test_pdf_filter_clair_only(self, auth_token, below_min_setup):
+        url = f"{BASE_URL}/api/admin/alu-inventory/purchase-order.pdf?token={auth_token}&finish=clair"
+        r = requests.get(url, timeout=30)
+        assert r.status_code == 200
+        assert r.content[:5] == b"%PDF-"
+        text = _pdf_text(r.content)
+        assert "FINI CLAIR" in text
+        # No NOIR section header and no MILL FINISH recap when filtered
+        assert "FINI NOIR" not in text
+        assert "MILL FINISH" not in text
+
+    def test_pdf_filter_noir_only(self, auth_token, below_min_setup):
+        url = f"{BASE_URL}/api/admin/alu-inventory/purchase-order.pdf?token={auth_token}&finish=noir"
+        r = requests.get(url, timeout=30)
+        assert r.status_code == 200
+        assert r.content[:5] == b"%PDF-"
+        text = _pdf_text(r.content)
+        assert "FINI NOIR" in text
+        assert "FINI CLAIR" not in text
+        assert "MILL FINISH" not in text
+
+    def test_pdf_size_ordering(self, auth_token, below_min_setup):
+        """Fallback structural check: full PDF must be >= each single-section PDF."""
+        def _size(qs: str) -> int:
+            url = f"{BASE_URL}/api/admin/alu-inventory/purchase-order.pdf?token={auth_token}{qs}"
+            return len(requests.get(url, timeout=30).content)
+        size_full = _size("")
+        size_clair = _size("&finish=clair")
+        size_noir = _size("&finish=noir")
+        # Full PDF has CLAIR + NOIR + MILL FINISH so must exceed either single
+        assert size_full >= size_clair, (size_full, size_clair)
+        assert size_full >= size_noir, (size_full, size_noir)
+
+
+class TestPurchaseOrderEmpty:
+    """When the inventory has no row below its min (i.e., after our cleanup or
+    when nothing is configured), the PDF should still return 200 with the
+    'Aucune commande necessaire' message."""
+
+    def test_pdf_empty_returns_200_with_message(self, client, auth_token, created_ids):
+        # Make sure NO test row triggers a restock: clear thresholds + add qty
+        for rid in created_ids:
+            try:
+                client.patch(f"{BASE_URL}/api/admin/alu-inventory/{rid}/thresholds",
+                             json={"restock_min": None, "restock_max": None}, timeout=15)
+                client.patch(f"{BASE_URL}/api/admin/alu-inventory/{rid}",
+                             json={"delta": 100}, timeout=15)
+            except Exception:
+                pass
+        url = f"{BASE_URL}/api/admin/alu-inventory/purchase-order.pdf?token={auth_token}"
+        r = requests.get(url, timeout=30)
+        assert r.status_code == 200
+        assert r.content[:5] == b"%PDF-"
+        text = _pdf_text(r.content)
+        # The empty-inventory message (ASCII-folded inside the renderer)
+        assert "Aucune commande" in text, f"Expected empty msg, got: {text[:500]!r}"
+
+
 class TestCleanup:
     def test_zzz_cleanup_created_rows(self, client, created_ids):
         for rid in created_ids:
@@ -228,3 +430,7 @@ class TestCleanup:
         r2 = client.get(f"{BASE_URL}/api/admin/alu-inventory", timeout=15)
         remaining = [b for b in r2.json()["bars"] if b["profile_key"] == PROFILE_KEY]
         assert remaining == []
+        # Also drop any META_KEY leftover if a re-keyed row escaped cleanup
+        for b in r2.json()["bars"]:
+            if b.get("profile_key") == META_KEY:
+                client.delete(f"{BASE_URL}/api/admin/alu-inventory/{b['id']}", timeout=15)
