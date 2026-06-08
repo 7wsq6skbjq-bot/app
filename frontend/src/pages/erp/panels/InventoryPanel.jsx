@@ -28,6 +28,8 @@ const PRESET_KEYS = [
     { key: "AT Fabrication #ATB1000",   desc: "ATB1000 / MH80476 — Base 3⅞\" AT1000 + tête AT2000 (partagée)",      len: 6800 },
     { key: "AT Fabrication #ATV1010",   desc: "ATV1010 / MH80478 — Stile charnière 2\" — AT1000 / ATi1000",         len: 6800 },
     { key: "AT Fabrication #ATV1015",   desc: "ATV1015 / MH80479 — Stile serrure 2⅛\" — AT1000 / ATi1000",          len: 6800 },
+    { key: "AT Fabrication #ATV1020",   desc: "ATV1020 / MH80480 — Side extrusion (jambage latéral cadre) — AT1000", len: 6800 },
+    { key: "AT Fabrication #ATV1025",   desc: "ATV1025 / MH80481 — Jamb extrusion (jambage cadre) — AT1000",        len: 6800 },
     { key: "AT Fabrication #ATCV1030",  desc: "ATCV1030 / MH80483 — Cladding vertical — ATi1000",                   len: 6800 },
     { key: "AT Fabrication #ATCHA1035", desc: "ATCHA1035 / MH80482 — Cladding horizontal — ATi1000 / ATi2000",     len: 6800 },
     { key: "AT Fabrication #ATCHB1040", desc: "ATCHB1040 / MH80484 — Sweep (joint balai bas) — ATi1000",            len: 6800 },
@@ -35,11 +37,16 @@ const PRESET_KEYS = [
     { key: "AT Fabrication #ATB2000",   desc: "ATB2000 / MH80321 — Base 6⅞\" — AT2000 / ATi2000",                   len: 6800 },
     { key: "AT Fabrication #ATV2010",   desc: "ATV2010 / MH81325 — Stile charnière 3½\" — AT2000 / ATi2000",        len: 6800 },
     { key: "AT Fabrication #ATV2015",   desc: "ATV2015 / MH81326 — Stile serrure 3⅝\" — AT2000 / ATi2000",          len: 6800 },
+    { key: "AT Fabrication #ATV2020",   desc: "ATV2020 / MH81327 — Side extrusion (jambage latéral cadre) — AT2000", len: 6800 },
+    { key: "AT Fabrication #ATV2025",   desc: "ATV2025 / MH81320 — Jamb extrusion (jambage cadre) — AT2000",        len: 6800 },
     { key: "AT Fabrication #ATCV2030",  desc: "ATCV2030 / MH81324 — Cladding vertical — ATi2000",                   len: 6800 },
     { key: "AT Fabrication #ATCHB2040", desc: "ATCHB2040 / MH81323 — Sweep (joint balai bas) — ATi2000",            len: 6800 },
     // ─── Moulures (interchangeables sur toutes les portes AT) ──────────
     { key: "AT Fabrication #AT1045",    desc: "AT1045 / MH80485 — Moulure CARRÉE 13.48 — verre simple 6 mm",        len: 6800 },
     { key: "AT Fabrication #AT1050",    desc: "AT1050 / MH80486 — Moulure PLATE 14.3 — verre thermos 25.4 mm",      len: 6800 },
+    // ─── Accessoires AT (longueurs spéciales) ──────────────────────────
+    { key: "AT Fabrication #AT1065",    desc: "AT1065 — Accessoire (joint / garniture) — barres 5000 mm",            len: 5000 },
+    { key: "AT Fabrication #AT1070",    desc: "AT1070 — Accessoire (joint / garniture) — barres 10'-0\" (3048 mm)",  len: 3048 },
     // ─── Trifab — Flush Glaze ──────────────────────────────────────────
     { key: "Trifab #450CG005", desc: "450CG005 — Tube à poche 1¾\" × 4½\" — Trifab VG450",                          len: 7315 },
     { key: "Trifab #450CG011", desc: "450CG011 — Tube escalier 1¾\" × 4½\" — Trifab VG450",                         len: 7315 },

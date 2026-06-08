@@ -68,6 +68,15 @@ HYDRO_PARTS = {
     "ATCHB1040": {"hydro": "MH80484", "internal": "40063-9",
                   "label": "Sweep extrusion (joint balai bas)",
                   "dim_in": "—", "dim_mm": "—"},
+    # ── Accessoires AT1065 / AT1070 (longueurs non-standard) ─────────────
+    # Codes vus dans le DXF Hydro sans description explicite — probablement
+    # joints d'étanchéité ou garnitures. Longueurs spécifiques :
+    "AT1065":    {"hydro": None, "internal": None,
+                  "label": "Accessoire AT1065 — vendu en barres 5000 mm",
+                  "dim_in": "—", "dim_mm": "—"},
+    "AT1070":    {"hydro": None, "internal": None,
+                  "label": "Accessoire AT1070 — vendu en barres 10'-0\" (3048 mm)",
+                  "dim_in": "—", "dim_mm": "—"},
     # ── AT2000 / ATi2000 family ──────────────────────────────────────────
     "ATB2000":   {"hydro": "MH80321", "internal": "40777-2",
                   "label": "Extrusion base lourde 6⅞\"",
