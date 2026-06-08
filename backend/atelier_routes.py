@@ -592,6 +592,20 @@ def _ascii(s) -> str:
 # ===========================================================================
 # Purchase-order PDF rendering (one printable sheet sent to the supplier)
 # ===========================================================================
+def _hydro_for_inventory_key(profile_key: str | None) -> str | None:
+    """Given an inventory profile_key like 'AT Fabrication #ATT1005',
+    return the matching Hydro code (e.g. 'MH80477') or None if unknown."""
+    if not profile_key or "#" not in profile_key:
+        return None
+    try:
+        from profile_catalog import hydro_for
+        at_code = profile_key.split("#", 1)[1].strip()
+        entry = hydro_for(at_code)
+        return entry.get("hydro") if entry else None
+    except Exception:
+        return None
+
+
 def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = None, stealth: bool = False) -> bytes:
     """Render a printable purchase-order PDF.
 
@@ -714,11 +728,17 @@ def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = No
         c.setFont("Helvetica", 7)
         label_fin = "Mill" if fin == "mill_finish" else _ascii(fin).capitalize()
         c.drawString(COL_FINI_TXT_X * mm, y[0] + 0.5, label_fin)
-        # Label / piece
+        # Label / piece (line 1 = AT label, line 2 = Hydro code if known)
         c.setFillColor(colors.black)
         c.setFont("Helvetica", 8)
         label = r.get("label") or r.get("profile_key") or ""
         c.drawString(COL_PIECE_X * mm, y[0] + 1.5, _ascii(label)[:42])
+        hydro = _hydro_for_inventory_key(r.get("profile_key"))
+        if hydro:
+            c.setFillColor(colors.HexColor("#4b5d7a"))
+            c.setFont("Helvetica-Oblique", 6.5)
+            c.drawString(COL_PIECE_X * mm, y[0] - 1.5, f"Hydro {hydro}")
+            c.setFillColor(colors.black)
         # Length
         c.drawString(COL_LEN_X * mm, y[0] + 1.5, f"{r.get('bar_length_mm', 0):.0f}")
         # Qty (color-coded)

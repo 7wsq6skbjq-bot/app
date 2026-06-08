@@ -70,25 +70,30 @@ LOCK_STILE_WIDTH_MM = {
 }
 
 # ----- AT Fabrication part numbers per profile slot per series -----
-# Same profile slot can reference DIFFERENT extrusions depending on series.
-# Example: AT2000 "tête" (3⅞") is the SAME physical extrusion as AT1000 "base"
-# (also 3⅞") → both stamped "AT1000" by the manufacturer.
+# Codes verified against the official Hydro Extrusion DXF (Jun 2026).
+# Same physical extrusion can be reused across series — e.g. the AT2000 head
+# is the same extrusion as the AT1000 base (both 3⅞"), so both reference
+# part_number "ATB1000" (Hydro MH80476).
 PART_NUMBERS = {
-    "AT1000":      {"top": "ATT1005", "base": "AT1000",  "hinge": "AT1025", "lock": "AT1020"},
-    "AT2000":      {"top": "AT1000",  "base": "AT2000",  "hinge": "AT2025", "lock": "AT2020"},
-    "ATI1000":     {"top": "ATT1005", "base": "AT1000",  "hinge": "AT1025", "lock": "AT1020",
-                     "clad_v": "ATV1030", "clad_h": "ATCHA1035"},
-    "ATI2000":     {"top": "AT1000",  "base": "AT2000",  "hinge": "AT2025", "lock": "AT2020",
-                     "clad_v": "ATV2030", "clad_h": "ATCHA2025"},
-    "AT1000-BASE-AT2000": {"top": "ATT1005", "base": "AT2000", "hinge": "AT1025", "lock": "AT1020"},
+    "AT1000":      {"top": "ATT1005", "base": "ATB1000", "hinge": "ATV1010", "lock": "ATV1015"},
+    "AT2000":      {"top": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015"},
+    "ATI1000":     {"top": "ATT1005", "base": "ATB1000", "hinge": "ATV1010", "lock": "ATV1015",
+                     "clad_v": "ATCV1030", "clad_h": "ATCHA1035"},
+    "ATI2000":     {"top": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015",
+                     "clad_v": "ATCV2030", "clad_h": "ATCHA1035"},
+    "AT1000-BASE-AT2000": {"top": "ATT1005", "base": "ATB2000", "hinge": "ATV1010", "lock": "ATV1015"},
 }
 
 # ----- Parclose (moulure) face width per glass type -----
-# Verre 6 mm        → moulure carrée 13.48 mm (comble l'écart pour 6mm dans une rainure de 25.4 mm)
-# Thermos 25.4 mm   → moulure plate 14.3 mm (le thermos comble lui-même la rainure)
+# Both moulures can be used on ANY door series — the choice depends entirely
+# on the GLASS the customer ordered:
+#   • Verre simple 6 mm     → moulure CARRÉE 13.48 (AT1045) — comble la rainure
+#   • Thermos 25.4 mm        → moulure PLATE  14.3  (AT1050) — le thermos remplit la rainure
 PARCLOSE_FACE_BY_GLASS_MM = {
-    6.0:  {"face": 13.48, "shape": "carrée", "label_suffix": "carrée vitrage 6mm"},
-    25.4: {"face": 14.3,  "shape": "plate",  "label_suffix": "plate vitrage thermos 25.4mm"},
+    6.0:  {"face": 13.48, "shape": "carrée", "part_number": "AT1045",
+           "label_suffix": "carrée AT1045 (verre simple 6 mm)"},
+    25.4: {"face": 14.3,  "shape": "plate", "part_number": "AT1050",
+           "label_suffix": "plate AT1050 (thermos 25.4 mm)"},
 }
 MOULURE_FACE_WIDTH_MM = 13.48  # Legacy default kept for back-compat in tests.
 
@@ -177,6 +182,7 @@ def decompose_at_door(
     moulure_face = parclose_spec["face"]
     moulure_shape = parclose_spec["shape"]
     parclose_label_suffix = parclose_spec["label_suffix"]
+    parclose_part_number = parclose_spec.get("part_number")
     parts = PART_NUMBERS[series_key]
 
     # ----- Cut lengths -----
@@ -252,10 +258,12 @@ def decompose_at_door(
             "label": f"{label_prefix} — Parclose verticale ({parclose_label_suffix})",
             "profile": f"{series_key} — parclose {moulure_shape} {moulure_face} mm",
             "material": material,
+            "part_number": parclose_part_number, "manufacturer": "AT Fabrication",
             "length_mm": round(moulure_v, 2),
             "qty": 4 * qty, "source": "computed",
             "notes": (
-                f"4 par porte. Calc : {leaf_height_mm:.1f} − {top_rail} (tête) − "
+                f"4 par porte. Pièce {parclose_part_number or '—'}. Calc : "
+                f"{leaf_height_mm:.1f} − {top_rail} (tête) − "
                 f"{base_rail} (base) − 2 × {moulure_face} = {moulure_v:.2f} mm. "
                 f"Moulure {moulure_shape} pour verre {glass_thickness_mm:.1f}mm. Coupes mitrées 45°."
             ),
@@ -265,10 +273,12 @@ def decompose_at_door(
             "label": f"{label_prefix} — Parclose horizontale ({parclose_label_suffix})",
             "profile": f"{series_key} — parclose {moulure_shape} {moulure_face} mm",
             "material": material,
+            "part_number": parclose_part_number, "manufacturer": "AT Fabrication",
             "length_mm": round(moulure_h, 2),
             "qty": 4 * qty, "source": "computed",
             "notes": (
-                f"4 par porte. Calc : moulure_H = largeur battant = {leaf_width_mm:.1f} mm "
+                f"4 par porte. Pièce {parclose_part_number or '—'}. "
+                f"Calc : moulure_H = largeur battant = {leaf_width_mm:.1f} mm "
                 f"(mitré 45° → s'étend sur toute la largeur). Moulure {moulure_shape} "
                 f"({moulure_face} mm) pour verre {glass_thickness_mm:.1f}mm."
             ),

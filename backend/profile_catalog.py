@@ -8,7 +8,8 @@ optimizer.
 Values verified against:
   - AT Fabrication official DXF (May 2026)
   - User-supplied BMO de la Rivière shop drawings (May 2026)
-  - Portech standard parclose 1/4" carrée = 13.48 mm face width.
+  - Hydro Extrusion DXF "Details des pieces de portes AT1000 et 2000" (Jun 2026)
+    → provides the official AT ↔ Hydro code mapping below.
 
 To add a new profile: append a dict to the relevant `profiles` list.
 To add a new system entirely: add a new top-level entry to `SYSTEMS`.
@@ -20,6 +21,83 @@ INCH_MM = 25.4
 def _in(value: float) -> float:
     """Inches → mm rounded to 2 decimals."""
     return round(value * INCH_MM, 2)
+
+
+# ===========================================================================
+# Master AT ↔ Hydro mapping — single source of truth.
+# Extracted from the official Hydro Extrusion DXF (Jun 2026).
+# All four AT door series (AT1000 / AT2000 / ATi1000 / ATi2000) share the same
+# extrusion pool — only the configuration (insulated / not) and the choice of
+# moulure varies. Both parclose types can be used on ANY of the four series:
+#   • AT1045 — moulure CARRÉE (large, 13.48 mm face) → pour verre simple 6 mm
+#   • AT1050 — moulure PLATE  (mince, 14.3 mm face)  → pour thermos 25.4 mm
+# The end client's glass spec drives which moulure is cut, not the door series.
+# ===========================================================================
+HYDRO_PARTS = {
+    # ── AT1000 / ATi1000 family ──────────────────────────────────────────
+    "ATT1005":   {"hydro": "MH80477", "internal": "40063-2",
+                  "label": "Extrusion tête (head) — tube 2¼\"",
+                  "dim_in": "2 1/4\" x 1 3/4\"", "dim_mm": "55.5 x 44.45"},
+    "ATB1000":   {"hydro": "MH80476", "internal": "40063-1",
+                  "label": "Extrusion base / seuil 3⅞\"",
+                  "dim_in": "3 7/8\" x 1 3/4\"", "dim_mm": "98.43 x 44.45"},
+    "ATV1010":   {"hydro": "MH80478", "internal": "40063-3",
+                  "label": "Stile — strike side (montant côté gâche)",
+                  "dim_in": "2\" x 1 3/4\"", "dim_mm": "50.8 x 44.45"},
+    "ATV1015":   {"hydro": "MH80479", "internal": "40063-4",
+                  "label": "Stile — lock side (montant côté serrure, usinage MS)",
+                  "dim_in": "2 1/8\" x 1 3/4\"", "dim_mm": "53.975 x 44.45"},
+    "ATV1020":   {"hydro": "MH80480", "internal": "40063-5",
+                  "label": "Side extrusion (jambage latéral cadre)",
+                  "dim_in": "—", "dim_mm": "—"},
+    "ATV1025":   {"hydro": "MH80481", "internal": "40063-6",
+                  "label": "Jamb extrusion (jambage du cadre)",
+                  "dim_in": "—", "dim_mm": "—"},
+    "AT1045":    {"hydro": "MH80485", "internal": "40063-10",
+                  "label": "Moulure CARRÉE 13.48 mm — verre simple 6 mm",
+                  "dim_in": "1/4\" carrée", "dim_mm": "13.48 face"},
+    "AT1050":    {"hydro": "MH80486", "internal": "40063-11",
+                  "label": "Moulure PLATE 14.3 mm — verre thermos 25.4 mm",
+                  "dim_in": "—", "dim_mm": "14.3 face"},
+    "ATCV1030":  {"hydro": "MH80483", "internal": "40063-8",
+                  "label": "Cladding vertical — ATi1000",
+                  "dim_in": "—", "dim_mm": "—"},
+    "ATCHA1035": {"hydro": "MH80482", "internal": "40063-7",
+                  "label": "Cladding horizontal — ATi1000",
+                  "dim_in": "—", "dim_mm": "—"},
+    "ATCHB1040": {"hydro": "MH80484", "internal": "40063-9",
+                  "label": "Sweep extrusion (joint balai bas)",
+                  "dim_in": "—", "dim_mm": "—"},
+    # ── AT2000 / ATi2000 family ──────────────────────────────────────────
+    "ATB2000":   {"hydro": "MH80321", "internal": "40777-2",
+                  "label": "Extrusion base lourde 6⅞\"",
+                  "dim_in": "6 7/8\" x 1 3/4\"", "dim_mm": "174.625 x 44.45"},
+    "ATV2010":   {"hydro": "MH81325", "internal": "40777-6",
+                  "label": "Stile — strike side (montant côté gâche, AT2000)",
+                  "dim_in": "3 1/2\" x 1 3/4\"", "dim_mm": "88.9 x 44.45"},
+    "ATV2015":   {"hydro": "MH81326", "internal": "40777-7",
+                  "label": "Stile — lock side (montant côté serrure, AT2000)",
+                  "dim_in": "3 5/8\" x 1 3/4\"", "dim_mm": "92.075 x 44.45"},
+    "ATV2020":   {"hydro": "MH81327", "internal": "40777-8",
+                  "label": "Side extrusion (jambage latéral cadre AT2000)",
+                  "dim_in": "—", "dim_mm": "—"},
+    "ATV2025":   {"hydro": "MH81320", "internal": "40777-1",
+                  "label": "Jamb extrusion (jambage du cadre AT2000)",
+                  "dim_in": "—", "dim_mm": "—"},
+    "ATCV2030":  {"hydro": "MH81324", "internal": "40777-5",
+                  "label": "Cladding vertical — ATi2000",
+                  "dim_in": "—", "dim_mm": "—"},
+    "ATCHB2040": {"hydro": "MH81323", "internal": "40777-4",
+                  "label": "Sweep extrusion (joint balai bas AT2000)",
+                  "dim_in": "—", "dim_mm": "—"},
+}
+
+
+def hydro_for(part_at: str | None) -> dict | None:
+    """Lookup an AT code in the Hydro mapping. Returns None if unknown."""
+    if not part_at:
+        return None
+    return HYDRO_PARTS.get(part_at)
 
 
 # ===========================================================================
@@ -46,24 +124,25 @@ SYSTEMS = [
         "offsets_mm": {"width": 115.10, "height": 22.20},
         "default_stock_bar_length_mm": 6800,
         "profiles": [
-            {"label": "Traverse haute (tête)", "dim_in": "2 1/4\" x 1 3/4\"", "dim_mm": "55.5 x 44.45",
-             "part_number": "ATT1005",
-             "usage": "Linteau de porte AT1000 — tube 2¼\". Coupe = largeur du battant."},
-            {"label": "Traverse basse (base) 3 7/8\"", "dim_in": "3 7/8\" x 1 3/4\"", "dim_mm": "98.43 x 44.45",
-             "part_number": "AT1000",
+            {"label": "Traverse haute (tête) 2¼\"", "dim_in": "2 1/4\" x 1 3/4\"", "dim_mm": "55.5 x 44.45",
+             "part_number": "ATT1005", "hydro_code": "MH80477", "internal_code": "40063-2",
+             "usage": "Linteau de porte AT1000. Coupe = largeur du battant."},
+            {"label": "Traverse basse (base) 3⅞\"", "dim_in": "3 7/8\" x 1 3/4\"", "dim_mm": "98.43 x 44.45",
+             "part_number": "ATB1000", "hydro_code": "MH80476", "internal_code": "40063-1",
              "usage": "Seuil renforcé 3⅞\" (même extrusion que la tête AT2000). Coupe = largeur du battant."},
-            {"label": "Montant côté charnière", "dim_in": "2\" x 1 3/4\"", "dim_mm": "50.8 x 44.45",
-             "part_number": "AT1025",
-             "usage": "Montant vertical, côté gonds. Coupe = hauteur du battant."},
-            {"label": "Montant côté serrure", "dim_in": "2 1/8\" x 1 3/4\"", "dim_mm": "53.975 x 44.45",
-             "part_number": "AT1020",
-             "usage": "Montant vertical, côté serrure (légèrement plus large pour usinage MS)."},
-            {"label": "Parclose carrée vitrage 6 mm", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
-             "part_number": None,
-             "usage": "Moulure carrée pour verre 6 mm (comble la rainure de 25.4 mm). 4 V + 4 H par porte (mitrés 45°)."},
-            {"label": "Parclose plate vitrage thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
-             "part_number": None,
-             "usage": "Moulure plate pour thermos 25.4 mm (le thermos remplit la rainure). 4 V + 4 H par porte."},
+            {"label": "Montant côté charnière (strike) 2\"", "dim_in": "2\" x 1 3/4\"", "dim_mm": "50.8 x 44.45",
+             "part_number": "ATV1010", "hydro_code": "MH80478", "internal_code": "40063-3",
+             "usage": "Stile côté gâche. Coupe = hauteur du battant."},
+            {"label": "Montant côté serrure (lock) 2⅛\"", "dim_in": "2 1/8\" x 1 3/4\"", "dim_mm": "53.975 x 44.45",
+             "part_number": "ATV1015", "hydro_code": "MH80479", "internal_code": "40063-4",
+             "usage": "Stile côté serrure (usinage MS Adams Rite)."},
+            {"label": "Moulure CARRÉE 13.48 — verre simple 6 mm", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
+             "part_number": "AT1045", "hydro_code": "MH80485", "internal_code": "40063-10",
+             "usage": "Moulure LARGE (carrée) si le client met du verre SIMPLE 6 mm. 4 V + 4 H par porte (mitrés 45°)."},
+            {"label": "Moulure PLATE 14.3 — verre thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
+             "part_number": "AT1050", "hydro_code": "MH80486", "internal_code": "40063-11",
+             "usage": "Moulure MINCE (plate) si le client met du THERMOS 25.4 mm. 4 V + 4 H par porte. "
+                      "✱ Les deux moulures sont interchangeables sur n'importe quelle porte AT — le choix dépend du verre commandé."},
         ],
         "hardware_typical": [
             "Charnière continue UH-120-DA (AT Fabrication)",
@@ -95,20 +174,25 @@ SYSTEMS = [
         "offsets_mm": {"width": 191.30, "height": 22.20},
         "default_stock_bar_length_mm": 6800,
         "profiles": [
-            {"label": "Tête 3 7/8\"", "dim_in": "3 7/8\" x 1 3/4\"", "dim_mm": "98.43 x 44.45",
-             "part_number": "AT1000",
-             "usage": "Linteau de porte AT2000 — hauteur 3⅞\" (même extrusion que la base AT1000)."},
-            {"label": "Base 6 7/8\"", "dim_in": "6 7/8\" x 1 3/4\"", "dim_mm": "174.625 x 44.45",
-             "part_number": "AT2000",
+            {"label": "Tête 3⅞\"", "dim_in": "3 7/8\" x 1 3/4\"", "dim_mm": "98.43 x 44.45",
+             "part_number": "ATB1000", "hydro_code": "MH80476", "internal_code": "40063-1",
+             "usage": "Linteau AT2000 — réutilise l'extrusion ATB1000 (base AT1000)."},
+            {"label": "Base 6⅞\"", "dim_in": "6 7/8\" x 1 3/4\"", "dim_mm": "174.625 x 44.45",
+             "part_number": "ATB2000", "hydro_code": "MH80321", "internal_code": "40777-2",
              "usage": "Traverse basse renforcée (caractéristique AT2000)."},
-            {"label": "Jambage côté charnière 3 1/2\"", "dim_in": "3 1/2\" x 1 3/4\"", "dim_mm": "88.9 x 44.45",
-             "part_number": "AT2025", "usage": "Montant vertical, côté gonds."},
-            {"label": "Jambage côté serrure 3 5/8\"", "dim_in": "3 5/8\" x 1 3/4\"", "dim_mm": "92.075 x 44.45",
-             "part_number": "AT2020", "usage": "Montant vertical, côté serrure."},
-            {"label": "Parclose carrée vitrage 6 mm", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
-             "part_number": None, "usage": "Moulure carrée pour verre 6 mm. 4 V + 4 H par porte (mitrés 45°)."},
-            {"label": "Parclose plate vitrage thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
-             "part_number": None, "usage": "Moulure plate pour thermos 25.4 mm. 4 V + 4 H par porte."},
+            {"label": "Jambage côté charnière (strike) 3½\"", "dim_in": "3 1/2\" x 1 3/4\"", "dim_mm": "88.9 x 44.45",
+             "part_number": "ATV2010", "hydro_code": "MH81325", "internal_code": "40777-6",
+             "usage": "Stile côté gâche."},
+            {"label": "Jambage côté serrure (lock) 3⅝\"", "dim_in": "3 5/8\" x 1 3/4\"", "dim_mm": "92.075 x 44.45",
+             "part_number": "ATV2015", "hydro_code": "MH81326", "internal_code": "40777-7",
+             "usage": "Stile côté serrure."},
+            {"label": "Moulure CARRÉE 13.48 — verre simple 6 mm", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
+             "part_number": "AT1045", "hydro_code": "MH80485", "internal_code": "40063-10",
+             "usage": "Moulure LARGE (carrée) si le client met du verre SIMPLE 6 mm."},
+            {"label": "Moulure PLATE 14.3 — verre thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
+             "part_number": "AT1050", "hydro_code": "MH80486", "internal_code": "40063-11",
+             "usage": "Moulure MINCE (plate) si le client met du THERMOS 25.4 mm. "
+                      "✱ Les deux moulures sont interchangeables — choisies selon le verre commandé."},
         ],
         "hardware_typical": [
             "Charnière continue UH-120-DA renforcée",
@@ -143,25 +227,32 @@ SYSTEMS = [
         "default_stock_bar_length_mm": 6800,
         "profiles": [
             {"label": "Tête isolée (tube 2¼\")", "dim_in": "2 1/4\" x 2 1/4\"", "dim_mm": "55.5 x 57.15",
-             "part_number": "ATT1005",
-             "usage": "Linteau ATi1000 — tube 2¼\". Coupe = largeur du battant."},
-            {"label": "Base isolée (3 7/8\")", "dim_in": "3 7/8\" x 2 1/4\"", "dim_mm": "98.43 x 57.15",
-             "part_number": "AT1000",
-             "usage": "Seuil renforcé 3⅞\" (même extrusion que tête AT2000)."},
-            {"label": "Montant côté charnière", "dim_in": "2\" x 2 1/4\"", "dim_mm": "50.8 x 57.15",
-             "part_number": "AT1025", "usage": "Jambage gonds."},
-            {"label": "Montant côté serrure", "dim_in": "2 1/8\" x 2 1/4\"", "dim_mm": "53.975 x 57.15",
-             "part_number": "AT1020", "usage": "Jambage serrure (usinage MS)."},
+             "part_number": "ATT1005", "hydro_code": "MH80477", "internal_code": "40063-2",
+             "usage": "Linteau ATi1000 — même extrusion qu'AT1000, isolation via cladding."},
+            {"label": "Base isolée 3⅞\"", "dim_in": "3 7/8\" x 2 1/4\"", "dim_mm": "98.43 x 57.15",
+             "part_number": "ATB1000", "hydro_code": "MH80476", "internal_code": "40063-1",
+             "usage": "Seuil renforcé 3⅞\"."},
+            {"label": "Montant côté charnière (strike) 2\"", "dim_in": "2\" x 2 1/4\"", "dim_mm": "50.8 x 57.15",
+             "part_number": "ATV1010", "hydro_code": "MH80478", "internal_code": "40063-3",
+             "usage": "Stile côté gâche."},
+            {"label": "Montant côté serrure (lock) 2⅛\"", "dim_in": "2 1/8\" x 2 1/4\"", "dim_mm": "53.975 x 57.15",
+             "part_number": "ATV1015", "hydro_code": "MH80479", "internal_code": "40063-4",
+             "usage": "Stile côté serrure (usinage MS)."},
             {"label": "Cladding vertical", "dim_in": "—", "dim_mm": "leaf_height − 5.7",
-             "part_number": "ATV1030",
+             "part_number": "ATCV1030", "hydro_code": "MH80483", "internal_code": "40063-8",
              "usage": "Revêtement extérieur vertical. 2 par porte (extérieur + intérieur)."},
             {"label": "Cladding horizontal", "dim_in": "—", "dim_mm": "leaf_width − 5.7",
-             "part_number": "ATCHA1035",
+             "part_number": "ATCHA1035", "hydro_code": "MH80482", "internal_code": "40063-7",
              "usage": "Revêtement extérieur horizontal. 2 par porte."},
-            {"label": "Parclose plate vitrage thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
-             "part_number": None, "usage": "Moulure plate pour thermos 25.4 mm. 4 V + 4 H par porte."},
-            {"label": "Parclose carrée vitrage 6 mm (option)", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
-             "part_number": None, "usage": "Moulure carrée si verre 6 mm (rare sur isolée)."},
+            {"label": "Sweep (joint balai bas)", "dim_in": "—", "dim_mm": "leaf_width",
+             "part_number": "ATCHB1040", "hydro_code": "MH80484", "internal_code": "40063-9",
+             "usage": "Joint balai inférieur (option étanchéité)."},
+            {"label": "Moulure CARRÉE 13.48 — verre simple 6 mm", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
+             "part_number": "AT1045", "hydro_code": "MH80485", "internal_code": "40063-10",
+             "usage": "Moulure LARGE pour verre simple (rare sur porte isolée mais possible)."},
+            {"label": "Moulure PLATE 14.3 — verre thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
+             "part_number": "AT1050", "hydro_code": "MH80486", "internal_code": "40063-11",
+             "usage": "Moulure MINCE pour thermos (configuration standard ATi). ✱ Les 2 moulures sont interchangeables — choix selon verre commandé."},
         ],
         "hardware_typical": [
             "Charnière continue UH-120-DA",
@@ -192,23 +283,28 @@ SYSTEMS = [
         "cladding_offset_mm": 5.7,
         "default_stock_bar_length_mm": 6800,
         "profiles": [
-            {"label": "Tête isolée 3 7/8\"", "dim_in": "3 7/8\" x 2 1/4\"", "dim_mm": "98.43 x 57.15",
-             "part_number": "AT1000",
-             "usage": "Linteau ATi2000 (même extrusion que base AT1000)."},
-            {"label": "Base isolée 6 7/8\"", "dim_in": "6 7/8\" x 2 1/4\"", "dim_mm": "174.625 x 57.15",
-             "part_number": "AT2000", "usage": "Traverse basse renforcée."},
-            {"label": "Jambage isolé 3 1/2\" (charnière)", "dim_in": "3 1/2\" x 2 1/4\"", "dim_mm": "88.9 x 57.15",
-             "part_number": "AT2025"},
-            {"label": "Jambage isolé 3 5/8\" (serrure)", "dim_in": "3 5/8\" x 2 1/4\"", "dim_mm": "92.075 x 57.15",
-             "part_number": "AT2020"},
+            {"label": "Tête isolée 3⅞\"", "dim_in": "3 7/8\" x 2 1/4\"", "dim_mm": "98.43 x 57.15",
+             "part_number": "ATB1000", "hydro_code": "MH80476", "internal_code": "40063-1",
+             "usage": "Linteau ATi2000 — réutilise ATB1000."},
+            {"label": "Base isolée 6⅞\"", "dim_in": "6 7/8\" x 2 1/4\"", "dim_mm": "174.625 x 57.15",
+             "part_number": "ATB2000", "hydro_code": "MH80321", "internal_code": "40777-2",
+             "usage": "Traverse basse renforcée."},
+            {"label": "Jambage charnière (strike) 3½\"", "dim_in": "3 1/2\" x 2 1/4\"", "dim_mm": "88.9 x 57.15",
+             "part_number": "ATV2010", "hydro_code": "MH81325", "internal_code": "40777-6"},
+            {"label": "Jambage serrure (lock) 3⅝\"", "dim_in": "3 5/8\" x 2 1/4\"", "dim_mm": "92.075 x 57.15",
+             "part_number": "ATV2015", "hydro_code": "MH81326", "internal_code": "40777-7"},
             {"label": "Cladding vertical", "dim_in": "—", "dim_mm": "leaf_height − 5.7",
-             "part_number": "ATV2030"},
+             "part_number": "ATCV2030", "hydro_code": "MH81324", "internal_code": "40777-5"},
             {"label": "Cladding horizontal", "dim_in": "—", "dim_mm": "leaf_width − 5.7",
-             "part_number": "ATCHA2025"},
-            {"label": "Parclose plate vitrage thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
-             "part_number": None, "usage": "Moulure plate pour thermos 25.4 mm. 4 V + 4 H par porte."},
-            {"label": "Parclose carrée vitrage 6 mm (option)", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
-             "part_number": None, "usage": "Moulure carrée si verre 6 mm (rare sur isolée)."},
+             "part_number": "ATCHA1035", "hydro_code": "MH80482", "internal_code": "40063-7",
+             "usage": "Cladding horizontal (réutilise ATCHA1035 sur ATi2000)."},
+            {"label": "Sweep (joint balai bas)", "dim_in": "—", "dim_mm": "leaf_width",
+             "part_number": "ATCHB2040", "hydro_code": "MH81323", "internal_code": "40777-4"},
+            {"label": "Moulure CARRÉE 13.48 — verre simple 6 mm", "dim_in": "1/4\" carrée", "dim_mm": "13.48 face",
+             "part_number": "AT1045", "hydro_code": "MH80485", "internal_code": "40063-10"},
+            {"label": "Moulure PLATE 14.3 — verre thermos 25.4 mm", "dim_in": "—", "dim_mm": "14.3 face",
+             "part_number": "AT1050", "hydro_code": "MH80486", "internal_code": "40063-11",
+             "usage": "✱ Les 2 moulures sont interchangeables sur n'importe quelle porte AT — choix selon verre commandé."},
         ],
         "hardware_typical": [
             "Comme AT2000 + joints thermiques",

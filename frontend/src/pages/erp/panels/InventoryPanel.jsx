@@ -20,27 +20,33 @@ import { useAuth } from "@/context/AuthContext";
 
 // `key` = inventory profile_key, identical to the optimizer's display key,
 // so "Confirmer coupes" can match and deduct correctly.
-// Description format (uniform): "<CODE> — <rôle> <dimension> — <séries>"
+// Format: "AT Fabrication #<AT_CODE>" — descriptions include the Hydro code (MH8xxxx)
+// extracted from the official Hydro Extrusion DXF (Jun 2026).
 const PRESET_KEYS = [
-    // ─── AT Fabrication — séries de portes ─────────────────────────────
-    { key: "AT Fabrication #ATT1005",   desc: "ATT1005 — Tête / linteau 2¼\" — AT1000 / ATi1000",         len: 6800 },
-    { key: "AT Fabrication #AT1000",    desc: "AT1000 — Traverse 3⅞\" — base AT1000 + tête AT2000 (partagée)", len: 6800 },
-    { key: "AT Fabrication #AT1025",    desc: "AT1025 — Montant charnière 2\" — AT1000 / ATi1000",        len: 6800 },
-    { key: "AT Fabrication #AT1020",    desc: "AT1020 — Montant serrure 2⅛\" — AT1000 / ATi1000",         len: 6800 },
-    { key: "AT Fabrication #AT2000",    desc: "AT2000 — Base lourde 6⅞\" — AT2000 / ATi2000",             len: 6800 },
-    { key: "AT Fabrication #AT2025",    desc: "AT2025 — Jambage charnière 3½\" — AT2000 / ATi2000",       len: 6800 },
-    { key: "AT Fabrication #AT2020",    desc: "AT2020 — Jambage serrure 3⅝\" — AT2000 / ATi2000",         len: 6800 },
-    { key: "AT Fabrication #ATV1030",   desc: "ATV1030 — Cladding vertical — ATi1000",                    len: 6800 },
-    { key: "AT Fabrication #ATCHA1035", desc: "ATCHA1035 — Cladding horizontal — ATi1000",               len: 6800 },
-    { key: "AT Fabrication #ATV2030",   desc: "ATV2030 — Cladding vertical — ATi2000",                    len: 6800 },
-    { key: "AT Fabrication #ATCHA2025", desc: "ATCHA2025 — Cladding horizontal — ATi2000",               len: 6800 },
+    // ─── AT Fabrication — séries portes AT1000 / ATi1000 ───────────────
+    { key: "AT Fabrication #ATT1005",   desc: "ATT1005 / MH80477 — Tête 2¼\" — AT1000 / ATi1000",                   len: 6800 },
+    { key: "AT Fabrication #ATB1000",   desc: "ATB1000 / MH80476 — Base 3⅞\" AT1000 + tête AT2000 (partagée)",      len: 6800 },
+    { key: "AT Fabrication #ATV1010",   desc: "ATV1010 / MH80478 — Stile charnière 2\" — AT1000 / ATi1000",         len: 6800 },
+    { key: "AT Fabrication #ATV1015",   desc: "ATV1015 / MH80479 — Stile serrure 2⅛\" — AT1000 / ATi1000",          len: 6800 },
+    { key: "AT Fabrication #ATCV1030",  desc: "ATCV1030 / MH80483 — Cladding vertical — ATi1000",                   len: 6800 },
+    { key: "AT Fabrication #ATCHA1035", desc: "ATCHA1035 / MH80482 — Cladding horizontal — ATi1000 / ATi2000",     len: 6800 },
+    { key: "AT Fabrication #ATCHB1040", desc: "ATCHB1040 / MH80484 — Sweep (joint balai bas) — ATi1000",            len: 6800 },
+    // ─── AT Fabrication — séries portes AT2000 / ATi2000 ───────────────
+    { key: "AT Fabrication #ATB2000",   desc: "ATB2000 / MH80321 — Base 6⅞\" — AT2000 / ATi2000",                   len: 6800 },
+    { key: "AT Fabrication #ATV2010",   desc: "ATV2010 / MH81325 — Stile charnière 3½\" — AT2000 / ATi2000",        len: 6800 },
+    { key: "AT Fabrication #ATV2015",   desc: "ATV2015 / MH81326 — Stile serrure 3⅝\" — AT2000 / ATi2000",          len: 6800 },
+    { key: "AT Fabrication #ATCV2030",  desc: "ATCV2030 / MH81324 — Cladding vertical — ATi2000",                   len: 6800 },
+    { key: "AT Fabrication #ATCHB2040", desc: "ATCHB2040 / MH81323 — Sweep (joint balai bas) — ATi2000",            len: 6800 },
+    // ─── Moulures (interchangeables sur toutes les portes AT) ──────────
+    { key: "AT Fabrication #AT1045",    desc: "AT1045 / MH80485 — Moulure CARRÉE 13.48 — verre simple 6 mm",        len: 6800 },
+    { key: "AT Fabrication #AT1050",    desc: "AT1050 / MH80486 — Moulure PLATE 14.3 — verre thermos 25.4 mm",      len: 6800 },
     // ─── Trifab — Flush Glaze ──────────────────────────────────────────
-    { key: "Trifab #450CG005", desc: "450CG005 — Tube à poche 1¾\" × 4½\" — Trifab VG450",                len: 7315 },
-    { key: "Trifab #450CG011", desc: "450CG011 — Tube escalier 1¾\" × 4½\" — Trifab VG450",               len: 7315 },
+    { key: "Trifab #450CG005", desc: "450CG005 — Tube à poche 1¾\" × 4½\" — Trifab VG450",                          len: 7315 },
+    { key: "Trifab #450CG011", desc: "450CG011 — Tube escalier 1¾\" × 4½\" — Trifab VG450",                         len: 7315 },
     // ─── Kawneer — Mur-rideau 1620 ─────────────────────────────────────
-    { key: "Kawneer #178-001", desc: "178-001 — Meneau 2\" × 3¾\" — Kawneer 1620",                        len: 7315 },
-    { key: "Kawneer #178-006", desc: "178-006 — Couvercle 2\" × ¾\" — Kawneer 1620",                      len: 7315 },
-    { key: "Kawneer #178-300", desc: "178-300 — Plaque à pression 2\" — Kawneer 1620",                    len: 7315 },
+    { key: "Kawneer #178-001", desc: "178-001 — Meneau 2\" × 3¾\" — Kawneer 1620",                                  len: 7315 },
+    { key: "Kawneer #178-006", desc: "178-006 — Couvercle 2\" × ¾\" — Kawneer 1620",                                len: 7315 },
+    { key: "Kawneer #178-300", desc: "178-300 — Plaque à pression 2\" — Kawneer 1620",                              len: 7315 },
 ];
 
 const FINISH_LABELS = { clair: "Clair", noir: "Noir", mill_finish: "Mill" };

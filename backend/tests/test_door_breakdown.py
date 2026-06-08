@@ -65,9 +65,9 @@ def test_at1000_part_numbers_and_glass6mm_parclose():
     hinge = next(v for k, v in by_label.items() if "charnière" in k.lower() and "Montant" in k)
     lock = next(v for k, v in by_label.items() if "serrure" in k.lower() and "Montant" in k)
     assert top["part_number"] == "ATT1005"
-    assert base["part_number"] == "AT1000"     # 3⅞" base (same as AT2000 head)
-    assert hinge["part_number"] == "AT1025"    # 2" hinge stile
-    assert lock["part_number"] == "AT1020"     # 2⅛" lock stile
+    assert base["part_number"] == "ATB1000"    # 3⅞" base (= AT2000 head extrusion)
+    assert hinge["part_number"] == "ATV1010"   # 2" hinge stile (strike side)
+    assert lock["part_number"] == "ATV1015"    # 2⅛" lock stile
     # Parclose 6 mm → carrée 13.48
     pv = next(v for k, v in by_label.items() if "Parclose verticale" in k)
     assert "carrée" in pv["profile"]
@@ -75,7 +75,8 @@ def test_at1000_part_numbers_and_glass6mm_parclose():
 
 
 def test_at2000_part_numbers():
-    """AT2000 — top = AT1000 (3⅞ extrusion shared), base = AT2000, hinge = AT2025, lock = AT2020."""
+    """AT2000 — top reuses ATB1000 (3⅞ extrusion shared with AT1000 base),
+    base = ATB2000, hinge = ATV2010, lock = ATV2015."""
     from cut_door_breakdown import decompose_at_door
     result = decompose_at_door(723.10, 2114.50, series="AT2000",
                                 glass_thickness_mm=6.0)
@@ -84,15 +85,15 @@ def test_at2000_part_numbers():
     base = next(v for k, v in by_label.items() if "Traverse basse" in k)
     hinge = next(v for k, v in by_label.items() if "charnière" in k.lower() and "Montant" in k)
     lock = next(v for k, v in by_label.items() if "serrure" in k.lower() and "Montant" in k)
-    assert top["part_number"] == "AT1000"      # AT2000 head = AT1000 part (3⅞")
-    assert base["part_number"] == "AT2000"     # 6⅞"
-    assert hinge["part_number"] == "AT2025"    # 3½"
-    assert lock["part_number"] == "AT2020"     # 3⅝"
+    assert top["part_number"] == "ATB1000"     # AT2000 head reuses ATB1000 extrusion
+    assert base["part_number"] == "ATB2000"    # 6⅞"
+    assert hinge["part_number"] == "ATV2010"   # 3½"
+    assert lock["part_number"] == "ATV2015"    # 3⅝"
 
 
 def test_ati2000_part_numbers_and_thermos_parclose():
-    """ATi2000 with 25.4 mm thermos glass → plate 14.3 mm parclose
-    and cladding parts ATV2030 / ATCHA2025."""
+    """ATi2000 with 25.4 mm thermos glass → plate AT1050 14.3 mm parclose
+    and cladding parts ATCV2030 / ATCHA1035 (shared cladding H)."""
     from cut_door_breakdown import decompose_at_door
     result = decompose_at_door(723.10, 2111.40, series="ATi2000",
                                 glass_thickness_mm=25.4)
@@ -101,25 +102,39 @@ def test_ati2000_part_numbers_and_thermos_parclose():
     pv = next(v for k, v in by_label.items() if "Parclose verticale" in k)
     assert "plate" in pv["profile"]
     assert "14.3" in pv["profile"]
+    assert pv["part_number"] == "AT1050"
     # Verify recomputed length with 14.3 mm face:
     # 2111.40 - 98.425 (head 3⅞) - 174.625 (base 6⅞) - 2×14.3 = 1809.75
     assert abs(pv["length_mm"] - 1809.75) < 0.1
     # Cladding part numbers
     clad_v = next(v for k, v in by_label.items() if "Cladding vertical" in k)
     clad_h = next(v for k, v in by_label.items() if "Cladding horizontal" in k)
-    assert clad_v["part_number"] == "ATV2030"
-    assert clad_h["part_number"] == "ATCHA2025"
+    assert clad_v["part_number"] == "ATCV2030"
+    assert clad_h["part_number"] == "ATCHA1035"
 
 
 def test_ati1000_cladding_part_numbers():
-    """ATi1000 cladding pieces = ATV1030 / ATCHA1035."""
+    """ATi1000 cladding pieces = ATCV1030 / ATCHA1035."""
     from cut_door_breakdown import decompose_at_door
     result = decompose_at_door(799.30, 2111.40, series="ATi1000",
                                 glass_thickness_mm=25.4)
     clad_v = next(i for i in result.items if "Cladding vertical" in i["label"])
     clad_h = next(i for i in result.items if "Cladding horizontal" in i["label"])
-    assert clad_v["part_number"] == "ATV1030"
+    assert clad_v["part_number"] == "ATCV1030"
     assert clad_h["part_number"] == "ATCHA1035"
+
+
+def test_parclose_part_number_carree_vs_plate():
+    """6mm glass → AT1045 (carrée). 25.4mm thermos → AT1050 (plate)."""
+    from cut_door_breakdown import decompose_at_door
+    r6 = decompose_at_door(799.30, 2111.40, series="AT1000", glass_thickness_mm=6.0)
+    pv6 = next(i for i in r6.items if "Parclose verticale" in i["label"])
+    assert pv6["part_number"] == "AT1045"
+    assert "carrée" in pv6["profile"]
+    r254 = decompose_at_door(799.30, 2111.40, series="AT1000", glass_thickness_mm=25.4)
+    pv254 = next(i for i in r254.items if "Parclose verticale" in i["label"])
+    assert pv254["part_number"] == "AT1050"
+    assert "plate" in pv254["profile"]
 
 
 def test_decompose_at2000_user_supplied_leaf_bmo():
