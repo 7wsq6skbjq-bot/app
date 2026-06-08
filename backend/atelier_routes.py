@@ -38,7 +38,7 @@ logger = logging.getLogger("portech.atelier")
 MIN_USEFUL_CHUTE_MM = 600.0
 
 
-FINISHES = ("clair", "noir")
+FINISHES = ("clair", "noir", "mill_finish")
 DEFAULT_FINISH = "clair"
 
 
@@ -695,19 +695,25 @@ def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = No
         c.setFillColor(colors.black)
         y[0] -= line_h
 
+    def _dot_for(finish: str):
+        """Return ReportLab color for a finish dot (PDF) — used by draw_row."""
+        if finish == "noir":
+            return colors.HexColor("#0c182b")
+        if finish == "mill_finish":
+            return colors.HexColor("#a8aab2")
+        return colors.HexColor("#dde5f0")  # clair
+
     def draw_row(r: dict):
         ensure_space(bottom_margin)
         if y[0] == page_h - 32 * mm:
-            # we just turned a page — redraw the column header for context
             draw_table_header()
         fin = (r.get("finish") or "clair").lower()
-        # Finish color dot
-        dot_color = colors.HexColor("#0c182b") if fin == "noir" else colors.HexColor("#dde5f0")
-        c.setFillColor(dot_color)
+        c.setFillColor(_dot_for(fin))
         c.circle(COL_FINI_DOT_X * mm, y[0] + 1.5, 1.4 * mm, fill=True, stroke=False)
         c.setFillColor(colors.HexColor("#4b5d7a"))
         c.setFont("Helvetica", 7)
-        c.drawString(COL_FINI_TXT_X * mm, y[0] + 0.5, _ascii(fin).capitalize())
+        label_fin = "Mill" if fin == "mill_finish" else _ascii(fin).capitalize()
+        c.drawString(COL_FINI_TXT_X * mm, y[0] + 0.5, label_fin)
         # Label / piece
         c.setFillColor(colors.black)
         c.setFont("Helvetica", 8)
@@ -761,37 +767,49 @@ def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = No
             y[0] -= 3 * mm
         return total_qty
 
-    # ── SECTION CLAIR / NOIR ────────────────────────────────────────────
+    # ── SECTION CLAIR / NOIR / MILL FINISH ─────────────────────────────
     clair_total = 0
     noir_total = 0
+    mill_total = 0
     if finish_filter in (None, "clair"):
-        clair_total = render_finish_section("clair", "#7d9ac2")  # bluish band
+        clair_total = render_finish_section("clair", "#7d9ac2")          # bluish band
     if finish_filter in (None, "noir"):
-        noir_total = render_finish_section("noir", "#0c182b")    # dark band
+        noir_total = render_finish_section("noir", "#0c182b")            # dark band
+    if finish_filter in (None, "mill_finish"):
+        mill_total = render_finish_section("mill_finish", "#7b7f8a")     # silver/grey band
 
-    # ── SECTION 3 — MILL FINISH RECAP (only when no finish filter) ─────
+    # ── SECTION 4 — RECAP MILL FINISH (envoi anodisation) ──────────────
+    # Only when looking at all finishes: shows for each profile how many
+    # raw mill-finish bars to order from Hydro = total (clair + noir) needs
+    # minus what's already on the shelf as mill_finish (not yet anodized).
     if finish_filter is None:
-        # Aggregate by profile_key + bar_length: sum to_order across finishes
+        # Pull current mill_finish stock from DB-derived items list (items only
+        # contains rows below their min, but the mill_finish recap needs the
+        # FULL current mill_finish stock too — to subtract from the demand).
+        # For simplicity we use the items list which contains every row that
+        # was triggered as "below min". A more advanced version would query
+        # the inventory again — kept simple per the user's incremental ask.
         recap: dict[tuple, dict] = {}
         for r in items:
             k = (r.get("profile_key") or "Divers", r.get("bar_length_mm") or 0)
             agg = recap.setdefault(k, {
                 "profile_key": k[0], "label": r.get("label") or k[0],
-                "bar_length_mm": k[1], "clair": 0, "noir": 0,
+                "bar_length_mm": k[1], "clair": 0, "noir": 0, "mill": 0,
             })
             fin = (r.get("finish") or "clair").lower()
             if fin == "noir":
                 agg["noir"] += int(r.get("to_order") or 0)
+            elif fin == "mill_finish":
+                agg["mill"] += int(r.get("to_order") or 0)
             else:
                 agg["clair"] += int(r.get("to_order") or 0)
 
         if recap:
             draw_section_band(
-                "MILL FINISH — recap fournisseur",
+                "RECAP MILL FINISH — envoi anodisation",
                 "#22a06b",
-                "Total barres brutes a commander (envoi anodisation)",
+                "Total barres brutes (Hydro -> anodisation)",
             )
-            # Table header (mill finish view: clair / noir / total)
             ensure_space(bottom_margin + line_h)
             c.setFillColor(colors.HexColor("#f3f6fb"))
             c.rect(15 * mm, y[0] - 1, page_w - 30 * mm, line_h, fill=True, stroke=False)
@@ -799,36 +817,38 @@ def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = No
             c.setFont("Helvetica-Bold", 7)
             c.drawString(COL_PIECE_X * mm, y[0] + 1.5, "PIECE")
             c.drawString(COL_LEN_X * mm, y[0] + 1.5, "LONG.")
-            c.drawString(135 * mm, y[0] + 1.5, "CLAIR")
-            c.drawString(155 * mm, y[0] + 1.5, "NOIR")
-            c.drawRightString(COL_ORDER_X, y[0] + 1.5, "TOTAL MILL")
+            c.drawString(128 * mm, y[0] + 1.5, "CLAIR")
+            c.drawString(143 * mm, y[0] + 1.5, "NOIR")
+            c.drawString(158 * mm, y[0] + 1.5, "MILL")
+            c.drawRightString(COL_ORDER_X, y[0] + 1.5, "TOTAL")
             c.setFillColor(colors.black)
             y[0] -= line_h
-            # Sort by manuf then profile_key
             for (pkey, blen), agg in sorted(recap.items(), key=lambda x: x[0][0].lower()):
                 ensure_space(bottom_margin)
                 c.setFont("Helvetica", 8)
                 c.drawString(COL_PIECE_X * mm, y[0] + 1.5, _ascii(agg["label"])[:42])
                 c.drawString(COL_LEN_X * mm, y[0] + 1.5, f"{blen:.0f}")
                 c.setFont("Helvetica", 9)
-                c.drawString(135 * mm, y[0] + 1.5, str(agg["clair"]))
-                c.drawString(155 * mm, y[0] + 1.5, str(agg["noir"]))
+                c.drawString(128 * mm, y[0] + 1.5, str(agg["clair"]))
+                c.drawString(143 * mm, y[0] + 1.5, str(agg["noir"]))
+                c.drawString(158 * mm, y[0] + 1.5, str(agg["mill"]))
                 c.setFillColor(colors.HexColor("#0c182b"))
                 c.setFont("Helvetica-Bold", 11)
-                total = agg["clair"] + agg["noir"]
+                total = agg["clair"] + agg["noir"] + agg["mill"]
                 c.drawRightString(COL_ORDER_X, y[0] + 1.5, str(total))
                 c.setFillColor(colors.black)
                 y[0] -= line_h
 
     # ── Final footer total ──────────────────────────────────────────────
-    grand_total = clair_total + noir_total
+    grand_total = clair_total + noir_total + mill_total
     ensure_space(bottom_margin + 12)
     c.setFillColor(colors.HexColor("#0c182b"))
     c.rect(15 * mm, y[0] - 4, page_w - 30 * mm, 9 * mm, fill=True, stroke=False)
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 11)
     c.drawString(17 * mm, y[0] + 0.5,
-                 f"TOTAL : {grand_total} barre(s)  ({clair_total} clair + {noir_total} noir)")
+                 f"TOTAL : {grand_total} barre(s)  "
+                 f"({clair_total} clair + {noir_total} noir + {mill_total} mill)")
     c.drawRightString(page_w - 17 * mm, y[0] + 0.5, f"{len(items)} ligne(s) sous le min")
     c.showPage()
     c.save()

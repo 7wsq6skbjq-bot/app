@@ -43,7 +43,7 @@ const PRESET_KEYS = [
     { key: "Kawneer #178-300", desc: "178-300 — Plaque à pression 2\" — Kawneer 1620",                    len: 7315 },
 ];
 
-const FINISH_LABELS = { clair: "Clair", noir: "Noir" };
+const FINISH_LABELS = { clair: "Clair", noir: "Noir", mill_finish: "Mill" };
 
 const rowStatus = (r) => {
     const qty = r.qty_available || 0;
@@ -69,18 +69,39 @@ export const InventoryPanel = () => {
 
     const load = useCallback(async () => {
         setLoading(true);
+        let result = null;
         try {
             const { data } = await http.get("/admin/alu-inventory");
-            setBars(data.bars || []);
-            setChutes(data.chutes || []);
-            setCounts(data.finishes_count || { clair: 0, noir: 0 });
-            setBelowMin(data.below_min || 0);
+            result = data;
         } finally {
             setLoading(false);
         }
+        if (result) {
+            setBars(result.bars || []);
+            setChutes(result.chutes || []);
+            setCounts(result.finishes_count || { clair: 0, noir: 0, mill_finish: 0 });
+            setBelowMin(result.below_min || 0);
+        }
     }, [http]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        // Initial fetch — fire-and-forget. setState inside is OK because it
+        // happens AFTER the await resolves (microtask), not synchronously.
+        let cancelled = false;
+        (async () => {
+            try {
+                const { data } = await http.get("/admin/alu-inventory");
+                if (cancelled) return;
+                setBars(data.bars || []);
+                setChutes(data.chutes || []);
+                setCounts(data.finishes_count || { clair: 0, noir: 0, mill_finish: 0 });
+                setBelowMin(data.below_min || 0);
+            } catch {
+                // silent — user can hit Rafraîchir
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [http]);
 
     const adjust = async (row, delta) => {
         try {
@@ -164,6 +185,9 @@ export const InventoryPanel = () => {
                 <FilterChip active={filterFinish === "noir"} onClick={() => setFilterFinish("noir")} testId="inv-filter-noir">
                     <FinishDot finish="noir" /> Noir ({counts.noir || 0})
                 </FilterChip>
+                <FilterChip active={filterFinish === "mill_finish"} onClick={() => setFilterFinish("mill_finish")} testId="inv-filter-mill">
+                    <FinishDot finish="mill_finish" /> Mill ({counts.mill_finish || 0})
+                </FilterChip>
             </div>
 
             {/* ─── Bars table ───────────────────────────────────── */}
@@ -204,16 +228,21 @@ export const InventoryPanel = () => {
 };
 
 // ─── Small UI primitives ───────────────────────────────────────────────
-const FinishDot = ({ finish }) => (
-    <span
-        aria-hidden="true"
-        className="inline-block w-3 h-3 rounded-full border"
-        style={{
-            background: finish === "noir" ? "#0c182b" : "#f3f6fb",
-            borderColor: finish === "noir" ? "#0c182b" : "#9aaecb",
-        }}
-    />
-);
+const FinishDot = ({ finish }) => {
+    const colorMap = {
+        noir: { bg: "#0c182b", border: "#0c182b" },
+        mill_finish: { bg: "#a8aab2", border: "#7b7f8a" },  // silver/grey for raw alu
+        clair: { bg: "#f3f6fb", border: "#9aaecb" },
+    };
+    const c = colorMap[finish] || colorMap.clair;
+    return (
+        <span
+            aria-hidden="true"
+            className="inline-block w-3 h-3 rounded-full border"
+            style={{ background: c.bg, borderColor: c.border }}
+        />
+    );
+};
 
 const FilterChip = ({ active, onClick, children, testId }) => (
     <button
@@ -453,25 +482,19 @@ const AddInventoryModal = ({ onClose, onAdded }) => {
                 </Field>
                 <Field label="Fini / Couleur" required>
                     <div className="flex gap-2">
-                        {["clair", "noir"].map((f) => (
+                        {["clair", "noir", "mill_finish"].map((f) => (
                             <button
                                 key={f}
                                 type="button"
                                 onClick={() => setFinish(f)}
-                                data-testid={`inv-finish-${f}`}
+                                data-testid={`inv-finish-${f === "mill_finish" ? "mill" : f}`}
                                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border tech-stamp text-xs transition-colors ${
                                     finish === f
                                         ? "border-[#0c182b] bg-[#0c182b] text-white"
                                         : "border-[#dde5f0] text-[#4b5d7a] hover:bg-[#f3f6fb]"
                                 }`}
                             >
-                                <span
-                                    className="inline-block w-3 h-3 rounded-full border"
-                                    style={{
-                                        background: f === "noir" ? (finish === f ? "#fff" : "#0c182b") : (finish === f ? "#fff" : "#f3f6fb"),
-                                        borderColor: finish === f ? "#fff" : (f === "noir" ? "#0c182b" : "#9aaecb"),
-                                    }}
-                                />
+                                <FinishDot finish={f} />
                                 {FINISH_LABELS[f]}
                             </button>
                         ))}
@@ -503,7 +526,7 @@ const AddInventoryModal = ({ onClose, onAdded }) => {
                 </div>
                 <div className="text-[11px] text-[#4b5d7a]">
                     Standard Portech : portes AT en barres de <b>6800 mm</b> · Flush Glaze / Mur-rideau en barres de <b>7315 mm</b>.
-                    L'extrusion <code>AT1000</code> sert à la fois pour la base AT1000 (3⅞") et la tête AT2000 (3⅞").
+                    L&apos;extrusion <code>AT1000</code> sert à la fois pour la base AT1000 (3⅞&quot;) et la tête AT2000 (3⅞&quot;).
                     Si une ligne identique existe (même clé + longueur + fini), la quantité est cumulée.
                 </div>
             </div>
@@ -566,7 +589,7 @@ const ThresholdsModal = ({ row, onClose, onSaved }) => {
                     </Field>
                 </div>
                 <div className="text-[11px] text-[#4b5d7a]">
-                    Laisser vide pour désactiver l'alerte. Le bon de commande PDF calcule
+                    Laisser vide pour désactiver l&apos;alerte. Le bon de commande PDF calcule
                     automatiquement <code>(max − qté actuelle)</code> pour chaque pièce sous le min.
                 </div>
             </div>
@@ -630,8 +653,8 @@ const EditMetaModal = ({ row, onClose, onSaved }) => {
                         placeholder="ex. ATT1005 — Tête 2¼ AT1000" />
                 </Field>
                 <div className="text-[11px] text-[#4b5d7a]">
-                    ⚠ Modifier la clé peut casser la déduction automatique au "Confirmer coupes"
-                    si une liste de coupe est en cours et référence l'ancienne clé. La description
+                    ⚠ Modifier la clé peut casser la déduction automatique au &quot;Confirmer coupes&quot;
+                    si une liste de coupe est en cours et référence l&apos;ancienne clé. La description
                     libre est sans risque — change-la pour corriger une coquille.
                 </div>
             </div>
@@ -693,6 +716,7 @@ const BulkThresholdsModal = ({ currentFilter, onClose, onSaved }) => {
                             { v: "all", label: "Tout" },
                             { v: "clair", label: "Clair seulement" },
                             { v: "noir", label: "Noir seulement" },
+                            { v: "mill_finish", label: "Mill seulement" },
                         ].map((opt) => (
                             <button
                                 key={opt.v}
