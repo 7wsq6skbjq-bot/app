@@ -45,8 +45,8 @@ const PRESET_KEYS = [
     { key: "AT Fabrication #AT1045",    desc: "AT1045 / MH80485 — Moulure CARRÉE 13.48 — verre simple 6 mm",        len: 6800 },
     { key: "AT Fabrication #AT1050",    desc: "AT1050 / MH80486 — Moulure PLATE 14.3 — verre thermos 25.4 mm",      len: 6800 },
     // ─── Accessoires AT (longueurs spéciales) ──────────────────────────
-    { key: "AT Fabrication #AT1065",    desc: "AT1065 — Accessoire (joint / garniture) — barres 5000 mm",            len: 5000 },
-    { key: "AT Fabrication #AT1070",    desc: "AT1070 — Accessoire (joint / garniture) — barres 10'-0\" (3048 mm)",  len: 3048 },
+    { key: "AT Fabrication #AT1065",    desc: "AT1065 — PVC bris thermique — ATi1000 / ATi2000 (barres 5000 mm)",   len: 5000 },
+    { key: "AT Fabrication #AT1070",    desc: "AT1070 — Garniture à moulures (joint vitrage) — barres 10'-0\" (3048 mm)", len: 3048 },
     // ─── Trifab — Flush Glaze ──────────────────────────────────────────
     { key: "Trifab #450CG005", desc: "450CG005 — Tube à poche 1¾\" × 4½\" — Trifab VG450",                          len: 7315 },
     { key: "Trifab #450CG011", desc: "450CG011 — Tube escalier 1¾\" × 4½\" — Trifab VG450",                         len: 7315 },
