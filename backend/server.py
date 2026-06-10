@@ -346,6 +346,9 @@ api_router.include_router(build_erp_router(db, get_current_admin))
 from atelier_routes import build_atelier_router  # noqa: E402
 api_router.include_router(build_atelier_router(auth_dep=get_current_admin, get_db=lambda: db))
 
+from at_order_routes import build_at_order_router  # noqa: E402
+api_router.include_router(build_at_order_router(auth_dep=get_current_admin, get_db=lambda: db))
+
 app.include_router(api_router)
 
 app.add_middleware(

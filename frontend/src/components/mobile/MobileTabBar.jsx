@@ -13,6 +13,7 @@ import {
     Wallet,
     Scissors,
     Boxes,
+    DoorOpen,
     X,
     Inbox,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const SECONDARY = [
     { to: "/admin/gestion/connaissements",     label: "Connaissements",      icon: Truck },
     { to: "/admin/gestion/coupes",             label: "Listes de coupe",     icon: Scissors },
     { to: "/admin/gestion/inventaire-alu",      label: "Inventaire alu",      icon: Boxes },
+    { to: "/admin/gestion/commandes-at",        label: "Commandes AT",        icon: DoorOpen },
     { to: "/admin/gestion/prospection",        label: "Prospection",         icon: Send },
 ];
 
