@@ -30,6 +30,19 @@ User language: **French**.
       parclose** (2026-02)
 - ✅ **Inventory finishes (clair/noir) + min/max thresholds + Purchase-Order
       PDF + filter chips + status badges** (2026-06)
+- ✅ **AT Orders Phase 1**: Gemini Vision OCR of order forms → 3-page Shop
+      Drawing PDF (cover, elevations, hardware checklist) (2026-06)
+- ✅ **AT Orders Phase 2** (2026-06):
+    - Per-door hardware matrix (UI + backend `DoorLine.hardware`)
+    - 12" pulls added (pull_12_back_to_back / exterior / interior)
+    - Copy-hardware-to-all-doors button per column
+    - Profile cross-section library pages 4+ in Shop Drawing PDF
+      (`at_profile_library.py` — ATT1005 / ATB1000 / ATB2000 / ATV1010 /
+       ATV1015 / ATV2010 / ATV2015 / AT1045 / AT1050 / ATCV* / ATCHA1035)
+    - "Créer liste de coupe" button — pushes AT order into a new ERP CutList
+      via `POST /admin/at-orders/to-cut-list` (uses `decompose_at_door`)
+    - Legacy v1 top-level hardware migrated to per-door on load
+    - Encoding sanitizer fixes "?" rendering for em-dash / quotes / fractions
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`
