@@ -728,17 +728,17 @@ def _render_purchase_order_pdf(items: list[dict], finish_filter: str | None = No
         c.setFont("Helvetica", 7)
         label_fin = "Mill" if fin == "mill_finish" else _ascii(fin).capitalize()
         c.drawString(COL_FINI_TXT_X * mm, y[0] + 0.5, label_fin)
-        # Label / piece (line 1 = AT label, line 2 = Hydro code if known)
+        # Label / piece — single line: "<description> · Hydro MHxxxxx"
         c.setFillColor(colors.black)
         c.setFont("Helvetica", 8)
-        label = r.get("label") or r.get("profile_key") or ""
-        c.drawString(COL_PIECE_X * mm, y[0] + 1.5, _ascii(label)[:42])
+        label = _ascii(r.get("label") or r.get("profile_key") or "")
         hydro = _hydro_for_inventory_key(r.get("profile_key"))
-        if hydro:
-            c.setFillColor(colors.HexColor("#4b5d7a"))
-            c.setFont("Helvetica-Oblique", 6.5)
-            c.drawString(COL_PIECE_X * mm, y[0] - 1.5, f"Hydro {hydro}")
-            c.setFillColor(colors.black)
+        if hydro and hydro not in label:
+            # Truncate description so we have room for the Hydro suffix
+            label = label[:30].rstrip(" ,;:") + f"  ·  Hydro {hydro}"
+        else:
+            label = label[:48]
+        c.drawString(COL_PIECE_X * mm, y[0] + 1.5, label)
         # Length
         c.drawString(COL_LEN_X * mm, y[0] + 1.5, f"{r.get('bar_length_mm', 0):.0f}")
         # Qty (color-coded)
