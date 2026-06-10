@@ -6,10 +6,10 @@
  *    3. User clicks "Generer plan d'atelier" → PDF downloaded.
  *    4. Optional "Enregistrer" persists the order in MongoDB for later access.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     DoorOpen, Upload, Download, Save, Trash2, RefreshCw, Plus, FileText,
-    AlertCircle,
+    AlertCircle, Scissors, Copy, CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -32,6 +32,7 @@ const emptyOrder = () => ({
 const emptyDoor = () => ({
     tag: "", series: "AT1000", width_in: 36, height_in: 84, qty: 1,
     hand: "unknown", glazing: "unknown", notes: "",
+    hardware: {},
 });
 
 const HARDWARE_KEYS = [
@@ -44,6 +45,9 @@ const HARDWARE_KEYS = [
         ["pull_9_back_to_back", "Poignées 9\" dos-à-dos"],
         ["pull_9_exterior", "Poignée 9\" extérieure"],
         ["pull_9_interior", "Poignée 9\" intérieure"],
+        ["pull_12_back_to_back", "Poignées 12\" dos-à-dos"],
+        ["pull_12_exterior", "Poignée 12\" extérieure"],
+        ["pull_12_interior", "Poignée 12\" intérieure"],
         ["push_bar_tubular", "Barre à pousser tubulaire"],
     ]],
     ["Serrures / Sécurité", [
@@ -79,7 +83,25 @@ export const ATOrdersPanel = () => {
     const [saving, setSaving] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+    const [successMsg, setSuccessMsg] = useState("");
+    const [creatingCutList, setCreatingCutList] = useState(false);
     const fileRef = useRef(null);
+
+    // ── Helpers ────────────────────────────────────────────────
+    // Legacy v1 orders stored hardware at the top level; new orders nest it
+    // inside each door. Migrate on load so the UI always sees per-door HW.
+    const _migrateOrder = (raw) => {
+        if (!raw) return emptyOrder();
+        const next = { ...emptyOrder(), ...raw };
+        const topHw = next.hardware && Object.keys(next.hardware).length ? next.hardware : null;
+        next.doors = (next.doors || []).map((d) => {
+            const hw = d.hardware && Object.keys(d.hardware).length ? d.hardware : (topHw || {});
+            return { ...emptyDoor(), ...d, hardware: { ...hw } };
+        });
+        // We no longer use the global hardware once doors carry it.
+        next.hardware = {};
+        return next;
+    };
 
     const loadList = useCallback(async () => {
         try {
@@ -115,7 +137,7 @@ export const ATOrdersPanel = () => {
                 headers: { "Content-Type": "multipart/form-data" },
                 timeout: 90000,
             });
-            setOrder({ ...emptyOrder(), ...data });
+            setOrder(_migrateOrder(data));
         } catch (err) {
             setErrorMsg(err?.response?.data?.detail || "Erreur OCR — le PDF n'a pas pu être lu.");
         } finally {
@@ -136,9 +158,20 @@ export const ATOrdersPanel = () => {
     const removeDoor = (idx) => setOrder((o) => ({
         ...o, doors: (o.doors || []).filter((_, i) => i !== idx),
     }));
-    const toggleHardware = (k) => setOrder((o) => ({
-        ...o, hardware: { ...(o.hardware || {}), [k]: !o.hardware?.[k] },
-    }));
+    const toggleHardware = (doorIdx, k) => setOrder((o) => {
+        const doors = [...(o.doors || [])];
+        if (!doors[doorIdx]) return o;
+        const hw = { ...(doors[doorIdx].hardware || {}) };
+        hw[k] = !hw[k];
+        doors[doorIdx] = { ...doors[doorIdx], hardware: hw };
+        return { ...o, doors };
+    });
+    const copyHardwareToAll = (fromIdx) => setOrder((o) => {
+        const src = o.doors?.[fromIdx]?.hardware || {};
+        const doors = (o.doors || []).map((d, i) =>
+            i === fromIdx ? d : { ...d, hardware: { ...src } });
+        return { ...o, doors };
+    });
 
     const save = async () => {
         if (!order.doors?.length) {
@@ -150,8 +183,9 @@ export const ATOrdersPanel = () => {
             const payload = { ...order };
             if (!payload.id) delete payload.id;
             const { data } = await http.post("/admin/at-orders", payload);
-            setOrder({ ...emptyOrder(), ...data });
+            setOrder(_migrateOrder(data));
             await loadList();
+            setSuccessMsg("Commande enregistrée.");
         } catch (e) {
             setErrorMsg(e?.response?.data?.detail || "Erreur d'enregistrement.");
         } finally { setSaving(false); }
@@ -185,7 +219,7 @@ export const ATOrdersPanel = () => {
     const openSaved = async (id) => {
         try {
             const { data } = await http.get(`/admin/at-orders/${id}`);
-            setOrder({ ...emptyOrder(), ...data });
+            setOrder(_migrateOrder(data));
             window.scrollTo({ top: 0, behavior: "smooth" });
         } catch (e) {
             setErrorMsg(e?.response?.data?.detail || "Erreur");
@@ -209,6 +243,24 @@ export const ATOrdersPanel = () => {
         const url = `${base}/api/admin/at-orders/${id}/shop-drawing.pdf?token=${token}`;
         const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) window.location.href = url; else window.open(url, "_blank");
+    };
+
+    const createCutList = async () => {
+        if (!order.doors?.length) {
+            setErrorMsg("Aucune porte — impossible de créer une liste de coupe.");
+            return;
+        }
+        setCreatingCutList(true);
+        setErrorMsg("");
+        try {
+            const { data } = await http.post("/admin/at-orders/to-cut-list", order);
+            setSuccessMsg(
+                `Liste de coupe créée : « ${data.name} » (${data.items_count} pièces). `
+                + `Ouvrez l'onglet « Liste de coupe » pour la consulter.`,
+            );
+        } catch (e) {
+            setErrorMsg(e?.response?.data?.detail || "Erreur lors de la création de la liste de coupe.");
+        } finally { setCreatingCutList(false); }
     };
 
     const totalDoors = useMemo(
@@ -242,6 +294,15 @@ export const ATOrdersPanel = () => {
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">{errorMsg}</div>
                     <button onClick={() => setErrorMsg("")} className="text-[#a31a1a] hover:underline text-xs">Fermer</button>
+                </div>
+            )}
+
+            {successMsg && (
+                <div className="flex items-start gap-2 px-3 py-2 bg-[#e6f7ee] border border-[#86c9a4] text-[#0f6b3a] text-sm"
+                    data-testid="at-orders-success-banner">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">{successMsg}</div>
+                    <button onClick={() => setSuccessMsg("")} className="text-[#0f6b3a] hover:underline text-xs">Fermer</button>
                 </div>
             )}
 
@@ -355,26 +416,68 @@ export const ATOrdersPanel = () => {
                 )}
             </div>
 
-            {/* ─── Hardware ──────────────────────────────────────── */}
-            <div className="bg-white border border-[#dde5f0] p-4 space-y-3">
-                <h3 className="tech-stamp text-[#0c182b] font-bold">Quincaillerie</h3>
-                {HARDWARE_KEYS.map(([group, items]) => (
-                    <div key={group}>
-                        <div className="text-[10px] uppercase tracking-wider text-[#4b5d7a] font-bold mb-1.5 mt-2">{group}</div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                            {items.map(([key, label]) => (
-                                <label key={key} className="flex items-center gap-2 px-2 py-1 hover:bg-[#f3f6fb] cursor-pointer text-sm">
-                                    <input type="checkbox"
-                                        data-testid={`hardware-${key}`}
-                                        checked={!!order.hardware?.[key]}
-                                        onChange={() => toggleHardware(key)}
-                                        className="w-4 h-4 accent-[#0c182b]" />
-                                    <span className={order.hardware?.[key] ? "text-[#0c182b] font-bold" : "text-[#4b5d7a]"}>{label}</span>
-                                </label>
-                            ))}
-                        </div>
+            {/* ─── Hardware matrix (per door) ─────────────────────────── */}
+            <div className="bg-white border border-[#dde5f0] p-4 space-y-3" data-testid="hardware-matrix">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="tech-stamp text-[#0c182b] font-bold">
+                        Quincaillerie — matrice par porte
+                    </h3>
+                    <span className="text-[10px] text-[#4b5d7a]">
+                        Une coche par cellule = quincaillerie posée sur cette porte.
+                    </span>
+                </div>
+                {(order.doors || []).length === 0 ? (
+                    <div className="text-sm italic text-[#4b5d7a]">Ajoute au moins une porte pour saisir la quincaillerie.</div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[640px]">
+                            <thead className="text-[10px] uppercase text-[#4b5d7a] border-b border-[#dde5f0] bg-[#f3f6fb]">
+                                <tr>
+                                    <th className="text-left px-2 py-1.5 sticky left-0 bg-[#f3f6fb]">Pièce</th>
+                                    {order.doors.map((d, i) => (
+                                        <th key={i} className="px-2 py-1.5 text-center min-w-[80px]">
+                                            <div className="font-mono text-[#0c182b]">{d.tag || `D${i + 1}`}</div>
+                                            <button
+                                                onClick={() => copyHardwareToAll(i)}
+                                                className="mt-0.5 px-1 py-0.5 text-[9px] border border-[#dde5f0] hover:bg-white tech-stamp inline-flex items-center gap-0.5"
+                                                title="Copier la quincaillerie de cette porte vers toutes les autres"
+                                                data-testid={`hardware-copy-from-${i}`}>
+                                                <Copy className="w-2.5 h-2.5" /> Copier
+                                            </button>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {HARDWARE_KEYS.map(([group, items]) => (
+                                    <Fragment key={group}>
+                                        <tr className="bg-[#7d9ac2]">
+                                            <td colSpan={order.doors.length + 1}
+                                                className="px-2 py-1 text-[10px] uppercase tracking-wider text-white font-bold">
+                                                {group}
+                                            </td>
+                                        </tr>
+                                        {items.map(([key, label], rowIdx) => (
+                                            <tr key={key} className={rowIdx % 2 === 0 ? "bg-white" : "bg-[#f7f9fc]"}>
+                                                <td className="px-2 py-1 text-[#0c182b] sticky left-0 bg-inherit">{label}</td>
+                                                {order.doors.map((d, i) => (
+                                                    <td key={i} className="px-2 py-1 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            data-testid={`hardware-${i}-${key}`}
+                                                            checked={!!d.hardware?.[key]}
+                                                            onChange={() => toggleHardware(i, key)}
+                                                            className="w-4 h-4 accent-[#0c182b] cursor-pointer" />
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </Fragment>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                ))}
+                )}
             </div>
 
             {/* ─── Notes ──────────────────────────────────────── */}
@@ -393,6 +496,10 @@ export const ATOrdersPanel = () => {
                 <button onClick={generatePdf} disabled={generating} data-testid="at-orders-generate"
                     className="btn-primary !py-2 !px-4 !text-sm">
                     <Download className="w-4 h-4" /> {generating ? "Génération…" : "Générer plan d'atelier"}
+                </button>
+                <button onClick={createCutList} disabled={creatingCutList} data-testid="at-orders-create-cutlist"
+                    className="btn-secondary !py-2 !px-4 !text-sm">
+                    <Scissors className="w-4 h-4" /> {creatingCutList ? "Création…" : "Créer liste de coupe"}
                 </button>
             </div>
 

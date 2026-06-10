@@ -29,6 +29,8 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 
 from at_order_pdf import render_shop_drawing_pdf
+from cut_door_breakdown import decompose_at_door
+from cut_models import CutList, CutItem
 
 logger = logging.getLogger("portech.at_orders")
 
@@ -44,21 +46,6 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 SeriesT = Literal["AT1000", "ATi1000", "AT2000", "ATi2000"]
 GlazingT = Literal["thermos", "simple", "none", "unknown"]
 HandT = Literal["GE", "DE", "PE", "GI", "DI", "PI", "unknown"]  # gauche/droite/paire ext/int
-
-
-class DoorLine(BaseModel):
-    """One physical door / leaf in the order. Most orders contain 1-4 lines.
-    Each door carries its OWN hardware spec so the shop can tell at a glance
-    which hardware goes on which door (was a single global hardware before)."""
-    tag: str | None = None                          # e.g. "P-100"
-    series: SeriesT = "AT1000"
-    width_in: float = Field(..., gt=0, description="Largeur du battant en pouces")
-    height_in: float = Field(..., gt=0, description="Hauteur du battant en pouces")
-    qty: int = Field(default=1, ge=1)
-    hand: HandT = "unknown"
-    glazing: GlazingT = "unknown"                   # thermos / simple
-    hardware: Hardware = Field(default_factory=Hardware)
-    notes: str | None = None
 
 
 class Hardware(BaseModel):
@@ -104,6 +91,21 @@ class Hardware(BaseModel):
     sill_type_non_insulated: str | None = None
     sill_space_standard: bool = False
     sill_space_none: bool = False
+
+
+class DoorLine(BaseModel):
+    """One physical door / leaf in the order. Most orders contain 1-4 lines.
+    Each door carries its OWN hardware spec so the shop can tell at a glance
+    which hardware goes on which door (was a single global hardware before)."""
+    tag: str | None = None                          # e.g. "P-100"
+    series: SeriesT = "AT1000"
+    width_in: float = Field(..., gt=0, description="Largeur du battant en pouces")
+    height_in: float = Field(..., gt=0, description="Hauteur du battant en pouces")
+    qty: int = Field(default=1, ge=1)
+    hand: HandT = "unknown"
+    glazing: GlazingT = "unknown"                   # thermos / simple
+    hardware: Hardware = Field(default_factory=Hardware)
+    notes: str | None = None
 
 
 class ATDoorOrder(BaseModel):
@@ -360,5 +362,81 @@ def build_at_order_router(*, auth_dep, get_db) -> APIRouter:
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="plan-atelier-{suffix}.pdf"'},
         )
+
+    @router.post("/at-orders/to-cut-list", status_code=201)
+    async def at_order_to_cut_list(order: ATDoorOrder,
+                                    _: dict = Depends(auth_dep),
+                                    db: AsyncIOMotorDatabase = Depends(get_db)):
+        """Convert an AT order (posted, not necessarily saved) into a new
+        ERP Cut List. Each door is decomposed into its frame pieces (head,
+        base, hinge stile, lock stile, parclose V/H) using the same
+        deterministic logic as the Cut List ERP module.
+
+        Returns the newly created cut_list { id, name, items_count } so the
+        frontend can either redirect the user or show a confirmation toast."""
+        if not order.doors:
+            raise HTTPException(400, "Aucune porte dans la commande — impossible de créer une liste de coupe.")
+
+        all_items: list[CutItem] = []
+        notes_lines: list[str] = []
+        material = "Aluminium AT Fabrication"
+        if order.finish_exterior:
+            material += f" — fini ext. {order.finish_exterior}"
+
+        for idx, d in enumerate(order.doors, start=1):
+            leaf_w_in = d.width_in
+            leaf_h_in = d.height_in
+            # AT order width/height are the rough opening dimensions in inches.
+            # Convert to leaf finish dimensions (apply standard offsets per series).
+            # We use the SAME offsets baked in profile_catalog SYSTEMS — but for
+            # simplicity we apply the same formula here.
+            from profile_catalog import SYSTEMS  # local import to avoid cycle
+            sys_def = next((s for s in SYSTEMS if s.get("system") == d.series), None)
+            offsets = (sys_def or {}).get("offsets_mm") or {"width": 115.10, "height": 22.20}
+
+            rough_w_mm = leaf_w_in * 25.4
+            rough_h_mm = leaf_h_in * 25.4
+            leaf_w_mm = rough_w_mm - offsets["width"]
+            leaf_h_mm = rough_h_mm - offsets["height"]
+
+            glass_mm = 25.4 if d.glazing == "thermos" else 6.0
+            label_prefix = f"{d.tag or f'D{idx}'} — {d.series}"
+
+            bd = decompose_at_door(
+                leaf_width_mm=leaf_w_mm,
+                leaf_height_mm=leaf_h_mm,
+                series=d.series,
+                glass_thickness_mm=glass_mm,
+                material=material,
+                label_prefix=label_prefix,
+                qty=d.qty,
+            )
+            # Mark every line as coming from this AT order
+            for raw in bd.items:
+                raw["source"] = "at_order"
+                all_items.append(CutItem(**raw))
+            if bd.notes:
+                notes_lines.append(f"[{label_prefix}] " + " · ".join(bd.notes))
+
+        # Build the cut list
+        name = f"Plan d'atelier AT — {order.order_number or order.project_name or 'sans-num'}"
+        notes_lines.insert(0,
+            f"Source : Commande AT Fabrication {order.order_number or ''} "
+            f"— Projet {order.project_name or ''} — Client {order.client or ''}".strip())
+        cut = CutList(
+            name=name,
+            project_ref=order.project_name,
+            customer_name=order.client,
+            items=all_items,
+            source_filename=f"at-order-{order.order_number or order.id}",
+            source_type="at_order",
+            notes="\n".join(notes_lines),
+        )
+        await db.erp_cut_lists.insert_one(cut.model_dump())
+        return {
+            "id": cut.id,
+            "name": cut.name,
+            "items_count": len(cut.items),
+        }
 
     return router

@@ -17,6 +17,12 @@ from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
+from at_profile_library import (
+    PROFILES as PROFILE_LIB,
+    draw_profile_card,
+    profiles_for_order,
+)
+
 INCH_MM = 25.4
 
 
@@ -469,6 +475,31 @@ def _page_hardware(c, page_w, page_h, order: dict):
 
 
 # ===========================================================================
+# Pages 4+ — Profile cross-sections (pre-rendered library)
+# ===========================================================================
+def _page_profiles(c, page_w, page_h, order: dict, keys: list[str]):
+    """Draw a page of profile cross-section cards (3 columns × N rows)."""
+    _draw_header_band(c, page_w, page_h,
+                       "Profilés — coupes transversales",
+                       order.get("order_number"))
+    margin = 15 * mm
+    cols = 3
+    rows = 3
+    top = page_h - 22 * mm - 6 * mm
+    bottom = 26 * mm
+    grid_w = page_w - 2 * margin
+    grid_h = top - bottom
+    card_w = (grid_w - (cols - 1) * 4 * mm) / cols
+    card_h = (grid_h - (rows - 1) * 4 * mm) / rows
+    for idx, key in enumerate(keys[:cols * rows]):
+        col = idx % cols
+        row = idx // cols
+        x = margin + col * (card_w + 4 * mm)
+        y = top - (row + 1) * card_h - row * 4 * mm
+        draw_profile_card(c, key, x=x, y=y, w=card_w, h=card_h)
+
+
+# ===========================================================================
 # Public render entry-point
 # ===========================================================================
 def render_shop_drawing_pdf(order: dict) -> bytes:
@@ -480,7 +511,17 @@ def render_shop_drawing_pdf(order: dict) -> bytes:
     # We can fit ~6 doors per elevation page → chunk if more.
     chunk = 6
     elevation_pages = max(1, (len(doors) + chunk - 1) // chunk) if doors else 1
-    total_pages = 1 + elevation_pages + 1  # cover + N x elevation + hardware
+
+    # Profile library — chunk 9 per page (3×3 grid)
+    profile_keys = profiles_for_order(order) if doors else []
+    per_profile_page = 9
+    profile_pages_count = (
+        (len(profile_keys) + per_profile_page - 1) // per_profile_page
+        if profile_keys else 0
+    )
+
+    total_pages = 1 + elevation_pages + 1 + profile_pages_count
+    # cover + N x elevation + hardware + M x profiles
 
     page_num = 1
     _page_cover(c, page_w, page_h, order)
@@ -498,5 +539,13 @@ def render_shop_drawing_pdf(order: dict) -> bytes:
     _page_hardware(c, page_w, page_h, order)
     _draw_footer_cartouche(c, page_w, order, page_num, total_pages)
     c.showPage()
+
+    for i in range(profile_pages_count):
+        page_num += 1
+        slice_keys = profile_keys[i * per_profile_page:(i + 1) * per_profile_page]
+        _page_profiles(c, page_w, page_h, order, slice_keys)
+        _draw_footer_cartouche(c, page_w, order, page_num, total_pages)
+        c.showPage()
+
     c.save()
     return buf.getvalue()

@@ -1,0 +1,41 @@
+{
+  "summary": "Tested AT Fabrication orders module end-to-end (backend + frontend). Per-door hardware matrix, copy-button propagation, Cut List creation endpoint, shop drawing PDF with Phase 2 profile cross-section pages, and v1 legacy hardware handling all verified. 6/6 backend pytest passing, full UI flow passing including success banner with no redirect.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "ATOrdersPanel hardware matrix", "issues": ["Column header shows 'D1'/'D2' fallback when TAG input is empty. Once a tag is typed (e.g. 'P-100') the header updates correctly. Consider auto-focusing the TAG input after 'Ajouter' for better UX."]},
+      {"screen": "ATOrdersPanel door rows", "issues": ["The TAG <input> inside each door-row-{i} does not have a dedicated data-testid (e.g. door-tag-{i}). Only the row container has one. Adding one would help test automation address tag/series fields directly."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_at_orders.py",
+    "/app/test_reports/pytest/iteration_10_at_orders.xml"
+  ],
+  "action_items": [
+    "(Optional, low-prio) Add data-testid='door-tag-{i}', 'door-series-{i}', etc. on per-door form inputs inside ATOrdersPanel for stronger E2E coverage.",
+    "(Optional) Auto-focus TAG input after clicking 'Ajouter' so users see immediately where to type the door tag (otherwise header falls back to D1/D2 which can confuse OCR vs manual flows)."
+  ],
+  "critical_code_review_comments": [
+    "at_order_routes.py: `Hardware` is correctly defined before `DoorLine` (regression-safe). Legacy `hardware: Hardware | None = None` field at ATDoorOrder level is retained for v1 docs and `_migrate_v1_hardware` correctly fans out top-level hardware to each door without overriding existing per-door hardware — verified by test_legacy_v1_order_top_level_hardware_still_loads.",
+    "at_order_routes.py /at-orders/to-cut-list: uses local import of profile_catalog.SYSTEMS to avoid cycle — good. Default offsets {115.10, 22.20} are hardcoded fallback; consider exposing per-series defaults from SYSTEMS to avoid silent mismatches if a new series is added without offsets_mm.",
+    "at_order_pdf.py + at_profile_library.py: cross-section pages render and include 'Profilés' / 'coupes transversales' text — assertion passed against the actual PDF body (Phase 2 ✓). The renderer caps scale at 1.4 so small moulures (13.48 mm) still draw at a readable size — good.",
+    "ATOrdersPanel.jsx: hardware checkboxes correctly bound to `order.doors[i].hardware[key]` (per-door isolation verified — no leak between doors when toggling). 'Copier' button properly propagates the entire hardware object from one door to all others.",
+    "ATOrdersPanel.jsx: success banner uses dedicated data-testid='at-orders-success-banner' and stays visible after createCutList without navigating away — matches Option E spec.",
+    "Authentication note (not a bug, just documentation): the login endpoint is POST /api/auth/login (NOT /api/admin/login). Previous test agents may have to update fixtures accordingly."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_at_orders.py (created)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "PortechAdmin / Portech2026! via POST /api/auth/login (returns {access_token, username, role} + sets httpOnly cookie)",
+  "seed_data_creation": "Tests create TEST_-prefixed AT orders and delete them in teardown. cut_list created during E2E test in MongoDB (erp_cut_lists collection) not deleted — main agent may want to add cleanup if test data pollutes.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend tests live at /app/backend/tests/test_at_orders.py — uses POST /api/auth/login with username='PortechAdmin' password='Portech2026!', returns access_token in response body (also sets httpOnly cookie). AT order endpoints are under /api/admin/at-orders/*. The ATOrdersPanel route is /admin/gestion/commandes-at. Hardware matrix testids: hardware-{doorIdx}-{key} for checkboxes, hardware-copy-from-{doorIdx} for copy button, at-orders-success-banner for confirmation, at-orders-create-cutlist/at-orders-generate/at-orders-save for action buttons.",
+  "rca of the issue": "N/A — no failures encountered. The DoorLine vs Hardware NameError previously fixed by main agent is no longer reproducible; backend boots clean and Pydantic schema accepts the per-door hardware payload. PDF generation correctly appends 'Profilés — coupes transversales' page via at_profile_library.profiles_for_order() (verified by pypdf text extraction)."
+}
