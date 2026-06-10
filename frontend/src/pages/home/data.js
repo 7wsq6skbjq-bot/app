@@ -17,7 +17,7 @@ export const IMG = {
     hands:       `${P}/home-showcase-tech.png`,
     luxuryGlass: `${P}/home-luxury-glass.png`,
     exitDevice:  `${P}/home-showcase-exit.png`,
-    panicBar:    `${P}/home-showcase-panic.png`,
+    panicBar:    `${P}/gal-panic-1.png`,
     lockCloseup: `${P}/home-showcase-lock.png`,
     serviceInstall:  `${P}/home-service-installation.png`,
     serviceMachine:  `${P}/home-service-machining.png`,

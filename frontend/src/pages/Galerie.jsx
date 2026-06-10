@@ -43,7 +43,6 @@ const CATEGORIES = {
             { src: `${P}/gal-exit-1.png`, caption: "Dispositif de sortie rim chromé — porte aluminium simple" },
             { src: `${P}/gal-exit-2.png`, caption: "Tige verticale dissimulée — issue d'auditorium scolaire" },
             { src: `${P}/gal-exit-3.png`, caption: "Tige verticale en surface — corridor d'hôpital" },
-            { src: `${P}/gal-exit-4.png`, caption: "Dispositif touchpad chromé — gros plan" },
         ],
     },
     "barres-antipaniques": {
@@ -53,9 +52,7 @@ const CATEGORIES = {
             "Installation, ajustement et remplacement de barres antipaniques sur tous types de portes commerciales. On travaille avec Von Duprin, Sargent, Adams Rite, Yale et plus encore — selon ce qui est déjà en place.",
         photos: [
             { src: `${P}/gal-panic-1.png`, caption: "Barre horizontale fini noir — sortie arrière commerce de détail" },
-            { src: `${P}/gal-panic-2.png`, caption: "Barre acier brossé avec dogging — sortie d'urgence cinéma" },
             { src: `${P}/gal-panic-3.png`, caption: "Barre aluminium anodisé — pharmacie" },
-            { src: `${P}/gal-panic-4.png`, caption: "Barre électrifiée avec REX — zone sécurisée" },
         ],
     },
     serrures: {
