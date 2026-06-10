@@ -2,9 +2,11 @@
 import asyncio
 import base64
 import csv
+import html as _html_mod
 import io
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -19,6 +21,46 @@ from erp_models import LineItem, TPS_RATE, TVQ_RATE
 logger = logging.getLogger("portech.erp")
 
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+
+
+# Matches any HTML tag the user might have typed deliberately ; if present we
+# assume the caller already provided ready-to-send HTML and leave it alone.
+_HTML_TAG_RE = re.compile(r"<\s*(p|br|div|table|ul|ol|li|h[1-6]|strong|em|b|i|a|img|hr)\b",
+                          re.IGNORECASE)
+
+
+def normalize_message_to_html(msg: str) -> str:
+    """Convert a user-typed message into safe HTML preserving whitespace.
+
+    The ERP UI (PO, BOL, invoice, supplier emails) is a plain `<textarea>` —
+    when Cédrick presses Enter twice to make a blank line between paragraphs,
+    those newlines must reach the recipient. Without conversion the HTML
+    renderer collapses them and the supplier sees a wall of text.
+
+    Behaviour :
+      * If the input already contains an HTML tag (the route default messages
+        are written in HTML) → return as-is. No double-escaping.
+      * Otherwise : escape HTML entities, split on blank lines into <p>s,
+        and convert remaining single newlines to <br/>. Preserve runs of
+        spaces with &nbsp; chains so indentation doesn't collapse.
+    """
+    if not msg:
+        return ""
+    if _HTML_TAG_RE.search(msg):
+        return msg
+    # 1. Escape so the user can safely type <, > or & without breaking HTML.
+    safe = _html_mod.escape(msg, quote=False)
+    # 2. Preserve runs of >1 spaces (Outlook/Gmail collapse them otherwise).
+    safe = re.sub(r" {2,}", lambda m: "&nbsp;" * len(m.group(0)), safe)
+    # 3. Normalize newlines, split on blank line(s) → paragraphs.
+    safe = safe.replace("\r\n", "\n").replace("\r", "\n")
+    paragraphs = re.split(r"\n\s*\n", safe.strip("\n"))
+    out_parts: list[str] = []
+    for p in paragraphs:
+        # Within a paragraph, single \n → <br/>
+        p_html = p.replace("\n", "<br/>")
+        out_parts.append(f'<p style="margin:0 0 12px 0;">{p_html}</p>')
+    return "".join(out_parts)
 
 
 # ---------- Branded email wrapper (matches prospection campaigns) ----------
@@ -120,6 +162,10 @@ async def send_pdf_email(*, to_email: str, subject: str, html: str,
     """
     if not resend.api_key:
         raise HTTPException(503, "Service courriel non configuré (RESEND_API_KEY manquante)")
+    # Convert user-typed plain text (with line breaks / blank lines) into proper
+    # HTML so suppliers / clients see the same layout that Cédrick typed.
+    # If `html` already contains HTML tags, this is a no-op.
+    html = normalize_message_to_html(html)
     final_html = wrap_branded_email(html, footer_note=footer_note) if branded else html
     params = {
         "from": f"Portech <{SENDER_EMAIL}>",
