@@ -21,9 +21,29 @@ INCH_MM = 25.4
 
 
 def _ascii(s):
+    """Sanitize a string for ReportLab's default Latin-1 Helvetica font.
+    Em-dashes / curly quotes / special spaces get readable replacements so
+    they no longer render as "?". For anything else outside Latin-1 we fall
+    back to "?" rather than silently dropping the character."""
     if s is None:
         return ""
-    return "".join(c if ord(c) < 256 else "?" for c in str(s))
+    replacements = {
+        "—": "-", "–": "-", "•": "*", "…": "...",
+        "“": '"', "”": '"', "‘": "'", "’": "'",
+        "✓": "v", "✗": "x", "×": "x", "⅛": "1/8", "¼": "1/4",
+        "⅜": "3/8", "½": "1/2", "⅝": "5/8", "¾": "3/4", "⅞": "7/8",
+        "²": "2", "³": "3", "°": "deg", "→": "->", "←": "<-",
+        "\xa0": " ", "\u200b": "", "\ufeff": "",
+    }
+    out = []
+    for c in str(s):
+        if c in replacements:
+            out.append(replacements[c])
+        elif ord(c) < 256:
+            out.append(c)
+        else:
+            out.append("?")
+    return "".join(out)
 
 
 def _today() -> str:
@@ -301,6 +321,9 @@ HARDWARE_GROUPS = [
         ("pull_9_back_to_back", "Poignees 9\" dos-a-dos"),
         ("pull_9_exterior", "Poignee 9\" exterieure"),
         ("pull_9_interior", "Poignee 9\" interieure"),
+        ("pull_12_back_to_back", "Poignees 12\" dos-a-dos"),
+        ("pull_12_exterior", "Poignee 12\" exterieure"),
+        ("pull_12_interior", "Poignee 12\" interieure"),
         ("push_bar_tubular", "Barre a pousser tubulaire"),
     ]),
     ("Serrures / Securite", [
@@ -341,52 +364,107 @@ def _draw_checkbox(c, x, y, checked: bool):
                 x + side - 0.4 * mm, y + side - 0.4 * mm)
 
 
+def _hw_for_door(order: dict, door: dict) -> dict:
+    """Return the hardware dict for this door, falling back to the order's
+    top-level hardware (v1) if the door has none of its own."""
+    return door.get("hardware") or order.get("hardware") or {}
+
+
 def _page_hardware(c, page_w, page_h, order: dict):
-    _draw_header_band(c, page_w, page_h, "Quincaillerie commandee", order.get("order_number"))
-    hardware = order.get("hardware") or {}
+    """Matrix layout : rows = hardware items grouped by category,
+    columns = each door (by TAG). A check is drawn in the cell when that
+    hardware is checked on that door."""
+    _draw_header_band(c, page_w, page_h, "Quincaillerie par porte", order.get("order_number"))
+    doors = order.get("doors") or []
+    if not doors:
+        c.setFont("Helvetica", 11)
+        c.setFillColor(colors.HexColor("#4b5d7a"))
+        c.drawCentredString(page_w / 2, page_h / 2, "Aucune porte definie.")
+        return
+
+    # Layout: left column = item label (90mm), then one narrow column per door.
+    left_w = 90 * mm
+    avail_w = page_w - 30 * mm - left_w
+    col_w = max(14 * mm, avail_w / max(1, len(doors)))
+    x0 = 15 * mm
+
     y = page_h - 30 * mm
+
+    # Column header: list of TAGs
+    c.setFillColor(colors.HexColor("#0c182b"))
+    c.rect(x0, y - 1 * mm, page_w - 30 * mm, 9 * mm, fill=True, stroke=False)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 8)
+    c.drawString(x0 + 2 * mm, y + 2 * mm, "PIECE")
+    for i, d in enumerate(doors):
+        cx = x0 + left_w + i * col_w + col_w / 2
+        tag = _ascii(d.get("tag") or f"D{i + 1}")[:10]
+        c.drawCentredString(cx, y + 2 * mm, tag)
+    c.setFillColor(colors.black)
+    y -= 11 * mm
+
+    line_h = 5.5 * mm
+    bottom_margin = 28 * mm
+
     for group_title, items in HARDWARE_GROUPS:
-        if y < 35 * mm:
+        if y < bottom_margin + 14:
             break
-        c.setFillColor(colors.HexColor("#0c182b"))
-        c.rect(15 * mm, y - 1 * mm, page_w - 30 * mm, 6.5 * mm, fill=True, stroke=False)
+        # group band
+        c.setFillColor(colors.HexColor("#7d9ac2"))
+        c.rect(x0, y - 1 * mm, page_w - 30 * mm, 6 * mm, fill=True, stroke=False)
         c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(17 * mm, y + 1 * mm, _ascii(group_title).upper())
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(x0 + 2 * mm, y + 1 * mm, _ascii(group_title).upper())
         c.setFillColor(colors.black)
-        y -= 9 * mm
-        # 2-column layout
-        col_x = [18 * mm, page_w / 2 + 2 * mm]
+        y -= 7 * mm
+
         for idx, (key, label) in enumerate(items):
-            col = idx % 2
-            x = col_x[col]
-            checked = bool(hardware.get(key))
-            _draw_checkbox(c, x, y - 0.5 * mm, checked)
-            c.setFont("Helvetica" + ("-Bold" if checked else ""), 9)
-            c.setFillColor(colors.HexColor("#0c182b") if checked else colors.HexColor("#4b5d7a"))
-            c.drawString(x + 5 * mm, y, _ascii(label))
-            # Extra info for hinge qty
-            if key == "hinge_4_5x4" and checked and hardware.get("hinge_4_5x4_qty"):
-                c.setFont("Helvetica", 8)
-                c.setFillColor(colors.HexColor("#4b5d7a"))
-                c.drawString(x + 5 * mm + 60 * mm, y, f"qte : {hardware['hinge_4_5x4_qty']}")
-            if col == 1 or idx == len(items) - 1:
-                y -= 6 * mm
-        y -= 4 * mm
+            if y < bottom_margin:
+                break
+            # alternate row background for readability
+            if idx % 2 == 0:
+                c.setFillColor(colors.HexColor("#f7f9fc"))
+                c.rect(x0, y - 0.5 * mm, page_w - 30 * mm, line_h, fill=True, stroke=False)
+            c.setFillColor(colors.HexColor("#0c182b"))
+            c.setFont("Helvetica", 8)
+            c.drawString(x0 + 2 * mm, y + 1 * mm, _ascii(label)[:55])
+            # one cell per door
+            for i, d in enumerate(doors):
+                cx = x0 + left_w + i * col_w + col_w / 2
+                hw = _hw_for_door(order, d)
+                if hw.get(key):
+                    # green check
+                    side = 2.8 * mm
+                    cx0 = cx - side / 2
+                    cy0 = y - 0.2 * mm
+                    c.setStrokeColor(colors.HexColor("#22a06b"))
+                    c.setLineWidth(1.2)
+                    c.line(cx0 + 0.5 * mm, cy0 + side / 2,
+                            cx0 + side / 2, cy0 + 0.5 * mm)
+                    c.line(cx0 + side / 2, cy0 + 0.5 * mm,
+                            cx0 + side - 0.4 * mm, cy0 + side - 0.4 * mm)
+                else:
+                    # subtle empty box
+                    c.setStrokeColor(colors.HexColor("#dde5f0"))
+                    c.setLineWidth(0.3)
+                    side = 2.5 * mm
+                    c.rect(cx - side / 2, y - 0.2 * mm, side, side, stroke=True, fill=False)
+            y -= line_h
+        y -= 1.5 * mm
 
     # Notes footer
     notes = (order.get("notes") or "").strip()
-    if notes and y > 35 * mm:
+    if notes and y > 30 * mm:
         c.setFont("Helvetica-Bold", 9)
         c.setFillColor(colors.HexColor("#0c182b"))
         c.drawString(15 * mm, y, "NOTES")
         y -= 5 * mm
         c.setFont("Helvetica", 8.5)
         c.setFillColor(colors.black)
-        for line in notes.splitlines()[:8]:
-            c.drawString(15 * mm, y, _ascii(line)[:120])
+        for line in notes.splitlines()[:6]:
+            c.drawString(15 * mm, y, _ascii(line)[:110])
             y -= 4.5 * mm
-            if y < 35 * mm:
+            if y < 30 * mm:
                 break
 
 

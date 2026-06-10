@@ -47,7 +47,9 @@ HandT = Literal["GE", "DE", "PE", "GI", "DI", "PI", "unknown"]  # gauche/droite/
 
 
 class DoorLine(BaseModel):
-    """One physical door / leaf in the order. Most orders contain 1-4 lines."""
+    """One physical door / leaf in the order. Most orders contain 1-4 lines.
+    Each door carries its OWN hardware spec so the shop can tell at a glance
+    which hardware goes on which door (was a single global hardware before)."""
     tag: str | None = None                          # e.g. "P-100"
     series: SeriesT = "AT1000"
     width_in: float = Field(..., gt=0, description="Largeur du battant en pouces")
@@ -55,24 +57,31 @@ class DoorLine(BaseModel):
     qty: int = Field(default=1, ge=1)
     hand: HandT = "unknown"
     glazing: GlazingT = "unknown"                   # thermos / simple
+    hardware: Hardware = Field(default_factory=Hardware)
     notes: str | None = None
 
 
 class Hardware(BaseModel):
-    """Checkboxes from the form. Each key = True if the checkbox is checked."""
+    """Checkboxes from the form, ATTACHED TO A SPECIFIC DOOR (one Hardware
+    instance per DoorLine since v2 — was global previously). When the form is
+    parsed, the OCR fills the hardware on the first door; the admin can then
+    spread / customize hardware per door in the UI."""
     # Hinges
     hinge_4_5x4: bool = False
     hinge_4_5x4_qty: int | None = None              # 2 / 3 / 4
     hinge_continuous: bool = False
     hinge_continuous_hd: bool = False
-    # Handles / pulls
+    # Handles / pulls (9" and 12")
     pull_9_back_to_back: bool = False
     pull_9_exterior: bool = False
     pull_9_interior: bool = False
+    pull_12_back_to_back: bool = False
+    pull_12_exterior: bool = False
+    pull_12_interior: bool = False
     push_bar_tubular: bool = False
     # Locks
-    lock_4510_ar: bool = False                       # serrure à ressort
-    lock_4590_ar: bool = False                       # palette de relâche
+    lock_4510_ar: bool = False
+    lock_4590_ar: bool = False
     lock_sm_1850_ar: bool = False
     panic_8400_ar: bool = False
     panic_8600_ar: bool = False
@@ -113,9 +122,11 @@ class ATDoorOrder(BaseModel):
     finish_interior: str | None = None
     color_code_exterior: str | None = None
     color_code_interior: str | None = None
-    # Doors
+    # Doors (each one carries its own hardware spec)
     doors: list[DoorLine] = Field(default_factory=list)
-    hardware: Hardware = Field(default_factory=Hardware)
+    # Legacy: top-level hardware persisted by v1 orders. Kept optional so we
+    # can read v1 orders, but new orders should put hardware on each DoorLine.
+    hardware: Hardware | None = None
     # Free text
     notes: str | None = None
     # Audit
@@ -146,6 +157,12 @@ OCR_SYSTEM = (
     "'MOULURE VITRAGE SIMPLE' (=simple). Si aucune cochée → unknown.\n"
     "6. Si une porte a plusieurs TAGs séparés par '/' (ex: 'P-100/P-100.G'), "
     "crée une seule ligne `doors` avec le tag combiné.\n"
+    "7. La QUINCAILLERIE doit être attachée à chaque porte. Si le formulaire "
+    "n'indique qu'une seule colonne de cases à cocher pour TOUTES les portes, "
+    "DUPLIQUE la même quincaillerie pour chaque ligne `doors`. Si le "
+    "formulaire a une colonne par TAG, attribue la quincaillerie spécifique "
+    "à la bonne porte.\n"
+    "8. AJOUTE les poignées 12\" si tu vois 'POIGNÉE 12' ou similaire.\n"
 )
 
 OCR_USER = (
@@ -163,26 +180,22 @@ OCR_USER = (
     '     "width_in": float, "height_in": float, "qty": int,\n'
     '     "hand": "GE"|"DE"|"PE"|"GI"|"DI"|"PI"|"unknown",\n'
     '     "glazing": "thermos"|"simple"|"unknown",\n'
+    '     "hardware": { all hardware fields below, attached to THIS door },\n'
     '     "notes": str|null}\n'
     "  ],\n"
-    '  "hardware": {\n'
-    '    "hinge_4_5x4": bool, "hinge_4_5x4_qty": int|null,\n'
-    '    "hinge_continuous": bool, "hinge_continuous_hd": bool,\n'
-    '    "pull_9_back_to_back": bool, "pull_9_exterior": bool,\n'
-    '    "pull_9_interior": bool, "push_bar_tubular": bool,\n'
-    '    "lock_4510_ar": bool, "lock_4590_ar": bool, "lock_sm_1850_ar": bool,\n'
-    '    "panic_8400_ar": bool, "panic_8600_ar": bool,\n'
-    '    "cylinder_exterior": bool, "cylinder_interior_manual": bool,\n'
-    '    "cylinder_protector": bool, "bolt_protector": bool,\n'
-    '    "strike_standard": bool, "strike_electric": bool, "contact_recessed": bool,\n'
-    '    "astragal": bool, "flush_bolts": bool, "door_sweep": bool,\n'
-    '    "moulding_thermo": bool, "moulding_simple": bool,\n'
-    '    "sill_supplied": bool, "sill_type_insulated": str|null,\n'
-    '    "sill_type_non_insulated": str|null,\n'
-    '    "sill_space_standard": bool, "sill_space_none": bool\n'
-    "  },\n"
     '  "notes": str|null\n'
     "}\n"
+    "\n"
+    "Champs hardware (booleans sauf indication) :\n"
+    "  hinge_4_5x4, hinge_4_5x4_qty (int), hinge_continuous, hinge_continuous_hd,\n"
+    "  pull_9_back_to_back, pull_9_exterior, pull_9_interior,\n"
+    "  pull_12_back_to_back, pull_12_exterior, pull_12_interior, push_bar_tubular,\n"
+    "  lock_4510_ar, lock_4590_ar, lock_sm_1850_ar, panic_8400_ar, panic_8600_ar,\n"
+    "  cylinder_exterior, cylinder_interior_manual, cylinder_protector, bolt_protector,\n"
+    "  strike_standard, strike_electric, contact_recessed,\n"
+    "  astragal, flush_bolts, door_sweep, moulding_thermo, moulding_simple,\n"
+    "  sill_supplied, sill_type_insulated (str), sill_type_non_insulated (str),\n"
+    "  sill_space_standard, sill_space_none\n"
     "\n"
     "AUCUN texte hors du JSON. Pas de ```json. Pas d'explication."
 )
@@ -194,6 +207,19 @@ def _strip_json_fence(s: str) -> str:
         s = re.sub(r"^```(?:json)?\s*", "", s)
         s = re.sub(r"\s*```$", "", s)
     return s.strip()
+
+
+def _migrate_v1_hardware(data: dict) -> dict:
+    """If hardware was provided at the top level (v1) but not on each door,
+    copy it to every door. If a door already has its own hardware, keep it."""
+    top_hw = data.get("hardware") or None
+    doors = data.get("doors") or []
+    if not top_hw or not doors:
+        return data
+    for d in doors:
+        if not d.get("hardware"):
+            d["hardware"] = dict(top_hw)
+    return data
 
 
 async def _ocr_at_order(file_path: Path, mime: str) -> dict:
@@ -245,6 +271,7 @@ def build_at_order_router(*, auth_dep, get_db) -> APIRouter:
         path.write_bytes(contents)
         try:
             data = await _ocr_at_order(path, "application/pdf")
+            data = _migrate_v1_hardware(data)
         finally:
             try:
                 path.unlink(missing_ok=True)
