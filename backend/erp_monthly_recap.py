@@ -19,7 +19,7 @@ from typing import Optional
 
 import resend
 
-from erp_helpers import wrap_branded_email
+from erp_helpers import REPLY_TO_EMAIL, wrap_branded_email
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -196,6 +196,7 @@ async def send_recap(
     params = {
         "from": f"Portech <{SENDER_EMAIL}>",
         "to": [target_email],
+        "reply_to": REPLY_TO_EMAIL,
         "subject": subject,
         "html": branded_html,
         "attachments": [{

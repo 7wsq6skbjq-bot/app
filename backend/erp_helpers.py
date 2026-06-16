@@ -22,6 +22,16 @@ logger = logging.getLogger("portech.erp")
 
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
+# Inbox that actually RECEIVES replies. The portech.info domain has no MX
+# records (Resend is send-only) so a client clicking "Reply" on info@portech.info
+# would bounce into the void — that's exactly the bug Cédrick reported (clients
+# replying to POs/invoices and Cédrick never seeing it). We mirror the same
+# default the prospection routes already use so replies all land in one inbox.
+REPLY_TO_EMAIL = os.environ.get(
+    "ERP_REPLY_TO_EMAIL",
+    os.environ.get("LEADS_RECIPIENT_EMAIL", "portech.infos@gmail.com"),
+)
+
 
 # Matches any HTML tag the user might have typed deliberately ; if present we
 # assume the caller already provided ready-to-send HTML and leave it alone.
@@ -170,6 +180,7 @@ async def send_pdf_email(*, to_email: str, subject: str, html: str,
     params = {
         "from": f"Portech <{SENDER_EMAIL}>",
         "to": [to_email],
+        "reply_to": REPLY_TO_EMAIL,
         "subject": subject,
         "html": final_html,
         "attachments": [{
