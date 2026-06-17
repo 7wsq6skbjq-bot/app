@@ -14,6 +14,7 @@ import { ExpensesPanel } from "./erp/panels/ExpensesPanel";
 import { CutListPanel } from "./erp/panels/CutListPanel";
 import { InventoryPanel } from "./erp/panels/InventoryPanel";
 import { ATOrdersPanel } from "./erp/panels/ATOrdersPanel";
+import { ComposeEmailPanel } from "./erp/panels/ComposeEmailPanel";
 import { MobileTabBar } from "../components/mobile/MobileTabBar";
 
 const TABS = [
@@ -29,6 +30,7 @@ const TABS = [
     { slug: "coupes",          label: "Coupes",          panel: "cuts" },
     { slug: "inventaire-alu",  label: "Inventaire alu",  panel: "inventory" },
     { slug: "commandes-at",    label: "Commandes AT",    panel: "at-orders" },
+    { slug: "courriel",         label: "Composer courriel", panel: "compose-email" },
     { slug: "prospection",     label: "Prospection",     panel: "prospection" },
 ];
 
@@ -97,6 +99,7 @@ const AdminErp = () => {
                 {activeTab.panel === "cuts" && <CutListPanel />}
                 {activeTab.panel === "inventory" && <InventoryPanel />}
                 {activeTab.panel === "at-orders" && <ATOrdersPanel />}
+                {activeTab.panel === "compose-email" && <ComposeEmailPanel />}
                 {activeTab.panel === "prospection" && <ProspectionPanel />}
             </main>
 

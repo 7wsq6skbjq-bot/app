@@ -43,6 +43,17 @@ User language: **French**.
       via `POST /admin/at-orders/to-cut-list` (uses `decompose_at_door`)
     - Legacy v1 top-level hardware migrated to per-door on load
     - Encoding sanitizer fixes "?" rendering for em-dash / quotes / fractions
+- ✅ **Email line-break preservation** (2026-06): `normalize_message_to_html`
+      in `erp_helpers.py` converts textarea newlines / blank lines to proper
+      `<p>` / `<br/>` so suppliers see the layout Cédrick typed
+- ✅ **Email Reply-To routing** (2026-06): every ERP outbound (POs, BOLs,
+      invoices, reminders, monthly recap) now sets `reply_to` to
+      `portech.infos@gmail.com` so client replies land in Cédrick's inbox
+      instead of bouncing off `info@portech.info` (no MX records)
+- ✅ **Compose Email panel** (2026-06): new ERP tab "Composer courriel" —
+      free-form branded email composer with party autocomplete, multi-file
+      attachments (20 MB cap), full audit log in `erp_email_log`. Backend:
+      `erp_routes_compose.py` with `POST /admin/compose-email` + GET log
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`
