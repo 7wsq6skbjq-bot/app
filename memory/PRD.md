@@ -54,6 +54,14 @@ User language: **French**.
       free-form branded email composer with party autocomplete, multi-file
       attachments (20 MB cap), full audit log in `erp_email_log`. Backend:
       `erp_routes_compose.py` with `POST /admin/compose-email` + GET log
+- ✅ **Payment Notices (Avis de paiement)** (2026-06): new ERP tab to
+      generate branded "remittance advice" PDFs proving suppliers have been
+      paid (eliminates "you didn't pay us" follow-up emails). Backend:
+      `erp_routes_payment_notices.py` + `render_payment_notice_pdf` in
+      `erp_pdf.py`. Auto-number `AP-YYYY-NNN`, methods (EFT / chèque /
+      Interac / etc.), free-form items (invoice # / description / amount),
+      PDF banner says "3 à 5 jours ouvrables" for bank transfer arrival.
+      Email send route attaches the PDF + tracks `sent_at`/`sent_to`.
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`

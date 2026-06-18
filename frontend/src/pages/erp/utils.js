@@ -125,6 +125,34 @@ export const emptyBOL = () => ({
     status: "brouillon",
 });
 
+export const PAYMENT_METHODS = [
+    "Virement bancaire (EFT)",
+    "Chèque",
+    "Carte de crédit",
+    "Comptant",
+    "Virement Interac",
+    "Autre",
+];
+
+export const emptyPaymentNoticeItem = () => ({
+    _key: newKey(),
+    invoice_number: "",
+    description: "",
+    amount: 0,
+});
+
+export const emptyPaymentNotice = () => ({
+    supplier_id: null,
+    supplier_snapshot: emptyParty("supplier"),
+    date: todayISO(),
+    payment_date: todayISO(),
+    payment_method: "Virement bancaire (EFT)",
+    reference_number: "",
+    items: [emptyPaymentNoticeItem()],
+    notes: "",
+});
+
+
 export const computeTotals = (items, taxable = true) => {
     const subtotal = items.reduce(
         (s, it) => s + Number(it.quantity || 0) * Number(it.unit_price || 0),

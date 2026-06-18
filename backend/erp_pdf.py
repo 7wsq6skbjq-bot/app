@@ -472,3 +472,119 @@ def render_bol_pdf(bol: dict) -> bytes:
     doc.build(story)
     buf.seek(0)
     return buf.read()
+
+
+
+def _items_table_payment(items: list[dict]) -> Table:
+    """Items table for payment notice (Invoice # | Description | Amount)."""
+    s = _styles()
+    header = ["N° facture", "Description", "Montant"]
+    data = [header]
+    for it in items or []:
+        amount = float(it.get("amount") or 0)
+        data.append([
+            Paragraph(it.get("invoice_number") or "—", s["body"]),
+            Paragraph(it.get("description") or "—", s["body"]),
+            _money(amount),
+        ])
+    t = Table(data, colWidths=[40 * mm, 105 * mm, 32 * mm], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (2, 0), (2, -1), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.4, NAVY_BORDER),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    return t
+
+
+def _payment_total_box(total: float) -> Table:
+    """Stacked box showing the grand total paid."""
+    s = _styles()
+    rows = [
+        [Paragraph("<b>TOTAL PAYÉ</b>", s["body"]),
+         Paragraph(f"<b>{_money(total)} CAD</b>", s["body"])],
+    ]
+    t = Table(rows, colWidths=[60 * mm, 50 * mm], hAlign="RIGHT")
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
+        ("ALIGN", (0, 0), (0, -1), "LEFT"),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("FONTSIZE", (0, 0), (-1, -1), 12),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    return t
+
+
+def render_payment_notice_pdf(notice: dict) -> bytes:
+    """Render a supplier payment notice (avis de paiement / remittance advice).
+
+    `notice` is expected to contain:
+        notice_number, date, supplier_snapshot {name, address?, email?, contact_name?},
+        items [{invoice_number, description, amount}], total,
+        payment_method, payment_date, reference_number, notes
+    """
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+    number = notice.get("notice_number") or "AP-XXXX"
+    story.append(_header(s, "AVIS DE PAIEMENT", number, "PAYÉ"))
+    story.append(Spacer(1, 8 * mm))
+
+    party = _party_block(s, "Fournisseur payé",
+                          notice.get("supplier_snapshot") or {})
+    meta = _meta_grid(s, [
+        ("Numéro", number),
+        ("Date émission", _date_fr(notice.get("date"))),
+        ("Date du paiement", _date_fr(notice.get("payment_date"))),
+        ("Méthode", notice.get("payment_method") or "—"),
+        ("N° référence", notice.get("reference_number") or "—"),
+    ])
+    side_by_side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
+    side_by_side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(side_by_side)
+    story.append(Spacer(1, 6 * mm))
+
+    story.append(_items_table_payment(notice.get("items", [])))
+    story.append(Spacer(1, 4 * mm))
+    story.append(_payment_total_box(float(notice.get("total") or 0)))
+    story.append(Spacer(1, 8 * mm))
+
+    # Confirmation block — explains the 3-5 business day arrival window.
+    confirmation = (
+        "<b>Confirmation de paiement</b><br/>"
+        "Le paiement ci-dessus a été émis par Portech à la date indiquée. "
+        "Selon votre institution financière, le montant devrait être crédité "
+        "dans votre compte d'ici <b>3 à 5 jours ouvrables</b> suivant la date "
+        "d'émission. "
+        "Veuillez utiliser le numéro de référence pour le rapprochement."
+    )
+    story.append(Paragraph(confirmation, s["body"]))
+
+    if notice.get("notes"):
+        story.append(Spacer(1, 6 * mm))
+        story.append(Paragraph(f"<b>Notes :</b><br/>{notice['notes']}", s["body"]))
+
+    story.append(Spacer(1, 12 * mm))
+    story.append(Paragraph(
+        "Pour toute question concernant ce paiement, communiquez avec "
+        "info@portech.info — merci pour votre service.",
+        s["footer"],
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
