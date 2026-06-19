@@ -62,6 +62,11 @@ User language: **French**.
       Interac / etc.), free-form items (invoice # / description / amount),
       PDF banner says "3 à 5 jours ouvrables" for bank transfer arrival.
       Email send route attaches the PDF + tracks `sent_at`/`sent_to`.
+- ✅ **Product catalog PDF** (2026-06): new "Catalogue PDF" button in
+      Products panel (`erp_routes_products.py` GET /products/catalog.pdf).
+      Branded cover + grouped-by-category tables (SKU / Name / Description
+      / Unit / Price), `is_service` badge, "sur demande" for $0 items.
+      Hand out to trusted clients without exposing the internal ERP.
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`

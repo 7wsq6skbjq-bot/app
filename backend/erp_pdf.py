@@ -13,6 +13,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Image,
+    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -588,3 +589,203 @@ def render_payment_notice_pdf(notice: dict) -> bytes:
     doc.build(story)
     buf.seek(0)
     return buf.read()
+
+
+# ============================================================
+# Product catalogue PDF (Catalogue produits & services)
+# ============================================================
+def _catalog_cover(styles) -> list:
+    """Cover page — branded, presentable to clients."""
+    story = []
+    # Top spacer pushes content to vertical center-ish
+    story.append(Spacer(1, 40 * mm))
+
+    # Big logo
+    if os.path.exists(LOGO_PATH):
+        try:
+            story.append(Image(LOGO_PATH, width=90 * mm, height=30 * mm,
+                                kind="proportional", hAlign="CENTER"))
+        except Exception:
+            pass
+
+    story.append(Spacer(1, 18 * mm))
+
+    title_style = ParagraphStyle(
+        "cover_title", fontName="Helvetica-Bold", fontSize=36,
+        textColor=NAVY, alignment=1, leading=40,
+    )
+    sub_style = ParagraphStyle(
+        "cover_sub", fontName="Helvetica", fontSize=14,
+        textColor=NAVY_LIGHT, alignment=1, leading=18,
+    )
+    meta_style = ParagraphStyle(
+        "cover_meta", fontName="Courier", fontSize=9,
+        textColor=TEXT_MUTED, alignment=1, leading=14,
+    )
+
+    story.append(Paragraph("CATALOGUE", title_style))
+    story.append(Paragraph("Produits &amp; services", sub_style))
+    story.append(Spacer(1, 25 * mm))
+    story.append(Paragraph(COMPANY["tagline"].upper(), meta_style))
+    story.append(Spacer(1, 4 * mm))
+    today = datetime.now().strftime("%d %B %Y").replace(
+        "January", "janvier").replace("February", "février").replace(
+        "March", "mars").replace("April", "avril").replace(
+        "May", "mai").replace("June", "juin").replace(
+        "July", "juillet").replace("August", "août").replace(
+        "September", "septembre").replace("October", "octobre").replace(
+        "November", "novembre").replace("December", "décembre")
+    story.append(Paragraph(f"ÉDITION DU {today.upper()}", meta_style))
+
+    story.append(Spacer(1, 40 * mm))
+    story.append(Paragraph(
+        f"<b>{COMPANY['name']}</b> &nbsp;·&nbsp; {COMPANY['email']} &nbsp;·&nbsp; {COMPANY['site']}",
+        styles["footer"],
+    ))
+    return story
+
+
+def _money_no_zero(v) -> str:
+    """Format money but show 'sur demande' for $0 (typical for services)."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return "—"
+    if f <= 0:
+        return "sur demande"
+    return _money(f)
+
+
+def _catalog_category_block(styles, category: str, items: list[dict]) -> Table:
+    """Render one category section : title + items table."""
+    s = styles
+    header = ["Code", "Nom", "Description", "Unité", "Prix"]
+    data = [header]
+    for it in items:
+        name_html = it.get("name") or "—"
+        if it.get("is_service"):
+            name_html = f"{name_html} <font face='Courier' size='6' color='#2f4f7f'>[SERVICE]</font>"
+        data.append([
+            Paragraph(it.get("sku") or "—",
+                      ParagraphStyle("sku", fontName="Courier", fontSize=8,
+                                      textColor=NAVY)),
+            Paragraph(f"<b>{name_html}</b>", s["body"]),
+            Paragraph(it.get("description") or "", s["body"]),
+            Paragraph(it.get("unit") or "unité",
+                      ParagraphStyle("u", fontName="Helvetica", fontSize=8,
+                                      textColor=TEXT_MUTED)),
+            _money_no_zero(it.get("unit_price")),
+        ])
+
+    t = Table(
+        data,
+        colWidths=[22 * mm, 50 * mm, 65 * mm, 18 * mm, 22 * mm],
+        repeatRows=1,
+    )
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (-1, 0), (-1, -1), "RIGHT"),
+        ("ALIGN", (3, 0), (3, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTSIZE", (0, 1), (-1, -1), 8.5),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, BG_LIGHT]),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.3, NAVY_BORDER),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    return t
+
+
+def render_product_catalog_pdf(products: list[dict]) -> bytes:
+    """Generate a printable catalog of all products & services.
+
+    Layout:
+      * Cover page (logo, title, edition date)
+      * For each category : a section with a clean items table
+      * Items inside a category are sorted alphabetically by name
+      * `unit_price == 0` displays "sur demande" — typical for services
+      * Items with `is_service=True` get a `[SERVICE]` mini-badge
+    """
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    # ── Cover ─────────────────────────────────────────────────
+    story.extend(_catalog_cover(s))
+    story.append(PageBreak())
+
+    # ── Header (small) on subsequent pages, then content ──────
+    story.append(_header(s, "CATALOGUE", "Produits & services", None))
+    story.append(Spacer(1, 8 * mm))
+
+    intro_style = ParagraphStyle(
+        "intro", fontName="Helvetica", fontSize=10, textColor=NAVY, leading=14,
+    )
+    story.append(Paragraph(
+        "Ce catalogue présente l'ensemble des produits et services offerts par "
+        "Portech à ses clients de confiance. Les prix indiqués sont en dollars "
+        "canadiens, hors taxes (TPS &amp; TVQ), et susceptibles d'évoluer "
+        "selon les fluctuations du marché et la disponibilité chez nos "
+        "fournisseurs. Pour toute commande personnalisée ou volume important, "
+        f"communiquez avec nous à <b>{COMPANY['email']}</b>.",
+        intro_style,
+    ))
+    story.append(Spacer(1, 6 * mm))
+
+    # ── Group by category ────────────────────────────────────
+    by_category: dict[str, list[dict]] = {}
+    for p in products or []:
+        cat = (p.get("category") or "").strip() or "Sans catégorie"
+        by_category.setdefault(cat, []).append(p)
+
+    # Sort categories alphabetically, "Sans catégorie" last
+    def cat_sort_key(c: str) -> tuple[int, str]:
+        return (1 if c == "Sans catégorie" else 0, c.lower())
+
+    category_style = ParagraphStyle(
+        "category", fontName="Helvetica-Bold", fontSize=14,
+        textColor=NAVY, leading=18, spaceBefore=2, spaceAfter=4,
+        borderPadding=0,
+    )
+    count_style = ParagraphStyle(
+        "count", fontName="Courier", fontSize=8,
+        textColor=TEXT_MUTED, leading=10,
+    )
+
+    for cat in sorted(by_category.keys(), key=cat_sort_key):
+        items = sorted(by_category[cat], key=lambda p: (p.get("name") or "").lower())
+        n = len(items)
+        story.append(Spacer(1, 4 * mm))
+        story.append(Paragraph(cat.upper(), category_style))
+        story.append(Paragraph(
+            f"{n} {'article' if n == 1 else 'articles'}",
+            count_style,
+        ))
+        story.append(Spacer(1, 2 * mm))
+        story.append(_catalog_category_block(s, cat, items))
+
+    # ── Closing ──────────────────────────────────────────────
+    if not by_category:
+        story.append(Paragraph(
+            "Aucun produit ou service n'est répertorié pour le moment.",
+            s["body"],
+        ))
+
+    story.append(Spacer(1, 12 * mm))
+    story.append(Paragraph(
+        "Document confidentiel — Pour usage exclusif de nos partenaires de "
+        f"confiance. © {datetime.now().year} {COMPANY['name']} · "
+        f"{COMPANY['site']}",
+        s["footer"],
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+

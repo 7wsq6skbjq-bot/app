@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, FileDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { formatCurrency } from "../utils";
@@ -15,7 +15,7 @@ const emptyProduct = () => ({
 });
 
 export const ProductsPanel = () => {
-    const { http } = useAuth();
+    const { http, getToken } = useAuth();
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -60,6 +60,14 @@ export const ProductsPanel = () => {
 
     const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+    const downloadCatalog = () => {
+        const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+        const token = encodeURIComponent(getToken() || "");
+        const url = `${base}/api/admin/products/catalog.pdf?token=${token}`;
+        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) window.location.href = url; else window.open(url, "_blank");
+    };
+
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
@@ -70,6 +78,14 @@ export const ProductsPanel = () => {
                 <div className="flex gap-2">
                     <button onClick={load} className="btn-secondary !py-2 !px-3 !text-xs">
                         <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                    </button>
+                    <button onClick={downloadCatalog}
+                        disabled={!rows.length}
+                        data-testid="erp-product-catalog-pdf"
+                        title={rows.length ? "Télécharger le catalogue en PDF pour le partager avec vos clients de confiance" : "Aucun produit à exporter"}
+                        className="btn-secondary !py-2 !px-3 !text-xs disabled:opacity-40 disabled:cursor-not-allowed">
+                        <FileDown className="w-3.5 h-3.5" />
+                        Catalogue PDF
                     </button>
                     <button onClick={openNew} data-testid="erp-new-product" className="btn-primary !py-2 !px-4 !text-xs">
                         <Plus className="w-3.5 h-3.5" />
@@ -154,7 +170,7 @@ export const ProductsPanel = () => {
                     </div>
                     <label className="inline-flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={!!form.is_service} onChange={(e) => set("is_service", e.target.checked)} />
-                        Service (main-d'œuvre, temps) plutôt qu'un bien
+                        Service (main-d&apos;œuvre, temps) plutôt qu&apos;un bien
                     </label>
                 </div>
             </Modal>
