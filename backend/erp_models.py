@@ -131,6 +131,43 @@ class InvoiceIn(BaseModel):
     status: str = Field(default="brouillon", pattern="^(brouillon|envoyée|payée|annulée)$")
 
 
+
+# ---------- Quotes (Soumissions) ----------
+QUOTE_STATUS_PATTERN = "^(brouillon|envoyée|acceptée|refusée|expirée|annulée)$"
+
+
+class Quote(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    number: int
+    customer_id: Optional[str] = None
+    customer_snapshot: Party
+    date: str
+    valid_until: Optional[str] = None
+    items: List[LineItem]
+    subtotal: float
+    tps: float
+    tvq: float
+    total: float
+    taxable: bool = True
+    notes: Optional[str] = None
+    status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
+    converted_invoice_id: Optional[str] = None       # set when converted → facture
+    created_at: str = Field(default_factory=now_iso)
+
+
+class QuoteIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    customer_id: Optional[str] = None
+    customer_snapshot: PartyIn
+    date: str
+    valid_until: Optional[str] = None
+    items: List[LineItem] = Field(min_length=1)
+    taxable: bool = True
+    notes: Optional[str] = None
+    status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
+
+
 # ---------- Purchase Orders ----------
 class PurchaseOrder(BaseModel):
     model_config = ConfigDict(extra="ignore")

@@ -356,6 +356,59 @@ def render_invoice_pdf(inv: dict) -> bytes:
     return buf.read()
 
 
+def render_quote_pdf(q: dict) -> bytes:
+    """Render a quote / soumission PDF — same layout family as invoices
+    but with 'SOUMISSION' branding and a validity window instead of a
+    payment due date."""
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    number = f"SO-{int(q['number']):04d}"
+    story.append(_header(s, "SOUMISSION", number, q.get("status")))
+    story.append(Spacer(1, 8 * mm))
+
+    party = _party_block(s, "Soumis à", q.get("customer_snapshot") or {})
+    meta = _meta_grid(s, [
+        ("Numéro", number),
+        ("Date", _date_fr(q.get("date"))),
+        ("Valide jusqu'au", _date_fr(q.get("valid_until"))),
+        ("Statut", (q.get("status") or "—").upper()),
+    ])
+    side_by_side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
+    side_by_side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(side_by_side)
+    story.append(Spacer(1, 6 * mm))
+
+    story.append(_items_table_money(q.get("items", [])))
+    story.append(Spacer(1, 4 * mm))
+    story.append(_totals_box(
+        q.get("subtotal", 0), q.get("tps", 0),
+        q.get("tvq", 0), q.get("total", 0),
+        q.get("taxable", True), "Total estimé",
+    ))
+
+    if q.get("notes"):
+        story.append(Spacer(1, 6 * mm))
+        story.append(Paragraph(f"<b>Notes :</b><br/>{q['notes']}", s["body"]))
+
+    story.append(Spacer(1, 10 * mm))
+    story.append(Paragraph(
+        "<b>Cette soumission est valide 30 jours</b> à compter de la date "
+        "d'émission (sauf mention contraire ci-dessus). Prix en dollars "
+        "canadiens, hors taxes indiquées ci-dessus, sous réserve de la "
+        "disponibilité des matériaux chez nos fournisseurs.<br/>"
+        "Pour accepter : répondez à ce courriel ou signez et retournez ce "
+        "document — info@portech.info",
+        s["footer"],
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
+
+
 def render_purchase_order_pdf(po: dict) -> bytes:
     s = _styles()
     buf, doc = _build_doc()

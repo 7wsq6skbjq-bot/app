@@ -34,6 +34,7 @@ export const DocumentPanel = ({
     numberPrefix,
     emptyDoc,
     csvExportPath, // optional CSV export endpoint
+    extraRowActions,  // optional (doc) => [{ icon, onClick, title, testid, className?, disabled? }]
 }) => {
     const { http } = useAuth();
     const [rows, setRows] = useState([]);
@@ -321,6 +322,20 @@ export const DocumentPanel = ({
                                     )}
                                 </div>
                                 <div className="col-span-2 flex justify-end gap-1">
+                                    {(extraRowActions ? extraRowActions(d) : []).map((a, i) => {
+                                        const Icon = a.icon;
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={a.onClick}
+                                                disabled={a.disabled}
+                                                data-testid={a.testid}
+                                                title={a.title}
+                                                className={a.className || "p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]"}>
+                                                <Icon className="w-3.5 h-3.5" />
+                                            </button>
+                                        );
+                                    })}
                                     {kind === "invoice" && d.status !== "payée" && d.status !== "annulée" && (
                                         <button
                                             onClick={() => markPaid(d)}
@@ -347,15 +362,17 @@ export const DocumentPanel = ({
                                     >
                                         <Send className="w-3.5 h-3.5" />
                                     </button>
-                                    <Link
-                                        to={`${printPath}/${d.id}`}
-                                        target="_blank"
-                                        rel="noopener"
-                                        title="Imprimer (aperçu HTML)"
-                                        className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]"
-                                    >
-                                        <Printer className="w-3.5 h-3.5" />
-                                    </Link>
+                                    {printPath && (
+                                        <Link
+                                            to={`${printPath}/${d.id}`}
+                                            target="_blank"
+                                            rel="noopener"
+                                            title="Imprimer (aperçu HTML)"
+                                            className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]"
+                                        >
+                                            <Printer className="w-3.5 h-3.5" />
+                                        </Link>
+                                    )}
                                     <button onClick={() => openEdit(d)} title="Modifier" className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
                                         <Pencil className="w-3.5 h-3.5" />
                                     </button>

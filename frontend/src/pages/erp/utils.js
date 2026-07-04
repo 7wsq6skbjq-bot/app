@@ -7,12 +7,16 @@ export const PROVINCES = ["QC", "ON", "NB", "NS", "PE", "NL", "MB", "SK", "AB", 
 export const INVOICE_STATUSES = ["brouillon", "envoyée", "payée", "annulée"];
 export const PO_STATUSES = ["brouillon", "envoyée", "reçue", "annulée"];
 export const BOL_STATUSES = ["brouillon", "expédié", "livré", "annulé"];
+export const QUOTE_STATUSES = ["brouillon", "envoyée", "acceptée", "refusée", "expirée", "annulée"];
 
 export const STATUS_BADGE = {
     brouillon: "bg-[#f3f6fb] text-[#4b5d7a] border-[#c5d4e7]",
     envoyée: "bg-[#eaf1fb] text-[#2f4f7f] border-[#97b0d0]",
     payée: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]",
     reçue: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]",
+    acceptée: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]",
+    refusée: "bg-[#fbe8e8] text-[#8a1f1f] border-[#e8a5a5]",
+    expirée: "bg-[#fff4e0] text-[#925800] border-[#e5ba67]",
     expédié: "bg-[#fff4e0] text-[#925800] border-[#e5ba67]",
     livré: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]",
     annulée: "bg-[#fbe8e8] text-[#8a1f1f] border-[#e8a5a5]",
@@ -87,6 +91,24 @@ export const emptyInvoice = () => ({
     customer_snapshot: emptyParty("customer"),
     date: todayISO(),
     due_date: "",
+    items: [emptyLineItem()],
+    taxable: true,
+    notes: "",
+    status: "brouillon",
+});
+
+// Default valid_until = today + 30 days
+const _plusDays = (n) => {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+};
+
+export const emptyQuote = () => ({
+    customer_id: null,
+    customer_snapshot: emptyParty("customer"),
+    date: todayISO(),
+    valid_until: _plusDays(30),
     items: [emptyLineItem()],
     taxable: true,
     notes: "",

@@ -5,6 +5,7 @@ import { AdminHeader } from "./admin/AdminHeader";
 import { PartiesPanel } from "./erp/panels/PartiesPanel";
 import { ProductsPanel } from "./erp/panels/ProductsPanel";
 import { InvoicesPanel } from "./erp/panels/InvoicesPanel";
+import { QuotesPanel } from "./erp/panels/QuotesPanel";
 import { PurchaseOrdersPanel } from "./erp/panels/PurchaseOrdersPanel";
 import { BolPanel } from "./erp/panels/BolPanel";
 import { CalendarPanel } from "./erp/panels/CalendarPanel";
@@ -24,6 +25,7 @@ const TABS = [
     { slug: "clients",         label: "Clients",         panel: "parties-customer" },
     { slug: "fournisseurs",    label: "Fournisseurs",    panel: "parties-supplier" },
     { slug: "produits",        label: "Produits",        panel: "products" },
+    { slug: "soumissions",     label: "Soumissions",     panel: "quotes" },
     { slug: "factures",        label: "Factures",        panel: "invoices" },
     { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
     { slug: "connaissements",  label: "Connaissements",  panel: "bills-of-lading" },
@@ -95,6 +97,7 @@ const AdminErp = () => {
                 {activeTab.panel === "parties-supplier" && <PartiesPanel kind="supplier" />}
                 {activeTab.panel === "products" && <ProductsPanel />}
                 {activeTab.panel === "invoices" && <InvoicesPanel />}
+                {activeTab.panel === "quotes" && <QuotesPanel />}
                 {activeTab.panel === "purchase-orders" && <PurchaseOrdersPanel />}
                 {activeTab.panel === "bills-of-lading" && <BolPanel />}
                 {activeTab.panel === "expenses" && <ExpensesPanel />}

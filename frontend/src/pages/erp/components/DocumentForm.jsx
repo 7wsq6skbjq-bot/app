@@ -28,11 +28,17 @@ export const DocumentForm = ({
     statuses,
 }) => {
     const isInvoice = kind === "invoice";
-    const partyKey = isInvoice ? "customer_snapshot" : "supplier_snapshot";
-    const partyIdKey = isInvoice ? "customer_id" : "supplier_id";
-    const partyLabel = isInvoice ? "Client" : "Fournisseur";
-    const dateSecondaryLabel = isInvoice ? "Échéance" : "Livraison attendue";
-    const dateSecondaryKey = isInvoice ? "due_date" : "expected_delivery";
+    const isQuote = kind === "quote";
+    const usesCustomer = isInvoice || isQuote;
+    const partyKey = usesCustomer ? "customer_snapshot" : "supplier_snapshot";
+    const partyIdKey = usesCustomer ? "customer_id" : "supplier_id";
+    const partyLabel = usesCustomer ? "Client" : "Fournisseur";
+    const dateSecondaryLabel = isInvoice
+        ? "Échéance"
+        : (isQuote ? "Valide jusqu'au" : "Livraison attendue");
+    const dateSecondaryKey = isInvoice
+        ? "due_date"
+        : (isQuote ? "valid_until" : "expected_delivery");
 
     const [partyMode, setPartyMode] = useState(value[partyIdKey] ? "select" : "custom");
     const [showPartyForm, setShowPartyForm] = useState(!value[partyIdKey]);
@@ -45,7 +51,7 @@ export const DocumentForm = ({
     const selectParty = (id) => {
         const p = parties.find((x) => x.id === id);
         if (!p) {
-            onChange({ ...value, [partyIdKey]: null, [partyKey]: emptyParty(isInvoice ? "customer" : "supplier") });
+            onChange({ ...value, [partyIdKey]: null, [partyKey]: emptyParty(usesCustomer ? "customer" : "supplier") });
             return;
         }
         onChange({ ...value, [partyIdKey]: p.id, [partyKey]: { ...p } });

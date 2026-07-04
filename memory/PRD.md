@@ -67,6 +67,17 @@ User language: **French**.
       Branded cover + grouped-by-category tables (SKU / Name / Description
       / Unit / Price), `is_service` badge, "sur demande" for $0 items.
       Hand out to trusted clients without exposing the internal ERP.
+- ✅ **Quotes / Soumissions module** (2026-07): new ERP tab to build
+      client quotes, download branded PDF (SO-YYYY numbering), email
+      directly to prospects with 30-day validity clause. Statuses:
+      brouillon / envoyée / acceptée / refusée / expirée / annulée.
+      Backend: `erp_routes_quotes.py` + `render_quote_pdf` +
+      Quote/QuoteIn models. One-click **"Convertir en facture"** creates
+      a draft invoice from an accepted quote (line items + customer
+      cloned, quote marked "acceptée" and linked via
+      `converted_invoice_id`). Frontend: `QuotesPanel.jsx` extends the
+      shared `DocumentPanel` (which now supports `extraRowActions` +
+      optional `printPath`). Also added quotes tab to mobile menu.
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`
