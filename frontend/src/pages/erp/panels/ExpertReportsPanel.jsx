@@ -28,6 +28,63 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
     reader.readAsDataURL(file);
 });
 
+/**
+ * Resize a photo before upload:
+ *   - decode via <img>
+ *   - draw onto a canvas at max 2000 px on the longest side
+ *   - re-encode as JPEG @ quality 0.82
+ *
+ * This solves 3 pain points:
+ *   1) HEIC iPhone photos → become JPEG (universal decoder support)
+ *   2) 10-15 MB originals → become 400-900 KB (way under any proxy limit)
+ *   3) Portrait / landscape orientation preserved (canvas honors EXIF-baked
+ *      orientation once decoded by the browser).
+ *
+ * If decoding fails (rare — e.g. iOS HEIC on desktop Chrome), we fall back
+ * to the original file so nothing is lost.
+ */
+const resizePhoto = (file) => new Promise((resolve) => {
+    // Non-image → pass through untouched
+    if (!file.type || !file.type.startsWith("image/")) {
+        return resolve(file);
+    }
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    const cleanup = () => URL.revokeObjectURL(url);
+    img.onerror = () => { cleanup(); resolve(file); };  // fallback → original
+    img.onload = () => {
+        try {
+            const maxSide = 2000;
+            let { naturalWidth: w, naturalHeight: h } = img;
+            const longest = Math.max(w, h);
+            if (longest > maxSide) {
+                const ratio = maxSide / longest;
+                w = Math.round(w * ratio);
+                h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob((blob) => {
+                cleanup();
+                if (!blob) return resolve(file);
+                // Rename to .jpg so backend accepts it (HEIC → JPEG)
+                const base = (file.name || "photo").replace(/\.[^.]+$/, "");
+                const newFile = new File([blob], `${base}.jpg`, {
+                    type: "image/jpeg", lastModified: Date.now(),
+                });
+                resolve(newFile);
+            }, "image/jpeg", 0.82);
+        } catch {
+            cleanup();
+            resolve(file);
+        }
+    };
+    img.src = url;
+});
+
 // Editable list of bullet items — used for observations + impacts.
 const BulletEditor = ({ label, items, onChange, testidPrefix }) => {
     const set = (i, v) => onChange(items.map((it, idx) => (idx === i ? v : it)));
@@ -70,33 +127,49 @@ const BulletEditor = ({ label, items, onChange, testidPrefix }) => {
 const DoorCard = ({ door, index, onChange, onRemove, canDelete, reportId, photos, onUploadPhotos, onDeletePhoto, http }) => {
     const [expanded, setExpanded] = useState(true);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0, failed: [] });
     const fileRef = useRef(null);
 
     const set = (k, v) => onChange({ ...door, [k]: v });
 
-    const handleFiles = async (files) => {
-        if (!files?.length) return;
+    // Sequential per-file upload:
+    //   * resize each photo to max 2000 px JPEG (fixes HEIC + 10 MB iPhone)
+    //   * upload ONE at a time (bypasses proxy body-size limits)
+    //   * a bad photo doesn't kill the batch
+    //   * UI shows "Photo X sur N"
+    const handleFiles = async (fileList) => {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
         setUploading(true);
-        try {
-            const items = [];
-            for (const f of files) {
-                if (f.size > 10 * 1024 * 1024) {
-                    alert(`Photo « ${f.name} » trop volumineuse (max 10 Mo).`);
-                    continue;
-                }
-                const b64 = await fileToBase64(f);
-                items.push({
-                    filename: f.name,
+        setUploadProgress({ done: 0, total: files.length, failed: [] });
+        const failed = [];
+        for (let i = 0; i < files.length; i++) {
+            const original = files[i];
+            try {
+                const resized = await resizePhoto(original);
+                const b64 = await fileToBase64(resized);
+                await onUploadPhotos([{
+                    filename: resized.name || `photo-${Date.now()}.jpg`,
                     content_base64: b64,
                     caption: "",
                     door_index: index,
-                });
+                }]);
+            } catch (e) {
+                failed.push(original.name || `photo ${i + 1}`);
             }
-            if (items.length) await onUploadPhotos(items);
-        } finally {
-            setUploading(false);
-            if (fileRef.current) fileRef.current.value = "";
+            setUploadProgress({ done: i + 1, total: files.length, failed: [...failed] });
         }
+        setUploading(false);
+        if (fileRef.current) fileRef.current.value = "";
+        if (failed.length) {
+            window.alert(
+                `${files.length - failed.length} photo(s) ajoutée(s).\n\n`
+                + `Échec pour :\n- ${failed.join("\n- ")}\n\n`
+                + "Réessaie individuellement les photos en échec.",
+            );
+        }
+        // Reset progress a bit later so the user sees "13/13"
+        setTimeout(() => setUploadProgress({ done: 0, total: 0, failed: [] }), 1500);
     };
 
     return (
@@ -217,7 +290,11 @@ const DoorCard = ({ door, index, onChange, onRemove, canDelete, reportId, photos
                                 className="btn-secondary !py-1.5 !px-2.5 !text-xs disabled:opacity-40"
                                 data-testid={`door-photo-add-${index}`}>
                                 {uploading
-                                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Upload…</>
+                                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        {uploadProgress.total > 0
+                                            ? `Photo ${uploadProgress.done} / ${uploadProgress.total}…`
+                                            : "Upload…"}
+                                      </>
                                     : <><Camera className="w-3.5 h-3.5" /> Ajouter photos</>}
                             </button>
                         </div>

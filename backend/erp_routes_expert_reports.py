@@ -146,45 +146,80 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
     async def upload_photos(report_id: str, payload: PhotoUploadRequest,
                               _: dict = Depends(auth_dep)):
         """Upload one or more photos to a report. Photos are decoded from
-        base64 and written to disk under the report's folder."""
+        base64 and written to disk under the report's folder.
+
+        Per-photo errors are tolerated : if one file fails validation, we
+        skip it and keep going. Callers using the recommended
+        one-at-a-time client flow will therefore still get useful HTTP
+        status codes on truly bad payloads, but a batch that has ONE bad
+        file won't nuke the whole upload.
+        """
         doc = await db.erp_expert_reports.find_one({"id": report_id}, {"_id": 0})
         if not doc:
             raise HTTPException(404, "Rapport introuvable")
 
         rdir = _report_dir(report_id)
         new_photos: list[dict] = list(doc.get("photos") or [])
-        # Determine next order value per door_index
-        max_order = {}
+        max_order: dict = {}
         for p in new_photos:
             di = p.get("door_index")
             max_order[di] = max(max_order.get(di, -1), p.get("order", 0))
 
+        rejected: list[dict] = []
+        accepted_count = 0
         for item in payload.photos:
-            ext = _safe_ext(item.filename)
+            try:
+                ext = _safe_ext(item.filename)
+            except HTTPException as e:
+                rejected.append({"filename": item.filename, "reason": e.detail})
+                continue
             try:
                 raw = base64.b64decode(item.content_base64, validate=False)
             except Exception:
-                raise HTTPException(400, f"Image « {item.filename} » illisible (base64 invalide).")
+                rejected.append({"filename": item.filename,
+                                  "reason": "base64 invalide"})
+                continue
             if len(raw) > MAX_PHOTO_BYTES:
-                raise HTTPException(413,
-                    f"Photo « {item.filename} » trop volumineuse "
-                    f"({len(raw) / 1024 / 1024:.1f} Mo). Maximum 10 Mo par photo.")
+                rejected.append({
+                    "filename": item.filename,
+                    "reason": f"trop volumineuse ({len(raw) / 1024 / 1024:.1f} Mo)",
+                })
+                continue
             photo_id = str(uuid.uuid4())
             stored_name = f"{photo_id}{ext}"
-            with open(os.path.join(rdir, stored_name), "wb") as fp:
-                fp.write(raw)
+            try:
+                with open(os.path.join(rdir, stored_name), "wb") as fp:
+                    fp.write(raw)
+            except OSError as e:
+                rejected.append({"filename": item.filename,
+                                  "reason": f"erreur disque : {e}"})
+                continue
             di = item.door_index
             max_order[di] = max_order.get(di, -1) + 1
             new_photos.append(ReportPhoto(
                 id=photo_id, filename=stored_name,
                 caption=item.caption or "",
-                door_index=di, order=item.order or max_order[di],
+                door_index=di,
+                order=item.order if item.order > 0 else max_order[di],
             ).model_dump())
+            accepted_count += 1
+
+        # If EVERYTHING was rejected, tell the caller
+        if accepted_count == 0 and rejected:
+            raise HTTPException(400, f"Aucune photo acceptée. Refus : {rejected}")
 
         await db.erp_expert_reports.update_one(
             {"id": report_id}, {"$set": {"photos": new_photos}},
         )
         doc = await db.erp_expert_reports.find_one({"id": report_id}, {"_id": 0})
+        # We return the standard ExpertReport model — the response_model
+        # strips any extra fields, so rejected info goes into the log only.
+        if rejected:
+            import logging as _lg
+            _lg.getLogger("portech.erp").warning(
+                "Rapport %s : %d photo(s) refusée(s) — %s",
+                report_id, len(rejected), rejected,
+            )
         return ExpertReport(**doc)
 
     @router.delete("/expert-reports/{report_id}/photos/{photo_id}",

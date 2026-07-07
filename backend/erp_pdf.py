@@ -1003,15 +1003,12 @@ def _bullet_list(styles, items: list) -> list:
     return flowables
 
 
-def _door_photos_grid(photos: list[dict], uploads_dir: str) -> Table | None:
-    """Return a 2-column table of photos with captions, or None if empty.
-
-    Each cell contains an Image + caption paragraph. Photos are scaled to
-    fit within the cell width preserving aspect ratio.
-    """
+def _door_photos_flowables(photos: list[dict], uploads_dir: str) -> list:
+    """Return one Table per pair of photos so ReportLab can page-break
+    between pairs (a single big Table with N rows sometimes silently
+    truncates when it doesn't fit — we hit this at 13 photos)."""
     if not photos:
-        return None
-    valid_cells: list[list] = []
+        return []
     caption_style = ParagraphStyle(
         "caption", fontName="Helvetica-Oblique", fontSize=7.5,
         textColor=TEXT_MUTED, alignment=1, leading=10, spaceBefore=1,
@@ -1019,7 +1016,7 @@ def _door_photos_grid(photos: list[dict], uploads_dir: str) -> Table | None:
     max_w = 76 * mm
     max_h = 55 * mm
 
-    tmp: list = []
+    cells: list = []
     for p in sorted(photos, key=lambda x: x.get("order", 0)):
         path = os.path.join(uploads_dir, p.get("filename", ""))
         if not os.path.exists(path):
@@ -1027,33 +1024,38 @@ def _door_photos_grid(photos: list[dict], uploads_dir: str) -> Table | None:
         try:
             img = Image(path, width=max_w, height=max_h, kind="proportional")
         except Exception:
+            # Corrupt / unsupported file — skip silently rather than crash the PDF.
             continue
         cap = p.get("caption") or ""
         cell = [img]
         if cap:
             cell.append(Spacer(1, 1 * mm))
             cell.append(Paragraph(cap, caption_style))
-        tmp.append(cell)
+        cells.append(cell)
 
-    # Chunk into rows of 2
-    for i in range(0, len(tmp), 2):
-        pair = tmp[i:i + 2]
+    if not cells:
+        return []
+
+    tables: list = []
+    for i in range(0, len(cells), 2):
+        pair = cells[i:i + 2]
         while len(pair) < 2:
             pair.append("")
-        valid_cells.append(pair)
+        t = Table([pair], colWidths=[80 * mm, 80 * mm])
+        t.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 2),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ]))
+        tables.append(t)
+    return tables
 
-    if not valid_cells:
-        return None
 
-    t = Table(valid_cells, colWidths=[80 * mm, 80 * mm])
-    t.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 2),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-    ]))
-    return t
+def _door_photos_grid(photos: list[dict], uploads_dir: str):
+    """Legacy wrapper — kept for backward compat but now returns a list."""
+    return _door_photos_flowables(photos, uploads_dir)
 
 
 def render_expert_report_pdf(report: dict, uploads_dir: str) -> bytes:
@@ -1128,11 +1130,11 @@ def render_expert_report_pdf(report: dict, uploads_dir: str) -> bytes:
                 f"<b>Recommandation :</b> {d['recommendation']}", s["body"],
             ))
         # Photos
-        photo_grid = _door_photos_grid(photos_by_door.get(i - 1, []), uploads_dir)
-        if photo_grid is not None:
+        photo_flowables = _door_photos_flowables(photos_by_door.get(i - 1, []), uploads_dir)
+        if photo_flowables:
             story.append(Spacer(1, 3 * mm))
             story.append(Paragraph("<b>Photos :</b>", s["body"]))
-            story.append(photo_grid)
+            story.extend(photo_flowables)
         story.append(Spacer(1, 4 * mm))
 
     if not any_deficiency:
