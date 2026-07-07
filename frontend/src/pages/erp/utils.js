@@ -175,6 +175,48 @@ export const emptyPaymentNotice = () => ({
 });
 
 
+
+// ─── Expert reports (Rapports d'expertise) ─────────────────
+export const REPORT_STATUSES = ["brouillon", "finalisé", "envoyé", "archivé"];
+
+export const emptyInspectedDoor = () => ({
+    _key: newKey(),
+    tag: "",
+    location: "",
+    series: "",
+    model: "",
+    width_mm: null,
+    height_mm: null,
+    finish: "",
+    configuration: "",
+    hinges: "",
+    lock: "",
+    electric_strike: "",
+    threshold: "",
+    trim: "",
+    other_specs: "",
+    observations: [],
+    impacts: [],
+    recommendation: "",
+});
+
+export const emptyExpertReport = () => ({
+    client_snapshot: emptyParty("customer"),
+    project_name: "",
+    project_address: "",
+    project_city: "",
+    inspection_date: todayISO(),
+    inspector_name: "Cédrick Pimparé",
+    inspector_title: "Expert Portes Commerciales – Portech",
+    mandated_by: "",
+    purpose: "",
+    doors: [emptyInspectedDoor()],
+    risks: "",
+    conclusion: "",
+    status: "brouillon",
+});
+
+
 export const computeTotals = (items, taxable = true) => {
     const subtotal = items.reduce(
         (s, it) => s + Number(it.quantity || 0) * Number(it.unit_price || 0),

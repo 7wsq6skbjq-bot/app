@@ -15,6 +15,7 @@ from erp_routes_bols import register as register_bols
 from erp_routes_dashboard import register as register_dashboard
 from erp_routes_invoices import register as register_invoices
 from erp_routes_quotes import register as register_quotes
+from erp_routes_expert_reports import register as register_expert_reports
 from erp_routes_parties import register as register_parties
 from erp_routes_products import register as register_products
 from erp_routes_purchase_orders import register as register_pos
@@ -36,6 +37,7 @@ def build_erp_router(db: AsyncIOMotorDatabase, auth_dep) -> APIRouter:
     register_products(router, db, auth_dep)
     register_invoices(router, db, auth_dep, next_number)
     register_quotes(router, db, auth_dep, next_number)
+    register_expert_reports(router, db, auth_dep, next_number)
     register_pos(router, db, auth_dep, next_number)
     register_bols(router, db, auth_dep, next_number)
     register_appointments(router, db, auth_dep)

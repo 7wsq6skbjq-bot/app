@@ -6,6 +6,7 @@ import { PartiesPanel } from "./erp/panels/PartiesPanel";
 import { ProductsPanel } from "./erp/panels/ProductsPanel";
 import { InvoicesPanel } from "./erp/panels/InvoicesPanel";
 import { QuotesPanel } from "./erp/panels/QuotesPanel";
+import { ExpertReportsPanel } from "./erp/panels/ExpertReportsPanel";
 import { PurchaseOrdersPanel } from "./erp/panels/PurchaseOrdersPanel";
 import { BolPanel } from "./erp/panels/BolPanel";
 import { CalendarPanel } from "./erp/panels/CalendarPanel";
@@ -33,6 +34,7 @@ const TABS = [
     { slug: "coupes",          label: "Coupes",          panel: "cuts" },
     { slug: "inventaire-alu",  label: "Inventaire alu",  panel: "inventory" },
     { slug: "commandes-at",    label: "Commandes AT",    panel: "at-orders" },
+    { slug: "rapports",         label: "Rapports d'expertise", panel: "expert-reports" },
     { slug: "avis-paiement",   label: "Avis de paiement", panel: "payment-notices" },
     { slug: "courriel",         label: "Composer courriel", panel: "compose-email" },
     { slug: "prospection",     label: "Prospection",     panel: "prospection" },
@@ -104,6 +106,7 @@ const AdminErp = () => {
                 {activeTab.panel === "cuts" && <CutListPanel />}
                 {activeTab.panel === "inventory" && <InventoryPanel />}
                 {activeTab.panel === "at-orders" && <ATOrdersPanel />}
+                {activeTab.panel === "expert-reports" && <ExpertReportsPanel />}
                 {activeTab.panel === "payment-notices" && <PaymentNoticesPanel />}
                 {activeTab.panel === "compose-email" && <ComposeEmailPanel />}
                 {activeTab.panel === "prospection" && <ProspectionPanel />}

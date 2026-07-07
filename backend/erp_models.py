@@ -168,6 +168,87 @@ class QuoteIn(BaseModel):
     status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
 
 
+
+# ---------- Expert reports (Rapports d'expertise) ----------
+class ReportPhoto(BaseModel):
+    """Photo attached to a report door — metadata only (file lives on disk)."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    filename: str
+    caption: Optional[str] = ""
+    door_index: Optional[int] = None  # which door this photo belongs to (0-based)
+    order: int = 0                     # display order within the door
+
+
+class InspectedDoor(BaseModel):
+    """One door being inspected in an expert report."""
+    model_config = ConfigDict(extra="ignore")
+    tag: str = Field(default="", max_length=80)                # e.g. "P-100" / "Entrée principale"
+    location: Optional[str] = ""                                # "Rez-de-chaussée, façade Peel"
+    series: Optional[str] = ""                                  # AT1000 / ATi2000 / Kawneer 190 / etc.
+    model: Optional[str] = ""                                   # Free text (e.g. "Aluminium blanc")
+    width_mm: Optional[float] = None
+    height_mm: Optional[float] = None
+    finish: Optional[str] = ""
+    configuration: Optional[str] = ""                           # Simple / double / porte-fenêtre
+    hinges: Optional[str] = ""
+    lock: Optional[str] = ""
+    electric_strike: Optional[str] = ""
+    threshold: Optional[str] = ""
+    trim: Optional[str] = ""
+    other_specs: Optional[str] = ""                             # Free notes on this door
+    # Deficiency block
+    observations: List[str] = Field(default_factory=list)       # bullets
+    impacts: List[str] = Field(default_factory=list)            # bullets
+    recommendation: Optional[str] = ""
+
+
+class ExpertReport(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    number: int
+    # Client (recipient of the report)
+    client_snapshot: Party
+    # Project details
+    project_name: str = Field(default="", max_length=200)
+    project_address: Optional[str] = ""
+    project_city: Optional[str] = ""
+    inspection_date: str                                        # YYYY-MM-DD
+    inspector_name: str = "Cédrick Pimparé"
+    inspector_title: str = "Expert Portes Commerciales – Portech"
+    mandated_by: Optional[str] = ""                             # "Marc Tremblay – VERRE SELECT"
+    # Report body
+    purpose: Optional[str] = ""                                  # Section 1 — free text
+    doors: List[InspectedDoor] = Field(default_factory=list)     # Sections 2 & 3
+    risks: Optional[str] = ""                                     # Section 4
+    conclusion: Optional[str] = ""                                # Section 5
+    photos: List[ReportPhoto] = Field(default_factory=list)
+    # Metadata
+    status: str = Field(default="brouillon",
+                         pattern="^(brouillon|finalisé|envoyé|archivé)$")
+    sent_at: Optional[str] = None
+    sent_to: Optional[str] = None
+    created_at: str = Field(default_factory=now_iso)
+
+
+class ExpertReportIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    client_snapshot: PartyIn
+    project_name: str = ""
+    project_address: Optional[str] = ""
+    project_city: Optional[str] = ""
+    inspection_date: str
+    inspector_name: Optional[str] = "Cédrick Pimparé"
+    inspector_title: Optional[str] = "Expert Portes Commerciales – Portech"
+    mandated_by: Optional[str] = ""
+    purpose: Optional[str] = ""
+    doors: List[InspectedDoor] = Field(default_factory=list)
+    risks: Optional[str] = ""
+    conclusion: Optional[str] = ""
+    status: str = Field(default="brouillon",
+                         pattern="^(brouillon|finalisé|envoyé|archivé)$")
+
+
 # ---------- Purchase Orders ----------
 class PurchaseOrder(BaseModel):
     model_config = ConfigDict(extra="ignore")

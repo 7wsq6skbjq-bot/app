@@ -4,6 +4,7 @@ Uses reportlab — no headless browser, deterministic output.
 """
 import io
 import os
+import re
 from datetime import datetime
 from typing import Iterable
 
@@ -836,6 +837,331 @@ def render_product_catalog_pdf(products: list[dict]) -> bytes:
         f"confiance. © {datetime.now().year} {COMPANY['name']} · "
         f"{COMPANY['site']}",
         s["footer"],
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
+
+
+# ============================================================
+# Expert Report (Rapport d'expertise technique)
+# ============================================================
+def _report_cover(styles, report: dict) -> list:
+    """Cover page — professional, matches VERRE SELECT / 750 Peel style."""
+    story = []
+    story.append(Spacer(1, 25 * mm))
+
+    if os.path.exists(LOGO_PATH):
+        try:
+            story.append(Image(LOGO_PATH, width=80 * mm, height=27 * mm,
+                                kind="proportional", hAlign="CENTER"))
+        except Exception:
+            pass
+
+    story.append(Spacer(1, 20 * mm))
+
+    title_style = ParagraphStyle(
+        "cover_title", fontName="Helvetica-Bold", fontSize=28,
+        textColor=NAVY, alignment=1, leading=32,
+    )
+    sub_style = ParagraphStyle(
+        "cover_sub", fontName="Helvetica-Bold", fontSize=13,
+        textColor=NAVY_LIGHT, alignment=1, leading=17,
+    )
+    meta_style = ParagraphStyle(
+        "cover_meta", fontName="Helvetica", fontSize=10,
+        textColor=NAVY, alignment=1, leading=15,
+    )
+    small_style = ParagraphStyle(
+        "cover_small", fontName="Courier", fontSize=8,
+        textColor=TEXT_MUTED, alignment=1, leading=12,
+    )
+
+    story.append(Paragraph("RAPPORT D'EXPERTISE", title_style))
+    story.append(Paragraph("TECHNIQUE", title_style))
+    story.append(Spacer(1, 8 * mm))
+    client_name = (report.get("client_snapshot") or {}).get("name") or "—"
+    story.append(Paragraph(f"PRÉPARÉ POUR<br/><b>{client_name.upper()}</b>", sub_style))
+    story.append(Spacer(1, 20 * mm))
+
+    proj = report.get("project_name") or "—"
+    city = report.get("project_city") or ""
+    addr = report.get("project_address") or ""
+    project_line = f"<b>PROJET :</b> {proj}"
+    if addr or city:
+        project_line += f"<br/>{addr}"
+        if city:
+            project_line += f"{'  ·  ' if addr else ''}{city}"
+    story.append(Paragraph(project_line, meta_style))
+
+    story.append(Spacer(1, 12 * mm))
+    story.append(Paragraph(
+        f"Date d'inspection : <b>{_date_fr(report.get('inspection_date'))}</b><br/>"
+        f"Inspecteur : <b>{report.get('inspector_name') or 'Cédrick Pimparé'}</b><br/>"
+        f"{report.get('inspector_title') or 'Expert Portes Commerciales – Portech'}"
+        + (f"<br/>Mandaté par : {report['mandated_by']}" if report.get("mandated_by") else ""),
+        meta_style,
+    ))
+
+    story.append(Spacer(1, 30 * mm))
+    number = f"RAP-{int(report.get('number', 0)):04d}"
+    story.append(Paragraph(f"RÉFÉRENCE {number}", small_style))
+    story.append(Paragraph(
+        f"{COMPANY['name']} · {COMPANY['email']} · {COMPANY['site']}",
+        small_style,
+    ))
+    return story
+
+
+def _section_heading(styles, num: str, label: str) -> Paragraph:
+    style = ParagraphStyle(
+        f"h_{num}", fontName="Helvetica-Bold", fontSize=13,
+        textColor=NAVY, leading=17, spaceBefore=6, spaceAfter=4,
+    )
+    return Paragraph(f"<b>{num}. {label.upper()}</b>", style)
+
+
+def _subheading(styles, text: str) -> Paragraph:
+    style = ParagraphStyle(
+        "sub", fontName="Helvetica-Bold", fontSize=10.5,
+        textColor=NAVY, leading=14, spaceBefore=3, spaceAfter=2,
+    )
+    return Paragraph(text, style)
+
+
+def _paragraph_free(styles, text: str) -> Paragraph:
+    """Preserve line breaks and blank lines from a user-typed textarea."""
+    if not text:
+        return Paragraph("<i>—</i>", styles["body"])
+    # Blank lines → paragraph breaks ; single \n → <br/>
+    parts = [p for p in re.split(r"\n\s*\n", text.strip()) if p.strip()]
+    html = "<br/><br/>".join(p.replace("\n", "<br/>") for p in parts)
+    return Paragraph(html, styles["body"])
+
+
+def _door_specs_table(styles, door: dict) -> Table:
+    """Render the technical description block of one door."""
+    fields = [
+        ("Modèle", door.get("model")),
+        ("Série", door.get("series")),
+        ("Dimensions", _dims_fmt(door.get("width_mm"), door.get("height_mm"))),
+        ("Finition", door.get("finish")),
+        ("Configuration", door.get("configuration")),
+        ("Pentures", door.get("hinges")),
+        ("Serrure", door.get("lock")),
+        ("Gâche électrique", door.get("electric_strike")),
+        ("Seuil", door.get("threshold")),
+        ("Trim / Moulure", door.get("trim")),
+    ]
+    rows = [
+        [Paragraph(f"<b>{k}</b>", styles["body"]),
+         Paragraph(v or "—", styles["body"])]
+        for k, v in fields if v
+    ]
+    if not rows:
+        rows = [[Paragraph("—", styles["body"]), Paragraph("", styles["body"])]]
+    t = Table(rows, colWidths=[42 * mm, 118 * mm])
+    t.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BOX", (0, 0), (-1, -1), 0.3, NAVY_BORDER),
+        ("INNERGRID", (0, 0), (-1, -1), 0.2, NAVY_BORDER),
+        ("BACKGROUND", (0, 0), (0, -1), BG_LIGHT),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    return t
+
+
+def _dims_fmt(w: float | None, h: float | None) -> str:
+    if not w and not h:
+        return ""
+    parts = []
+    if w:
+        parts.append(f"{int(w) if float(w).is_integer() else w} mm L")
+    if h:
+        parts.append(f"{int(h) if float(h).is_integer() else h} mm H")
+    return " × ".join(parts)
+
+
+def _bullet_list(styles, items: list) -> list:
+    """Render a list of bullet items as flowables."""
+    flowables = []
+    bullet_style = ParagraphStyle(
+        "bullet", parent=styles["body"], leftIndent=12, bulletIndent=2,
+        spaceAfter=1, spaceBefore=0,
+    )
+    for it in items or []:
+        text = str(it or "").strip()
+        if text:
+            flowables.append(Paragraph(f"•  {text}", bullet_style))
+    if not flowables:
+        flowables.append(Paragraph("<i>—</i>", styles["body"]))
+    return flowables
+
+
+def _door_photos_grid(photos: list[dict], uploads_dir: str) -> Table | None:
+    """Return a 2-column table of photos with captions, or None if empty.
+
+    Each cell contains an Image + caption paragraph. Photos are scaled to
+    fit within the cell width preserving aspect ratio.
+    """
+    if not photos:
+        return None
+    valid_cells: list[list] = []
+    caption_style = ParagraphStyle(
+        "caption", fontName="Helvetica-Oblique", fontSize=7.5,
+        textColor=TEXT_MUTED, alignment=1, leading=10, spaceBefore=1,
+    )
+    max_w = 76 * mm
+    max_h = 55 * mm
+
+    tmp: list = []
+    for p in sorted(photos, key=lambda x: x.get("order", 0)):
+        path = os.path.join(uploads_dir, p.get("filename", ""))
+        if not os.path.exists(path):
+            continue
+        try:
+            img = Image(path, width=max_w, height=max_h, kind="proportional")
+        except Exception:
+            continue
+        cap = p.get("caption") or ""
+        cell = [img]
+        if cap:
+            cell.append(Spacer(1, 1 * mm))
+            cell.append(Paragraph(cap, caption_style))
+        tmp.append(cell)
+
+    # Chunk into rows of 2
+    for i in range(0, len(tmp), 2):
+        pair = tmp[i:i + 2]
+        while len(pair) < 2:
+            pair.append("")
+        valid_cells.append(pair)
+
+    if not valid_cells:
+        return None
+
+    t = Table(valid_cells, colWidths=[80 * mm, 80 * mm])
+    t.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 2),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    return t
+
+
+def render_expert_report_pdf(report: dict, uploads_dir: str) -> bytes:
+    """Render the full technical inspection report PDF.
+
+    `uploads_dir` : absolute path to the directory holding this report's
+    photo files. Files are referenced by `report["photos"][*]["filename"]`.
+    """
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    # ── Cover ─────────────────────────────────────────────────
+    story.extend(_report_cover(s, report))
+    story.append(PageBreak())
+
+    # ── Section 1 — Purpose ──────────────────────────────────
+    story.append(_section_heading(s, "1", "Objet du rapport"))
+    story.append(_paragraph_free(s, report.get("purpose") or ""))
+    story.append(Spacer(1, 5 * mm))
+
+    # ── Section 2 — Technical description ────────────────────
+    story.append(_section_heading(s, "2", "Description technique des ensembles inspectés"))
+    doors = report.get("doors") or []
+    if not doors:
+        story.append(Paragraph("<i>Aucune porte inspectée n'a été saisie.</i>", s["body"]))
+    for i, d in enumerate(doors, start=1):
+        title = f"2.{i} {d.get('tag') or f'Porte {i}'}"
+        if d.get("location"):
+            title += f" — <font color='#4b5d7a'>{d['location']}</font>"
+        story.append(_subheading(s, title))
+        story.append(_door_specs_table(s, d))
+        if d.get("other_specs"):
+            story.append(Spacer(1, 2 * mm))
+            story.append(Paragraph(
+                f"<b>Notes :</b> {d['other_specs']}", s["body"],
+            ))
+        story.append(Spacer(1, 4 * mm))
+
+    story.append(Spacer(1, 3 * mm))
+
+    # ── Section 3 — Deficiencies (with photos) ───────────────
+    story.append(_section_heading(s, "3", "Déficiences observées"))
+    photos_by_door: dict[int, list[dict]] = {}
+    for p in report.get("photos") or []:
+        idx = p.get("door_index")
+        if idx is None:
+            continue
+        photos_by_door.setdefault(int(idx), []).append(p)
+
+    any_deficiency = False
+    for i, d in enumerate(doors, start=1):
+        if not (d.get("observations") or d.get("impacts")
+                 or d.get("recommendation") or photos_by_door.get(i - 1)):
+            continue
+        any_deficiency = True
+        title = f"3.{i} {d.get('tag') or f'Porte {i}'}"
+        story.append(_subheading(s, title))
+        # Observations
+        if d.get("observations"):
+            story.append(Paragraph("<b>Observations :</b>", s["body"]))
+            story.extend(_bullet_list(s, d["observations"]))
+        # Impacts
+        if d.get("impacts"):
+            story.append(Spacer(1, 2 * mm))
+            story.append(Paragraph("<b>Impacts :</b>", s["body"]))
+            story.extend(_bullet_list(s, d["impacts"]))
+        # Recommendation
+        if d.get("recommendation"):
+            story.append(Spacer(1, 2 * mm))
+            story.append(Paragraph(
+                f"<b>Recommandation :</b> {d['recommendation']}", s["body"],
+            ))
+        # Photos
+        photo_grid = _door_photos_grid(photos_by_door.get(i - 1, []), uploads_dir)
+        if photo_grid is not None:
+            story.append(Spacer(1, 3 * mm))
+            story.append(Paragraph("<b>Photos :</b>", s["body"]))
+            story.append(photo_grid)
+        story.append(Spacer(1, 4 * mm))
+
+    if not any_deficiency:
+        story.append(Paragraph(
+            "<i>Aucune déficience n'a été relevée lors de l'inspection.</i>",
+            s["body"],
+        ))
+        story.append(Spacer(1, 5 * mm))
+
+    # ── Section 4 — Risks & liability ────────────────────────
+    story.append(_section_heading(s, "4", "Risques et responsabilités potentielles"))
+    story.append(_paragraph_free(s, report.get("risks") or ""))
+    story.append(Spacer(1, 5 * mm))
+
+    # ── Section 5 — Conclusion ───────────────────────────────
+    story.append(_section_heading(s, "5", "Conclusion"))
+    story.append(_paragraph_free(s, report.get("conclusion") or ""))
+    story.append(Spacer(1, 15 * mm))
+
+    # Signature block
+    sig_style = ParagraphStyle(
+        "sig", fontName="Helvetica", fontSize=10, textColor=NAVY, leading=14,
+    )
+    story.append(Paragraph(
+        f"<b>Rédigé par :</b><br/>"
+        f"{report.get('inspector_name') or 'Cédrick Pimparé'}<br/>"
+        f"<font size='8' color='#4b5d7a'>{report.get('inspector_title') or ''}</font><br/><br/>"
+        f"<b>Date :</b> {_date_fr(report.get('inspection_date'))}",
+        sig_style,
     ))
 
     doc.build(story)

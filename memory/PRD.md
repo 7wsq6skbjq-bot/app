@@ -78,6 +78,19 @@ User language: **French**.
       `converted_invoice_id`). Frontend: `QuotesPanel.jsx` extends the
       shared `DocumentPanel` (which now supports `extraRowActions` +
       optional `printPath`). Also added quotes tab to mobile menu.
+- ✅ **Expert Reports (Rapports d'expertise)** (2026-07): field
+      inspection report builder matching Cédrick's PDF template
+      (5 numbered sections + cover). Doors are dynamic (dimensions,
+      series, hardware, deficiency bullet lists, recommendation).
+      Photos are uploaded per door (mobile camera capture supported),
+      stored on disk under `/app/backend/uploads/expert_reports/{id}/`
+      with GET auth-gated thumbnail serving. Branded PDF `RAP-YYYY-NNNN`
+      embeds photos inline in section 3. Email send route auto-updates
+      status to "envoyé". Backend: `erp_routes_expert_reports.py` +
+      `render_expert_report_pdf` in `erp_pdf.py` + `ExpertReport` /
+      `InspectedDoor` / `ReportPhoto` models. Frontend:
+      `ExpertReportsPanel.jsx` with collapsible door cards + bullet
+      editors + inline photo grid.
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`
