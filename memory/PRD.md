@@ -84,13 +84,19 @@ User language: **French**.
       series, hardware, deficiency bullet lists, recommendation).
       Photos are uploaded per door (mobile camera capture supported),
       stored on disk under `/app/backend/uploads/expert_reports/{id}/`
-      with GET auth-gated thumbnail serving. Branded PDF `RAP-YYYY-NNNN`
-      embeds photos inline in section 3. Email send route auto-updates
-      status to "envoyé". Backend: `erp_routes_expert_reports.py` +
-      `render_expert_report_pdf` in `erp_pdf.py` + `ExpertReport` /
-      `InspectedDoor` / `ReportPhoto` models. Frontend:
-      `ExpertReportsPanel.jsx` with collapsible door cards + bullet
-      editors + inline photo grid.
+      **AND in GridFS** (bucket `expert_report_photos`, keyed by
+      `metadata.photo_id`) so they survive Kubernetes redeploys.
+      Disk is used as a hot cache; missing files are re-hydrated from
+      GridFS on-demand before PDF render / photo serve.
+      Branded PDF `RAP-YYYY-NNNN` embeds photos inline in section 3 —
+      photos are chunked into 1-row-per-pair tables so ReportLab can
+      page-break cleanly (fixes 13-photo truncation bug).
+      Frontend uploads photos ONE-AT-A-TIME after resizing them to
+      max 2000 px JPEG q82 in-browser (fixes HEIC + 10 MB iPhone
+      cases + K8s ingress body-size limits).
+      Backend: `erp_routes_expert_reports.py` + `render_expert_report_pdf`
+      in `erp_pdf.py` + `ExpertReport` / `InspectedDoor` / `ReportPhoto`
+      models. Frontend: `ExpertReportsPanel.jsx`.
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`

@@ -21,7 +21,8 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from gridfs.errors import NoFile
+from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
 from pydantic import BaseModel, EmailStr, Field
 
 from erp_helpers import csv_response, send_pdf_email
@@ -67,6 +68,99 @@ def _safe_ext(filename: str) -> str:
         raise HTTPException(415, f"Extension non supportée : {ext}. "
                                   f"Autorisées : {', '.join(sorted(ALLOWED_EXTENSIONS))}.")
     return ext
+
+
+# ───────────────────────────────────────────────────────────────────
+# GridFS-backed photo storage (survives container redeploys)
+# ───────────────────────────────────────────────────────────────────
+# Photos are stored twice:
+#   1. Immediately on the local disk (fast for the very next PDF render)
+#   2. In MongoDB GridFS, keyed by our own photo_id in the file's metadata
+#
+# On any redeploy, the disk is wiped — before serving/PDF-rendering we
+# re-hydrate the disk from GridFS on-demand.
+
+def _gridfs(db: AsyncIOMotorDatabase) -> AsyncIOMotorGridFSBucket:
+    return AsyncIOMotorGridFSBucket(db, bucket_name="expert_report_photos")
+
+
+async def _hydrate_disk_from_gridfs(db: AsyncIOMotorDatabase,
+                                     report_id: str,
+                                     photos: list[dict]) -> None:
+    """For each photo, make sure the file exists on disk. If not, fetch
+    from GridFS and write it. Silently skips photos that have no GridFS
+    entry (legacy / already-lost)."""
+    if not photos:
+        return
+    bucket = _gridfs(db)
+    rdir = _report_dir(report_id)
+    for p in photos:
+        stored = p.get("filename")
+        if not stored:
+            continue
+        path = os.path.join(rdir, stored)
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            continue
+        # Locate the GridFS file by metadata.photo_id
+        photo_id = p.get("id")
+        if not photo_id:
+            continue
+        cursor = bucket.find({"metadata.photo_id": photo_id})
+        gf_doc = await cursor.to_list(length=1)
+        if not gf_doc:
+            continue
+        try:
+            stream = await bucket.open_download_stream(gf_doc[0]["_id"])
+            data = await stream.read()
+        except NoFile:
+            continue
+        with open(path, "wb") as fp:
+            fp.write(data)
+
+
+async def _store_in_gridfs(db: AsyncIOMotorDatabase, *,
+                            photo_id: str, report_id: str,
+                            filename: str, content_type: str,
+                            raw: bytes) -> None:
+    bucket = _gridfs(db)
+    await bucket.upload_from_stream(
+        filename, raw,
+        metadata={
+            "photo_id": photo_id,
+            "report_id": report_id,
+            "content_type": content_type,
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+
+
+async def _delete_from_gridfs(db: AsyncIOMotorDatabase, photo_id: str) -> None:
+    bucket = _gridfs(db)
+    cursor = bucket.find({"metadata.photo_id": photo_id})
+    async for gf in cursor:
+        try:
+            await bucket.delete(gf["_id"])
+        except NoFile:
+            pass
+
+
+async def _delete_all_report_photos_from_gridfs(db: AsyncIOMotorDatabase,
+                                                  report_id: str) -> None:
+    bucket = _gridfs(db)
+    cursor = bucket.find({"metadata.report_id": report_id})
+    async for gf in cursor:
+        try:
+            await bucket.delete(gf["_id"])
+        except NoFile:
+            pass
+
+
+def _ext_to_media(ext: str) -> str:
+    return {
+        ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".png": "image/png", ".webp": "image/webp",
+        ".heic": "image/heic",
+    }.get(ext.lower(), "application/octet-stream")
 
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number) -> None:
@@ -135,10 +229,11 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         result = await db.erp_expert_reports.delete_one({"id": report_id})
         if result.deleted_count == 0:
             raise HTTPException(404, "Rapport introuvable")
-        # Cleanup photos on disk
+        # Cascade delete: photos on disk AND in GridFS
         d = os.path.join(UPLOADS_ROOT, report_id)
         if os.path.isdir(d):
             shutil.rmtree(d, ignore_errors=True)
+        await _delete_all_report_photos_from_gridfs(db, report_id)
         return {"deleted": report_id}
 
     @router.post("/expert-reports/{report_id}/photos",
@@ -194,6 +289,23 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
                 rejected.append({"filename": item.filename,
                                   "reason": f"erreur disque : {e}"})
                 continue
+            # ── ALSO persist in GridFS so photos survive redeploys ──
+            try:
+                await _store_in_gridfs(
+                    db, photo_id=photo_id, report_id=report_id,
+                    filename=stored_name,
+                    content_type=_ext_to_media(ext), raw=raw,
+                )
+            except Exception as e:
+                # Roll back disk file so we never claim ownership of a photo
+                # that has no persistent copy.
+                try:
+                    os.remove(os.path.join(rdir, stored_name))
+                except OSError:
+                    pass
+                rejected.append({"filename": item.filename,
+                                  "reason": f"erreur GridFS : {e}"})
+                continue
             di = item.door_index
             max_order[di] = max_order.get(di, -1) + 1
             new_photos.append(ReportPhoto(
@@ -243,6 +355,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             os.remove(os.path.join(UPLOADS_ROOT, report_id, removed_filename))
         except OSError:
             pass
+        # Remove from GridFS (persistent)
+        await _delete_from_gridfs(db, photo_id)
         await db.erp_expert_reports.update_one(
             {"id": report_id}, {"$set": {"photos": remaining}},
         )
@@ -257,14 +371,17 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         if not re.match(r"^[A-Za-z0-9\-_.]+$", filename):
             raise HTTPException(400, "Nom de fichier invalide")
         path = os.path.join(UPLOADS_ROOT, report_id, filename)
+        # If missing on disk (e.g. after container redeploy) try GridFS
+        if not os.path.isfile(path):
+            doc = await db.erp_expert_reports.find_one({"id": report_id}, {"_id": 0})
+            if doc:
+                await _hydrate_disk_from_gridfs(
+                    db, report_id, doc.get("photos") or [],
+                )
         if not os.path.isfile(path):
             raise HTTPException(404, "Photo introuvable")
         ext = os.path.splitext(filename)[1].lower()
-        media = {
-            ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-            ".png": "image/png", ".webp": "image/webp",
-            ".heic": "image/heic",
-        }.get(ext, "application/octet-stream")
+        media = _ext_to_media(ext)
         with open(path, "rb") as fp:
             data = fp.read()
         return Response(content=data, media_type=media)
@@ -274,6 +391,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         doc = await db.erp_expert_reports.find_one({"id": report_id}, {"_id": 0})
         if not doc:
             raise HTTPException(404, "Rapport introuvable")
+        # Make sure every photo file is on disk before the sync renderer runs
+        await _hydrate_disk_from_gridfs(db, report_id, doc.get("photos") or [])
         rdir = _report_dir(report_id)
         pdf_bytes = await asyncio.to_thread(render_expert_report_pdf, doc, rdir)
         number = f"RAP-{int(doc['number']):04d}"
@@ -288,6 +407,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         doc = await db.erp_expert_reports.find_one({"id": report_id}, {"_id": 0})
         if not doc:
             raise HTTPException(404, "Rapport introuvable")
+        # Rehydrate photos from GridFS if disk cache is empty
+        await _hydrate_disk_from_gridfs(db, report_id, doc.get("photos") or [])
         rdir = _report_dir(report_id)
         pdf_bytes = await asyncio.to_thread(render_expert_report_pdf, doc, rdir)
         number = f"RAP-{int(doc['number']):04d}"
