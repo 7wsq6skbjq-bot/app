@@ -22,6 +22,7 @@ from starlette.middleware.cors import CORSMiddleware
 from erp import build_erp_router
 from erp_reminders import start_scheduler
 from erp_monthly_recap import start_recap_scheduler
+from erp_expert_report_backup import start_backup_scheduler
 
 # ==============================================================
 # Configuration
@@ -373,9 +374,11 @@ async def startup_event():
     if os.environ.get("DISABLE_SCHEDULER", "").lower() not in ("1", "true", "yes"):
         app.state.scheduler = start_scheduler(db)
         app.state.recap_scheduler = start_recap_scheduler(db)
+        app.state.backup_scheduler = start_backup_scheduler(db)
     else:
         app.state.scheduler = None
         app.state.recap_scheduler = None
+        app.state.backup_scheduler = None
 
 
 @app.on_event("shutdown")
@@ -386,4 +389,7 @@ async def shutdown_db_client():
     recap_sched = getattr(app.state, "recap_scheduler", None)
     if recap_sched is not None:
         recap_sched.shutdown(wait=False)
+    backup_sched = getattr(app.state, "backup_scheduler", None)
+    if backup_sched is not None:
+        backup_sched.shutdown(wait=False)
     client.close()

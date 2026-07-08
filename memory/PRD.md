@@ -94,9 +94,30 @@ User language: **French**.
       Frontend uploads photos ONE-AT-A-TIME after resizing them to
       max 2000 px JPEG q82 in-browser (fixes HEIC + 10 MB iPhone
       cases + K8s ingress body-size limits).
+      Inline editable **caption/note** per photo — user types
+      "Réf. #1" etc. and it appears in the PDF next to the photo.
       Backend: `erp_routes_expert_reports.py` + `render_expert_report_pdf`
       in `erp_pdf.py` + `ExpertReport` / `InspectedDoor` / `ReportPhoto`
       models. Frontend: `ExpertReportsPanel.jsx`.
+- ✅ **Expert Report daily backups** (2026-07): `erp_expert_report_backup.py`
+      — APScheduler daily 02:00 America/Montreal snapshots the FULL
+      report doc (metadata + photo-id references — GridFS entries left
+      alone) into `erp_expert_report_backups`. 90-day retention with
+      auto-prune. Admin endpoints: `POST /admin/expert-reports/backup/run`,
+      `GET /admin/expert-reports/backup/list?report_id=…`,
+      `POST /admin/expert-reports/backup/{snapshot_id}/restore`.
+- ✅ **Cost price + profit margin on quotes** (2026-07):
+      `Product.cost_price` (confidential — never on quote PDF).
+      New "🔒 Marge de profit" panel inside quote form only —
+      shows per-line cost/sell/margin, totals with color-coded %
+      indicator, and one-click "+X %" price bump buttons (5/10/15/20
+      plus custom %). Data lives purely in-browser (looked up from
+      products cache on-the-fly, `_cost_price` on LineItem stripped
+      by backend `extra="ignore"`).
+- ✅ **Inventory bug fix** (2026-07): `<EditMetaModal>` and
+      `<ThresholdsModal>` now receive `key={row.id}` — prevents state
+      leakage across rows when editing multiple aluminum profiles
+      back-to-back (previous bug: edits applied to wrong product).
     - InventoryRowIn supports `finish`, `restock_min`, `restock_max`
     - New endpoints: `PATCH /admin/alu-inventory/{id}/thresholds`,
       `GET /admin/alu-inventory/purchase-order.pdf?finish=&token=`

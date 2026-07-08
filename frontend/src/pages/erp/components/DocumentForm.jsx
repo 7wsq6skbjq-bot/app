@@ -75,6 +75,10 @@ export const DocumentForm = ({
             description: p.name + (p.description ? ` — ${p.description}` : ""),
             unit_price: Number(p.unit_price || 0),
             product_id: p.id,
+            // Cost price is used for the admin-only profit margin panel — the
+            // backend LineItem model ignores unknown fields (`extra="ignore"`)
+            // so this NEVER hits the PDF or the client-facing quote.
+            _cost_price: p.cost_price != null ? Number(p.cost_price) : null,
         });
     };
 
@@ -239,6 +243,176 @@ export const DocumentForm = ({
                     <div className="flex justify-between text-sm py-1"><span>TPS (5 %)</span><span className="font-display font-bold">{formatCurrency(totals.tps)}</span></div>
                     <div className="flex justify-between text-sm py-1"><span>TVQ (9,975 %)</span><span className="font-display font-bold">{formatCurrency(totals.tvq)}</span></div>
                     <div className="flex justify-between py-2 mt-2 border-t-2 border-[#0c182b] text-lg"><span className="font-display font-bold uppercase">Total</span><span className="font-display font-bold">{formatCurrency(totals.total)}</span></div>
+                </div>
+            </div>
+
+            {/* === CONFIDENTIAL profit-margin panel (never shown to client) === */}
+            {kind === "quote" && (
+                <ProfitMarginPanel
+                    items={value.items}
+                    products={products}
+                    onBumpPrices={(factor) => onChange({
+                        ...value,
+                        items: value.items.map((it) => ({
+                            ...it,
+                            unit_price: Math.round(Number(it.unit_price || 0) * factor * 100) / 100,
+                        })),
+                    })}
+                />
+            )}
+        </div>
+    );
+};
+
+
+/**
+ * ProfitMarginPanel — CONFIDENTIAL, ADMIN-ONLY.
+ *
+ * Renders NEXT TO / BELOW the standard totals block. Displays cost vs.
+ * sell for each line item that has a linked product with a `cost_price`,
+ * and offers a one-click "bump prices by X %" adjustment. Never visible
+ * on the PDF or the emailed quote — the data lives purely in-browser
+ * (cost_price is looked up on-the-fly from the products list).
+ *
+ * Rendering rules:
+ *   - Hidden if no line has cost data
+ *   - Shows margin coloured red/orange/green based on % threshold
+ *   - Bump control: pick a % (or type custom), multiplies every line's
+ *     unit_price by (1 + %/100). Rounded to the cent.
+ */
+const ProfitMarginPanel = ({ items, products, onBumpPrices }) => {
+    const [customPct, setCustomPct] = useState("");
+    const productMap = Object.fromEntries((products || []).map((p) => [p.id, p]));
+
+    // Enrich items with cost from the products cache
+    const rows = (items || []).map((it) => {
+        const p = productMap[it.product_id];
+        const cost = p && p.cost_price != null ? Number(p.cost_price) : null;
+        const qty = Number(it.quantity || 0);
+        const sell = Number(it.unit_price || 0);
+        return {
+            desc: it.description || "—",
+            qty, cost, sell,
+            hasCost: cost != null && cost > 0,
+            lineCost: cost != null ? cost * qty : 0,
+            lineSell: sell * qty,
+        };
+    });
+
+    const withCost = rows.filter((r) => r.hasCost);
+    if (withCost.length === 0) {
+        return (
+            <div className="mt-4 border border-dashed border-[#c5d4e7] bg-[#f9fbfd] p-3 text-xs text-[#4b5d7a] tech-stamp">
+                🔒 Panneau de marge : aucune ligne n&apos;a de prix d&apos;achat lié. Ajoute
+                un prix d&apos;achat aux produits (onglet « Produits ») pour voir
+                automatiquement ta marge ici.
+            </div>
+        );
+    }
+
+    const totalCost = withCost.reduce((s, r) => s + r.lineCost, 0);
+    const totalSell = rows.reduce((s, r) => s + r.lineSell, 0);
+    const margin = totalSell - totalCost;
+    const marginPct = totalCost > 0 ? (margin / totalCost) * 100 : 0;
+    const tone = marginPct < 15 ? "text-[#a31a1a]"
+               : marginPct < 30 ? "text-[#925800]"
+               : "text-[#0f6b3a]";
+
+    const bump = (pct) => {
+        const factor = 1 + Number(pct) / 100;
+        if (!Number.isFinite(factor) || factor <= 0) return;
+        onBumpPrices(factor);
+    };
+
+    return (
+        <div className="mt-4 border border-[#0c182b] bg-[#0c182b]/5 p-4"
+            data-testid="quote-profit-panel">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div className="tech-stamp text-[#0c182b] font-bold flex items-center gap-1.5">
+                    🔒 Marge de profit — <span className="text-[10px] uppercase text-[#a31a1a]">Confidentiel — ne figure pas sur la soumission</span>
+                </div>
+            </div>
+            <div className="overflow-x-auto mb-3">
+                <table className="w-full text-xs">
+                    <thead className="text-[10px] uppercase text-[#4b5d7a] border-b border-[#dde5f0]">
+                        <tr>
+                            <th className="text-left py-1">Ligne</th>
+                            <th className="text-right py-1">Qté</th>
+                            <th className="text-right py-1">Coût unit.</th>
+                            <th className="text-right py-1">Vente unit.</th>
+                            <th className="text-right py-1">Marge</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((r, i) => (
+                            <tr key={i} className="border-b border-[#f3f6fb]">
+                                <td className="py-1 truncate max-w-xs">{r.desc}</td>
+                                <td className="py-1 text-right font-mono">{r.qty}</td>
+                                <td className="py-1 text-right font-mono">
+                                    {r.hasCost ? formatCurrency(r.cost) : <span className="text-[#a31a1a]">—</span>}
+                                </td>
+                                <td className="py-1 text-right font-mono">{formatCurrency(r.sell)}</td>
+                                <td className={`py-1 text-right font-mono font-bold ${r.hasCost ? (r.sell - r.cost >= 0 ? "text-[#0f6b3a]" : "text-[#a31a1a]") : "text-[#4b5d7a]"}`}>
+                                    {r.hasCost ? formatCurrency((r.sell - r.cost) * r.qty) : "—"}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+                <div>
+                    <div className="text-[10px] uppercase text-[#4b5d7a]">Coût total</div>
+                    <div className="font-mono font-bold">{formatCurrency(totalCost)}</div>
+                </div>
+                <div>
+                    <div className="text-[10px] uppercase text-[#4b5d7a]">Vente totale</div>
+                    <div className="font-mono font-bold">{formatCurrency(totalSell)}</div>
+                </div>
+                <div>
+                    <div className="text-[10px] uppercase text-[#4b5d7a]">Marge $</div>
+                    <div className={`font-mono font-bold ${tone}`}>{formatCurrency(margin)}</div>
+                </div>
+                <div>
+                    <div className="text-[10px] uppercase text-[#4b5d7a]">Marge %</div>
+                    <div className={`font-mono font-bold ${tone}`}>{marginPct.toFixed(1)} %</div>
+                </div>
+            </div>
+            <div className="border-t border-[#dde5f0] pt-3">
+                <div className="text-[10px] uppercase text-[#4b5d7a] font-bold mb-1">
+                    Ajuster les prix de vente en un clic
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                    {[5, 10, 15, 20].map((p) => (
+                        <button key={p} type="button" onClick={() => bump(p)}
+                            data-testid={`quote-bump-${p}`}
+                            className="px-3 py-1.5 border border-[#0c182b] bg-white hover:bg-[#0c182b] hover:text-white tech-stamp text-xs">
+                            +{p} %
+                        </button>
+                    ))}
+                    <span className="text-[#dde5f0]">|</span>
+                    <input type="number" step="0.5"
+                        value={customPct}
+                        onChange={(e) => setCustomPct(e.target.value)}
+                        placeholder="Personnalisé %"
+                        className="w-32 px-2 py-1.5 border border-[#dde5f0] text-xs" />
+                    <button type="button"
+                        onClick={() => { if (customPct !== "") bump(customPct); }}
+                        disabled={customPct === ""}
+                        className="px-3 py-1.5 border border-[#0c182b] bg-[#0c182b] text-white hover:bg-[#1a2b4a] tech-stamp text-xs disabled:opacity-40">
+                        Appliquer
+                    </button>
+                    <button type="button"
+                        onClick={() => bump(-100 + (100 * totalSell / totalCost * (30 / 100 + 1)) / (totalSell / totalCost))}
+                        title="Sans effet — utilise +X % ci-dessus"
+                        className="hidden">
+                        reset
+                    </button>
+                </div>
+                <div className="text-[10px] text-[#4b5d7a] mt-2 italic">
+                    Astuce : « +5 % » multiplie chaque prix de vente par 1,05. Utile pour
+                    un nouveau client où tu veux ajouter une marge de sécurité. Tu peux
+                    aussi appliquer un pourcentage négatif (ex. -10) pour un rabais.
                 </div>
             </div>
         </div>

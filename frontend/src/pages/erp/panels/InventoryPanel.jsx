@@ -222,12 +222,12 @@ export const InventoryPanel = () => {
 
             {addOpen && <AddInventoryModal onClose={() => setAddOpen(false)} onAdded={load} />}
             {editingThresholds && (
-                <ThresholdsModal row={editingThresholds}
+                <ThresholdsModal key={editingThresholds.id} row={editingThresholds}
                     onClose={() => setEditingThresholds(null)}
                     onSaved={load} />
             )}
             {editingMeta && (
-                <EditMetaModal row={editingMeta}
+                <EditMetaModal key={editingMeta.id} row={editingMeta}
                     onClose={() => setEditingMeta(null)}
                     onSaved={load} />
             )}

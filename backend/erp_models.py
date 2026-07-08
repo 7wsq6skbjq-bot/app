@@ -61,7 +61,8 @@ class Product(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
     unit: str = "unité"
-    unit_price: float = Field(ge=0)
+    unit_price: float = Field(ge=0)                     # sell price (public)
+    cost_price: Optional[float] = Field(default=None, ge=0)   # CONFIDENTIAL — never on quotes/invoices
     category: Optional[str] = None
     is_service: bool = False
     created_at: str = Field(default_factory=now_iso)
@@ -74,6 +75,7 @@ class ProductIn(BaseModel):
     description: Optional[str] = None
     unit: str = "unité"
     unit_price: float = Field(ge=0)
+    cost_price: Optional[float] = Field(default=None, ge=0)
     category: Optional[str] = None
     is_service: bool = False
 

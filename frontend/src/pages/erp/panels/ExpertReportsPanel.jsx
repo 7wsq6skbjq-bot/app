@@ -124,7 +124,7 @@ const BulletEditor = ({ label, items, onChange, testidPrefix }) => {
 };
 
 // One collapsible door card.
-const DoorCard = ({ door, index, onChange, onRemove, canDelete, reportId, photos, onUploadPhotos, onDeletePhoto, http }) => {
+const DoorCard = ({ door, index, onChange, onRemove, canDelete, reportId, photos, onUploadPhotos, onDeletePhoto, onCaptionSaved, http }) => {
     const [expanded, setExpanded] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0, failed: [] });
@@ -307,7 +307,8 @@ const DoorCard = ({ door, index, onChange, onRemove, canDelete, reportId, photos
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {photos.map((p) => (
                                     <PhotoThumb key={p.id} photo={p} reportId={reportId}
-                                        http={http} onDelete={() => onDeletePhoto(p.id)} />
+                                        http={http} onDelete={() => onDeletePhoto(p.id)}
+                                        onCaptionSaved={onCaptionSaved} />
                                 ))}
                             </div>
                         )}
@@ -318,9 +319,16 @@ const DoorCard = ({ door, index, onChange, onRemove, canDelete, reportId, photos
     );
 };
 
-// Photo thumbnail with delete button. Fetches image via authenticated GET.
-const PhotoThumb = ({ photo, reportId, http, onDelete }) => {
+// Photo thumbnail with delete button + editable caption/note.
+const PhotoThumb = ({ photo, reportId, http, onDelete, onCaptionSaved }) => {
     const [src, setSrc] = useState("");
+    const [captionDraft, setCaptionDraft] = useState(photo.caption || "");
+    const [savingCap, setSavingCap] = useState(false);
+    // Track the last value we successfully persisted so we know if the
+    // draft has diverged (avoids showing a "Save" button when the user
+    // didn't actually edit).
+    const [savedCaption, setSavedCaption] = useState(photo.caption || "");
+
     useEffect(() => {
         let objUrl = null;
         (async () => {
@@ -335,10 +343,28 @@ const PhotoThumb = ({ photo, reportId, http, onDelete }) => {
         })();
         return () => { if (objUrl) URL.revokeObjectURL(objUrl); };
     }, [http, reportId, photo.filename]);
+
+    const dirty = captionDraft !== savedCaption;
+
+    const saveCaption = async () => {
+        setSavingCap(true);
+        try {
+            await http.patch(
+                `/admin/expert-reports/${reportId}/photos/${photo.id}`,
+                { caption: captionDraft },
+            );
+            setSavedCaption(captionDraft);
+            if (onCaptionSaved) onCaptionSaved();
+        } catch (e) {
+            alert(e?.response?.data?.detail || "Échec de la sauvegarde de la note.");
+        } finally { setSavingCap(false); }
+    };
+
     return (
-        <div className="relative border border-[#dde5f0] bg-[#f7f9fc]">
+        <div className="relative border border-[#dde5f0] bg-[#f7f9fc]"
+            data-testid={`photo-thumb-${photo.id}`}>
             {src ? (
-                <img src={src} alt={photo.caption || "photo"} className="w-full h-24 object-cover" />
+                <img src={src} alt={savedCaption || "photo"} className="w-full h-24 object-cover" />
             ) : (
                 <div className="w-full h-24 flex items-center justify-center text-[#4b5d7a] text-[10px]">Chargement…</div>
             )}
@@ -347,9 +373,26 @@ const PhotoThumb = ({ photo, reportId, http, onDelete }) => {
                 title="Supprimer">
                 <X className="w-3 h-3" />
             </button>
-            {photo.caption && (
-                <div className="text-[9px] text-[#4b5d7a] px-1 py-0.5 truncate">{photo.caption}</div>
-            )}
+            {/* Editable caption / reference note */}
+            <div className="p-1 border-t border-[#dde5f0] bg-white">
+                <input
+                    type="text"
+                    value={captionDraft}
+                    onChange={(e) => setCaptionDraft(e.target.value)}
+                    placeholder='Ex: "Réf. #1" ou "Voir photo 3"'
+                    data-testid={`photo-caption-${photo.id}`}
+                    className="w-full px-1.5 py-1 border border-[#dde5f0] text-[10px] focus:outline-none focus:border-[#0c182b]"
+                    maxLength={500}
+                />
+                {dirty && (
+                    <button type="button" onClick={saveCaption}
+                        disabled={savingCap}
+                        data-testid={`photo-caption-save-${photo.id}`}
+                        className="mt-1 w-full text-[9px] py-0.5 bg-[#0c182b] text-white hover:bg-[#1a2b4a] tech-stamp disabled:opacity-50">
+                        {savingCap ? "…" : "Enregistrer la note"}
+                    </button>
+                )}
+            </div>
         </div>
     );
 };
@@ -524,6 +567,15 @@ export const ExpertReportsPanel = () => {
         }
     };
 
+    // Refetch the current report to pull updated photo captions.
+    const refetchPhotos = async () => {
+        if (!editingId) return;
+        try {
+            const { data } = await http.get(`/admin/expert-reports/${editingId}`);
+            setPhotos(data.photos || []);
+        } catch { /* silent */ }
+    };
+
     const photosForDoor = (idx) => photos.filter((p) => p.door_index === idx);
 
     // ─── PDF & email ──────────────────────────────────────────
@@ -690,6 +742,7 @@ export const ExpertReportsPanel = () => {
                             photos={photosForDoor(i)}
                             onUploadPhotos={uploadPhotos}
                             onDeletePhoto={deletePhoto}
+                            onCaptionSaved={refetchPhotos}
                             http={http}
                         />
                     ))}

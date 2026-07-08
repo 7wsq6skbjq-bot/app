@@ -10,6 +10,7 @@ const emptyProduct = () => ({
     description: "",
     unit: "unité",
     unit_price: 0,
+    cost_price: 0,
     category: "",
     is_service: false,
 });
@@ -42,7 +43,13 @@ export const ProductsPanel = () => {
 
     const save = async () => {
         try {
-            const payload = { ...form, unit_price: Number(form.unit_price || 0) };
+            const payload = {
+                ...form,
+                unit_price: Number(form.unit_price || 0),
+                // cost_price is optional — send null if empty so it's cleared
+                cost_price: form.cost_price === "" || form.cost_price === null
+                    ? null : Number(form.cost_price),
+            };
             if (editing) await http.put(`/admin/products/${editing.id}`, payload);
             else await http.post("/admin/products", payload);
             setModalOpen(false);
@@ -164,9 +171,36 @@ export const ProductsPanel = () => {
                         <Field label="Unité">
                             <input type="text" value={form.unit || "unité"} onChange={(e) => set("unit", e.target.value)} className={inputClass} />
                         </Field>
-                        <Field label="Prix unitaire (CAD)">
+                        <Field label="Prix de vente (CAD)">
                             <input type="number" step="0.01" min="0" value={form.unit_price} onChange={(e) => set("unit_price", e.target.value)} className={inputClass} />
                         </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="🔒 Prix d'achat (CAD) — confidentiel">
+                            <input type="number" step="0.01" min="0"
+                                value={form.cost_price ?? ""}
+                                onChange={(e) => set("cost_price", e.target.value)}
+                                data-testid="product-cost-price"
+                                placeholder="Coût fournisseur"
+                                className={inputClass} />
+                        </Field>
+                        <div className="flex flex-col justify-end pb-1">
+                            {(() => {
+                                const cost = Number(form.cost_price || 0);
+                                const sell = Number(form.unit_price || 0);
+                                if (cost <= 0 || sell <= 0) {
+                                    return <div className="text-[11px] text-[#4b5d7a] italic">Entre un coût et un prix de vente pour voir la marge.</div>;
+                                }
+                                const profit = sell - cost;
+                                const pct = (profit / cost) * 100;
+                                const tone = pct < 15 ? "text-[#a31a1a]" : pct < 30 ? "text-[#925800]" : "text-[#0f6b3a]";
+                                return (
+                                    <div className={`text-xs font-mono ${tone}`}>
+                                        Marge : <b>{profit.toFixed(2)} $</b> ({pct.toFixed(1)}%)
+                                    </div>
+                                );
+                            })()}
+                        </div>
                     </div>
                     <label className="inline-flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={!!form.is_service} onChange={(e) => set("is_service", e.target.checked)} />

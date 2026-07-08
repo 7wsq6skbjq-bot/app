@@ -56,6 +56,10 @@ class ReportEmailRequest(BaseModel):
     message: Optional[str] = None
 
 
+class PhotoCaptionUpdate(BaseModel):
+    caption: str = Field(default="", max_length=500)
+
+
 def _report_dir(report_id: str) -> str:
     p = os.path.join(UPLOADS_ROOT, report_id)
     os.makedirs(p, exist_ok=True)
@@ -332,6 +336,32 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
                 "Rapport %s : %d photo(s) refusée(s) — %s",
                 report_id, len(rejected), rejected,
             )
+        return ExpertReport(**doc)
+
+    @router.patch("/expert-reports/{report_id}/photos/{photo_id}",
+                    response_model=ExpertReport)
+    async def update_photo_caption(report_id: str, photo_id: str,
+                                     payload: PhotoCaptionUpdate,
+                                     _: dict = Depends(auth_dep)):
+        """Update just the caption of one photo. Lets the user type a
+        reference note ('Réf. #1', 'Voir photo 3', etc.) that ends up in
+        the PDF next to the photo. Photo file / GridFS entry untouched."""
+        doc = await db.erp_expert_reports.find_one({"id": report_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Rapport introuvable")
+        photos = list(doc.get("photos") or [])
+        found = False
+        for p in photos:
+            if p.get("id") == photo_id:
+                p["caption"] = payload.caption
+                found = True
+                break
+        if not found:
+            raise HTTPException(404, "Photo introuvable dans ce rapport")
+        await db.erp_expert_reports.update_one(
+            {"id": report_id}, {"$set": {"photos": photos}},
+        )
+        doc = await db.erp_expert_reports.find_one({"id": report_id}, {"_id": 0})
         return ExpertReport(**doc)
 
     @router.delete("/expert-reports/{report_id}/photos/{photo_id}",
