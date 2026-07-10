@@ -19,7 +19,7 @@ const IMG = {
     install:     `${P}/services-installation.png`,
     tools:       `${P}/services-machining.png`,
     closer:      `${P}/services-repair.png`,
-    lock:        `${P}/services-upgrade.png`,
+    lock:        `${P}/gal-lock-2.png`,
     luxuryGlass: `${P}/services-inspection.png`,
     grid:        `${P}/services-consultation.png`,
 };

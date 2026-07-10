@@ -114,6 +114,11 @@ User language: **French**.
       plus custom %). Data lives purely in-browser (looked up from
       products cache on-the-fly, `_cost_price` on LineItem stripped
       by backend `extra="ignore"`).
+- ✅ **Realistic image swap** (2026-07): replaced 3 unrealistic AI images
+      on the public site (`services-upgrade.png`, `home-service-upgrade.png`,
+      `precision-install.png`) with existing gallery photos
+      (`gal-lock-2.png`, `gal-lock-4.png`, `gal-chantier-3.png`).
+      Files edited: `Services.jsx`, `home/data.js`.
 - ✅ **Inventory bug fix** (2026-07): `<EditMetaModal>` and
       `<ThresholdsModal>` now receive `key={row.id}` — prevents state
       leakage across rows when editing multiple aluminum profiles
