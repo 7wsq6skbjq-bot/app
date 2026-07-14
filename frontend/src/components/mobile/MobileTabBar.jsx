@@ -37,7 +37,7 @@ const SECONDARY = [
     { to: "/admin/gestion/soumissions",        label: "Soumissions",         icon: FileCheck2 },
     { to: "/admin/gestion/bons-commande",      label: "Bons de commande",    icon: ShoppingCart },
     { to: "/admin/gestion/connaissements",     label: "Connaissements",      icon: Truck },
-    { to: "/admin/gestion/coupes",             label: "Listes de coupe",     icon: Scissors },
+    { to: "/admin/gestion/fabrication",         label: "Fabrication",         icon: Scissors },
     { to: "/admin/gestion/inventaire-alu",      label: "Inventaire alu",      icon: Boxes },
     { to: "/admin/gestion/commandes-at",        label: "Commandes AT",        icon: DoorOpen },
     { to: "/admin/gestion/rapports",            label: "Rapports d'expertise", icon: ClipboardList },

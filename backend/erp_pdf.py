@@ -1170,3 +1170,177 @@ def render_expert_report_pdf(report: dict, uploads_dir: str) -> bytes:
     buf.seek(0)
     return buf.read()
 
+
+# ============================================================
+# Mosquito screens (Moustiquaires) — fabrication order PDF
+# ============================================================
+def _mosquito_items_table(items: list[dict]) -> Table:
+    """Items table for a mosquito-screen fabrication order.
+
+    Columns : # / Nom / Largeur (mm) / Hauteur (mm) / Qté / Cadre / Toile /
+              Attache / Notes
+    """
+    header = [
+        "#", "Identifiant", "Largeur\n(mm)", "Hauteur\n(mm)", "Qté",
+        "Cadre", "Toile", "Attache", "Notes",
+    ]
+    data = [header]
+    s = _styles()
+    for idx, it in enumerate(items or [], start=1):
+        data.append([
+            str(idx),
+            Paragraph(f"<b>{it.get('name') or '—'}</b>", s["body"]),
+            f"{int(it.get('width_mm') or 0)}",
+            f"{int(it.get('height_mm') or 0)}",
+            f"{int(it.get('qty') or 0)}",
+            Paragraph(it.get("frame_color") or "—", s["body"]),
+            Paragraph(it.get("mesh_type") or "—", s["body"]),
+            Paragraph(it.get("attachment_type") or "—", s["body"]),
+            Paragraph(it.get("notes") or "", s["body"]),
+        ])
+    t = Table(
+        data,
+        colWidths=[
+            8 * mm, 32 * mm, 15 * mm, 15 * mm, 10 * mm,
+            22 * mm, 28 * mm, 22 * mm, 32 * mm,
+        ],
+        repeatRows=1,
+    )
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 7),
+        ("ALIGN", (0, 0), (0, -1), "CENTER"),
+        ("ALIGN", (2, 0), (4, -1), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 8),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.4, NAVY_BORDER),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, BG_LIGHT]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    return t
+
+
+def render_mosquito_screens_pdf(order: dict) -> bytes:
+    """Render a "Bon de fabrication — Moustiquaires" PDF.
+
+    `order` is expected to contain:
+        order_number, date, needed_by, mode ("interne"|"fournisseur"),
+        supplier_snapshot? {name, address...}, customer_name?, project_ref?,
+        project_address?, status, items [{name, width_mm, height_mm, qty,
+        frame_color, mesh_type, attachment_type, notes}], total_qty, notes
+    """
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+    number = order.get("order_number") or "MS-XXXX"
+    status = (order.get("status") or "").upper() or None
+    story.append(_header(s, "BON DE FABRICATION — MOUSTIQUAIRES",
+                          number, status))
+    story.append(Spacer(1, 8 * mm))
+
+    mode = order.get("mode") or "interne"
+    if mode == "fournisseur" and order.get("supplier_snapshot"):
+        party = _party_block(s, "Fournisseur — fabrication",
+                              order.get("supplier_snapshot") or {})
+    else:
+        internal = {
+            "name": COMPANY["name"],
+            "address_line1": "Fabrication à l'interne (atelier Portech)",
+            "email": COMPANY["email"],
+        }
+        party = _party_block(s, "Fabrication", internal)
+
+    meta_entries = [
+        ("Numéro", number),
+        ("Date émission", _date_fr(order.get("date"))),
+        ("Requis pour", _date_fr(order.get("needed_by"))
+                        if order.get("needed_by") else "—"),
+        ("Mode", "Fabrication interne" if mode == "interne"
+                 else "Fabrication fournisseur"),
+        ("Statut", (order.get("status") or "brouillon").capitalize()),
+        ("Qté totale", str(order.get("total_qty") or 0)),
+    ]
+    if order.get("customer_name"):
+        meta_entries.append(("Client final", order["customer_name"]))
+    if order.get("project_ref"):
+        meta_entries.append(("Projet / Réf.", order["project_ref"]))
+    meta = _meta_grid(s, meta_entries)
+
+    side_by_side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
+    side_by_side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(side_by_side)
+    story.append(Spacer(1, 6 * mm))
+
+    if order.get("project_address"):
+        story.append(Paragraph(
+            f"<b>Adresse du projet :</b> {order['project_address']}",
+            s["body"],
+        ))
+        story.append(Spacer(1, 4 * mm))
+
+    story.append(_mosquito_items_table(order.get("items", [])))
+    story.append(Spacer(1, 6 * mm))
+
+    # Total quantity strip
+    total_qty = int(order.get("total_qty") or 0)
+    unit_count = len(order.get("items", []) or [])
+    strip = Table(
+        [[f"{unit_count} modèle(s) · {total_qty} unité(s) au total"]],
+        colWidths=[170 * mm],
+    )
+    strip.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
+        ("FONTNAME", (0, 0), (-1, -1), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.append(strip)
+    story.append(Spacer(1, 8 * mm))
+
+    # Instructions / notes fabricant
+    if mode == "fournisseur":
+        instructions = (
+            "<b>Instructions au fournisseur</b><br/>"
+            "Merci de nous confirmer par retour de courriel : le <b>prix "
+            "unitaire</b>, le <b>délai de fabrication</b> et le <b>mode "
+            "d'expédition</b>. Les dimensions ci-dessus sont exprimées "
+            "en <b>millimètres (mm)</b> — largeur × hauteur. "
+            "Toute question ou clarification, contactez-nous avant de "
+            "démarrer la fabrication."
+        )
+    else:
+        instructions = (
+            "<b>Notes atelier</b><br/>"
+            "Toutes les dimensions sont en <b>millimètres (mm)</b> — "
+            "largeur × hauteur. Vérifier le stock de toile et de cadre "
+            "avant de démarrer. Cocher chaque unité au fur et à mesure "
+            "sur la copie papier."
+        )
+    story.append(Paragraph(instructions, s["body"]))
+
+    if order.get("notes"):
+        story.append(Spacer(1, 6 * mm))
+        story.append(Paragraph(
+            f"<b>Notes :</b><br/>{order['notes']}", s["body"],
+        ))
+
+    story.append(Spacer(1, 12 * mm))
+    story.append(Paragraph(
+        "Pour toute question, communiquez avec info@portech.info — merci.",
+        s["footer"],
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+

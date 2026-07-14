@@ -14,6 +14,7 @@ import { DashboardPanel } from "./erp/panels/DashboardPanel";
 import { ProspectionPanel } from "./erp/panels/ProspectionPanel";
 import { ExpensesPanel } from "./erp/panels/ExpensesPanel";
 import { CutListPanel } from "./erp/panels/CutListPanel";
+import { FabricationPanel } from "./erp/panels/FabricationPanel";
 import { InventoryPanel } from "./erp/panels/InventoryPanel";
 import { ATOrdersPanel } from "./erp/panels/ATOrdersPanel";
 import { PaymentNoticesPanel } from "./erp/panels/PaymentNoticesPanel";
@@ -31,7 +32,7 @@ const TABS = [
     { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
     { slug: "connaissements",  label: "Connaissements",  panel: "bills-of-lading" },
     { slug: "depenses",        label: "Dépenses",        panel: "expenses" },
-    { slug: "coupes",          label: "Coupes",          panel: "cuts" },
+    { slug: "fabrication",     label: "Fabrication",     panel: "fabrication" },
     { slug: "inventaire-alu",  label: "Inventaire alu",  panel: "inventory" },
     { slug: "commandes-at",    label: "Commandes AT",    panel: "at-orders" },
     { slug: "rapports",         label: "Rapports d'expertise", panel: "expert-reports" },
@@ -49,6 +50,8 @@ const AdminErp = () => {
 
     useEffect(() => {
         if (!tab) navigate("/admin/gestion/tableau-de-bord", { replace: true });
+        // Legacy URL support — /coupes → /fabrication
+        if (tab === "coupes") navigate("/admin/gestion/fabrication", { replace: true });
     }, [tab, navigate]);
 
     return (
@@ -104,6 +107,7 @@ const AdminErp = () => {
                 {activeTab.panel === "bills-of-lading" && <BolPanel />}
                 {activeTab.panel === "expenses" && <ExpensesPanel />}
                 {activeTab.panel === "cuts" && <CutListPanel />}
+                {activeTab.panel === "fabrication" && <FabricationPanel />}
                 {activeTab.panel === "inventory" && <InventoryPanel />}
                 {activeTab.panel === "at-orders" && <ATOrdersPanel />}
                 {activeTab.panel === "expert-reports" && <ExpertReportsPanel />}

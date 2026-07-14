@@ -175,6 +175,60 @@ export const emptyPaymentNotice = () => ({
 });
 
 
+// ─── Mosquito screens (Moustiquaires) ──────────────────────
+export const MOSQUITO_SCREEN_STATUSES = [
+    "brouillon", "envoyé", "en fabrication", "reçu", "fabriqué", "annulé",
+];
+
+export const MOSQUITO_FRAME_COLORS = [
+    "Blanc", "Noir", "Bronze", "Brun commercial", "Naturel (anodisé)", "Sur mesure",
+];
+
+export const MOSQUITO_MESH_TYPES = [
+    "Fibre de verre standard",
+    "Anti-pollen (No-see-um)",
+    "Anti-chat renforcée",
+    "Solaire (Solar Screen)",
+    "Aluminium",
+    "Sur mesure",
+];
+
+export const MOSQUITO_ATTACHMENT_TYPES = [
+    "Accroches (clips)",
+    "Rails coulissants",
+    "À visser",
+    "Magnétique",
+    "Sur cadre existant",
+    "Sur mesure",
+];
+
+export const emptyMosquitoScreenItem = () => ({
+    _key: newKey(),
+    name: "",
+    width_mm: 0,
+    height_mm: 0,
+    qty: 1,
+    frame_color: "Blanc",
+    mesh_type: "Fibre de verre standard",
+    attachment_type: "Accroches (clips)",
+    notes: "",
+});
+
+export const emptyMosquitoScreen = () => ({
+    mode: "interne",
+    supplier_id: null,
+    supplier_snapshot: emptyParty("supplier"),
+    customer_name: "",
+    project_ref: "",
+    project_address: "",
+    date: todayISO(),
+    needed_by: "",
+    status: "brouillon",
+    items: [emptyMosquitoScreenItem()],
+    notes: "",
+});
+
+
 
 // ─── Expert reports (Rapports d'expertise) ─────────────────
 export const REPORT_STATUSES = ["brouillon", "finalisé", "envoyé", "archivé"];

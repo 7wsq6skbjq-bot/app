@@ -114,6 +114,18 @@ User language: **French**.
       plus custom %). Data lives purely in-browser (looked up from
       products cache on-the-fly, `_cost_price` on LineItem stripped
       by backend `extra="ignore"`).
+- ✅ **Fabrication tab + Moustiquaires module** (2026-07):
+      renommage de l'onglet "Coupes" → **"Fabrication"** avec deux
+      sous-onglets : "Listes de coupe" (existant) et "Moustiquaires" (nouveau).
+      Nouveau module **Bons de fabrication moustiquaires** —
+      `MS-YYYY-NNN`, mode double (fabrication interne / envoi à un
+      fournisseur), champs par unité : identifiant/nom, largeur, hauteur (mm),
+      qté, couleur de cadre, type de toile, type d'attache, notes.
+      PDF brandé + envoi Resend au fournisseur (mode fournisseur).
+      Backend : `erp_routes_mosquito_screens.py` + `render_mosquito_screens_pdf`.
+      Frontend : `FabricationPanel.jsx` (wrapper sous-onglets) +
+      `MosquitoScreensPanel.jsx`. Slug `coupes` redirige vers `fabrication`
+      (compatibilité URL). Sous-onglet actif persisté en localStorage.
 - ✅ **Realistic image swap** (2026-07): replaced 3 unrealistic AI images
       on the public site (`services-upgrade.png`, `home-service-upgrade.png`,
       `precision-install.png`) with existing gallery photos
