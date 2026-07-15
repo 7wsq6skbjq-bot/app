@@ -1345,368 +1345,384 @@ def render_mosquito_screens_pdf(order: dict) -> bytes:
     return buf.read()
 
 
+
 # ============================================================
-# Client-facing AT door order form (blank, fillable)
+# Client-facing AT door order form — INTERACTIVE (AcroForm)
 # ============================================================
-def _cbox_char() -> str:
-    """Unicode empty ballot box – used as blank check-box marker on paper."""
-    return "\u2610"          # ☐
-
-
-def _cbox_ck() -> str:
-    return "\u2611"          # ☑ (not used but ready)
-
-
-def _at_form_field_line(styles, label: str, width_mm: float = 90,
-                        underline: bool = True) -> Table:
-    """A label followed by a fill-in line (underscore box for the client)."""
-    row = [
-        Paragraph(f"<b>{label.upper()}</b>", styles["label"]),
-        Paragraph("", styles["body"]),
-    ]
-    t = Table([row], colWidths=[45 * mm, width_mm * mm])
-    style = [
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 2),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-        ("TOPPADDING", (0, 0), (-1, -1), 2),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]
-    if underline:
-        style.append(("LINEBELOW", (1, 0), (1, -1), 0.6, NAVY))
-    t.setStyle(TableStyle(style))
-    return t
-
-
-def _at_form_section_title(styles, title: str) -> Table:
-    t = Table([[Paragraph(f"<b>{title.upper()}</b>", ParagraphStyle(
-        "sect", fontName="Helvetica-Bold", fontSize=10, textColor=colors.white,
-        leading=12,
-    ))]], colWidths=[175 * mm])
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-    ]))
-    return t
-
-
-def _at_form_checkboxes(styles, options: list[str], cols: int = 2,
-                        col_width_mm: float = 87) -> Table:
-    """Render a list of ☐ Option checkboxes in a grid."""
-    cells = []
-    row = []
-    box = _cbox_char()
-    body = styles["body"]
-    for opt in options:
-        row.append(Paragraph(
-            f"<font size='11'>{box}</font>&nbsp;&nbsp;{opt}",
-            ParagraphStyle("cbx", parent=body, fontSize=8.5, leading=12),
-        ))
-        if len(row) == cols:
-            cells.append(row)
-            row = []
-    if row:
-        while len(row) < cols:
-            row.append(Paragraph("", body))
-        cells.append(row)
-
-    t = Table(cells, colWidths=[col_width_mm * mm] * cols)
-    t.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
-    return t
-
-
-def _at_form_qty_grid(styles) -> Table:
-    """Door swing direction grid : 6 cells (GE/DE/PE/GI/DI/PI) with qty box."""
-    body = styles["body"]
-    label_style = ParagraphStyle(
-        "swing_lbl", fontName="Helvetica-Bold", fontSize=9, textColor=NAVY,
-        alignment=1, leading=11,
-    )
-    code_style = ParagraphStyle(
-        "swing_code", fontName="Courier-Bold", fontSize=14, textColor=NAVY,
-        alignment=1, leading=16,
-    )
-    qty_style = ParagraphStyle(
-        "swing_qty", fontName="Helvetica", fontSize=8, textColor=TEXT_MUTED,
-        alignment=1, leading=10,
-    )
-    labels = [
-        ("GE", "Main gauche extérieure"),
-        ("DE", "Main droite extérieure"),
-        ("PE", "Paire extérieure"),
-        ("GI", "Main gauche intérieure"),
-        ("DI", "Main droite intérieure"),
-        ("PI", "Paire intérieure"),
-    ]
-    def cell(code, lbl):
-        return [
-            Paragraph(code, code_style),
-            Paragraph(lbl, label_style),
-            Spacer(1, 3),
-            Paragraph("QTÉ : ______", qty_style),
-        ]
-    rows = [
-        [cell(*labels[0]), cell(*labels[1]), cell(*labels[2])],
-        [cell(*labels[3]), cell(*labels[4]), cell(*labels[5])],
-    ]
-    t = Table(rows, colWidths=[58 * mm] * 3, rowHeights=[26 * mm, 26 * mm])
-    t.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("BOX", (0, 0), (-1, -1), 0.6, NAVY_BORDER),
-        ("INNERGRID", (0, 0), (-1, -1), 0.4, NAVY_BORDER),
-        ("BACKGROUND", (0, 0), (-1, -1), BG_LIGHT),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
-    return t
-
-
 def render_client_at_order_form_pdf() -> bytes:
-    """Blank, printable/fillable Portech-branded AT door order form.
+    """Blank Portech-branded AT door order form — 2 pages, TRUE interactive
+    PDF with real AcroForm text fields and check-boxes.
 
-    Modeled after the AT Fabrication interactive PDF but re-skinned for
-    Portech (logo header + email footer). Meant to be sent to glazier
-    clients so they can order AT doors from Portech directly.
+    Meant to be emailed to glazier clients ; they open in Adobe/Preview,
+    click each field, tick the boxes, save and return by email.
     """
-    s = _styles()
+    from reportlab.pdfgen import canvas as canvas_mod
+
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buf, pagesize=LETTER,
-        leftMargin=15 * mm, rightMargin=15 * mm,
-        topMargin=12 * mm, bottomMargin=12 * mm,
-        title="Portech — Formulaire de commande de porte AT",
-    )
-    story = []
-    story.append(_header(
-        s, "Formulaire de commande — Porte AT",
-        "V1", None,
-    ))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph(
-        "Remplissez ce formulaire et retournez-le à "
-        "<b>info@portech.info</b> — notre équipe vous confirme le délai et le "
-        "prix par retour de courriel.",
-        s["body"],
-    ))
-    story.append(Spacer(1, 5 * mm))
+    W, H = LETTER                        # 612 x 792 pt (8.5" x 11")
+    c = canvas_mod.Canvas(buf, pagesize=LETTER)
+    c.setTitle("Portech — Formulaire de commande de porte AT")
+    form = c.acroForm
 
-    # ────── Section 1 — Client & projet ──────
-    story.append(_at_form_section_title(s, "1. Client & projet"))
-    story.append(Spacer(1, 2 * mm))
-    client_fields = [
-        [_at_form_field_line(s, "Client"),
-         _at_form_field_line(s, "N° commande")],
-        [_at_form_field_line(s, "Responsable"),
-         _at_form_field_line(s, "Nom du projet")],
-        [_at_form_field_line(s, "Date"),
-         _at_form_field_line(s, "Date requise")],
-        [_at_form_field_line(s, "Téléphone"),
-         _at_form_field_line(s, "Courriel")],
+    field_counter = {"n": 0}
+
+    def _uniq(prefix):
+        field_counter["n"] += 1
+        return f"{prefix}_{field_counter['n']}"
+
+    def draw_banner(cnv, page_num):
+        cnv.saveState()
+        cnv.setFillColor(NAVY)
+        cnv.rect(0, H - 22 * mm, W, 22 * mm, fill=1, stroke=0)
+        if os.path.exists(LOGO_PATH):
+            try:
+                cnv.drawImage(LOGO_PATH, 12 * mm, H - 19 * mm,
+                               width=32 * mm, height=12 * mm,
+                               preserveAspectRatio=True, mask="auto")
+            except Exception:
+                pass
+        cnv.setFillColor(colors.white)
+        cnv.setFont("Helvetica-Bold", 13)
+        cnv.drawString(50 * mm, H - 11 * mm,
+                        "FORMULAIRE DE COMMANDE \u2014 PORTE AT")
+        cnv.setFont("Courier", 8)
+        cnv.setFillColor(colors.HexColor("#9bb6d8"))
+        cnv.drawString(50 * mm, H - 16 * mm,
+                        f"V1  \u00b7  Page {page_num} / 2  \u00b7  "
+                        "Portech \u2014 Quincaillerie et porte commerciale")
+        cnv.restoreState()
+
+    def draw_footer(cnv):
+        cnv.saveState()
+        cnv.setFillColor(NAVY)
+        cnv.rect(0, 0, W, 10 * mm, fill=1, stroke=0)
+        cnv.setFillColor(colors.white)
+        cnv.setFont("Helvetica", 7.5)
+        cnv.drawCentredString(
+            W / 2, 4 * mm,
+            "Retourner \u00e0 info@portech.info  \u00b7  438-376-4177  "
+            "\u00b7  portech.info  \u00b7  Portech \u2014 "
+            "Quincaillerie et porte commerciale",
+        )
+        cnv.restoreState()
+
+    def section_title(cnv, text, y):
+        cnv.saveState()
+        cnv.setFillColor(NAVY)
+        cnv.rect(12 * mm, y - 4.2 * mm, W - 24 * mm, 4.6 * mm,
+                 fill=1, stroke=0)
+        cnv.setFillColor(colors.white)
+        cnv.setFont("Helvetica-Bold", 8.5)
+        cnv.drawString(14 * mm, y - 3.2 * mm, text.upper())
+        cnv.restoreState()
+
+    def label(cnv, text, x, y, size=7):
+        cnv.saveState()
+        cnv.setFont("Helvetica-Bold", size)
+        cnv.setFillColor(TEXT_MUTED)
+        cnv.drawString(x, y, text.upper())
+        cnv.restoreState()
+
+    def text_field(name, x, y, w, h, tooltip=""):
+        form.textfield(
+            name=name, tooltip=tooltip,
+            x=x, y=y, width=w, height=h,
+            borderStyle="underlined", borderWidth=0.5,
+            borderColor=NAVY_BORDER, fillColor=colors.HexColor("#f7f9fc"),
+            textColor=NAVY, forceBorder=True,
+            fontName="Helvetica", fontSize=9,
+        )
+
+    def multiline_field(name, x, y, w, h, tooltip=""):
+        form.textfield(
+            name=name, tooltip=tooltip,
+            x=x, y=y, width=w, height=h,
+            borderStyle="solid", borderWidth=0.5,
+            borderColor=NAVY_BORDER, fillColor=colors.HexColor("#f7f9fc"),
+            textColor=NAVY, forceBorder=True,
+            fontName="Helvetica", fontSize=9,
+            fieldFlags="multiline",
+        )
+
+    def check(name, x, y, tooltip="", size=10):
+        form.checkbox(
+            name=name, tooltip=tooltip,
+            x=x, y=y, size=size,
+            buttonStyle="check", shape="square",
+            fillColor=colors.HexColor("#f7f9fc"),
+            textColor=NAVY, borderColor=NAVY,
+            borderWidth=0.8, forceBorder=True, checked=False,
+        )
+
+    def check_with_label(cnv, name, lbl, x, y,
+                          size=9, gap=1.5, font_size=8.5):
+        check(name, x, y - 0.5, tooltip=lbl, size=size)
+        cnv.setFont("Helvetica", font_size)
+        cnv.setFillColor(NAVY)
+        cnv.drawString(x + size + gap * mm, y + 1.5, lbl)
+
+    def labeled_field(cnv, lbl, x, y, w, name):
+        label(cnv, lbl, x, y + 4)
+        text_field(name, x, y - 3.5 * mm, w, 4.5 * mm, tooltip=lbl)
+
+    col1_x = 14 * mm
+    col2_x = W / 2 + 4 * mm
+    col_w = W / 2 - 20 * mm
+
+    # ============ PAGE 1 ============
+    draw_banner(c, 1)
+    draw_footer(c)
+
+    y = H - 27 * mm
+    section_title(c, "1. Client & projet", y)
+    y -= 8 * mm
+    labeled_field(c, "Client",       col1_x, y, col_w, _uniq("client"))
+    labeled_field(c, "N\u00b0 commande", col2_x, y, col_w, _uniq("po_number"))
+    y -= 11 * mm
+    labeled_field(c, "Responsable",  col1_x, y, col_w, _uniq("contact"))
+    labeled_field(c, "Nom du projet", col2_x, y, col_w, _uniq("project"))
+    y -= 11 * mm
+    labeled_field(c, "Date",         col1_x, y, col_w, _uniq("date"))
+    labeled_field(c, "Date requise", col2_x, y, col_w, _uniq("date_needed"))
+    y -= 11 * mm
+    labeled_field(c, "T\u00e9l\u00e9phone", col1_x, y, col_w, _uniq("phone"))
+    labeled_field(c, "Courriel",     col2_x, y, col_w, _uniq("email"))
+
+    y -= 12 * mm
+    section_title(c, "2. Mod\u00e8le de porte (cocher un choix)", y)
+    y -= 8 * mm
+    models = [
+        ("Porte non-isol\u00e9e \u00b7 AT1000",  "model_at1000"),
+        ("Porte isol\u00e9e \u00b7 ATi1000",     "model_ati1000"),
+        ("Porte non-isol\u00e9e \u00b7 AT2000",  "model_at2000"),
+        ("Porte isol\u00e9e \u00b7 ATi2000",     "model_ati2000"),
     ]
-    for row in client_fields:
-        t = Table([row], colWidths=[87 * mm, 87 * mm])
-        t.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        story.append(t)
-    story.append(Spacer(1, 5 * mm))
+    for i, (lbl, nm) in enumerate(models):
+        col = i % 2
+        row = i // 2
+        cx_i = 14 * mm + col * (W / 2 - 12 * mm)
+        cy_i = y - row * 6.5 * mm
+        check_with_label(c, nm, lbl, cx_i, cy_i)
+    y -= 15 * mm
 
-    # ────── Section 2 — Modèle & dimensions ──────
-    story.append(_at_form_section_title(s, "2. Modèle de porte & dimensions"))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_at_form_checkboxes(s, [
-        "Porte non-isolée · Série AT1000",
-        "Porte isolée · Série ATi1000",
-        "Porte non-isolée · Série AT2000",
-        "Porte isolée · Série ATi2000",
-    ]))
-    story.append(Spacer(1, 2 * mm))
-    dim_fields = [
-        [_at_form_field_line(s, "Dimensions (l × h)"),
-         _at_form_field_line(s, "Ouverture")],
-        [_at_form_field_line(s, "Fabrication"),
-         _at_form_field_line(s, "Tag / repère")],
-    ]
-    for row in dim_fields:
-        t = Table([row], colWidths=[87 * mm, 87 * mm])
-        t.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0),
-                                ("RIGHTPADDING", (0, 0), (-1, -1), 0)]))
-        story.append(t)
-    story.append(Spacer(1, 5 * mm))
+    section_title(c, "3. Dimensions", y)
+    y -= 8 * mm
+    check_with_label(c, "dim_standard_36x84",
+                      "Standard 36\u00d784\" (914 \u00d7 2134 mm)",
+                      14 * mm, y, size=11, font_size=10)
+    y -= 8 * mm
+    label(c, "Sur mesure \u2014 dimensions (L \u00d7 H)", 14 * mm, y + 4)
+    text_field(_uniq("dim_custom"), 14 * mm, y - 3.5 * mm,
+                col_w, 4.5 * mm, tooltip="Largeur x Hauteur")
+    label(c, "Ouverture (rough)", col2_x, y + 4)
+    text_field(_uniq("dim_opening"), col2_x, y - 3.5 * mm,
+                col_w, 4.5 * mm, tooltip="Dimensions de l'ouverture")
+    y -= 11 * mm
+    label(c, "Fabrication", 14 * mm, y + 4)
+    text_field(_uniq("dim_fab"), 14 * mm, y - 3.5 * mm,
+                col_w, 4.5 * mm, tooltip="Dimensions de fabrication")
+    label(c, "Tag / rep\u00e8re", col2_x, y + 4)
+    text_field(_uniq("tag"), col2_x, y - 3.5 * mm,
+                col_w, 4.5 * mm, tooltip="Identifiant de la porte")
+    y -= 12 * mm
 
-    # ────── Section 3 — Fini de l'aluminium ──────
-    story.append(_at_form_section_title(s, "3. Fini de l'aluminium"))
-    story.append(Spacer(1, 2 * mm))
-    finish_options = [
-        "Anodisé clair", "Noir",
+    section_title(c, "4. Fini aluminium \u2014 ext\u00e9rieur", y)
+    y -= 7 * mm
+    finishes = [
+        "Anodis\u00e9 clair", "Noir",
         "Bronze", "Dark Bronze",
         "Champagne", "Mill finish (aucune anodisation)",
     ]
-    story.append(Paragraph(
-        "<b>FINI EXTÉRIEUR</b> — cochez :",
-        ParagraphStyle("ex", fontName="Courier-Bold", fontSize=8,
-                       textColor=TEXT_MUTED),
-    ))
-    story.append(_at_form_checkboxes(s, finish_options, cols=2))
-    story.append(Spacer(1, 1 * mm))
-    story.append(_at_form_field_line(s, "Code couleur (si applicable)",
-                                      width_mm=130))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph(
-        "<b>FINI INTÉRIEUR</b> — cochez :",
-        ParagraphStyle("in", fontName="Courier-Bold", fontSize=8,
-                       textColor=TEXT_MUTED),
-    ))
-    story.append(_at_form_checkboxes(s, finish_options, cols=2))
-    story.append(Spacer(1, 1 * mm))
-    story.append(_at_form_field_line(s, "Code couleur (si applicable)",
-                                      width_mm=130))
-    story.append(Spacer(1, 5 * mm))
+    for i, name in enumerate(finishes):
+        col = i % 3
+        row = i // 3
+        cx_i = 14 * mm + col * (W - 28 * mm) / 3
+        cy_i = y - row * 5.5 * mm
+        check_with_label(c, f"finish_ext_{i}", name, cx_i, cy_i)
+    y -= 11 * mm
+    label(c, "Code couleur (si applicable)", 14 * mm, y + 4)
+    text_field(_uniq("finish_ext_code"), 14 * mm, y - 3.5 * mm,
+                W - 28 * mm, 4.5 * mm)
+    y -= 9 * mm
 
-    # ────── Section 4 — Sens d'ouverture ──────
-    story.append(_at_form_section_title(s, "4. Sens d'ouverture & quantité"))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_at_form_qty_grid(s))
-    story.append(Spacer(1, 5 * mm))
+    section_title(c, "5. Fini aluminium \u2014 int\u00e9rieur", y)
+    y -= 7 * mm
+    for i, name in enumerate(finishes):
+        col = i % 3
+        row = i // 3
+        cx_i = 14 * mm + col * (W - 28 * mm) / 3
+        cy_i = y - row * 5.5 * mm
+        check_with_label(c, f"finish_int_{i}", name, cx_i, cy_i)
+    y -= 11 * mm
+    label(c, "Code couleur (si applicable)", 14 * mm, y + 4)
+    text_field(_uniq("finish_int_code"), 14 * mm, y - 3.5 * mm,
+                W - 28 * mm, 4.5 * mm)
+    y -= 10 * mm
 
-    story.append(PageBreak())
+    section_title(c, "6. Sens d'ouverture & quantit\u00e9", y)
+    y -= 7 * mm
+    swings = [
+        ("GE \u2014 Main gauche ext\u00e9rieure",  "swing_ge"),
+        ("DE \u2014 Main droite ext\u00e9rieure",  "swing_de"),
+        ("PE \u2014 Paire ext\u00e9rieure",         "swing_pe"),
+        ("GI \u2014 Main gauche int\u00e9rieure",  "swing_gi"),
+        ("DI \u2014 Main droite int\u00e9rieure",  "swing_di"),
+        ("PI \u2014 Paire int\u00e9rieure",         "swing_pi"),
+    ]
+    for i, (lbl, nm) in enumerate(swings):
+        col = i % 3
+        row = i // 3
+        cx_i = 14 * mm + col * (W - 28 * mm) / 3
+        cy_i = y - row * 8 * mm
+        check_with_label(c, nm, lbl, cx_i, cy_i, size=9, font_size=8)
+        text_field(nm + "_qty",
+                    cx_i + (W - 28 * mm) / 3 - 18 * mm, cy_i - 1 * mm,
+                    12 * mm, 4.2 * mm, tooltip="Qt\u00e9")
+        c.setFont("Helvetica", 7)
+        c.setFillColor(TEXT_MUTED)
+        c.drawString(cx_i + (W - 28 * mm) / 3 - 24 * mm, cy_i + 1.5,
+                      "QT\u00c9")
 
-    # ────── Section 5 — Charnières ──────
-    story.append(_at_form_section_title(s, "5. Charnières"))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_at_form_checkboxes(s, [
-        "Charnière 4½ × 4 × 0,134",
-        "Charnière continue",
-        "Charnière continue HD (Heavy Duty)",
-        "Fournir et installer",
-    ]))
-    story.append(Spacer(1, 1 * mm))
-    story.append(Paragraph(
-        f"Quantité par porte :  {_cbox_char()} 1  &nbsp;&nbsp; "
-        f"{_cbox_char()} 2  &nbsp;&nbsp; {_cbox_char()} 3  &nbsp;&nbsp; "
-        f"{_cbox_char()} 4",
-        ParagraphStyle("qty", fontName="Helvetica", fontSize=9,
-                       textColor=NAVY, leading=13),
-    ))
-    story.append(Spacer(1, 5 * mm))
+    # ============ PAGE 2 ============
+    c.showPage()
+    draw_banner(c, 2)
+    draw_footer(c)
 
-    # ────── Section 6 — Poignées & barres à pousser ──────
-    story.append(_at_form_section_title(s, "6. Poignées & barres à pousser"))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_at_form_checkboxes(s, [
-        "Poignées 9\" dos à dos",
-        "Poignée 9\" extérieure",
-        "Poignée 9\" intérieure",
-        "Poignées 12\" dos à dos",
-        "Poignée 12\" extérieure",
-        "Poignée 12\" intérieure",
-        "Barre à pousser tubulaire",
-        "Fournir et installer",
-    ]))
-    story.append(Spacer(1, 5 * mm))
+    y = H - 27 * mm
+    section_title(c, "7. Charni\u00e8res", y)
+    y -= 7 * mm
+    hinges = [
+        ("Charni\u00e8re 4\u00bd\u00d74\u00d70,134", "hinge_std"),
+        ("Charni\u00e8re continue",                     "hinge_cont"),
+        ("Charni\u00e8re continue HD",                  "hinge_cont_hd"),
+    ]
+    for i, (lbl, nm) in enumerate(hinges):
+        cx_i = 14 * mm + i * (W - 28 * mm) / 3
+        check_with_label(c, nm, lbl, cx_i, y, size=9)
+    y -= 6.5 * mm
+    check_with_label(c, "hinge_qty_1", "Qt\u00e9 1", 14 * mm, y, size=9)
+    check_with_label(c, "hinge_qty_2", "Qt\u00e9 2", 42 * mm, y, size=9)
+    check_with_label(c, "hinge_qty_3", "Qt\u00e9 3", 70 * mm, y, size=9)
+    check_with_label(c, "hinge_qty_4", "Qt\u00e9 4", 98 * mm, y, size=9)
+    check_with_label(c, "hinge_supply_install", "Fournir et installer",
+                      130 * mm, y, size=9)
+    y -= 10 * mm
 
-    # ────── Section 7 — Serrures & sécurité ──────
-    story.append(_at_form_section_title(s, "7. Serrure & sécurité"))
-    story.append(Spacer(1, 2 * mm))
-    story.append(Paragraph("<b>Serrure principale</b>",
-                            ParagraphStyle("t", fontName="Courier-Bold",
-                                            fontSize=8, textColor=TEXT_MUTED)))
-    story.append(_at_form_checkboxes(s, [
-        "Serrure SM 1850 AR", "Barillet extérieur",
-        "Barillet intérieur", "Barillet manuel intérieur",
-        "Projection courte (adaptateur MR)", "Serrure à ressort 4510 AR",
-        "Barillet extérieur (serrure 4510)", "Palette de relâche 4590 AR",
-    ]))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph("<b>Barre panique</b>",
-                            ParagraphStyle("t", fontName="Courier-Bold",
-                                            fontSize=8, textColor=TEXT_MUTED)))
-    story.append(_at_form_checkboxes(s, [
+    section_title(c, "8. Poign\u00e9es & barres \u00e0 pousser", y)
+    y -= 7 * mm
+    handles = [
+        "Poign\u00e9es 9\" dos \u00e0 dos", "Poign\u00e9e 9\" ext\u00e9rieure",
+        "Poign\u00e9e 9\" int\u00e9rieure",
+        "Poign\u00e9es 12\" dos \u00e0 dos", "Poign\u00e9e 12\" ext\u00e9rieure",
+        "Poign\u00e9e 12\" int\u00e9rieure",
+        "Barre \u00e0 pousser tubulaire", "Fournir et installer",
+    ]
+    for i, name in enumerate(handles):
+        col = i % 3
+        row = i // 3
+        cx_i = 14 * mm + col * (W - 28 * mm) / 3
+        cy_i = y - row * 5.5 * mm
+        check_with_label(c, f"handle_{i}", name, cx_i, cy_i)
+    y -= 18 * mm
+
+    section_title(c, "9. Serrure & s\u00e9curit\u00e9", y)
+    y -= 6 * mm
+    label(c, "Serrure principale", 14 * mm, y + 1)
+    y -= 4.5 * mm
+    locks = [
+        "Serrure SM 1850 AR", "Barillet ext\u00e9rieur",
+        "Barillet int\u00e9rieur", "Barillet manuel int\u00e9rieur",
+        "Projection courte (adaptateur MR)",
+        "Serrure \u00e0 ressort 4510 AR",
+        "Barillet ext\u00e9rieur (4510)",
+        "Palette de rel\u00e2che 4590 AR",
+    ]
+    for i, name in enumerate(locks):
+        col = i % 2
+        row = i // 2
+        cx_i = 14 * mm + col * (W - 28 * mm) / 2
+        cy_i = y - row * 5.2 * mm
+        check_with_label(c, f"lock_main_{i}", name, cx_i, cy_i,
+                          size=8.5, font_size=8)
+    y -= 5.2 * 4 * mm + 3 * mm
+
+    label(c, "Barre panique", 14 * mm, y + 1)
+    y -= 4.5 * mm
+    panics = [
         "Barre panique 8400 AR", "Barre panique 8600 AR",
-        "Barillet extérieur (active seulement)",
-        "Barillet extérieur sur les 2 battants",
-        "Pas de barillet extérieur", "Barillet manuel intérieur (panique)",
-    ]))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph("<b>Gâches & protecteurs</b>",
-                            ParagraphStyle("t", fontName="Courier-Bold",
-                                            fontSize=8, textColor=TEXT_MUTED)))
-    story.append(_at_form_checkboxes(s, [
-        "Gâche standard", "Gâche électrique",
-        "Contact encastré", "Protège-pêne",
-        "Protecteur de barillet",
-    ]))
-    story.append(Spacer(1, 5 * mm))
+        "Barillet ext\u00e9rieur (active seulement)",
+        "Barillet ext\u00e9rieur sur les 2 battants",
+        "Pas de barillet ext\u00e9rieur",
+        "Barillet manuel int\u00e9rieur (panique)",
+    ]
+    for i, name in enumerate(panics):
+        col = i % 2
+        row = i // 2
+        cx_i = 14 * mm + col * (W - 28 * mm) / 2
+        cy_i = y - row * 5.2 * mm
+        check_with_label(c, f"panic_{i}", name, cx_i, cy_i,
+                          size=8.5, font_size=8)
+    y -= 5.2 * 3 * mm + 3 * mm
 
-    # ────── Section 8 — Autre quincaillerie ──────
-    story.append(_at_form_section_title(s, "8. Autre quincaillerie"))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_at_form_checkboxes(s, [
-        "Astragale", "Verrous affleurés",
+    label(c, "G\u00e2ches & protecteurs", 14 * mm, y + 1)
+    y -= 4.5 * mm
+    strikes = [
+        "G\u00e2che standard", "G\u00e2che \u00e9lectrique",
+        "Contact encastr\u00e9", "Prot\u00e8ge-p\u00eane",
+        "Protecteur de barillet",
+    ]
+    for i, name in enumerate(strikes):
+        col = i % 3
+        row = i // 3
+        cx_i = 14 * mm + col * (W - 28 * mm) / 3
+        cy_i = y - row * 5.2 * mm
+        check_with_label(c, f"strike_{i}", name, cx_i, cy_i,
+                          size=8.5, font_size=8)
+    y -= 12 * mm
+
+    section_title(c, "10. Autre quincaillerie", y)
+    y -= 6 * mm
+    others = [
+        "Astragale", "Verrous affleur\u00e9s",
         "Balai de porte", "Moulure thermo",
         "Moulure vitrage simple",
-    ]))
-    story.append(Spacer(1, 5 * mm))
+    ]
+    for i, name in enumerate(others):
+        col = i % 3
+        row = i // 3
+        cx_i = 14 * mm + col * (W - 28 * mm) / 3
+        cy_i = y - row * 5.2 * mm
+        check_with_label(c, f"other_{i}", name, cx_i, cy_i,
+                          size=8.5, font_size=8)
+    y -= 12 * mm
 
-    # ────── Section 9 — Seuil ──────
-    story.append(_at_form_section_title(s, "9. Seuil de porte"))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_at_form_checkboxes(s, [
-        "Fournir (par Portech)", "Non-isolé — précisez le type ci-dessous",
-        "Isolé — précisez le type ci-dessous", "Allouer espace standard",
-        "Ne pas allouer d'espace",
-    ]))
-    story.append(Spacer(1, 1 * mm))
-    story.append(_at_form_field_line(s, "Type de seuil (précisez)",
-                                      width_mm=130))
-    story.append(Spacer(1, 5 * mm))
+    section_title(c, "11. Seuil de porte", y)
+    y -= 6 * mm
+    thresholds = [
+        ("Fournir (par Portech)",          "thr_supply"),
+        ("Non-isol\u00e9",                    "thr_non_iso"),
+        ("Isol\u00e9",                        "thr_iso"),
+        ("Allouer espace standard",         "thr_space_yes"),
+        ("Ne pas allouer d'espace",         "thr_space_no"),
+    ]
+    for i, (lbl, nm) in enumerate(thresholds):
+        col = i % 3
+        row = i // 3
+        cx_i = 14 * mm + col * (W - 28 * mm) / 3
+        cy_i = y - row * 5.2 * mm
+        check_with_label(c, nm, lbl, cx_i, cy_i, size=8.5, font_size=8)
+    y -= 11 * mm
+    label(c, "Type de seuil (pr\u00e9cisez)", 14 * mm, y + 4)
+    text_field(_uniq("thr_type"), 14 * mm, y - 3.5 * mm,
+                W - 28 * mm, 4.5 * mm)
+    y -= 10 * mm
 
-    # ────── Section 10 — Notes ──────
-    story.append(_at_form_section_title(s, "10. Notes & informations supplémentaires"))
-    story.append(Spacer(1, 2 * mm))
-    # Draw 5 empty lines
-    notes_style = ParagraphStyle("nl", fontName="Helvetica", fontSize=9,
-                                  textColor=NAVY, leading=14)
-    for _ in range(6):
-        line_row = [Paragraph("", notes_style)]
-        lt = Table([line_row], colWidths=[175 * mm])
-        lt.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 0.4, NAVY_BORDER),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ]))
-        story.append(lt)
-    story.append(Spacer(1, 6 * mm))
+    section_title(c, "12. Notes & informations suppl\u00e9mentaires", y)
+    y -= 5 * mm
+    multiline_field(_uniq("notes"), 14 * mm, y - 22 * mm,
+                     W - 28 * mm, 22 * mm)
 
-    # ────── Footer — Portech contact block ──────
-    story.append(Paragraph(
-        "<b>Retourner ce formulaire complété à :</b> "
-        f"<b>{COMPANY['email']}</b> · Portech · {COMPANY['tagline']} · "
-        f"{COMPANY['site']}",
-        s["footer"],
-    ))
-    story.append(Spacer(1, 2 * mm))
-    story.append(Paragraph(
-        "Merci de votre confiance — un membre de l'équipe Portech vous "
-        "confirme le délai et le prix dans les meilleurs délais suivant la "
-        "réception de ce formulaire.",
-        s["footer"],
-    ))
-
-    doc.build(story)
+    c.save()
     buf.seek(0)
     return buf.read()
 

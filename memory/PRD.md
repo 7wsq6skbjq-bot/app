@@ -114,6 +114,16 @@ User language: **French**.
       plus custom %). Data lives purely in-browser (looked up from
       products cache on-the-fly, `_cost_price` on LineItem stripped
       by backend `extra="ignore"`).
+- ✅ **AT order form — refonte interactive AcroForm (2 pages)** (2026-07):
+      Le formulaire de commande porte AT a été **entièrement réécrit** en
+      utilisant les vraies `AcroForm` de ReportLab (via `canvas.acroForm`) —
+      90 champs interactifs (text fields + checkboxes) que les vitreries
+      peuvent cliquer/cocher directement dans Adobe Reader ou Preview macOS.
+      Compactage à **exactement 2 pages** Letter (au lieu de 4 auparavant).
+      Ajout d'une **case "Standard 36×84" (914×2134 mm)** en tête de section
+      Dimensions. Tout le reste conservé : sections 1-12, séries
+      AT1000/ATi1000/AT2000/ATi2000, 6 finis, poignées 9" et 12", serrures
+      SM 1850 / 4510 / 8400 / 8600, gâches, seuils, notes multi-lignes.
 - ✅ **Branding refresh — Quincaillerie et porte commerciale** (2026-07):
       unification de la tagline sur TOUT le site + tous les documents PDF +
       emails à **"Quincaillerie et porte commerciale"** (fini les variantes
