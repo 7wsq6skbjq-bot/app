@@ -29,6 +29,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 
 from at_order_pdf import render_shop_drawing_pdf
+from at_form_parser import parse_portech_at_form
 from cut_door_breakdown import decompose_at_door
 from cut_models import CutList, CutItem
 
@@ -285,6 +286,34 @@ def build_at_order_router(*, auth_dep, get_db) -> APIRouter:
         except Exception as e:
             logger.warning("ATDoorOrder validation failed: %s", e)
             raise HTTPException(502, f"OCR retournait des données invalides : {e}")
+        return order.model_dump(mode="json")
+
+    @router.post("/at-orders/parse-portech-form", status_code=200)
+    async def parse_portech_form(file: UploadFile = File(...),
+                                  _: dict = Depends(auth_dep)):
+        """Read a *filled* Portech AT order form (interactive AcroForm PDF).
+
+        Instant, cost-free alternative to `/parse` (which uses Gemini OCR).
+        Meant for PDFs that clients returned to us after filling the blank
+        template served by `/admin/at-order-form.pdf`.
+        """
+        if not file.filename or not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(400, "Un PDF est requis.")
+        contents = await file.read()
+        if len(contents) > 12 * 1024 * 1024:
+            raise HTTPException(413, "PDF trop volumineux (>12 Mo).")
+        try:
+            data = parse_portech_at_form(contents)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        except Exception as e:
+            logger.exception("AcroForm parse failed")
+            raise HTTPException(500, f"Lecture du formulaire échouée : {e}")
+        try:
+            order = ATDoorOrder(**data)
+        except Exception as e:
+            logger.warning("ATDoorOrder validation from AcroForm failed: %s", e)
+            raise HTTPException(422, f"Formulaire invalide : {e}")
         return order.model_dump(mode="json")
 
     @router.post("/at-orders", status_code=201)

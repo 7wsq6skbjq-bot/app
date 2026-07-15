@@ -1374,22 +1374,28 @@ def render_client_at_order_form_pdf() -> bytes:
         cnv.saveState()
         cnv.setFillColor(NAVY)
         cnv.rect(0, H - 22 * mm, W, 22 * mm, fill=1, stroke=0)
-        if os.path.exists(LOGO_PATH):
+        # High-resolution white P-mark (335x335) drawn crisply as an icon
+        mark_path = "/app/frontend/public/brand/portech-mark-white.png"
+        if os.path.exists(mark_path):
             try:
-                cnv.drawImage(LOGO_PATH, 12 * mm, H - 19 * mm,
-                               width=32 * mm, height=12 * mm,
+                cnv.drawImage(mark_path, 12 * mm, H - 20 * mm,
+                               width=16 * mm, height=16 * mm,
                                preserveAspectRatio=True, mask="auto")
             except Exception:
                 pass
+        # Draw PORTECH wordmark as text at high resolution
         cnv.setFillColor(colors.white)
-        cnv.setFont("Helvetica-Bold", 13)
-        cnv.drawString(50 * mm, H - 11 * mm,
-                        "FORMULAIRE DE COMMANDE \u2014 PORTE AT")
-        cnv.setFont("Courier", 8)
+        cnv.setFont("Helvetica-Bold", 20)
+        cnv.drawString(31 * mm, H - 12 * mm, "PORTECH")
+        cnv.setFont("Helvetica", 9)
+        cnv.drawString(31 * mm, H - 17 * mm,
+                        "Formulaire de commande \u2014 Porte AT")
+        cnv.setFont("Courier", 7.5)
         cnv.setFillColor(colors.HexColor("#9bb6d8"))
-        cnv.drawString(50 * mm, H - 16 * mm,
-                        f"V1  \u00b7  Page {page_num} / 2  \u00b7  "
-                        "Portech \u2014 Quincaillerie et porte commerciale")
+        cnv.drawRightString(W - 12 * mm, H - 12 * mm,
+                             f"V1  \u00b7  Page {page_num} / 2")
+        cnv.drawRightString(W - 12 * mm, H - 17 * mm,
+                             "Quincaillerie et porte commerciale")
         cnv.restoreState()
 
     def draw_footer(cnv):
@@ -1569,19 +1575,25 @@ def render_client_at_order_form_pdf() -> bytes:
         ("DI \u2014 Main droite int\u00e9rieure",  "swing_di"),
         ("PI \u2014 Paire int\u00e9rieure",         "swing_pi"),
     ]
+    # 2 columns x 3 rows so each cell has ~90mm width — plenty of room
+    swing_cell_w = (W - 28 * mm) / 2
+    swing_row_h = 10 * mm
     for i, (lbl, nm) in enumerate(swings):
-        col = i % 3
-        row = i // 3
-        cx_i = 14 * mm + col * (W - 28 * mm) / 3
-        cy_i = y - row * 8 * mm
-        check_with_label(c, nm, lbl, cx_i, cy_i, size=9, font_size=8)
-        text_field(nm + "_qty",
-                    cx_i + (W - 28 * mm) / 3 - 18 * mm, cy_i - 1 * mm,
-                    12 * mm, 4.2 * mm, tooltip="Qt\u00e9")
-        c.setFont("Helvetica", 7)
+        col = i % 2
+        row = i // 2
+        cx_i = 14 * mm + col * swing_cell_w
+        cy_i = y - row * swing_row_h
+        # Checkbox + label on the left half of the cell
+        check_with_label(c, nm, lbl, cx_i, cy_i, size=10, font_size=9)
+        # QTÉ label + text field on the right half (same line)
+        qty_x = cx_i + swing_cell_w - 34 * mm
+        c.setFont("Helvetica-Bold", 7.5)
         c.setFillColor(TEXT_MUTED)
-        c.drawString(cx_i + (W - 28 * mm) / 3 - 24 * mm, cy_i + 1.5,
-                      "QT\u00c9")
+        c.drawString(qty_x, cy_i + 1.5, "QT\u00c9")
+        text_field(nm + "_qty",
+                    qty_x + 10 * mm, cy_i - 1 * mm,
+                    18 * mm, 5 * mm, tooltip=f"Quantit\u00e9 {lbl}")
+    y -= swing_row_h * 3
 
     # ============ PAGE 2 ============
     c.showPage()

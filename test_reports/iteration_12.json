@@ -1,0 +1,24 @@
+{
+  "summary": "Validated the 2 UX bugs (section 6 overlap + logo quality) and the new Portech AcroForm parser feature. Backend: 6/6 pytest passing on /app/backend/tests/test_at_form_bugs_and_parser.py — blank AT form is 2 pages / 90+ AcroForm fields with all required swing_* names, qty boxes are >=40pt wide (no crowding), filled form round-trip via /api/admin/at-orders/parse-portech-form returns exactly the expected payload (client=Vitrerie ABC, order_number=PO-2026-042, 2 doors DE(qty=3)+PI(qty=1), series=ATi2000, Bronze/Mill finish, all hardware flags including moulding_thermo→glazing='thermos', hinge_continuous_hd, hinge_4_5x4_qty=3, pull_12_back_to_back, lock_4510_ar, panic_8400_ar, strike_electric, astragal, sill_type_insulated='Précisé'). Non-AcroForm PDF correctly rejected with HTTP 400 + French message 'aucun champ interactif'. Legacy /api/admin/at-orders/parse (Gemini OCR) route still exists (not 404/405). Visual rendering (pdftoppm@200dpi) confirms BUG#1 fixed: section 6 shows 2-col × 3-row layout with wide QTÉ box and clear labels (GE, DE, PE, GI, DI, PI) — zero overlap. BUG#2 fixed: header shows crisp high-res P mark + vector-text 'PORTECH' (Helvetica-Bold), no pixelation. Frontend: all 3 testids on /admin/gestion/commandes-at present with correct labels: at-orders-parse-btn='PARSER UN PDF', at-orders-import-client-form-btn='IMPORTER FORMULAIRE CLIENT (PORTECH)', at-orders-form-btn='FORMULAIRE CLIENT VIERGE'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_at_form_bugs_and_parser.py",
+    "/app/test_reports/pytest/iteration_12.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "at_form_parser.py: clean deterministic mapping, pypdf .get_fields() used correctly, /Yes truth-set is safe, dim regex covers po/pouces/in/\" and mm auto-conversion above 200 — solid.",
+    "at_order_routes.py: new /parse-portech-form endpoint properly ordered before /at-orders/{order_id}, distinguishes 400 (no AcroForm) vs 422 (invalid schema) vs 500 (unexpected). Reuses same ATDoorOrder model — consistent with existing UI.",
+    "Frontend ATOrdersPanel: onImportClientForm posts to /admin/at-orders/parse-portech-form with proper auth header; button labelled clearly in French with a title tooltip explaining the no-OCR/no-cost value prop. ✓",
+    "portech-mark-white.png (335×335, ~13KB) is drawn at 16mm — resolution is ample even for print. PORTECH wordmark now uses Helvetica-Bold 20pt vector text, so any zoom stays crisp. ✓",
+    "Minor nit (not blocking): at_form_parser handle_map key 7 ('supply_install') and lock_map keys 2/4 (barillet intérieur, projection courte MR) are silently dropped because Hardware model has no field — this is documented inline, but consider adding a 'unmapped_flags' list in notes so admins can see what was ticked but not persisted."
+  ],
+  "updated_files": ["/app/backend/tests/test_at_form_bugs_and_parser.py (new)"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "PortechAdmin / Portech2026! (works via POST /api/auth/login returning access_token)",
+  "seed_data_creation": "None (tests do not persist anything — parse endpoint is stateless).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file: /app/backend/tests/test_at_form_bugs_and_parser.py (6 tests, ~8s). Uses pypdf.PdfWriter.update_page_form_field_values to fill the blank template served by /api/admin/at-order-form.pdf, then POSTs to /api/admin/at-orders/parse-portech-form. Auth login returns {access_token,...} (not {token}) — respect that. AT form now has 90 AcroForm fields; if you edit erp_pdf.render_client_at_order_form_pdf, keep swing_* qty fields at >=40pt wide or the width assertion will fail. Frontend page /admin/gestion/commandes-at has 3 upload/download buttons; login via placeholder-based fill + type + wait_for_response on /api/auth/login."
+}

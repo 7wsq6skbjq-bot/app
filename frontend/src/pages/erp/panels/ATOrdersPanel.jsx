@@ -146,6 +146,32 @@ export const ATOrdersPanel = () => {
         }
     };
 
+    const clientFormRef = useRef(null);
+    const [importingClientForm, setImportingClientForm] = useState(false);
+    const onImportClientForm = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImportingClientForm(true);
+        setErrorMsg("");
+        const form = new FormData();
+        form.append("file", file);
+        try {
+            const { data } = await http.post(
+                "/admin/at-orders/parse-portech-form", form, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    timeout: 30000,
+                },
+            );
+            setOrder(_migrateOrder(data));
+        } catch (err) {
+            setErrorMsg(err?.response?.data?.detail
+                || "Erreur — le formulaire client n'a pas pu être lu.");
+        } finally {
+            setImportingClientForm(false);
+            if (clientFormRef.current) clientFormRef.current.value = "";
+        }
+    };
+
     const setField = (k, v) => setOrder((o) => ({ ...o, [k]: v }));
     const setDoor = (idx, k, v) => {
         setOrder((o) => {
@@ -283,6 +309,16 @@ export const ATOrdersPanel = () => {
                     className="btn-primary !py-1.5 !px-3 !text-xs"
                     data-testid="at-orders-parse-btn">
                     <Upload className="w-3.5 h-3.5" /> {parsing ? "Lecture…" : "Parser un PDF"}
+                </button>
+                <input ref={clientFormRef} type="file" accept="application/pdf"
+                    onChange={onImportClientForm} className="hidden"
+                    data-testid="at-orders-import-client-form-input" />
+                <button onClick={() => clientFormRef.current?.click()} disabled={importingClientForm}
+                    className="btn-primary !py-1.5 !px-3 !text-xs"
+                    data-testid="at-orders-import-client-form-btn"
+                    title="Importe un formulaire Portech rempli par un client — lecture directe des cases à cocher, sans OCR / sans coût.">
+                    <Upload className="w-3.5 h-3.5" />
+                    {importingClientForm ? "Import…" : "Importer formulaire client (Portech)"}
                 </button>
                 <button onClick={() => setOrder(emptyOrder())} className="btn-secondary !py-1.5 !px-3 !text-xs">
                     <FileText className="w-3.5 h-3.5" /> Nouveau (vide)
