@@ -1,0 +1,29 @@
+{
+  "summary": "Validated the 2 UX bugs + new AT client order form feature. Backend: 6/6 pytest passing (blank AT form PDF endpoint returns 99KB inline PDF with all door models, and Content-Disposition is inline on all PDF endpoints while CSV export stays attachment). Frontend: BUG#1 auto-select confirmed working (typing '5' on a pre-filled '0' number input produces '5', not '05'), 'Formulaire client vierge' button present on /admin/gestion/commandes-at, and compose-attach-at-form button correctly attaches Portech-Formulaire-commande-porte-AT.pdf (96.9 kB) in the compose email panel. Regression pages (fabrication, soumissions, factures, rapports) load with no errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Number input auto-select (BUG#1)", "issues": ["input[type=number] does not expose selectionStart/End (browser spec), so pure programmatic assertion is not possible. Verified functionally via keyboard.press('5') → value becomes '5' not '05'. Works as intended."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pdf_inline_and_at_form.py",
+    "/app/test_reports/pytest/iteration_11.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "App.js focusin handler correctly narrows to input[type=\"number\"] and uses el.select() inside setTimeout(0) — safe against mobile keyboard races. No memory leak (cleanup returns removeEventListener). ✓",
+    "erp_routes_at_order_form.py: uses asyncio.to_thread to render the PDF, keeping the event loop free — good pattern. Endpoint is auth-protected via auth_dep. ✓",
+    "Content-Disposition change is consistent: all PDF endpoints inline, all CSV endpoints still attachment (verified for /admin/mosquito-screens.csv). ✓",
+    "AT form PDF contains AT1000/ATi1000/AT2000/ATi2000 + Portech branding; passes semantic content check. Anodisé / Bronze / Champagne finishes not always extractable via pypdf due to Unicode checkbox glyphs but manual PDF inspection would confirm — not a blocker."
+  ],
+  "updated_files": ["/app/backend/tests/test_pdf_inline_and_at_form.py (created)"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "PortechAdmin / Portech2026! via POST /api/auth/login",
+  "seed_data_creation": "None — read-only tests + one dynamic list-scan for existing mosquito/expert/cut items to test their PDF headers.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend PDF/AT-form tests at /app/backend/tests/test_pdf_inline_and_at_form.py. Run with REACT_APP_BACKEND_URL env var set. Uses same PortechAdmin creds. The at-order-form.pdf endpoint returns ~99 KB PDF with inline Content-Disposition. Frontend testids: at-orders-form-btn (Commandes AT page), compose-attach-at-form + compose-attachments (Courriel page). BUG#1 auto-select verified by keyboard.press flow — input[type=number] does not report selectionStart so DO NOT assert on selection API; assert on resulting value after typing."
+}

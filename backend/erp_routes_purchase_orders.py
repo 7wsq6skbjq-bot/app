@@ -93,7 +93,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         filename = f"BC-{int(doc['number']):04d}.pdf"
         return Response(
             content=pdf_bytes, media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
         )
 
     @router.post("/purchase-orders/{po_id}/send-email")

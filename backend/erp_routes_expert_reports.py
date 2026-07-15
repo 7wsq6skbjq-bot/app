@@ -428,7 +428,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         number = f"RAP-{int(doc['number']):04d}"
         return Response(
             content=pdf_bytes, media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{number}.pdf"'},
+            headers={"Content-Disposition": f'inline; filename="{number}.pdf"'},
         )
 
     @router.post("/expert-reports/{report_id}/send-email")

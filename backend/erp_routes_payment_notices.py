@@ -154,7 +154,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         filename = f"{doc.get('notice_number') or 'AP'}.pdf"
         return Response(
             content=pdf_bytes, media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
         )
 
     @router.post("/payment-notices/{notice_id}/send-email")

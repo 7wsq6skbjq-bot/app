@@ -441,7 +441,7 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
         return Response(
             content=pdf,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="etiquettes-{cut_id[:8]}.pdf"'},
+            headers={"Content-Disposition": f'inline; filename="etiquettes-{cut_id[:8]}.pdf"'},
         )
 
     # ─── Purchase-order PDF (inventory restock) ───────────────────────────
@@ -482,7 +482,7 @@ def build_atelier_router(*, auth_dep, get_db) -> APIRouter:
         return Response(
             content=pdf,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="bon-commande-alu-{suffix}.pdf"'},
+            headers={"Content-Disposition": f'inline; filename="bon-commande-alu-{suffix}.pdf"'},
         )
 
     return router

@@ -1,4 +1,5 @@
 import "@/App.css";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
@@ -20,6 +21,22 @@ import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { AuthProvider } from "@/context/AuthContext";
 
 function App() {
+    // Global UX : whenever a number input is focused, select its contents so
+    // typing a new digit replaces the pre-filled "0" instead of appending to it.
+    useEffect(() => {
+        const handler = (e) => {
+            const el = e.target;
+            if (el && el.matches && el.matches('input[type="number"]')) {
+                // Slight delay so mobile keyboards don't fight the selection.
+                setTimeout(() => {
+                    try { el.select(); } catch (_) { /* ignore */ }
+                }, 0);
+            }
+        };
+        document.addEventListener("focusin", handler);
+        return () => document.removeEventListener("focusin", handler);
+    }, []);
+
     return (
         <div className="App">
             <BrowserRouter>

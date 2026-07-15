@@ -287,6 +287,20 @@ export const ATOrdersPanel = () => {
                 <button onClick={() => setOrder(emptyOrder())} className="btn-secondary !py-1.5 !px-3 !text-xs">
                     <FileText className="w-3.5 h-3.5" /> Nouveau (vide)
                 </button>
+                <button
+                    onClick={() => {
+                        const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+                        const token = encodeURIComponent(getToken() || "");
+                        const url = `${base}/api/admin/at-order-form.pdf?token=${token}`;
+                        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+                        if (isMobile) window.location.href = url; else window.open(url, "_blank");
+                    }}
+                    className="btn-secondary !py-1.5 !px-3 !text-xs"
+                    data-testid="at-orders-form-btn"
+                    title="Télécharger le formulaire vierge pour les vitreries clients"
+                >
+                    <Download className="w-3.5 h-3.5" /> Formulaire client vierge
+                </button>
             </div>
 
             {errorMsg && (

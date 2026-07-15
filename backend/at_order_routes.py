@@ -344,7 +344,7 @@ def build_at_order_router(*, auth_dep, get_db) -> APIRouter:
         return Response(
             content=pdf,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="plan-atelier-{suffix}.pdf"'},
+            headers={"Content-Disposition": f'inline; filename="plan-atelier-{suffix}.pdf"'},
         )
 
     @router.get("/at-orders/{order_id}/shop-drawing.pdf")
@@ -360,7 +360,7 @@ def build_at_order_router(*, auth_dep, get_db) -> APIRouter:
         return Response(
             content=pdf,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="plan-atelier-{suffix}.pdf"'},
+            headers={"Content-Disposition": f'inline; filename="plan-atelier-{suffix}.pdf"'},
         )
 
     @router.post("/at-orders/to-cut-list", status_code=201)

@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-    Send, Paperclip, X, AlertCircle, CheckCircle2, Mail, Loader2,
+    Send, Paperclip, X, AlertCircle, CheckCircle2, Mail, Loader2, FileText,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -149,6 +149,39 @@ export const ComposeEmailPanel = () => {
 
     const removeAttachment = (idx) => {
         setAttachments((a) => a.filter((_, i) => i !== idx));
+    };
+
+    // Attach the blank Portech AT door order form PDF directly from backend.
+    const [attachingForm, setAttachingForm] = useState(false);
+    const attachAtOrderForm = async () => {
+        setAttachingForm(true);
+        setErrorMsg("");
+        try {
+            const res = await http.get("/admin/at-order-form.pdf",
+                                        { responseType: "blob" });
+            const blob = res.data;
+            const b64 = await new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onerror = () => reject(r.error);
+                r.onload = () => {
+                    const result = String(r.result || "");
+                    const idx = result.indexOf("base64,");
+                    resolve(idx >= 0 ? result.slice(idx + 7) : result);
+                };
+                r.readAsDataURL(blob);
+            });
+            setAttachments((a) => [
+                ...a,
+                {
+                    name: "Portech-Formulaire-commande-porte-AT.pdf",
+                    size: blob.size,
+                    type: "application/pdf",
+                    b64,
+                },
+            ]);
+        } catch (e) {
+            setErrorMsg(e?.response?.data?.detail || "Impossible de joindre le formulaire.");
+        } finally { setAttachingForm(false); }
     };
 
     // ─── Send ──────────────────────────────────────────────────
@@ -338,6 +371,19 @@ export const ComposeEmailPanel = () => {
                             data-testid="compose-add-attachment"
                         >
                             <Paperclip className="w-4 h-4" /> Ajouter des fichiers
+                        </button>
+                        <button
+                            type="button"
+                            onClick={attachAtOrderForm}
+                            disabled={attachingForm}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#dde5f0] hover:border-[#0c182b] text-sm ml-2 disabled:opacity-50"
+                            data-testid="compose-attach-at-form"
+                            title="Joint le formulaire vierge de commande de porte AT (à envoyer aux vitreries)"
+                        >
+                            {attachingForm
+                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                : <FileText className="w-4 h-4" />}
+                            Joindre formulaire commande porte AT
                         </button>
                         <div className="text-[10px] text-[#4b5d7a] mt-1.5">
                             …ou glisse-dépose ici (PDF, images, etc.)

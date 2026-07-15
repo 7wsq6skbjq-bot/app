@@ -767,5 +767,5 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         return StreamingResponse(
             iter([pdf_bytes]),
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="coupes-{safe_name}.pdf"'},
+            headers={"Content-Disposition": f'inline; filename="coupes-{safe_name}.pdf"'},
         )

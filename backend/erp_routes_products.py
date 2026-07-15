@@ -32,7 +32,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             media_type="application/pdf",
             headers={
                 "Content-Disposition":
-                    'attachment; filename="catalogue-portech-produits-services.pdf"',
+                    'inline; filename="catalogue-portech-produits-services.pdf"',
             },
         )
 

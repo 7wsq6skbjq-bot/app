@@ -117,7 +117,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
         )
 
     @router.post("/invoices/{invoice_id}/send-email")
