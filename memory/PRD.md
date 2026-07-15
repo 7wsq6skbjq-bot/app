@@ -114,6 +114,18 @@ User language: **French**.
       plus custom %). Data lives purely in-browser (looked up from
       products cache on-the-fly, `_cost_price` on LineItem stripped
       by backend `extra="ignore"`).
+- ✅ **AT form V3 — remaining overlaps + section 7 restructure + threshold cleanup** (2026-07):
+      **Bug** (visuel) : légendes / sous-labels de sections passaient sous les
+      bandeaux navy (Section 6 GE=…, Section 9 SERRURE PRINCIPALE, Section 10
+      Astragale). Corrigé en portant tous les gaps sous les section titles
+      de 5-6 mm à **8-9 mm**. Rendu 180 DPI confirmé propre par testing agent.
+      **Bug** (structure) : les cases QTÉ 1/2/3/4 s'appliquaient à toutes les
+      charnières. Restructuré — Section 7 ligne 1 = *Charnière 4½ + QTÉ PAR
+      PORTE + 4 cases 1..4* (dédiées à la 4½), ligne 2 = *Continue + Continue
+      HD + Fournir/installer* (sans qté).
+      **Nettoyage** : Section 11 Seuil — retrait de « (par Portech) » sur
+      l'option *Fournir*.
+      Tests : 7/7 pytest passants dans `test_at_form_iter13.py`.
 - ✅ **AT form V2 — fixes overlap + logo quality + AcroForm parser** (2026-07):
       **Bug #1** : superposition section 6 (sens d'ouverture) corrigée —
       layout passe de 3 col × 2 rangs serrés à **2 col × 3 rangs** (10 mm par
