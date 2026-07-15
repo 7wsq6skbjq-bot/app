@@ -114,6 +114,27 @@ User language: **French**.
       plus custom %). Data lives purely in-browser (looked up from
       products cache on-the-fly, `_cost_price` on LineItem stripped
       by backend `extra="ignore"`).
+- ✅ **AT form V2 — fixes overlap + logo quality + AcroForm parser** (2026-07):
+      **Bug #1** : superposition section 6 (sens d'ouverture) corrigée —
+      layout passe de 3 col × 2 rangs serrés à **2 col × 3 rangs** (10 mm par
+      row) avec QTÉ box élargie à 18 mm. Zéro chevauchement confirmé.
+      **Bug #2** : logo Portech basse résolution corrigé — utilise maintenant
+      `portech-mark-white.png` (335×335 haute-res) rendu à 16×16 mm + le mot
+      **"PORTECH" rendu en TEXTE vectoriel** Helvetica-Bold 20 pt (au lieu
+      d'une image raster). Net à n'importe quel zoom.
+      **Feature** : nouveau parser `at_form_parser.py` + endpoint
+      `POST /admin/at-orders/parse-portech-form`. Lit directement les 90
+      champs AcroForm du formulaire Portech rempli par un client vitrerie —
+      **sans OCR / sans coût LLM / instantané / 100% déterministe**. Nouveau
+      bouton **"Importer formulaire client (Portech)"** dans ATOrdersPanel
+      à côté du "Parser un PDF" (OCR Gemini) existant. Mapping complet :
+      client/projet, série (AT1000/ATi1000/AT2000/ATi2000), dimensions
+      Standard 36×84 ou custom, finis ext/int, sens d'ouverture (6 mains +
+      qté), charnières + qté, poignées 9"/12", serrures SM 1850 / 4510 /
+      4590 / 8400 / 8600, gâches, protecteurs, autres quincailleries,
+      seuil (isolé/non-isolé/espace), notes.
+      Tests pytest : 6/6 passants dans
+      `backend/tests/test_at_form_bugs_and_parser.py`.
 - ✅ **AT order form — refonte interactive AcroForm (2 pages)** (2026-07):
       Le formulaire de commande porte AT a été **entièrement réécrit** en
       utilisant les vraies `AcroForm` de ReportLab (via `canvas.acroForm`) —
