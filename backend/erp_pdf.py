@@ -31,7 +31,7 @@ TEXT_MUTED = colors.HexColor("#4b5d7a")
 LOGO_PATH = "/app/frontend/public/brand/logo-portech.png"
 COMPANY = {
     "name": "Portech",
-    "tagline": "Quincaillerie commerciale — Grand Montréal",
+    "tagline": "Quincaillerie et porte commerciale — Grand Montréal",
     "email": "info@portech.info",
     "site": "portech.info",
 }

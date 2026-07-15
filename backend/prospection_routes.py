@@ -100,7 +100,7 @@ def _wrap_body(intro_paragraphs: str, sections_html: str, footer_note: str) -> s
         + '<p style="margin:0 0 4px 0;"><b><a href="tel:+14383764177" style="color:#0c182b; text-decoration:none;">438-376-4177</a></b></p>'
         + '<p style="margin:0 0 24px 0;"><a href="https://www.portech.info" style="color:#1d4ed8;">www.portech.info</a></p>'
         + '<p style="margin:0 0 4px 0;">Bonne journée!</p>'
-        + '<p style="margin:16px 0 0 0;"><b>Cédrick Pimparé</b><br/>Portech — Quincaillerie de porte commerciale</p>'
+        + '<p style="margin:16px 0 0 0;"><b>Cédrick Pimparé</b><br/>Portech — Quincaillerie et porte commerciale</p>'
         + '</td></tr>'
         + '<tr><td><img src="https://portech.info/email/email-footer.png" alt="Portech" style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>'
         + '<tr><td style="padding:16px 32px; color:#71717a; font-size:11px; text-align:center;">'
@@ -120,8 +120,8 @@ TEMPLATES: dict[str, dict] = {
         "intro": (
             '<p style="margin:0 0 16px 0;">Bonjour {{Nom_Entreprise}},</p>'
             '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de Portech.</p>'
-            '<p style="margin:0 0 16px 0;">On est spécialisés en <b>quincaillerie de porte commerciale</b> dans le Grand Montréal, Laval, la Rive-Sud et la Rive-Nord.</p>'
-            '<p style="margin:0 0 16px 0;">Je vous contacte parce qu\'on aide déjà plusieurs vitreries à gérer tout ce qui touche la quincaillerie commerciale et les portes aluminium.</p>'
+            '<p style="margin:0 0 16px 0;">On est spécialisés en <b>quincaillerie et porte commerciale</b> dans le Grand Montréal, Laval, la Rive-Sud et la Rive-Nord.</p>'
+            '<p style="margin:0 0 16px 0;">Je vous contacte parce qu\'on aide déjà plusieurs vitreries à gérer tout ce qui touche la quincaillerie et les portes aluminium commerciales.</p>'
             '<p style="margin:0 0 12px 0;">Concrètement, voici ce qu\'on peut faire pour vous :</p>'
         ),
         "sections": (
@@ -146,7 +146,7 @@ TEMPLATES: dict[str, dict] = {
         "subject": "Partenaire quincaillerie pour vos projets commerciaux",
         "intro": (
             '<p style="margin:0 0 16px 0;">Bonjour {{Nom_Entreprise}},</p>'
-            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — quincaillerie de porte commerciale dans le Grand Montréal, Laval, Rive-Sud et Rive-Nord.</p>'
+            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — quincaillerie et porte commerciale dans le Grand Montréal, Laval, Rive-Sud et Rive-Nord.</p>'
             '<p style="margin:0 0 16px 0;">Comme entrepreneur général, vous gérez des dizaines de fournisseurs sur chaque chantier. La quincaillerie de portes — c\'est souvent le détail qui retarde une remise des clés (codes du bâtiment, ajustements millimétriques, conformité NFPA 80).</p>'
             '<p style="margin:0 0 12px 0;">Ce que Portech peut faire pour vous :</p>'
         ),
@@ -168,7 +168,7 @@ TEMPLATES: dict[str, dict] = {
         "subject": "Spécification quincaillerie pour vos projets architecturaux",
         "intro": (
             '<p style="margin:0 0 16px 0;">Bonjour {{Nom_Entreprise}},</p>'
-            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — atelier spécialisé en quincaillerie de porte commerciale (Grand Montréal et environs).</p>'
+            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — atelier spécialisé en quincaillerie et porte commerciale (Grand Montréal et environs).</p>'
             '<p style="margin:0 0 16px 0;">Comme architecte, vous savez à quel point la spécification de la quincaillerie peut faire ou défaire un projet : retour d\'inspection, ferme-porte mal calibré, finition qui jure avec la vision du client…</p>'
             '<p style="margin:0 0 12px 0;">Mon objectif est de devenir votre référence pour ce volet :</p>'
         ),
@@ -190,7 +190,7 @@ TEMPLATES: dict[str, dict] = {
         "subject": "Quincaillerie haut de gamme pour vos projets de design",
         "intro": (
             '<p style="margin:0 0 16px 0;">Bonjour {{Nom_Entreprise}},</p>'
-            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — quincaillerie de porte commerciale (Grand Montréal, Laval, Rive-Sud, Rive-Nord).</p>'
+            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — quincaillerie et porte commerciale (Grand Montréal, Laval, Rive-Sud, Rive-Nord).</p>'
             '<p style="margin:0 0 16px 0;">Dans un projet de design commercial, le détail des portes — finition, poignée, serrure visible — peut faire toute la différence sur la perception du client final.</p>'
             '<p style="margin:0 0 12px 0;">Ce que je peux apporter à vos projets :</p>'
         ),
@@ -212,7 +212,7 @@ TEMPLATES: dict[str, dict] = {
         "subject": "Contrat-cadre quincaillerie pour vos développements",
         "intro": (
             '<p style="margin:0 0 16px 0;">Bonjour {{Nom_Entreprise}},</p>'
-            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — quincaillerie de porte commerciale dans le Grand Montréal.</p>'
+            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — quincaillerie et porte commerciale dans le Grand Montréal.</p>'
             '<p style="margin:0 0 16px 0;">Quand on construit ou développe plusieurs projets simultanément, la quincaillerie représente un poste de coût souvent sous-estimé : entre 8 000 $ et 25 000 $ par bâtiment commercial moyen, sans compter les retours et reprises.</p>'
             '<p style="margin:0 0 12px 0;">Je vous propose un partenariat structuré :</p>'
         ),
@@ -231,10 +231,10 @@ TEMPLATES: dict[str, dict] = {
 
     # ----- CENTRES COMMERCIAUX & BÂTIMENTS COMMERCIAUX -----
     "commercial": {
-        "subject": "Entretien et remplacement de quincaillerie commerciale",
+        "subject": "Entretien et remplacement de quincaillerie et porte commerciale",
         "intro": (
             '<p style="margin:0 0 16px 0;">Bonjour {{Nom_Entreprise}},</p>'
-            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — spécialiste de la quincaillerie de porte commerciale (Grand Montréal).</p>'
+            '<p style="margin:0 0 16px 0;">Cédrick Pimparé, fondateur de <b>Portech</b> — spécialiste de la quincaillerie et porte commerciale (Grand Montréal).</p>'
             '<p style="margin:0 0 16px 0;">Dans un centre d\'achats ou un bâtiment commercial à fort achalandage, les portes prennent un usage 10 à 20 fois plus intense qu\'en résidentiel. Un ferme-porte mal calibré ou une barre antipanique défectueuse, c\'est une plainte par jour — et un risque légal en cas d\'évacuation.</p>'
             '<p style="margin:0 0 12px 0;">Ce que je peux offrir à votre établissement :</p>'
         ),

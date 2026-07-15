@@ -13,7 +13,7 @@ const CATEGORIES = {
         eyebrow: "Galerie · 01",
         title: "Intervention & Installation",
         intro:
-            "Pose, ajustement et installation de quincaillerie commerciale sur portes en aluminium, en acier ou en verre. Travail propre, alignement au millimètre, finitions sans bavures.",
+            "Pose, ajustement et installation de quincaillerie et porte commerciale sur portes en aluminium, en acier ou en verre. Travail propre, alignement au millimètre, finitions sans bavures.",
         photos: [
             { src: `${P}/gal-interv-1.png`, caption: "Pose d'une poignée à levier sur porte commerciale en aluminium" },
             { src: `${P}/gal-interv-2.png`, caption: "Ajustement d'un ferme-porte hydraulique de surface" },
@@ -72,12 +72,12 @@ const CATEGORIES = {
 // SEO descriptions optimisées pour intentions locales Grand Montréal.
 const SEO = {
     interventions: {
-        title: "Galerie · Intervention & installation de quincaillerie commerciale | Portech",
+        title: "Galerie · Intervention & installation de quincaillerie et porte commerciale | Portech",
         description:
-            "Photos d'interventions Portech : pose et installation de quincaillerie commerciale dans le Grand Montréal — serrures mortaises, leviers inox, charnières continues, cylindres haute sécurité.",
+            "Photos d'interventions Portech : pose et installation de quincaillerie et porte commerciale dans le Grand Montréal — serrures mortaises, leviers inox, charnières continues, cylindres haute sécurité.",
     },
     chantiers: {
-        title: "Galerie · Chantiers haut de gamme — quincaillerie commerciale | Portech",
+        title: "Galerie · Chantiers haut de gamme — quincaillerie et porte commerciale | Portech",
         description:
             "Chantiers réalisés par Portech : portes pivot vitrées, restaurants gastronomiques, tours à condos rue Peel, sièges sociaux. Pré-assemblage atelier, installation Grand Montréal.",
     },

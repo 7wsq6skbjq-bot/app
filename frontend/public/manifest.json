@@ -1,7 +1,7 @@
 {
-  "name": "Portech — Quincaillerie de porte commerciale",
+  "name": "Portech — Quincaillerie et porte commerciale",
   "short_name": "Portech",
-  "description": "Installation, entretien, réparation et remplacement de quincaillerie de porte commerciale dans le Grand Montréal.",
+  "description": "Installation, entretien, réparation et remplacement de quincaillerie et porte commerciale dans le Grand Montréal.",
   "start_url": "/admin",
   "scope": "/",
   "display": "standalone",

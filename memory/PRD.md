@@ -114,6 +114,17 @@ User language: **French**.
       plus custom %). Data lives purely in-browser (looked up from
       products cache on-the-fly, `_cost_price` on LineItem stripped
       by backend `extra="ignore"`).
+- ✅ **Branding refresh — Quincaillerie et porte commerciale** (2026-07):
+      unification de la tagline sur TOUT le site + tous les documents PDF +
+      emails à **"Quincaillerie et porte commerciale"** (fini les variantes
+      "quincaillerie commerciale" et "quincaillerie de porte commerciale" —
+      pour éviter la confusion avec RONA/Home Hardware). Nouveau visuel
+      d'entête email (`/frontend/public/email/email-header.png`) avec
+      **"PORTECH" réduit d'environ 30 %** (100 px au lieu de ~150 px) et
+      la nouvelle tagline. 15 fichiers mis à jour (backend PDF templates,
+      prospection intros, signatures email, meta SEO, JSON-LD, manifest.json,
+      pages publiques Services / Catalogue / Galerie / About / Home /
+      Contact / Legal / HomeSolution).
 - ✅ **Client AT door order form + PDF-inline preview + number-input auto-select** (2026-07):
       **Feature** — nouveau formulaire vierge PDF de commande de porte AT
       (`GET /admin/at-order-form.pdf` — 99 KB, brandé Portech, cases à cocher
