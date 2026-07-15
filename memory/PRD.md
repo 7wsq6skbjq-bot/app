@@ -114,6 +114,25 @@ User language: **French**.
       plus custom %). Data lives purely in-browser (looked up from
       products cache on-the-fly, `_cost_price` on LineItem stripped
       by backend `extra="ignore"`).
+- ✅ **Client AT door order form + PDF-inline preview + number-input auto-select** (2026-07):
+      **Feature** — nouveau formulaire vierge PDF de commande de porte AT
+      (`GET /admin/at-order-form.pdf` — 99 KB, brandé Portech, cases à cocher
+      Unicode). Toutes les séries (AT1000/ATi1000/AT2000/ATi2000), tous les
+      finis (anodisé clair, noir, bronze, dark bronze, champagne, mill),
+      poignées 9" ET 12" (dos-à-dos / extérieure / intérieure), sens
+      d'ouverture (GE/DE/PE/GI/DI/PI), serrures (SM 1850, 4510 AR, 8400,
+      8600), gâches, protecteurs, seuil, notes. Boutons : "Joindre formulaire
+      commande porte AT" (Composer courriel) et "Formulaire client vierge"
+      (Commandes AT). Backend : `erp_routes_at_order_form.py` +
+      `render_client_at_order_form_pdf()` dans `erp_pdf.py`.
+      **Bug UX #1** — champs `input[type=number]` pré-remplis avec `0` :
+      handler global `focusin` dans `App.js` qui appelle `el.select()` — taper
+      un chiffre remplace automatiquement le 0.
+      **Bug UX #2** — PDFs auto-téléchargés : tous les endpoints PDF ERP
+      utilisent maintenant `Content-Disposition: inline` (prévisualisation
+      dans l'onglet du navigateur au lieu de download). Les exports CSV
+      restent en `attachment`. 12 endpoints migrés.
+      Tests pytest : 6/6 passants dans `backend/tests/test_pdf_inline_and_at_form.py`.
 - ✅ **Fabrication tab + Moustiquaires module** (2026-07):
       renommage de l'onglet "Coupes" → **"Fabrication"** avec deux
       sous-onglets : "Listes de coupe" (existant) et "Moustiquaires" (nouveau).
