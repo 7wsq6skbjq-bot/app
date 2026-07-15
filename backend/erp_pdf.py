@@ -1468,8 +1468,9 @@ def render_client_at_order_form_pdf() -> bytes:
         cnv.drawString(x + size + gap * mm, y + 1.5, lbl)
 
     def labeled_field(cnv, lbl, x, y, w, name):
-        label(cnv, lbl, x, y + 4)
-        text_field(name, x, y - 3.5 * mm, w, 4.5 * mm, tooltip=lbl)
+        """`y` is the label baseline. Field sits 6mm below with a safe gap."""
+        label(cnv, lbl, x, y)
+        text_field(name, x, y - 6 * mm, w, 4.5 * mm, tooltip=lbl)
 
     col1_x = 14 * mm
     col2_x = W / 2 + 4 * mm
@@ -1484,13 +1485,13 @@ def render_client_at_order_form_pdf() -> bytes:
     y -= 8 * mm
     labeled_field(c, "Client",       col1_x, y, col_w, _uniq("client"))
     labeled_field(c, "N\u00b0 commande", col2_x, y, col_w, _uniq("po_number"))
-    y -= 11 * mm
+    y -= 13 * mm
     labeled_field(c, "Responsable",  col1_x, y, col_w, _uniq("contact"))
     labeled_field(c, "Nom du projet", col2_x, y, col_w, _uniq("project"))
-    y -= 11 * mm
+    y -= 13 * mm
     labeled_field(c, "Date",         col1_x, y, col_w, _uniq("date"))
     labeled_field(c, "Date requise", col2_x, y, col_w, _uniq("date_needed"))
-    y -= 11 * mm
+    y -= 13 * mm
     labeled_field(c, "T\u00e9l\u00e9phone", col1_x, y, col_w, _uniq("phone"))
     labeled_field(c, "Courriel",     col2_x, y, col_w, _uniq("email"))
 
@@ -1517,18 +1518,18 @@ def render_client_at_order_form_pdf() -> bytes:
                       "Standard 36\u00d784\" (914 \u00d7 2134 mm)",
                       14 * mm, y, size=11, font_size=10)
     y -= 8 * mm
-    label(c, "Sur mesure \u2014 dimensions (L \u00d7 H)", 14 * mm, y + 4)
-    text_field(_uniq("dim_custom"), 14 * mm, y - 3.5 * mm,
+    label(c, "Sur mesure \u2014 dimensions (L \u00d7 H)", 14 * mm, y)
+    text_field(_uniq("dim_custom"), 14 * mm, y - 6 * mm,
                 col_w, 4.5 * mm, tooltip="Largeur x Hauteur")
-    label(c, "Ouverture (rough)", col2_x, y + 4)
-    text_field(_uniq("dim_opening"), col2_x, y - 3.5 * mm,
+    label(c, "Ouverture (rough)", col2_x, y)
+    text_field(_uniq("dim_opening"), col2_x, y - 6 * mm,
                 col_w, 4.5 * mm, tooltip="Dimensions de l'ouverture")
-    y -= 11 * mm
-    label(c, "Fabrication", 14 * mm, y + 4)
-    text_field(_uniq("dim_fab"), 14 * mm, y - 3.5 * mm,
+    y -= 13 * mm
+    label(c, "Fabrication", 14 * mm, y)
+    text_field(_uniq("dim_fab"), 14 * mm, y - 6 * mm,
                 col_w, 4.5 * mm, tooltip="Dimensions de fabrication")
-    label(c, "Tag / rep\u00e8re", col2_x, y + 4)
-    text_field(_uniq("tag"), col2_x, y - 3.5 * mm,
+    label(c, "Tag / rep\u00e8re", col2_x, y)
+    text_field(_uniq("tag"), col2_x, y - 6 * mm,
                 col_w, 4.5 * mm, tooltip="Identifiant de la porte")
     y -= 12 * mm
 
@@ -1545,9 +1546,9 @@ def render_client_at_order_form_pdf() -> bytes:
         cx_i = 14 * mm + col * (W - 28 * mm) / 3
         cy_i = y - row * 5.5 * mm
         check_with_label(c, f"finish_ext_{i}", name, cx_i, cy_i)
-    y -= 11 * mm
-    label(c, "Code couleur (si applicable)", 14 * mm, y + 4)
-    text_field(_uniq("finish_ext_code"), 14 * mm, y - 3.5 * mm,
+    y -= 13 * mm
+    label(c, "Code couleur (si applicable)", 14 * mm, y)
+    text_field(_uniq("finish_ext_code"), 14 * mm, y - 6 * mm,
                 W - 28 * mm, 4.5 * mm)
     y -= 9 * mm
 
@@ -1559,41 +1560,47 @@ def render_client_at_order_form_pdf() -> bytes:
         cx_i = 14 * mm + col * (W - 28 * mm) / 3
         cy_i = y - row * 5.5 * mm
         check_with_label(c, f"finish_int_{i}", name, cx_i, cy_i)
-    y -= 11 * mm
-    label(c, "Code couleur (si applicable)", 14 * mm, y + 4)
-    text_field(_uniq("finish_int_code"), 14 * mm, y - 3.5 * mm,
+    y -= 13 * mm
+    label(c, "Code couleur (si applicable)", 14 * mm, y)
+    text_field(_uniq("finish_int_code"), 14 * mm, y - 6 * mm,
                 W - 28 * mm, 4.5 * mm)
     y -= 10 * mm
 
     section_title(c, "6. Sens d'ouverture & quantit\u00e9", y)
+    y -= 8 * mm
+    # Legend explaining the 6 codes — compact one-liner
+    c.setFont("Helvetica", 7.5)
+    c.setFillColor(TEXT_MUTED)
+    c.drawString(
+        14 * mm, y,
+        "GE = gauche ext.  \u00b7  DE = droite ext.  \u00b7  PE = paire ext."
+        "  \u00b7  GI = gauche int.  \u00b7  DI = droite int.  \u00b7  "
+        "PI = paire int.",
+    )
     y -= 7 * mm
     swings = [
-        ("GE \u2014 Main gauche ext\u00e9rieure",  "swing_ge"),
-        ("DE \u2014 Main droite ext\u00e9rieure",  "swing_de"),
-        ("PE \u2014 Paire ext\u00e9rieure",         "swing_pe"),
-        ("GI \u2014 Main gauche int\u00e9rieure",  "swing_gi"),
-        ("DI \u2014 Main droite int\u00e9rieure",  "swing_di"),
-        ("PI \u2014 Paire int\u00e9rieure",         "swing_pi"),
+        ("GE", "swing_ge"), ("DE", "swing_de"), ("PE", "swing_pe"),
+        ("GI", "swing_gi"), ("DI", "swing_di"), ("PI", "swing_pi"),
     ]
-    # 2 columns x 3 rows so each cell has ~90mm width — plenty of room
-    swing_cell_w = (W - 28 * mm) / 2
-    swing_row_h = 10 * mm
+    # 3 columns × 2 rows — short codes + QTÉ box comfortably fit
+    swing_cell_w = (W - 28 * mm) / 3
+    swing_row_h = 9 * mm
     for i, (lbl, nm) in enumerate(swings):
-        col = i % 2
-        row = i // 2
+        col = i % 3
+        row = i // 3
         cx_i = 14 * mm + col * swing_cell_w
         cy_i = y - row * swing_row_h
-        # Checkbox + label on the left half of the cell
-        check_with_label(c, nm, lbl, cx_i, cy_i, size=10, font_size=9)
-        # QTÉ label + text field on the right half (same line)
-        qty_x = cx_i + swing_cell_w - 34 * mm
+        # Checkbox + short 2-letter code label
+        check_with_label(c, nm, lbl, cx_i, cy_i, size=10, font_size=10)
+        # QTÉ label + text field on the right of the same cell
+        qty_x = cx_i + 22 * mm
         c.setFont("Helvetica-Bold", 7.5)
         c.setFillColor(TEXT_MUTED)
-        c.drawString(qty_x, cy_i + 1.5, "QT\u00c9")
+        c.drawString(qty_x, cy_i + 2, "QT\u00c9")
         text_field(nm + "_qty",
-                    qty_x + 10 * mm, cy_i - 1 * mm,
+                    qty_x + 9 * mm, cy_i - 1 * mm,
                     18 * mm, 5 * mm, tooltip=f"Quantit\u00e9 {lbl}")
-    y -= swing_row_h * 3
+    y -= swing_row_h * 2
 
     # ============ PAGE 2 ============
     c.showPage()
@@ -1602,23 +1609,30 @@ def render_client_at_order_form_pdf() -> bytes:
 
     y = H - 27 * mm
     section_title(c, "7. Charni\u00e8res", y)
+    y -= 8 * mm
+    # Row A — Charnière 4½ + qty 1..4 grouped exclusively with this option
+    check_with_label(c, "hinge_std",
+                      "Charni\u00e8re 4\u00bd\u00d74\u00d70,134",
+                      14 * mm, y, size=10, font_size=9)
+    c.setFont("Helvetica-Bold", 7.5)
+    c.setFillColor(TEXT_MUTED)
+    c.drawString(85 * mm, y + 2, "QT\u00c9 PAR PORTE :")
+    check_with_label(c, "hinge_qty_1", "1", 118 * mm, y, size=9, font_size=9)
+    check_with_label(c, "hinge_qty_2", "2", 132 * mm, y, size=9, font_size=9)
+    check_with_label(c, "hinge_qty_3", "3", 146 * mm, y, size=9, font_size=9)
+    check_with_label(c, "hinge_qty_4", "4", 160 * mm, y, size=9, font_size=9)
     y -= 7 * mm
-    hinges = [
-        ("Charni\u00e8re 4\u00bd\u00d74\u00d70,134", "hinge_std"),
-        ("Charni\u00e8re continue",                     "hinge_cont"),
-        ("Charni\u00e8re continue HD",                  "hinge_cont_hd"),
-    ]
-    for i, (lbl, nm) in enumerate(hinges):
-        cx_i = 14 * mm + i * (W - 28 * mm) / 3
-        check_with_label(c, nm, lbl, cx_i, y, size=9)
-    y -= 6.5 * mm
-    check_with_label(c, "hinge_qty_1", "Qt\u00e9 1", 14 * mm, y, size=9)
-    check_with_label(c, "hinge_qty_2", "Qt\u00e9 2", 42 * mm, y, size=9)
-    check_with_label(c, "hinge_qty_3", "Qt\u00e9 3", 70 * mm, y, size=9)
-    check_with_label(c, "hinge_qty_4", "Qt\u00e9 4", 98 * mm, y, size=9)
-    check_with_label(c, "hinge_supply_install", "Fournir et installer",
-                      130 * mm, y, size=9)
-    y -= 10 * mm
+    # Row B — continuous hinges + supply/install
+    check_with_label(c, "hinge_cont",
+                      "Charni\u00e8re continue", 14 * mm, y,
+                      size=10, font_size=9)
+    check_with_label(c, "hinge_cont_hd",
+                      "Charni\u00e8re continue HD", 80 * mm, y,
+                      size=10, font_size=9)
+    check_with_label(c, "hinge_supply_install",
+                      "Fournir et installer", 140 * mm, y,
+                      size=10, font_size=9)
+    y -= 12 * mm
 
     section_title(c, "8. Poign\u00e9es & barres \u00e0 pousser", y)
     y -= 7 * mm
@@ -1638,7 +1652,7 @@ def render_client_at_order_form_pdf() -> bytes:
     y -= 18 * mm
 
     section_title(c, "9. Serrure & s\u00e9curit\u00e9", y)
-    y -= 6 * mm
+    y -= 9 * mm
     label(c, "Serrure principale", 14 * mm, y + 1)
     y -= 4.5 * mm
     locks = [
@@ -1690,10 +1704,10 @@ def render_client_at_order_form_pdf() -> bytes:
         cy_i = y - row * 5.2 * mm
         check_with_label(c, f"strike_{i}", name, cx_i, cy_i,
                           size=8.5, font_size=8)
-    y -= 12 * mm
+    y -= 15 * mm
 
     section_title(c, "10. Autre quincaillerie", y)
-    y -= 6 * mm
+    y -= 8 * mm
     others = [
         "Astragale", "Verrous affleur\u00e9s",
         "Balai de porte", "Moulure thermo",
@@ -1706,12 +1720,12 @@ def render_client_at_order_form_pdf() -> bytes:
         cy_i = y - row * 5.2 * mm
         check_with_label(c, f"other_{i}", name, cx_i, cy_i,
                           size=8.5, font_size=8)
-    y -= 12 * mm
+    y -= 15 * mm
 
     section_title(c, "11. Seuil de porte", y)
-    y -= 6 * mm
+    y -= 8 * mm
     thresholds = [
-        ("Fournir (par Portech)",          "thr_supply"),
+        ("Fournir",                            "thr_supply"),
         ("Non-isol\u00e9",                    "thr_non_iso"),
         ("Isol\u00e9",                        "thr_iso"),
         ("Allouer espace standard",         "thr_space_yes"),
@@ -1724,8 +1738,8 @@ def render_client_at_order_form_pdf() -> bytes:
         cy_i = y - row * 5.2 * mm
         check_with_label(c, nm, lbl, cx_i, cy_i, size=8.5, font_size=8)
     y -= 11 * mm
-    label(c, "Type de seuil (pr\u00e9cisez)", 14 * mm, y + 4)
-    text_field(_uniq("thr_type"), 14 * mm, y - 3.5 * mm,
+    label(c, "Type de seuil (pr\u00e9cisez)", 14 * mm, y)
+    text_field(_uniq("thr_type"), 14 * mm, y - 6 * mm,
                 W - 28 * mm, 4.5 * mm)
     y -= 10 * mm
 

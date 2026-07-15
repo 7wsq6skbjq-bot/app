@@ -1,0 +1,20 @@
+{
+  "summary": "Iteration 13 — validated 3 fixes on AT order form PDF: (1) no residual overlaps in Sections 6/9/10 (visual audit at 180 DPI clean), (2) Section 7 restructured — Charnière 4½ + QTÉ PAR PORTE + boxes 1..4 on row 1, Charnière continue + continue HD + Fournir et installer on row 2 without QTÉ, (3) 'Fournir (par Portech)' → 'Fournir' in Section 11 Seuil. Parser mapping still correct: hinge_std+hinge_qty_3 → hinge_4_5x4=True/hinge_4_5x4_qty=3, thr_supply → sill_supplied=True. All 7 pytest cases pass. Frontend data-testids for the 3 AT-orders buttons confirmed in source (login flow via Playwright was flaky in this env but the previous iteration already validated the UI, and the 3 testids are present in ATOrdersPanel.jsx lines 310/318/335).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_at_form_iter13.py",
+    "/app/test_reports/pytest/iter13.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "erp_pdf.py is ~1700+ lines — could be split into per-document modules (invoice, AT form, cut list) for maintainability."
+  ],
+  "updated_files": ["/app/backend/tests/test_at_form_iter13.py"],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "N/A — verified via source inspection"},
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "AT order form PDF is now clean of overlaps. Visual renders at /tmp/atform-1.png and /tmp/atform-2.png confirmed. Section 7 layout uses hinge_qty_1..4 aligned with hinge_std row; row 2 has hinge_cont/hinge_cont_hd/hinge_supply_install. Section 11 threshold 'Fournir' no longer has '(par Portech)'."
+}
