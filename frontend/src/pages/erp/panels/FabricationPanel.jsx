@@ -6,15 +6,17 @@
  *  lands back where they were.
  */
 import { useState } from "react";
-import { Scissors, Bug } from "lucide-react";
+import { Scissors, Bug, DraftingCompass } from "lucide-react";
 import { CutListPanel } from "./CutListPanel";
 import { MosquitoScreensPanel } from "./MosquitoScreensPanel";
+import { ProductionPlansPanel } from "./ProductionPlansPanel";
 
 const STORAGE_KEY = "portech.fabrication.subTab";
 
 const SUB_TABS = [
     { id: "cuts",       label: "Listes de coupe", icon: Scissors },
     { id: "mosquito",   label: "Moustiquaires",   icon: Bug },
+    { id: "plans",      label: "Dessins de production", icon: DraftingCompass },
 ];
 
 export const FabricationPanel = () => {
@@ -58,6 +60,7 @@ export const FabricationPanel = () => {
 
             {active === "cuts" && <CutListPanel />}
             {active === "mosquito" && <MosquitoScreensPanel />}
+            {active === "plans" && <ProductionPlansPanel />}
         </div>
     );
 };

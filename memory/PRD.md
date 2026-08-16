@@ -243,3 +243,12 @@ User language: **French**.
 - `frontend/src/pages/erp/panels/CutListPanel.jsx`
 - `frontend/src/pages/erp/panels/TemplateBuilderModal.jsx`
 - `frontend/src/pages/erp/panels/InventoryPanel.jsx`
+
+
+## Module « Dessins de production » (Fabrication) — 2026-08-16
+- Générateur de plans de production PDF paysage à partir des dimensions d'ouverture (template modifiable).
+- Pages : présentation (fond devanture estompée + quadrillé), élévation à lundefined'échelle par porte (cotes mm [po], charnières, bulles, quincaillerie libre), détails en plan (300), coupe (400), ancrages (500).
+- Détails 300/400/500 = vraies images CAO extraites des plans de référence, nettoyées (cartouche AT fabrication retiré) et intégrées sous entête Portech. Mappées par famille : AT1000/AT2000 -> détails AT (Kovo) ; ATi1000/ATi2000 -> détails ATi (AT064).
+- Backend : erp_pdf_production.py (moteur canvas), erp_routes_production_plans.py (CRUD + /pdf + /preview-pdf), collection erp_production_plans. Assets : backend/assets/production_details/.
+- Frontend : ProductionPlansPanel.jsx (3e sous-onglet Fabrication).
+- Note : les libellés « de AT Fabrication » restent dans les images de détails (série de porte du manufacturier).

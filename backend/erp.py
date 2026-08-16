@@ -23,6 +23,7 @@ from erp_routes_purchase_orders import register as register_pos
 from erp_routes_expenses import register as register_expenses
 from erp_routes_payment_notices import register as register_payment_notices
 from erp_routes_mosquito_screens import register as register_mosquito_screens
+from erp_routes_production_plans import register as register_production_plans
 from erp_routes_at_order_form import register as register_at_order_form
 from erp_routes_compose import register as register_compose
 from erp_monthly_recap import register_routes as register_monthly_recap
@@ -50,6 +51,7 @@ def build_erp_router(db: AsyncIOMotorDatabase, auth_dep) -> APIRouter:
     register_expenses(router, db, auth_dep)
     register_payment_notices(router, db, auth_dep)
     register_mosquito_screens(router, db, auth_dep)
+    register_production_plans(router, db, auth_dep)
     register_at_order_form(router, db, auth_dep)
     register_compose(router, db, auth_dep)
     register_monthly_recap(router, db, auth_dep)

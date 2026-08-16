@@ -229,6 +229,65 @@ export const emptyMosquitoScreen = () => ({
 });
 
 
+// ─── Production drawings (Dessins de production) ───────────
+export const PRODUCTION_SERIES = ["AT1000", "ATi1000", "AT2000", "ATi2000"];
+export const PRODUCTION_CONFIGS = [
+    { v: "simple", lbl: "Porte simple" },
+    { v: "pair", lbl: "Paire de portes" },
+];
+export const PRODUCTION_STATUSES = [
+    "brouillon", "en production", "en hold", "produit", "annulé",
+];
+export const PRODUCTION_FINISHES = [
+    "Anodisé clair", "Noir", "Bronze", "Dark Bronze", "Champagne",
+    "Mill finish", "Sur mesure",
+];
+
+export const emptyHardwareLine = () => ({
+    _key: newKey(),
+    qty: "1",
+    description: "",
+    part_number: "",
+    note: "",
+});
+
+export const emptyProductionDoor = () => ({
+    _key: newKey(),
+    tag: "",
+    series: "AT1000",
+    config: "simple",
+    opening_width_in: 36,
+    opening_height_in: 84,
+    qty: 1,
+    finish_ext: "Anodisé clair",
+    finish_int: "Anodisé clair",
+    glass: "VT6 · 6mm trempé clair",
+    hinges: "",
+    scale_note: "1:30",
+    hardware: [emptyHardwareLine()],
+    notes: "",
+});
+
+export const emptyProductionPlan = () => ({
+    project_name: "",
+    project_number: "",
+    production_name: "",
+    production_note: "",
+    revision: "no00",
+    date: todayISO(),
+    client_name: "",
+    client_address: "",
+    client_contact: "",
+    client_phone: "",
+    include_plan_details: true,
+    include_section_details: true,
+    include_anchors: true,
+    status: "brouillon",
+    doors: [emptyProductionDoor()],
+    notes: "",
+});
+
+
 
 // ─── Expert reports (Rapports d'expertise) ─────────────────
 export const REPORT_STATUSES = ["brouillon", "finalisé", "envoyé", "archivé"];
