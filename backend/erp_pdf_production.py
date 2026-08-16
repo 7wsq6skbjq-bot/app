@@ -234,18 +234,19 @@ def _band_top(c, plan, doc_title):
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 11)
     c.drawString(230, H - 30, doc_title.upper())
-    # PRODUCTION box on the right
-    bx, bw, bh = W - 214, 200, 38
-    c.setFillColor(RED)
-    c.rect(bx, H - 44, bw, bh, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 8)
-    c.drawString(bx + 6, H - 16, "PRODUCTION")
-    c.setFont("Helvetica", 7)
-    c.drawString(bx + 6, H - 26, (plan.get("production_name") or "").upper()[:34])
-    c.setFont("Courier", 6.5)
-    c.drawString(bx + 6, H - 36,
-                 f"{_date_fr(plan.get('date'))}  ·  REV. {plan.get('revision') or 'no00'}")
+    # PRODUCTION box on the right — only when a production name/note is set
+    if plan.get("production_name") or plan.get("production_note"):
+        bx, bw, bh = W - 214, 200, 38
+        c.setFillColor(RED)
+        c.rect(bx, H - 44, bw, bh, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(bx + 6, H - 16, "PRODUCTION")
+        c.setFont("Helvetica", 7)
+        c.drawString(bx + 6, H - 26, (plan.get("production_name") or "").upper()[:34])
+        c.setFont("Courier", 6.5)
+        c.drawString(bx + 6, H - 36,
+                     f"{_date_fr(plan.get('date'))}  ·  REV. {plan.get('revision') or 'no00'}")
     c.restoreState()
 
 
@@ -314,18 +315,19 @@ def _cover(c, plan):
     c.drawString(94, H - 82,
                  f"{COMPANY['line1']}  ·  Tél. {COMPANY['phone']}  ·  {COMPANY['email']}")
 
-    # PRODUCTION box
-    bx = W - 250
-    c.setFillColor(RED)
-    c.rect(bx, H - 78, 224, 52, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(bx + 10, H - 42, "PRODUCTION")
-    c.setFont("Helvetica", 9)
-    c.drawString(bx + 10, H - 56, (plan.get("production_name") or "—").upper()[:34])
-    c.setFont("Courier", 7.5)
-    if plan.get("production_note"):
-        c.drawString(bx + 10, H - 68, plan["production_note"][:38])
+    # PRODUCTION box — only when a production name/note is set
+    if plan.get("production_name") or plan.get("production_note"):
+        bx = W - 250
+        c.setFillColor(RED)
+        c.rect(bx, H - 78, 224, 52, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(bx + 10, H - 42, "PRODUCTION")
+        c.setFont("Helvetica", 9)
+        c.drawString(bx + 10, H - 56, (plan.get("production_name") or "—").upper()[:34])
+        c.setFont("Courier", 7.5)
+        if plan.get("production_note"):
+            c.drawString(bx + 10, H - 68, plan["production_note"][:38])
 
     # big project title
     c.setFillColor(TEXT_MUTED)

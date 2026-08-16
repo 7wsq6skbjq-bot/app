@@ -252,3 +252,5 @@ User language: **French**.
 - Backend : erp_pdf_production.py (moteur canvas), erp_routes_production_plans.py (CRUD + /pdf + /preview-pdf), collection erp_production_plans. Assets : backend/assets/production_details/.
 - Frontend : ProductionPlansPanel.jsx (3e sous-onglet Fabrication).
 - Note : les libellés « de AT Fabrication » restent dans les images de détails (série de porte du manufacturier).
+
+- MAJ 2026-08-16 : images de détails - mentions manufacturier remplacees par « de Portech » (OCR). Boite rouge PRODUCTION conditionnelle (affichee seulement si responsable/note production saisi). Bascules include_plan/section/anchor verifiees.
