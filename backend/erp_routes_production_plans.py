@@ -63,6 +63,7 @@ class DoorPlan(BaseModel):
     profile_base: str = ""
     profile_hinge_stile: str = ""
     profile_lock_stile: str = ""
+    profile_lock_stile_inactive: str = ""
     scale_note: str = "1:30"
     hardware: List[HardwareLine] = Field(default_factory=list)
     notes: str = ""
@@ -126,8 +127,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
         return {
             "heads": [opt(k) for k in ("ATT1005", "ATB1000")],
-            "bases": [opt(k) for k in ("ATB1000", "ATB2000")],
-            "stiles": [opt(k) for k in ("ATV1010", "ATV1015", "ATV2010", "ATV2015")],
+            "bases": [opt(k) for k in ("ATB1000", "ATB2000", "ATT1005")],
+            "stiles": [opt(k) for k in ("ATV1025", "ATV1015", "ATV1010", "ATV2010", "ATV2015")],
             "defaults": SERIES_DEFAULT_PROFILES,
         }
 

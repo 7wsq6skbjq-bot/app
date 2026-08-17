@@ -100,6 +100,7 @@ export const ProductionPlansPanel = () => {
             ...d, series,
             profile_head: "", profile_base: "",
             profile_hinge_stile: "", profile_lock_stile: "",
+            profile_lock_stile_inactive: "",
         } : d)),
     }));
 
@@ -196,6 +197,7 @@ export const ProductionPlansPanel = () => {
             profile_base: effProfile(d, "profile_base", "base"),
             profile_hinge_stile: effProfile(d, "profile_hinge_stile", "hinge"),
             profile_lock_stile: effProfile(d, "profile_lock_stile", "lock"),
+            profile_lock_stile_inactive: effProfile(d, "profile_lock_stile_inactive", "lock_inactive"),
             scale_note: d.scale_note || "1:30",
             notes: d.notes || "",
             hardware: stripKeys(d.hardware || []).map((h) => ({
@@ -593,12 +595,13 @@ export const ProductionPlansPanel = () => {
                                             {/* Aluminium profiles (real dimensions from inventory) */}
                                             <div>
                                                 <label className={labelCls}>Profilés d&apos;aluminium (dimensions réelles A.T. Fabrication)</label>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                                     {[
                                                         ["Profilé tête", "profile_head", "head", catalog?.heads],
                                                         ["Profilé base", "profile_base", "base", catalog?.bases],
                                                         ["Montant charnière", "profile_hinge_stile", "hinge", catalog?.stiles],
-                                                        ["Montant serrure/central", "profile_lock_stile", "lock", catalog?.stiles],
+                                                        ["Montant serrure (actif)", "profile_lock_stile", "lock", catalog?.stiles],
+                                                        ["Montant serrure (inactif)", "profile_lock_stile_inactive", "lock_inactive", catalog?.stiles],
                                                     ].map(([lbl, field, key, opts]) => (
                                                         <div key={field}>
                                                             <label className={labelCls}>{lbl}</label>

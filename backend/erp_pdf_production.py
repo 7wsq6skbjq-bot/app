@@ -102,15 +102,15 @@ W, H = landscape(LETTER)          # 792 x 612 pt
 # Default aluminium profile per element for each series (codes from
 # at_profile_library.PROFILES — the single source of truth for dimensions).
 SERIES_DEFAULT_PROFILES = {
-    "AT1000":  {"head": "ATT1005", "base": "ATB1000", "hinge": "ATV1010", "lock": "ATV1015"},
-    "ATi1000": {"head": "ATT1005", "base": "ATB1000", "hinge": "ATV1010", "lock": "ATV1015"},
-    "AT2000":  {"head": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015"},
-    "ATi2000": {"head": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015"},
+    "AT1000":  {"head": "ATT1005", "base": "ATB1000", "hinge": "ATV1025", "lock": "ATV1015", "lock_inactive": "ATV1010"},
+    "ATi1000": {"head": "ATT1005", "base": "ATB1000", "hinge": "ATV1025", "lock": "ATV1015", "lock_inactive": "ATV1010"},
+    "AT2000":  {"head": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015", "lock_inactive": "ATV2010"},
+    "ATi2000": {"head": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015", "lock_inactive": "ATV2010"},
 }
 
 
 def _door_profiles(door):
-    """Resolve the 4 element profile codes for a door (selection or default)."""
+    """Resolve the element profile codes for a door (selection or default)."""
     series = door.get("series") or "AT1000"
     d = SERIES_DEFAULT_PROFILES.get(series, SERIES_DEFAULT_PROFILES["AT1000"])
     return {
@@ -118,6 +118,7 @@ def _door_profiles(door):
         "base": door.get("profile_base") or d["base"],
         "hinge": door.get("profile_hinge_stile") or d["hinge"],
         "lock": door.get("profile_lock_stile") or d["lock"],
+        "lock_inactive": door.get("profile_lock_stile_inactive") or d["lock_inactive"],
     }
 
 
@@ -614,6 +615,7 @@ def _elevation_page(c, plan, door, page_no):
     base_pt = _face_in(prof["base"], 3.875) * scale
     hinge_pt = _face_in(prof["hinge"]) * scale
     lock_pt = _face_in(prof["lock"], 2.125) * scale
+    lock_inactive_pt = _face_in(prof.get("lock_inactive"), 2.0) * scale
 
     # frame (jamb) drawn slightly outside opening
     fo = 6
@@ -624,12 +626,16 @@ def _elevation_page(c, plan, door, page_no):
 
     if is_pair:
         gap = 3
-        leaf_w = (dw - gap) / 2        # left leaf: hinge (outer/left) + lock (inner/right)
+        leaf_w = (dw - gap) / 2
+        active = door.get("active_leaf") or "right"
+        left_lock = lock_pt if active == "left" else lock_inactive_pt
+        right_lock = lock_pt if active == "right" else lock_inactive_pt
+        # left leaf: hinge (outer/left) + lock (inner/right)
         _draw_leaf(c, ox, oy, leaf_w, dh, glass_label, spec["insulated"],
-                   hinge_pt, lock_pt, head_pt, base_pt)
+                   hinge_pt, left_lock, head_pt, base_pt)
         # right leaf: lock (inner/left) + hinge (outer/right)
         _draw_leaf(c, ox + leaf_w + gap, oy, leaf_w, dh, glass_label, spec["insulated"],
-                   lock_pt, hinge_pt, head_pt, base_pt)
+                   right_lock, hinge_pt, head_pt, base_pt)
         hinge_xs = [(ox, "L"), (ox + dw, "R")]
     else:
         # simple door — hinge side follows the handing (sens d'ouverture)
@@ -698,7 +704,12 @@ def _elevation_page(c, plan, door, page_no):
         lpt = max(handle_len * scale, 10)
         hy1 = hy0 + lpt                            # handle extends upward
         for hxp in handle_xs:
-            off = -4 if hxp >= (ox + dw / 2) else 4       # grip toward meeting/edge
+            if is_pair:
+                lw2 = (dw - gap) / 2
+                lc = (ox + lw2 / 2) if hxp < (ox + dw / 2) else (ox + dw - lw2 / 2)
+            else:
+                lc = ox + dw / 2
+            off = 4 if lc >= hxp else -4              # grip curves toward the glass
             c.setStrokeColor(NAVY)
             c.setFillColor(NAVY)
             c.setLineWidth(2)
@@ -757,9 +768,12 @@ def _elevation_page(c, plan, door, page_no):
         _dim_v(c, yf, oy, ox - fo - 26, f"{_dual(undercut / 25.4)}")
 
     # detail bubbles (jamb + head refs)
-    _bubble(c, ox - fo - 8, oy + dh * 0.5, "01", "300")
-    _bubble(c, ox + dw + fo + 8, oy + dh * 0.5, "02", "300")
-    _bubble(c, ox + dw / 2, oy + dh + fo + 12, "01", "400")
+    # detail bubbles (only when the corresponding detail pages are included)
+    if plan.get("include_plan_details", True):
+        _bubble(c, ox - fo - 8, oy + dh * 0.5, "01", "300")
+        _bubble(c, ox + dw + fo + 8, oy + dh * 0.5, "02", "300")
+    if plan.get("include_section_details", True):
+        _bubble(c, ox + dw / 2, oy + dh + fo + 12, "01", "400")
 
     # dimensions — width (top), height (left)
     _dim_h(c, ox, ox + dw, oy + dh + 22,

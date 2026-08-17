@@ -68,6 +68,16 @@ PROFILES = {
         "category": "jamb",
         "note": "Stile côté serrure — usinage MS Adams Rite.",
     },
+    "ATV1025": {
+        "label": "Montant charnière 2 1/16\"",
+        "at_code": "ATV1025",
+        "hydro": "",
+        "face_w": 51.6,
+        "face_h": 44.45,
+        "series": "AT1000 / ATi1000",
+        "category": "jamb",
+        "note": "Montant côté charnière (penture).",
+    },
     # ── AT2000 / ATi2000 family (asymétrique) ───────────────────────────────
     "ATB2000": {
         "label": "Base lourde (seuil) 6⅞\"",

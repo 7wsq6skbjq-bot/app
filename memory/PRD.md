@@ -266,3 +266,5 @@ User language: **French**.
 - MAJ 2026-08-17 (Dessins de production, lot 6) : cote hauteur de poignee corrigee - mesuree du bas de la porte au BAS de la poignee (la poignee s etend vers le haut ; 9po/12po = meme bas, fin plus haute).
 
 - MAJ 2026-08-17 (Dessins de production, lot 7) : cotes de quincaillerie reorganisees en colonnes espacees au-dessus du vitrage (vers le centre du battant) - plus de chevauchement avec la bulle de detail ni entre elles. Hauteur poignee + longueur empilees en colonne 1, serrure en colonne 2.
+
+- MAJ 2026-08-17 (Dessins de production, lot 8) : poignee - courbe orientee vers le vitrage (miroir corrige, par battant) ; profils par defaut AT1000/ATi1000 - montant charniere ATV1025 (ajoute a at_profile_library), serrure actif ATV1015, inactif ATV1010 (nouveau champ profile_lock_stile_inactive + 5e menu) ; base substituee ATT1005 ajoutee aux options de base ; bulles de detail (300/400) masquees quand les pages de detail correspondantes sont decochees.
