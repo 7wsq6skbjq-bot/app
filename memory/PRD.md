@@ -262,3 +262,5 @@ User language: **French**.
 - MAJ 2026-08-17 (Dessins de production, lot 4) : poignee sur 2 battants (handle_both) ; colonnes ACTIF/INACT. dans tableau quincaillerie (HardwareLine.on_active/on_inactive) ; detail 03/04 REVENU a original propre (rotation matricielle cassait la penture - besoin image corrigee du client).
 
 - MAJ 2026-08-17 (Dessins de production, lot 5) : barre anti-panique horizontale sur battant actif (panic_bar/panic_height_in, std 40po modifiable) ; cote Fab. auto = ouverture + jeu configurable (fab_auto/fab_allowance_in au niveau projet, override manuel par porte toujours possible).
+
+- MAJ 2026-08-17 (Dessins de production, lot 6) : cote hauteur de poignee corrigee - mesuree du bas de la porte au BAS de la poignee (la poignee s etend vers le haut ; 9po/12po = meme bas, fin plus haute).

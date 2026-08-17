@@ -685,21 +685,22 @@ def _elevation_page(c, plan, door, page_no):
     dim_x = min(lock_x + 22, ox + dw + fo + 4)
 
     if handle_h > 0:
-        hy = oy + handle_h * scale
+        hy0 = oy + handle_h * scale               # bottom of the handle (from door bottom)
         lpt = max(handle_len * scale, 10)
+        hy1 = hy0 + lpt                            # handle extends upward
         for hxp in handle_xs:
             off = -4 if hxp >= (ox + dw / 2) else 4       # grip toward meeting/edge
             c.setStrokeColor(NAVY)
             c.setFillColor(NAVY)
             c.setLineWidth(2)
-            c.line(hxp + off, hy - lpt / 2, hxp + off, hy + lpt / 2)      # grip
+            c.line(hxp + off, hy0, hxp + off, hy1)          # grip
             c.setLineWidth(1.2)
-            c.line(hxp, hy - lpt / 2, hxp + off, hy - lpt / 2)           # stand-offs
-            c.line(hxp, hy + lpt / 2, hxp + off, hy + lpt / 2)
-            c.circle(hxp, hy - lpt / 2, 1.6, fill=1, stroke=0)
-            c.circle(hxp, hy + lpt / 2, 1.6, fill=1, stroke=0)
-        _dim_v(c, oy, hy, dim_x, f"{_dual(handle_h)}")
-        _dim_v(c, hy - lpt / 2, hy + lpt / 2, dim_x + 16, f"{_dual(handle_len)}")
+            c.line(hxp, hy0, hxp + off, hy0)                # stand-offs
+            c.line(hxp, hy1, hxp + off, hy1)
+            c.circle(hxp, hy0, 1.6, fill=1, stroke=0)
+            c.circle(hxp, hy1, 1.6, fill=1, stroke=0)
+        _dim_v(c, oy, hy0, dim_x, f"{_dual(handle_h)}")     # door bottom -> handle bottom
+        _dim_v(c, hy0, hy1, dim_x + 16, f"{_dual(handle_len)}")
 
     if lock_h > 0:
         ly = oy + lock_h * scale
