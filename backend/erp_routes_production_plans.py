@@ -51,6 +51,8 @@ class DoorPlan(BaseModel):
     handle_length_in: float = 9
     handle_both: bool = False
     lock_height_in: float = 40
+    panic_bar: bool = False
+    panic_height_in: float = 40
     undercut_mm: float = 17.5
     finish_ext: str = ""
     finish_int: str = ""
@@ -79,6 +81,8 @@ class ProductionPlanIn(BaseModel):
     client_phone: str = ""
     machining_by: str = "A.T. Fabrication"
     installer: str = "Portech"
+    fab_auto: bool = True
+    fab_allowance_in: float = 0
     include_plan_details: bool = True
     include_section_details: bool = True
     include_anchors: bool = True

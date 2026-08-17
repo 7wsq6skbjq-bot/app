@@ -709,6 +709,33 @@ def _elevation_page(c, plan, door, page_no):
         c.circle(lock_x, ly, 1.6, fill=1, stroke=0)
         _dim_v(c, oy, ly, dim_x + 32, f"{_dual(lock_h)}")
 
+    # panic bar (barre anti-panique) — horizontal push bar on the active leaf
+    if door.get("panic_bar"):
+        ph = _num("panic_height_in", 40.0)
+        py = oy + ph * scale
+        if is_pair:
+            lw2 = (dw - gap) / 2
+            if (door.get("active_leaf") or "right") == "right":
+                ax0, ax1 = ox + lw2 + gap, ox + dw
+            else:
+                ax0, ax1 = ox, ox + lw2
+        else:
+            ax0, ax1 = ox, ox + dw
+        bx0 = ax0 + max(hinge_pt, 8) + 3
+        bx1 = ax1 - max(lock_pt, 8) - 3
+        if bx1 - bx0 > 12:
+            c.setStrokeColor(NAVY)
+            c.setFillColor(colors.HexColor("#7f8fa6"))
+            c.setLineWidth(1)
+            c.rect(bx0, py - 3, bx1 - bx0, 6, fill=1, stroke=1)      # push pad
+            c.setFillColor(NAVY)
+            c.rect(bx0, py - 5, 5, 10, fill=1, stroke=0)             # end brackets
+            c.rect(bx1 - 5, py - 5, 5, 10, fill=1, stroke=0)
+            c.setFillColor(NAVY)
+            c.setFont("Helvetica-Oblique", 5.5)
+            c.drawCentredString((bx0 + bx1) / 2, py + 6,
+                                f"Barre anti-panique · {_dual(ph)}")
+
     if undercut > 0:
         ucp = (undercut / 25.4) * scale
         yf = oy - ucp
@@ -730,15 +757,21 @@ def _elevation_page(c, plan, door, page_no):
     _dim_v(c, oy, oy + dh, ox - fo - 26,
            f"{_dual(rh)} Ouverture libre", ext_from=ox - fo)
 
-    # optional fabrication dimensions ("Fab.") drawn as an outer reference
-    try:
-        fw = float(door.get("fab_width_in") or 0)
-    except (TypeError, ValueError):
-        fw = 0
-    try:
-        fh = float(door.get("fab_height_in") or 0)
-    except (TypeError, ValueError):
-        fh = 0
+    # optional fabrication dimensions ("Fab.") — auto = opening + configurable allowance
+    def _fnum(v, dflt=0.0):
+        try:
+            return float(v if v not in (None, "") else dflt)
+        except (TypeError, ValueError):
+            return dflt
+
+    fab_auto = plan.get("fab_auto", True)
+    allow = _fnum(plan.get("fab_allowance_in"), 0.0)
+    fw = _fnum(door.get("fab_width_in"), 0.0)
+    fh = _fnum(door.get("fab_height_in"), 0.0)
+    if fw <= 0 and fab_auto:
+        fw = rw + allow
+    if fh <= 0 and fab_auto:
+        fh = rh + allow
     if fw > 0:
         _dim_h(c, ox - 8, ox + dw + 8, oy + dh + 40, f"{_dual(fw)} Fab.")
     if fh > 0:

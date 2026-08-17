@@ -260,3 +260,5 @@ User language: **French**.
 - MAJ 2026-08-17 (Dessins de production, lot 3) : (1) sens douverture MG/MD/MGR/MDR -> cote penture (MD,MGR=gauche / MG,MDR=droite) ; (2) cotes Fab. optionnelles (fab_width_in/fab_height_in) affichees en plus de louverture libre ; (3) details 03/04 (porte simple) - bande de dessin retournee verticalement, texte garde lisible (fini le texte a lenvers). plan_at.png finalise via /tmp/src/finalize.py.
 
 - MAJ 2026-08-17 (Dessins de production, lot 4) : poignee sur 2 battants (handle_both) ; colonnes ACTIF/INACT. dans tableau quincaillerie (HardwareLine.on_active/on_inactive) ; detail 03/04 REVENU a original propre (rotation matricielle cassait la penture - besoin image corrigee du client).
+
+- MAJ 2026-08-17 (Dessins de production, lot 5) : barre anti-panique horizontale sur battant actif (panic_bar/panic_height_in, std 40po modifiable) ; cote Fab. auto = ouverture + jeu configurable (fab_auto/fab_allowance_in au niveau projet, override manuel par porte toujours possible).

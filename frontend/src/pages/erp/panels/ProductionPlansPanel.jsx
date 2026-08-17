@@ -162,6 +162,8 @@ export const ProductionPlansPanel = () => {
         client_phone: form.client_phone || "",
         machining_by: form.machining_by || "A.T. Fabrication",
         installer: form.installer || "Portech",
+        fab_auto: form.fab_auto !== false,
+        fab_allowance_in: Number(form.fab_allowance_in || 0) || 0,
         include_plan_details: !!form.include_plan_details,
         include_section_details: !!form.include_section_details,
         include_anchors: !!form.include_anchors,
@@ -182,6 +184,8 @@ export const ProductionPlansPanel = () => {
             handle_length_in: Number(d.handle_length_in ?? 9) || 0,
             handle_both: !!d.handle_both,
             lock_height_in: Number(d.lock_height_in ?? 40) || 0,
+            panic_bar: !!d.panic_bar,
+            panic_height_in: Number(d.panic_height_in ?? 40) || 0,
             undercut_mm: Number(d.undercut_mm ?? 17.5) || 0,
             finish_ext: d.finish_ext || "",
             finish_int: d.finish_int || "",
@@ -428,6 +432,18 @@ export const ProductionPlansPanel = () => {
                             {lbl}
                         </label>
                     ))}
+                    <span className="w-px h-5 bg-[#dde5f0]" />
+                    <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                        <input type="checkbox" data-testid="pp-fab-auto" checked={form.fab_auto !== false}
+                            onChange={(e) => setForm((f) => ({ ...f, fab_auto: e.target.checked }))} />
+                        Cote Fab. auto
+                    </label>
+                    <label className="inline-flex items-center gap-1 text-sm text-[#0c182b]">
+                        Jeu Fab. (po)
+                        <input type="number" step="0.0625" data-testid="pp-fab-allow" value={form.fab_allowance_in}
+                            onChange={(e) => setForm((f) => ({ ...f, fab_allowance_in: e.target.value }))}
+                            className="w-20 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
+                    </label>
                 </div>
 
                 {/* Doors */}
@@ -645,6 +661,21 @@ export const ProductionPlansPanel = () => {
                                                         onChange={(e) => updateDoor(d._key, "handle_both", e.target.checked)} />
                                                     Poignée sur les 2 battants (paire)
                                                 </label>
+                                                <div className="flex flex-wrap items-center gap-3 mt-2">
+                                                    <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                        <input type="checkbox" data-testid={`pp-door-panic-${idx}`}
+                                                            checked={!!d.panic_bar}
+                                                            onChange={(e) => updateDoor(d._key, "panic_bar", e.target.checked)} />
+                                                        Barre anti-panique (battant actif)
+                                                    </label>
+                                                    <label className="inline-flex items-center gap-1 text-sm text-[#0c182b]">
+                                                        Haut. barre (po)
+                                                        <input type="number" min="0" step="0.5" value={d.panic_height_in}
+                                                            data-testid={`pp-door-panich-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "panic_height_in", e.target.value)}
+                                                            className="w-20 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
+                                                    </label>
+                                                </div>
                                             </div>
 
                                             {/* Hardware */}
