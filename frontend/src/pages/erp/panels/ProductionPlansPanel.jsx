@@ -15,7 +15,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import {
     emptyProductionPlan, emptyProductionDoor, emptyHardwareLine,
-    PRODUCTION_SERIES, PRODUCTION_CONFIGS, PRODUCTION_STATUSES, PRODUCTION_FINISHES,
+    PRODUCTION_SERIES, PRODUCTION_CONFIGS, PRODUCTION_STATUSES, PRODUCTION_MENTIONS, PRODUCTION_FINISHES,
     HINGE_TYPES, INSTALL_PARTIES, HANDING_OPTIONS,
     newKey, stripKeys, todayISO, formatDate,
 } from "../utils";
@@ -31,7 +31,7 @@ export const ProductionPlansPanel = () => {
     const [plans, setPlans] = useState([]);
     const [catalog, setCatalog] = useState(null);
     const [hwCatalog, setHwCatalog] = useState([]);
-    const [hwForm, setHwForm] = useState({ name: "", part_number: "" });
+    const [hwForm, setHwForm] = useState({ name: "", part_number: "", price: "" });
     const [showHwMgr, setShowHwMgr] = useState(false);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState(emptyProductionPlan());
@@ -94,8 +94,8 @@ export const ProductionPlansPanel = () => {
         if (!name) return;
         try {
             await http.post("/admin/production-hardware",
-                { name, part_number: (hwForm.part_number || "").trim() });
-            setHwForm({ name: "", part_number: "" });
+                { name, part_number: (hwForm.part_number || "").trim(), price: Number(hwForm.price || 0) || 0 });
+            setHwForm({ name: "", part_number: "", price: "" });
             await reloadHwCatalog();
         } catch (e) {
             setErrorMsg(e?.response?.data?.detail || "Erreur d'ajout au catalogue.");
@@ -109,12 +109,15 @@ export const ProductionPlansPanel = () => {
         } catch (_) { /* silent */ }
     };
 
-    // when a description matches a catalog entry, auto-fill the part number
+    // when a description matches a catalog entry, auto-fill part number + price
     const onHwDescription = (dk, hk, value) => {
         updateHw(dk, hk, "description", value);
         const match = hwCatalog.find(
             (it) => (it.name || "").toLowerCase() === (value || "").trim().toLowerCase());
-        if (match && match.part_number) updateHw(dk, hk, "part_number", match.part_number);
+        if (match) {
+            if (match.part_number) updateHw(dk, hk, "part_number", match.part_number);
+            if (match.price) updateHw(dk, hk, "unit_price", match.price);
+        }
     };
 
     const effProfile = (d, field, key) =>
@@ -208,6 +211,7 @@ export const ProductionPlansPanel = () => {
         production_name: form.production_name || "",
         production_note: form.production_note || "",
         revision: form.revision || "no00",
+        mention: form.mention || "Pour production",
         date: form.date || todayISO(),
         client_name: form.client_name || "",
         client_address: form.client_address || "",
@@ -220,6 +224,7 @@ export const ProductionPlansPanel = () => {
         include_plan_details: !!form.include_plan_details,
         include_section_details: !!form.include_section_details,
         include_anchors: !!form.include_anchors,
+        show_costs: !!form.show_costs,
         status: form.status || "brouillon",
         notes: form.notes || "",
         doors: (form.doors || []).map((d) => ({
@@ -251,6 +256,9 @@ export const ProductionPlansPanel = () => {
             protection_plate: !!d.protection_plate,
             plate_height_in: Number(d.plate_height_in ?? 40) || 0,
             flush_bolt: !!d.flush_bolt,
+            door_closer: !!d.door_closer,
+            closer_leaf: d.closer_leaf || "active",
+            astragal: !!d.astragal,
             handle_leaf: d.handle_leaf || "active",
             lock_leaf: d.lock_leaf || "active",
             lever_leaf: d.lever_leaf || "active",
@@ -276,6 +284,7 @@ export const ProductionPlansPanel = () => {
                 description: h.description || "",
                 part_number: h.part_number || "",
                 note: h.note || "",
+                unit_price: Number(h.unit_price || 0) || 0,
                 on_active: !!h.on_active,
                 on_inactive: !!h.on_inactive,
             })),
@@ -466,6 +475,14 @@ export const ProductionPlansPanel = () => {
                             placeholder="no00" className={inputCls} />
                     </div>
                     <div>
+                        <label className={labelCls}>Mention</label>
+                        <select value={form.mention || "Pour production"} data-testid="pp-mention"
+                            onChange={(e) => setForm((f) => ({ ...f, mention: e.target.value }))}
+                            className={`${inputCls} bg-white`}>
+                            {PRODUCTION_MENTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                    </div>
+                    <div>
                         <label className={labelCls}>Statut</label>
                         <select value={form.status}
                             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
@@ -510,6 +527,12 @@ export const ProductionPlansPanel = () => {
                         <input type="checkbox" data-testid="pp-fab-auto" checked={form.fab_auto !== false}
                             onChange={(e) => setForm((f) => ({ ...f, fab_auto: e.target.checked }))} />
                         Cote Fab. auto
+                    </label>
+                    <span className="w-px h-5 bg-[#dde5f0]" />
+                    <label className="inline-flex items-center gap-2 text-sm text-[#8a5a00] cursor-pointer font-medium">
+                        <input type="checkbox" data-testid="pp-show-costs" checked={!!form.show_costs}
+                            onChange={(e) => setForm((f) => ({ ...f, show_costs: e.target.checked }))} />
+                        Afficher les prix sur le plan (interne)
                     </label>
                     <label className="inline-flex items-center gap-1 text-sm text-[#0c182b]">
                         Jeu Fab. (po)
@@ -854,6 +877,21 @@ export const ProductionPlansPanel = () => {
                                                                     className="w-16 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
                                                             </label>
                                                         )}
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-closer-${idx}`}
+                                                                checked={!!d.door_closer}
+                                                                onChange={(e) => updateDoor(d._key, "door_closer", e.target.checked)} />
+                                                            Ferme-porte
+                                                        </label>
+                                                        {d.door_closer && leafSelect(d, "closer_leaf", `pp-door-closerleaf-${idx}`)}
+                                                        {d.config === "pair" && (
+                                                            <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                                <input type="checkbox" data-testid={`pp-door-astragal-${idx}`}
+                                                                    checked={!!d.astragal}
+                                                                    onChange={(e) => updateDoor(d._key, "astragal", e.target.checked)} />
+                                                                Astragale
+                                                            </label>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -874,6 +912,7 @@ export const ProductionPlansPanel = () => {
                                                             <th className="text-left px-2 py-1 w-14">Qté</th>
                                                             <th className="text-left px-2 py-1">Description</th>
                                                             <th className="text-left px-2 py-1 w-36">N° de pièce</th>
+                                                            <th className="text-right px-2 py-1 w-24">Prix U. ($)</th>
                                                             <th className="text-center px-1 py-1 w-12">Actif</th>
                                                             <th className="text-center px-1 py-1 w-12">Inact.</th>
                                                             <th className="w-8"></th>
@@ -900,6 +939,12 @@ export const ProductionPlansPanel = () => {
                                                                         placeholder="Ex : 8400"
                                                                         className="w-full px-2 py-1 border border-[#dde5f0] text-sm font-mono" />
                                                                 </td>
+                                                                <td className="px-1 py-1">
+                                                                    <input type="number" min="0" step="0.01" value={h.unit_price ?? 0}
+                                                                        data-testid={`pp-hw-price-${idx}`}
+                                                                        onChange={(e) => updateHw(d._key, h._key, "unit_price", e.target.value)}
+                                                                        className="w-full px-2 py-1 border border-[#dde5f0] text-sm text-right" />
+                                                                </td>
                                                                 <td className="px-1 py-1 text-center">
                                                                     <input type="checkbox" data-testid={`pp-hw-active-${idx}`}
                                                                         checked={!!h.on_active}
@@ -919,6 +964,20 @@ export const ProductionPlansPanel = () => {
                                                             </tr>
                                                         ))}
                                                     </tbody>
+                                                    <tfoot>
+                                                        <tr className="border-t border-[#dde5f0] bg-[#fff8e6]">
+                                                            <td colSpan={3} className="px-2 py-1 text-right text-xs font-bold text-[#8a5a00]">
+                                                                Coût quincaillerie (interne)
+                                                            </td>
+                                                            <td className="px-2 py-1 text-right text-xs font-bold text-[#8a5a00]" data-testid={`pp-door-cost-${idx}`}>
+                                                                {(d.hardware || []).reduce((s, h) => {
+                                                                    const q = parseFloat(String(h.qty || "1").replace(",", ".")) || 1;
+                                                                    return s + q * (Number(h.unit_price) || 0);
+                                                                }, 0).toFixed(2)} $
+                                                            </td>
+                                                            <td colSpan={3}></td>
+                                                        </tr>
+                                                    </tfoot>
                                                 </table>
                                             </div>
 
@@ -997,6 +1056,12 @@ export const ProductionPlansPanel = () => {
                                     onChange={(e) => setHwForm((f) => ({ ...f, part_number: e.target.value }))}
                                     placeholder="Ex : 9957" className={`${inputCls} font-mono`} />
                             </div>
+                            <div className="w-28">
+                                <label className={labelCls}>Prix ($)</label>
+                                <input type="number" min="0" step="0.01" value={hwForm.price} data-testid="pp-hw-new-price"
+                                    onChange={(e) => setHwForm((f) => ({ ...f, price: e.target.value }))}
+                                    placeholder="0.00" className={`${inputCls} text-right`} />
+                            </div>
                             <button onClick={saveHwCatalogItem} data-testid="pp-hw-add"
                                 className="btn-secondary !py-2 !px-3 !text-sm">
                                 <Plus className="w-4 h-4" /> Ajouter
@@ -1013,6 +1078,7 @@ export const ProductionPlansPanel = () => {
                                         <tr>
                                             <th className="text-left px-2 py-1.5">Nom / description</th>
                                             <th className="text-left px-2 py-1.5 w-40">N° de pièce</th>
+                                            <th className="text-right px-2 py-1.5 w-24">Prix ($)</th>
                                             <th className="px-2 py-1.5 w-10"></th>
                                         </tr>
                                     </thead>
@@ -1021,6 +1087,7 @@ export const ProductionPlansPanel = () => {
                                             <tr key={it.id} className="border-b border-[#f3f6fb] hover:bg-[#f7f9fc]">
                                                 <td className="px-2 py-1.5 text-[#0c182b]">{it.name}</td>
                                                 <td className="px-2 py-1.5 font-mono text-[#4b5d7a]">{it.part_number || "—"}</td>
+                                                <td className="px-2 py-1.5 text-right text-[#4b5d7a]">{it.price ? `${Number(it.price).toFixed(2)}` : "—"}</td>
                                                 <td className="px-2 py-1.5 text-right">
                                                     <button onClick={() => deleteHwCatalogItem(it.id)}
                                                         className="p-1 hover:bg-[#fde7e7] text-[#a31a1a]" title="Supprimer"

@@ -280,6 +280,28 @@ def _draw_flush_bolt(c, x, y):
     c.restoreState()
 
 
+def _draw_closer(c, hinge_x, y, facing=1):
+    """Surface door closer — body box near the top of the leaf (hinge side) with
+    an articulated arm reaching toward the leaf centre. facing +1 = arm to right."""
+    bw, bh = 22, 9
+    left = hinge_x if facing > 0 else hinge_x - bw
+    c.saveState()
+    c.setFillColor(colors.HexColor("#3a4658"))
+    c.setStrokeColor(LINE)
+    c.setLineWidth(0.7)
+    c.roundRect(left, y - bh / 2, bw, bh, 1.5, fill=1, stroke=1)     # closer body
+    c.setFillColor(colors.HexColor("#8a97a8"))
+    c.circle(left + (bw if facing > 0 else 0), y, 1.6, fill=1, stroke=1)  # arm pivot
+    # articulated arm
+    c.setStrokeColor(colors.HexColor("#1c2330"))
+    c.setLineWidth(2)
+    c.setLineCap(1)
+    ax = left + bw if facing > 0 else left
+    c.line(ax, y, ax + facing * 15, y + 6)
+    c.line(ax + facing * 15, y + 6, ax + facing * 24, y + 1)
+    c.restoreState()
+
+
 # ── unit / text helpers ────────────────────────────────────────────
 def _inch_fmt(v: float) -> str:
     """Format inches as a mixed fraction (nearest 1/16), e.g. 34.5 -> 34 1/2\"."""
@@ -424,7 +446,12 @@ def _band_top(c, plan, doc_title):
     # doc title (centered-ish)
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(230, H - 30, doc_title.upper())
+    c.drawString(230, H - 24, doc_title.upper())
+    mention = (plan.get("mention") or "").strip()
+    if mention:
+        c.setFillColor(colors.HexColor("#ffd27f"))
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(230, H - 37, mention.upper())
     # PRODUCTION box on the right — only when a production name/note is set
     if plan.get("production_name") or plan.get("production_note"):
         bx, bw, bh = W - 214, 200, 38
@@ -524,6 +551,13 @@ def _cover(c, plan):
     c.setFillColor(TEXT_MUTED)
     c.setFont("Helvetica", 11)
     c.drawString(40, H - 150, "DESSINS POUR PRODUCTION")
+    mention = (plan.get("mention") or "").strip()
+    if mention:
+        c.setFont("Helvetica-Bold", 11)
+        tw = c.stringWidth(mention.upper(), "Helvetica-Bold", 11)
+        c.setFillColor(RED)
+        c.rect(40, H - 132, tw + 16, 18, fill=0, stroke=1)
+        c.drawString(48, H - 128, mention.upper())
 
     # CLIENT block (right) — sized to its content
     name = plan.get("client_name") or "—"
@@ -965,6 +999,30 @@ def _elevation_page(c, plan, door, page_no):
         _draw_flush_bolt(c, fb_x, oy + dh - 14)
         _draw_flush_bolt(c, fb_x, oy + 14)
 
+    # door closer (ferme-porte) — top of the chosen leaf, hinge side, arm inward
+    if (not no_hw) and door.get("door_closer"):
+        cx0, cx1, cmeet, _cc, _tw = _leaf_geom(door.get("closer_leaf") or "active")
+        if abs(cmeet - cx1) < abs(cmeet - cx0):
+            hinge_x, cfacing = cx0, 1
+        else:
+            hinge_x, cfacing = cx1, -1
+        hinge_x = hinge_x + cfacing * (hinge_pt + 2)
+        _draw_closer(c, hinge_x, oy + dh - head_pt - 10, cfacing)
+
+    # astragal (astragale) — vertical meeting-gap cover on a pair
+    if (not no_hw) and door.get("astragal") and is_pair:
+        c.saveState()
+        c.setFillColor(colors.HexColor("#9aa7b8"))
+        c.setStrokeColor(LINE)
+        c.setLineWidth(0.6)
+        c.rect(pair_meet - 2.5, oy, 5, dh, fill=1, stroke=1)
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Oblique", 5)
+        c.translate(pair_meet + 5, oy + dh * 0.72)
+        c.rotate(90)
+        c.drawString(0, 0, "Astragale")
+        c.restoreState()
+
     # panic bar (barre anti-panique) — chosen leaf, edge to edge (touches both
     # sides of that leaf); hidden line for reverse hands (MGR/MDR)
     if (not no_hw) and door.get("panic_bar"):
@@ -1028,7 +1086,7 @@ def _elevation_page(c, plan, door, page_no):
     _dim_v(c, oy, oy + dh, ox - fo - 26,
            f"{_dual(rh)} Ouverture libre", ext_from=ox - fo)
 
-    # optional fabrication dimensions ("Fab.") — auto = opening + configurable allowance
+    # fabrication dimensions ("Fab.") = finished leaf = opening − per-series offset
     def _fnum(v, dflt=0.0):
         try:
             return float(v if v not in (None, "") else dflt)
@@ -1037,12 +1095,13 @@ def _elevation_page(c, plan, door, page_no):
 
     fab_auto = plan.get("fab_auto", True)
     allow = _fnum(plan.get("fab_allowance_in"), 0.0)
+    _foff = _leaf_offset(series)
     fw = _fnum(door.get("fab_width_in"), 0.0)
     fh = _fnum(door.get("fab_height_in"), 0.0)
     if fw <= 0 and fab_auto:
-        fw = rw + allow
+        fw = rw - _foff["width"] / 25.4 + allow
     if fh <= 0 and fab_auto:
-        fh = rh + allow
+        fh = rh - _foff["height"] / 25.4 + allow
     if fw > 0:
         _dim_h(c, ox - 8, ox + dw + 8, oy + dh + 40, f"{_dual(fw)} Fab.")
     if fh > 0:
@@ -1115,6 +1174,29 @@ def _elevation_page(c, plan, door, page_no):
     ry = _hardware_table(c, rx, ry, rw_col, door.get("hardware") or [],
                          plan.get("machining_by") or "A.T. Fabrication",
                          plan.get("installer") or "Portech")
+
+    # optional internal cost total (only when explicitly enabled — hidden by default)
+    if plan.get("show_costs"):
+        total = 0.0
+        for hw in (door.get("hardware") or []):
+            try:
+                q = float(str(hw.get("qty") or "1").replace(",", "."))
+            except (TypeError, ValueError):
+                q = 1.0
+            try:
+                total += q * float(hw.get("unit_price") or 0)
+            except (TypeError, ValueError):
+                pass
+        ch = 14
+        c.setFillColor(colors.HexColor("#fff3cf"))
+        c.rect(rx, ry - ch, rw_col, ch, fill=1, stroke=0)
+        c.setStrokeColor(colors.HexColor("#e0b34d"))
+        c.rect(rx, ry - ch, rw_col, ch, fill=0, stroke=1)
+        c.setFillColor(colors.HexColor("#8a5a00"))
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(rx + 5, ry - 10, "COÛT QUINCAILLERIE (interne)")
+        c.drawRightString(rx + rw_col - 5, ry - 10, f"{total:,.2f} $".replace(",", " "))
+        ry = ry - ch - 8
 
     if door.get("notes"):
         c.setFillColor(colors.HexColor("#fff7e6"))

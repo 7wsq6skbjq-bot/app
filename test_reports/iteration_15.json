@@ -1,0 +1,30 @@
+{
+  "summary": "Iteration 15 — validated new Production-Plans additions: hardware price (catalog + auto-sync via unit_price), plan-level mention + show_costs, per-door door_closer/closer_leaf/astragal, per-hardware-line unit_price, per-door cost total, PDFs. Backend: 10/10 pytest cases pass (hardware CRUD with price + upsert-updates-price + PUT price, plan round-trip with mention='Pour approbation', show_costs=true, pair config with door_closer/closer_leaf='inactive'/astragal, per-hw unit_price persisted, auto-add-to-catalog carries unit_price into price for brand-new names [15.0 verified], preview-pdf show_costs=true, preview-pdf show_costs=false, saved-plan pdf — all return 200 application/pdf). Frontend: Playwright end-to-end — login → GESTION → Fabrication → Dessins de production; catalog card add with price works and Prix column displays; pp-mention lists exactly ['Pour approbation','Pour demande de prix','Pour production']; pp-show-costs toggles; after selecting 'pair' and expanding door, pp-door-closer-0 and pp-door-astragal-0 are present; checking closer reveals pp-door-closerleaf-0 (leaf selector); typing catalog description into pp-hw-desc-0 auto-fills N° pièce (AUTOPN-15) AND pp-hw-price-0 (27.5); pp-door-cost-0 shows '55.00 $' after qty=2 × 27.5; pp-save persists plan (PLAN-2026-012 with project_name TEST_UI15_PLAN appeared in pp-list-table); no JS pageerrors observed. Test data cleaned up via API afterwards.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_production_plans.py",
+    "/app/test_reports/pytest/iteration_15.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ProductionPlansPanel.jsx is now 1176 lines — still recommended to split into DoorEditor, HardwareCatalogCard, PlansList sub-components for maintainability.",
+    "Hardware-line row inputs (qty, part_number) lack data-testid attributes. Only pp-hw-desc-{idx} and pp-hw-price-{idx} are addressable. Consider adding pp-hw-qty-{idx} and pp-hw-pn-{idx} for finer-grained tests (this iteration used DOM traversal to work around it).",
+    "review_request lists testid 'pp-hw-new-add' but the actual DOM uses 'pp-hw-add' — align naming or update spec.",
+    "The datalist #pp-hw-catalog is shared but pp-hw-desc-${idx} uses only the door index, so multiple hardware rows on the same door share the same testid — consider pp-hw-desc-${dk}-${hk}."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_production_plans.py"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100% — all new testids present, all flows exercised, no pageerrors"},
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created & later removed via API: hardware TEST_UI15_HW_AUTO (and TEST_Handle_15, TEST_AutoAddSerrure_15 from backend tests); plans TEST_UI15_PLAN and TEST_PP_15.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file /app/backend/tests/test_production_plans.py now covers price on catalog, plan round-trip with mention/show_costs/door_closer/closer_leaf/astragal/unit_price, auto-add-with-price and both PDF gate paths. Login form on /admin/login uses positional inputs (no name attrs); navigate via top-nav 'Gestion' link then click text 'Fabrication' then 'Dessins de production'. Catalog card starts collapsed on load — click pp-hw-mgr-toggle first. Door card is collapsed — click the first <button> inside [data-testid=pp-door-0]. Hardware row qty/pn inputs have no testids yet.",
+  "rca_of_the_issue": "No functional issues found."
+}

@@ -238,6 +238,9 @@ export const PRODUCTION_CONFIGS = [
 export const PRODUCTION_STATUSES = [
     "brouillon", "en production", "en hold", "produit", "annulé",
 ];
+export const PRODUCTION_MENTIONS = [
+    "Pour approbation", "Pour demande de prix", "Pour production",
+];
 export const PRODUCTION_FINISHES = [
     "Anodisé clair", "Noir", "Bronze", "Dark Bronze", "Champagne",
     "Mill finish", "Sur mesure",
@@ -261,6 +264,7 @@ export const emptyHardwareLine = () => ({
     description: "",
     part_number: "",
     note: "",
+    unit_price: 0,
     on_active: false,
     on_inactive: false,
 });
@@ -295,6 +299,9 @@ export const emptyProductionDoor = () => ({
     protection_plate: false,
     plate_height_in: 40,
     flush_bolt: false,
+    door_closer: false,
+    closer_leaf: "active",
+    astragal: false,
     handle_leaf: "active",
     lock_leaf: "active",
     lever_leaf: "active",
@@ -319,6 +326,7 @@ export const emptyProductionPlan = () => ({
     production_name: "",
     production_note: "",
     revision: "no00",
+    mention: "Pour production",
     date: todayISO(),
     client_name: "",
     client_address: "",
@@ -331,6 +339,7 @@ export const emptyProductionPlan = () => ({
     include_plan_details: true,
     include_section_details: true,
     include_anchors: true,
+    show_costs: false,
     status: "brouillon",
     doors: [emptyProductionDoor()],
     notes: "",

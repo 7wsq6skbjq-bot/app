@@ -32,6 +32,7 @@ class HardwareLine(BaseModel):
     description: str = ""
     part_number: str = ""
     note: str = ""
+    unit_price: float = 0
     on_active: bool = False
     on_inactive: bool = False
 
@@ -65,6 +66,9 @@ class DoorPlan(BaseModel):
     protection_plate: bool = False
     plate_height_in: float = 40
     flush_bolt: bool = False
+    door_closer: bool = False
+    closer_leaf: Literal["active", "inactive"] = "active"
+    astragal: bool = False
     handle_leaf: Literal["active", "inactive"] = "active"
     lock_leaf: Literal["active", "inactive"] = "active"
     lever_leaf: Literal["active", "inactive"] = "active"
@@ -94,6 +98,7 @@ class ProductionPlanIn(BaseModel):
     production_name: str = ""
     production_note: str = ""
     revision: str = "no00"
+    mention: str = "Pour production"
     date: DateT = Field(default_factory=DateT.today)
     client_name: str = ""
     client_address: str = ""
@@ -106,6 +111,7 @@ class ProductionPlanIn(BaseModel):
     include_plan_details: bool = True
     include_section_details: bool = True
     include_anchors: bool = True
+    show_costs: bool = False
     status: PlanStatus = "brouillon"
     doors: List[DoorPlan] = Field(default_factory=list)
     notes: str = ""
@@ -121,6 +127,7 @@ class ProductionHardwareIn(BaseModel):
     name: str = Field("", max_length=120)
     part_number: str = Field("", max_length=60)
     category: str = Field("", max_length=60)
+    price: float = 0
 
 
 class ProductionHardware(ProductionHardwareIn):
@@ -153,7 +160,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
                 existing = await db.erp_production_hardware.find_one({"name": name})
                 if not existing:
                     item = ProductionHardware(
-                        name=name, part_number=(hw.get("part_number") or "").strip())
+                        name=name, part_number=(hw.get("part_number") or "").strip(),
+                        price=float(hw.get("unit_price") or 0))
                     await db.erp_production_hardware.insert_one(item.model_dump(mode="json"))
 
     # ── hardware catalog (searchable dropdown source) ──────────────
@@ -169,13 +177,15 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             raise HTTPException(400, "Le nom est requis.")
         existing = await db.erp_production_hardware.find_one({"name": name}, {"_id": 0})
         if existing:
-            patch = {"part_number": data.part_number.strip(), "category": data.category.strip()}
+            patch = {"part_number": data.part_number.strip(),
+                     "category": data.category.strip(), "price": float(data.price or 0)}
             await db.erp_production_hardware.update_one({"id": existing["id"]}, {"$set": patch})
             existing.update(patch)
             return ProductionHardware(**existing)
         item = ProductionHardware(name=name,
                                   part_number=data.part_number.strip(),
-                                  category=data.category.strip())
+                                  category=data.category.strip(),
+                                  price=float(data.price or 0))
         await db.erp_production_hardware.insert_one(item.model_dump(mode="json"))
         return item
 
@@ -187,7 +197,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             raise HTTPException(404, "Quincaillerie introuvable.")
         patch = {"name": (data.name or "").strip(),
                  "part_number": data.part_number.strip(),
-                 "category": data.category.strip()}
+                 "category": data.category.strip(), "price": float(data.price or 0)}
         await db.erp_production_hardware.update_one({"id": item_id}, {"$set": patch})
         existing.update(patch)
         return ProductionHardware(**existing)
