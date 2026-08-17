@@ -971,10 +971,13 @@ export const ProductionPlansPanel = () => {
                                                                 Coût quincaillerie (interne)
                                                             </td>
                                                             <td className="px-2 py-1 text-right text-xs font-bold text-[#8a5a00]" data-testid={`pp-door-cost-${idx}`}>
-                                                                {(d.hardware || []).reduce((s, h) => {
-                                                                    const q = parseFloat(String(h.qty || "1").replace(",", ".")) || 1;
-                                                                    return s + q * (Number(h.unit_price) || 0);
-                                                                }, 0).toFixed(2)} $
+                                                                {(() => {
+                                                                    const t = (d.hardware || []).reduce((s, h) => {
+                                                                        const q = parseFloat(String(h.qty || "1").replace(",", ".")) || 1;
+                                                                        return s + q * (Number(h.unit_price) || 0);
+                                                                    }, 0);
+                                                                    return t > 0 ? `${t.toFixed(2)} $` : "—";
+                                                                })()}
                                                             </td>
                                                             <td colSpan={3}></td>
                                                         </tr>

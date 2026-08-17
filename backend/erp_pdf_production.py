@@ -1206,28 +1206,34 @@ def _elevation_page(c, plan, door, page_no):
                          plan.get("machining_by") or "A.T. Fabrication",
                          plan.get("installer") or "Portech")
 
-    # optional internal cost total (only when explicitly enabled — hidden by default)
+    # optional internal cost total — shown only when enabled AND a price exists
+    # (never print "0.00 $" when nothing was entered)
     if plan.get("show_costs"):
         total = 0.0
+        has_price = False
         for hw in (door.get("hardware") or []):
             try:
                 q = float(str(hw.get("qty") or "1").replace(",", "."))
             except (TypeError, ValueError):
                 q = 1.0
             try:
-                total += q * float(hw.get("unit_price") or 0)
+                up = float(hw.get("unit_price") or 0)
             except (TypeError, ValueError):
-                pass
-        ch = 14
-        c.setFillColor(colors.HexColor("#fff3cf"))
-        c.rect(rx, ry - ch, rw_col, ch, fill=1, stroke=0)
-        c.setStrokeColor(colors.HexColor("#e0b34d"))
-        c.rect(rx, ry - ch, rw_col, ch, fill=0, stroke=1)
-        c.setFillColor(colors.HexColor("#8a5a00"))
-        c.setFont("Helvetica-Bold", 7)
-        c.drawString(rx + 5, ry - 10, "COÛT QUINCAILLERIE (interne)")
-        c.drawRightString(rx + rw_col - 5, ry - 10, f"{total:,.2f} $".replace(",", " "))
-        ry = ry - ch - 8
+                up = 0.0
+            if up > 0:
+                has_price = True
+            total += q * up
+        if has_price and total > 0:
+            ch = 14
+            c.setFillColor(colors.HexColor("#fff3cf"))
+            c.rect(rx, ry - ch, rw_col, ch, fill=1, stroke=0)
+            c.setStrokeColor(colors.HexColor("#e0b34d"))
+            c.rect(rx, ry - ch, rw_col, ch, fill=0, stroke=1)
+            c.setFillColor(colors.HexColor("#8a5a00"))
+            c.setFont("Helvetica-Bold", 7)
+            c.drawString(rx + 5, ry - 10, "COÛT QUINCAILLERIE (interne)")
+            c.drawRightString(rx + rw_col - 5, ry - 10, f"{total:,.2f} $".replace(",", " "))
+            ry = ry - ch - 8
 
     if door.get("notes"):
         c.setFillColor(colors.HexColor("#fff7e6"))
