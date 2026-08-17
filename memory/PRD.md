@@ -254,3 +254,5 @@ User language: **French**.
 - Note : les libellés « de AT Fabrication » restent dans les images de détails (série de porte du manufacturier).
 
 - MAJ 2026-08-16 : images de détails - mentions manufacturier remplacees par « de Portech » (OCR). Boite rouge PRODUCTION conditionnelle (affichee seulement si responsable/note production saisi). Bascules include_plan/section/anchor verifiees.
+
+- MAJ 2026-08-17 (Dessins de production, lot 2) : (1) titre projet passe a la ligne + case client compacte ; (2) mentions « de AT Fabrication » restaurees dans les details ; (3) type de charniere (4 1/2 paumelles = 3 rects / continue = bande pleine hauteur -1/4 / aucune) ; (4) choix Usinage par + Installation par (Portech / A.T. Fabrication) dans lentete quincaillerie ; (5) selection des profils daluminium par element (tete/base/montant charniere/montant serrure) branchee sur at_profile_library (vraies dimensions), dessin delevation mis a lechelle des profils reels ; (6) details 03/04 (porte simple) pivotes 180 sur plan_at (convention fabricant). Nouveau endpoint GET /admin/production-plans/profile-catalog.

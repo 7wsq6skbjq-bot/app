@@ -24,6 +24,8 @@ from reportlab.lib.pagesizes import LETTER, landscape
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas as canvas_mod
 
+from at_profile_library import PROFILES as AL_PROFILES
+
 # ── Brand palette (mirrors erp_pdf.py) ─────────────────────────────
 NAVY = colors.HexColor("#0c182b")
 NAVY_LIGHT = colors.HexColor("#2f4f7f")
@@ -50,7 +52,7 @@ COMPANY = {
 # Standard specifications per door series (editable defaults).
 SERIES_SPECS = {
     "AT1000": {
-        "title": "Porte non-isolée série AT1000 de Portech",
+        "title": "Porte non-isolée série AT1000 de A.T. Fabrication",
         "insulated": False,
         "rows": [
             ("Tête", "2\" × 4 1/2\""),
@@ -61,7 +63,7 @@ SERIES_SPECS = {
         ],
     },
     "ATi1000": {
-        "title": "Porte isolée série ATi1000 p+ de Portech",
+        "title": "Porte isolée série ATi1000 p+ de A.T. Fabrication",
         "insulated": True,
         "rows": [
             ("Tête", "2\" × 4 1/2\""),
@@ -72,7 +74,7 @@ SERIES_SPECS = {
         ],
     },
     "AT2000": {
-        "title": "Porte non-isolée série AT2000 de Portech",
+        "title": "Porte non-isolée série AT2000 de A.T. Fabrication",
         "insulated": False,
         "rows": [
             ("Tête", "2 1/2\" × 4 1/2\""),
@@ -83,7 +85,7 @@ SERIES_SPECS = {
         ],
     },
     "ATi2000": {
-        "title": "Porte isolée série ATi2000 de Portech",
+        "title": "Porte isolée série ATi2000 de A.T. Fabrication",
         "insulated": True,
         "rows": [
             ("Tête", "2 1/2\" × 4 1/2\""),
@@ -96,6 +98,33 @@ SERIES_SPECS = {
 }
 
 W, H = landscape(LETTER)          # 792 x 612 pt
+
+# Default aluminium profile per element for each series (codes from
+# at_profile_library.PROFILES — the single source of truth for dimensions).
+SERIES_DEFAULT_PROFILES = {
+    "AT1000":  {"head": "ATT1005", "base": "ATB1000", "hinge": "ATV1010", "lock": "ATV1015"},
+    "ATi1000": {"head": "ATT1005", "base": "ATB1000", "hinge": "ATV1010", "lock": "ATV1015"},
+    "AT2000":  {"head": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015"},
+    "ATi2000": {"head": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015"},
+}
+
+
+def _door_profiles(door):
+    """Resolve the 4 element profile codes for a door (selection or default)."""
+    series = door.get("series") or "AT1000"
+    d = SERIES_DEFAULT_PROFILES.get(series, SERIES_DEFAULT_PROFILES["AT1000"])
+    return {
+        "head": door.get("profile_head") or d["head"],
+        "base": door.get("profile_base") or d["base"],
+        "hinge": door.get("profile_hinge_stile") or d["hinge"],
+        "lock": door.get("profile_lock_stile") or d["lock"],
+    }
+
+
+def _face_in(code, fallback=2.0):
+    """Visible face width of a profile, in inches (from the catalog)."""
+    p = AL_PROFILES.get(code)
+    return (p["face_w"] / 25.4) if p else fallback
 
 
 # ── unit / text helpers ────────────────────────────────────────────
@@ -329,41 +358,73 @@ def _cover(c, plan):
         if plan.get("production_note"):
             c.drawString(bx + 10, H - 68, plan["production_note"][:38])
 
-    # big project title
+    # big project title (drawn after the client box so it can wrap clear of it)
     c.setFillColor(TEXT_MUTED)
     c.setFont("Helvetica", 11)
     c.drawString(40, H - 150, "DESSINS POUR PRODUCTION")
+
+    # CLIENT block (right) — sized to its content
+    name = plan.get("client_name") or "—"
+    extra = [str(l) for l in (plan.get("client_address"), plan.get("client_contact"),
+                              plan.get("client_phone")) if l]
+    widths = [c.stringWidth(name, "Helvetica-Bold", 13)]
+    widths += [c.stringWidth(l, "Helvetica", 9) for l in extra]
+    box_w = max(150, min(262, max(widths) + 22))
+    box_h = 42 + len(extra) * 13 + 6
+    cx = (W - 38) - box_w
+    cy = H - 150
+    c.setFillColor(BG_LIGHT)
+    c.rect(cx, cy - box_h, box_w, box_h, fill=1, stroke=0)
+    c.setStrokeColor(NAVY_BORDER)
+    c.rect(cx, cy - box_h, box_w, box_h, fill=0, stroke=1)
+    c.setFillColor(TEXT_MUTED)
+    c.setFont("Helvetica-Bold", 8)
+    c.drawString(cx + 10, cy - 15, "CLIENT")
     c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 34)
-    c.drawString(40, H - 200, f"PROJET : {plan.get('project_name') or '—'}"[:46])
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(cx + 10, cy - 33, name)
+    c.setFont("Helvetica", 9)
+    yy = cy - 48
+    for l in extra:
+        c.drawString(cx + 10, yy, l)
+        yy -= 13
+
+    # project title — wraps downward, kept clear of the client box
+    max_title_w = cx - 40 - 16
+    size = 34
+
+    def _wrap(txt, sz):
+        out, cur = [], ""
+        for wd in txt.split():
+            trial = (cur + " " + wd).strip()
+            if not cur or c.stringWidth(trial, "Helvetica-Bold", sz) <= max_title_w:
+                cur = trial
+            else:
+                out.append(cur)
+                cur = wd
+        if cur:
+            out.append(cur)
+        return out
+
+    title = f"PROJET : {plan.get('project_name') or '—'}"
+    lines = _wrap(title, size)
+    while len(lines) > 2 and size > 18:
+        size -= 2
+        lines = _wrap(title, size)
+    c.setFillColor(NAVY)
+    ty = H - 176
+    for ln in lines:
+        c.setFont("Helvetica-Bold", size)
+        c.drawString(40, ty, ln)
+        ty -= size + 4
     c.setFillColor(NAVY_LIGHT)
     c.setFont("Courier", 16)
-    c.drawString(40, H - 228, f"# PROJET : {plan.get('project_number') or '—'}")
+    c.drawString(40, ty - 4, f"# PROJET : {plan.get('project_number') or '—'}")
 
     # accent rule
     c.setStrokeColor(RED)
     c.setLineWidth(3)
-    c.line(40, H - 240, 320, H - 240)
-
-    # CLIENT block (right)
-    cx, cy = W - 300, H - 150
-    c.setFillColor(BG_LIGHT)
-    c.rect(cx, cy - 96, 262, 92, fill=1, stroke=0)
-    c.setStrokeColor(NAVY_BORDER)
-    c.rect(cx, cy - 96, 262, 92, fill=0, stroke=1)
-    c.setFillColor(TEXT_MUTED)
-    c.setFont("Helvetica-Bold", 8)
-    c.drawString(cx + 10, cy - 16, "CLIENT")
-    c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(cx + 10, cy - 34, (plan.get("client_name") or "—")[:34])
-    c.setFont("Helvetica", 9)
-    yy = cy - 50
-    for ln in [plan.get("client_address"), plan.get("client_contact"),
-               plan.get("client_phone")]:
-        if ln:
-            c.drawString(cx + 10, yy, str(ln)[:40])
-            yy -= 13
+    c.line(40, ty - 16, 320, ty - 16)
 
     # INDEX block (bottom right)
     ix, iy = W - 300, 120
@@ -422,13 +483,16 @@ def _spec_block(c, x, y, w, title, rows, tint=BG_LIGHT):
     return y - height - 8
 
 
-def _hardware_table(c, x, y, w, hardware):
+def _hardware_table(c, x, y, w, hardware, machining_by="A.T. Fabrication",
+                    installer="Portech"):
     """Quincaillerie table. Returns y after the table."""
     c.setFillColor(NAVY)
     c.rect(x, y - 12, w, 12, fill=1, stroke=0)
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 6.5)
-    c.drawString(x + 4, y - 8.5, "QUINCAILLERIE FOURNIE, MACHINÉE ET INSTALLÉE PAR PORTECH")
+    hdr = (f"QUINCAILLERIE  ·  USINAGE : {machining_by.upper()}"
+           f"  ·  INSTALLATION : {installer.upper()}")
+    c.drawString(x + 4, y - 8.5, hdr[:82])
     yy = y - 12
     c.setFont("Helvetica", 6.5)
     col_qty, col_no = 16, w - 96
@@ -460,19 +524,16 @@ def _hardware_table(c, x, y, w, hardware):
     return yy - 6
 
 
-def _draw_leaf(c, x, y, lw, lh, glass_label, insulated):
-    """Draw a single door leaf with stiles/rails and a glazed area."""
+def _draw_leaf(c, x, y, lw, lh, glass_label, insulated,
+               left_w, right_w, top_h, bot_h):
+    """Draw a single door leaf with real stile/rail widths (in points)."""
     # leaf outline (aluminium)
     c.setFillColor(ALU)
     c.setStrokeColor(LINE)
     c.setLineWidth(1)
     c.rect(x, y, lw, lh, fill=1, stroke=1)
-    # stile / rail thickness in pt (scaled visual, not to exact scale)
-    st = max(6, lw * 0.14)
-    bottom_rail = max(18, lh * 0.12)
-    top_rail = max(8, lh * 0.05)
-    gx, gy = x + st, y + bottom_rail
-    gw, gh = lw - 2 * st, lh - bottom_rail - top_rail
+    gx, gy = x + left_w, y + bot_h
+    gw, gh = lw - left_w - right_w, lh - bot_h - top_h
     if gw > 4 and gh > 4:
         c.setFillColor(GLASS)
         c.rect(gx, gy, gw, gh, fill=1, stroke=1)
@@ -490,7 +551,7 @@ def _draw_leaf(c, x, y, lw, lh, glass_label, insulated):
     if insulated:
         c.setFillColor(NAVY_LIGHT)
         c.setFont("Helvetica-Oblique", 5.5)
-        c.drawCentredString(x + lw / 2, y + 5, "ISOLÉE")
+        c.drawCentredString(x + lw / 2, y + max(6, bot_h * 0.4), "ISOLÉE")
 
 
 def _elevation_page(c, plan, door, page_no):
@@ -528,6 +589,13 @@ def _elevation_page(c, plan, door, page_no):
     is_pair = door.get("config") == "pair"
     glass_label = (door.get("glass") or "").split("·")[0].strip() or ""
 
+    # real profile widths (points) for stiles/rails
+    prof = _door_profiles(door)
+    head_pt = _face_in(prof["head"]) * scale
+    base_pt = _face_in(prof["base"], 3.875) * scale
+    hinge_pt = _face_in(prof["hinge"]) * scale
+    lock_pt = _face_in(prof["lock"], 2.125) * scale
+
     # frame (jamb) drawn slightly outside opening
     fo = 6
     c.setFillColor(colors.white)
@@ -538,19 +606,31 @@ def _elevation_page(c, plan, door, page_no):
     if is_pair:
         gap = 3
         leaf_w = (dw - gap) / 2
-        _draw_leaf(c, ox, oy, leaf_w, dh, glass_label, spec["insulated"])
-        _draw_leaf(c, ox + leaf_w + gap, oy, leaf_w, dh, glass_label, spec["insulated"])
+        # left leaf: hinge (outer/left) + lock (inner/right)
+        _draw_leaf(c, ox, oy, leaf_w, dh, glass_label, spec["insulated"],
+                   hinge_pt, lock_pt, head_pt, base_pt)
+        # right leaf: lock (inner/left) + hinge (outer/right)
+        _draw_leaf(c, ox + leaf_w + gap, oy, leaf_w, dh, glass_label, spec["insulated"],
+                   lock_pt, hinge_pt, head_pt, base_pt)
         hinge_xs = [(ox, "L"), (ox + dw, "R")]
     else:
-        _draw_leaf(c, ox, oy, dw, dh, glass_label, spec["insulated"])
+        _draw_leaf(c, ox, oy, dw, dh, glass_label, spec["insulated"],
+                   hinge_pt, lock_pt, head_pt, base_pt)
         hinge_xs = [(ox, "L")]
 
-    # hinges (marks on hinge jamb)
+    # hinges — rendered according to the hinge type
+    hinge_type = door.get("hinge_type") or "butt45"
     c.setFillColor(RED)
-    for hx, _side in hinge_xs:
-        for frac in (0.9, 0.55, 0.12):
-            hy = oy + dh * frac
-            c.rect(hx - 2, hy - 4, 4, 8, fill=1, stroke=0)
+    if hinge_type == "butt45":
+        for hx, _side in hinge_xs:
+            for frac in (0.9, 0.55, 0.12):
+                hy = oy + dh * frac
+                c.rect(hx - 2, hy - 4, 4, 8, fill=1, stroke=0)
+    elif hinge_type == "continue":
+        inset = 0.125 * scale  # continuous hinge = full leaf height minus 1/4"
+        for hx, _side in hinge_xs:
+            c.rect(hx - 2, oy + inset, 4, dh - 2 * inset, fill=1, stroke=0)
+    # hinge_type == "none" -> no hinge marks
 
     # detail bubbles (jamb + head refs)
     _bubble(c, ox - fo - 8, oy + dh * 0.5, "01", "300")
@@ -571,10 +651,21 @@ def _elevation_page(c, plan, door, page_no):
     # ── right column : specs + hardware ──
     rx, rw_col = 448, W - 448 - 22
     ry = H - 62
+
+    def _prow(label, code):
+        p = AL_PROFILES.get(code)
+        if not p:
+            return (label, code or "—")
+        return (label, f'{code} · {_inch_fmt(p["face_w"] / 25.4)} ({p["face_w"]:.1f} mm)')
+
     ry = _spec_block(c, rx, ry, rw_col, spec["title"], [
         ("Fini ext.", door.get("finish_ext") or "—"),
         ("Fini int.", door.get("finish_int") or "—"),
-        *spec["rows"],
+        _prow("Tête", prof["head"]),
+        _prow("Base", prof["base"]),
+        _prow("Mont. charn.", prof["hinge"]),
+        _prow("Mont. serrure", prof["lock"]),
+        ("Épaisseur", '1 3/4" (44.45 mm)'),
     ])
     if door.get("glass"):
         ry = _spec_block(c, rx, ry, rw_col, "Vitrage (fourni et installé par autres)", [
@@ -584,7 +675,9 @@ def _elevation_page(c, plan, door, page_no):
         ry = _spec_block(c, rx, ry, rw_col, "Charnières / Pentures", [
             ("Détail", door.get("hinges") or "—"),
         ])
-    ry = _hardware_table(c, rx, ry, rw_col, door.get("hardware") or [])
+    ry = _hardware_table(c, rx, ry, rw_col, door.get("hardware") or [],
+                         plan.get("machining_by") or "A.T. Fabrication",
+                         plan.get("installer") or "Portech")
 
     if door.get("notes"):
         c.setFillColor(colors.HexColor("#fff7e6"))

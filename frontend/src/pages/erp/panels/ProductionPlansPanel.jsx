@@ -16,6 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
     emptyProductionPlan, emptyProductionDoor, emptyHardwareLine,
     PRODUCTION_SERIES, PRODUCTION_CONFIGS, PRODUCTION_STATUSES, PRODUCTION_FINISHES,
+    HINGE_TYPES, INSTALL_PARTIES,
     newKey, stripKeys, todayISO, formatDate,
 } from "../utils";
 
@@ -28,6 +29,7 @@ const inLabel = (v) => {
 export const ProductionPlansPanel = () => {
     const { http, getToken } = useAuth();
     const [plans, setPlans] = useState([]);
+    const [catalog, setCatalog] = useState(null);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState(emptyProductionPlan());
     const [editingId, setEditingId] = useState(null);
@@ -64,6 +66,21 @@ export const ProductionPlansPanel = () => {
         } catch (_) { /* silent */ }
     }, [http]);
 
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const { data } = await http.get("/admin/production-plans/profile-catalog");
+                if (!cancelled) setCatalog(data);
+            } catch (_) { /* silent */ }
+        })();
+        return () => { cancelled = true; };
+    }, [http]);
+
+    const effProfile = (d, field, key) =>
+        d[field] || catalog?.defaults?.[d.series]?.[key] || "";
+    const optLabel = (o) => `${o.code} · ${o.face_mm} mm`;
+
     // ─── door helpers ────────────────────────────────────
     const addDoor = () => {
         const d = emptyProductionDoor();
@@ -76,6 +93,14 @@ export const ProductionPlansPanel = () => {
     const updateDoor = (k, key, value) => setForm((f) => ({
         ...f,
         doors: f.doors.map((d) => (d._key === k ? { ...d, [key]: value } : d)),
+    }));
+    const changeSeries = (k, series) => setForm((f) => ({
+        ...f,
+        doors: f.doors.map((d) => (d._key === k ? {
+            ...d, series,
+            profile_head: "", profile_base: "",
+            profile_hinge_stile: "", profile_lock_stile: "",
+        } : d)),
     }));
 
     // ─── hardware helpers ────────────────────────────────
@@ -135,6 +160,8 @@ export const ProductionPlansPanel = () => {
         client_address: form.client_address || "",
         client_contact: form.client_contact || "",
         client_phone: form.client_phone || "",
+        machining_by: form.machining_by || "A.T. Fabrication",
+        installer: form.installer || "Portech",
         include_plan_details: !!form.include_plan_details,
         include_section_details: !!form.include_section_details,
         include_anchors: !!form.include_anchors,
@@ -151,6 +178,11 @@ export const ProductionPlansPanel = () => {
             finish_int: d.finish_int || "",
             glass: d.glass || "",
             hinges: d.hinges || "",
+            hinge_type: d.hinge_type || "butt45",
+            profile_head: effProfile(d, "profile_head", "head"),
+            profile_base: effProfile(d, "profile_base", "base"),
+            profile_hinge_stile: effProfile(d, "profile_hinge_stile", "hinge"),
+            profile_lock_stile: effProfile(d, "profile_lock_stile", "lock"),
             scale_note: d.scale_note || "1:30",
             notes: d.notes || "",
             hardware: stripKeys(d.hardware || []).map((h) => ({
@@ -353,6 +385,22 @@ export const ProductionPlansPanel = () => {
                             {PRODUCTION_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
+                    <div>
+                        <label className={labelCls}>Usinage par</label>
+                        <select value={form.machining_by} data-testid="pp-machining-by"
+                            onChange={(e) => setForm((f) => ({ ...f, machining_by: e.target.value }))}
+                            className={`${inputCls} bg-white`}>
+                            {INSTALL_PARTIES.map((p) => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Installation quincaillerie par</label>
+                        <select value={form.installer} data-testid="pp-installer"
+                            onChange={(e) => setForm((f) => ({ ...f, installer: e.target.value }))}
+                            className={`${inputCls} bg-white`}>
+                            {INSTALL_PARTIES.map((p) => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                    </div>
                 </div>
 
                 {/* Detail pages toggles */}
@@ -416,7 +464,7 @@ export const ProductionPlansPanel = () => {
                                                 <div>
                                                     <label className={labelCls}>Série</label>
                                                     <select value={d.series} data-testid={`pp-door-series-${idx}`}
-                                                        onChange={(e) => updateDoor(d._key, "series", e.target.value)}
+                                                        onChange={(e) => changeSeries(d._key, e.target.value)}
                                                         className={`${inputCls} bg-white`}>
                                                         {PRODUCTION_SERIES.map((s) => <option key={s} value={s}>{s}</option>)}
                                                     </select>
@@ -475,11 +523,44 @@ export const ProductionPlansPanel = () => {
                                                         onChange={(e) => updateDoor(d._key, "finish_int", e.target.value)}
                                                         className={inputCls} />
                                                 </div>
+                                                <div>
+                                                    <label className={labelCls}>Type de charnière</label>
+                                                    <select value={d.hinge_type || "butt45"} data-testid={`pp-door-hingetype-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "hinge_type", e.target.value)}
+                                                        className={`${inputCls} bg-white`}>
+                                                        {HINGE_TYPES.map((h) => <option key={h.v} value={h.v}>{h.lbl}</option>)}
+                                                    </select>
+                                                </div>
                                                 <div className="sm:col-span-2">
-                                                    <label className={labelCls}>Charnières / pentures</label>
+                                                    <label className={labelCls}>Charnières / pentures (détail)</label>
                                                     <input type="text" value={d.hinges}
                                                         onChange={(e) => updateDoor(d._key, "hinges", e.target.value)}
                                                         placeholder="Ex : 2 charnières continues HD" className={inputCls} />
+                                                </div>
+                                            </div>
+
+                                            {/* Aluminium profiles (real dimensions from inventory) */}
+                                            <div>
+                                                <label className={labelCls}>Profilés d&apos;aluminium (dimensions réelles A.T. Fabrication)</label>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    {[
+                                                        ["Profilé tête", "profile_head", "head", catalog?.heads],
+                                                        ["Profilé base", "profile_base", "base", catalog?.bases],
+                                                        ["Montant charnière", "profile_hinge_stile", "hinge", catalog?.stiles],
+                                                        ["Montant serrure/central", "profile_lock_stile", "lock", catalog?.stiles],
+                                                    ].map(([lbl, field, key, opts]) => (
+                                                        <div key={field}>
+                                                            <label className={labelCls}>{lbl}</label>
+                                                            <select value={effProfile(d, field, key)}
+                                                                data-testid={`pp-door-${field}-${idx}`}
+                                                                onChange={(e) => updateDoor(d._key, field, e.target.value)}
+                                                                className={`${inputCls} bg-white`}>
+                                                                {(opts || []).map((o) => (
+                                                                    <option key={o.code} value={o.code}>{optLabel(o)}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
 

@@ -242,6 +242,12 @@ export const PRODUCTION_FINISHES = [
     "Anodisé clair", "Noir", "Bronze", "Dark Bronze", "Champagne",
     "Mill finish", "Sur mesure",
 ];
+export const HINGE_TYPES = [
+    { v: "butt45", lbl: "Charnière 4½\" (paumelles)" },
+    { v: "continue", lbl: "Charnière continue" },
+    { v: "none", lbl: "Aucune / autre" },
+];
+export const INSTALL_PARTIES = ["Portech", "A.T. Fabrication"];
 
 export const emptyHardwareLine = () => ({
     _key: newKey(),
@@ -263,6 +269,7 @@ export const emptyProductionDoor = () => ({
     finish_int: "Anodisé clair",
     glass: "VT6 · 6mm trempé clair",
     hinges: "",
+    hinge_type: "butt45",
     scale_note: "1:30",
     hardware: [emptyHardwareLine()],
     notes: "",
@@ -279,6 +286,8 @@ export const emptyProductionPlan = () => ({
     client_address: "",
     client_contact: "",
     client_phone: "",
+    machining_by: "A.T. Fabrication",
+    installer: "Portech",
     include_plan_details: true,
     include_section_details: true,
     include_anchors: true,

@@ -45,6 +45,11 @@ class DoorPlan(BaseModel):
     finish_int: str = ""
     glass: str = ""
     hinges: str = ""
+    hinge_type: Literal["butt45", "continue", "none"] = "butt45"
+    profile_head: str = ""
+    profile_base: str = ""
+    profile_hinge_stile: str = ""
+    profile_lock_stile: str = ""
     scale_note: str = "1:30"
     hardware: List[HardwareLine] = Field(default_factory=list)
     notes: str = ""
@@ -61,6 +66,8 @@ class ProductionPlanIn(BaseModel):
     client_address: str = ""
     client_contact: str = ""
     client_phone: str = ""
+    machining_by: str = "A.T. Fabrication"
+    installer: str = "Portech"
     include_plan_details: bool = True
     include_section_details: bool = True
     include_anchors: bool = True
@@ -89,6 +96,25 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             upsert=True, return_document=True,
         )
         return _format_number(year, counter.get("seq") or 1)
+
+    @router.get("/production-plans/profile-catalog")
+    async def profile_catalog(_: dict = Depends(auth_dep)):
+        """Aluminium profile options (per element) + per-series defaults."""
+        from at_profile_library import PROFILES
+        from erp_pdf_production import SERIES_DEFAULT_PROFILES
+
+        def opt(code):
+            p = PROFILES[code]
+            return {"code": code, "label": p["label"],
+                    "face_mm": round(p["face_w"], 1),
+                    "face_in": round(p["face_w"] / 25.4, 3)}
+
+        return {
+            "heads": [opt(k) for k in ("ATT1005", "ATB1000")],
+            "bases": [opt(k) for k in ("ATB1000", "ATB2000")],
+            "stiles": [opt(k) for k in ("ATV1010", "ATV1015", "ATV2010", "ATV2015")],
+            "defaults": SERIES_DEFAULT_PROFILES,
+        }
 
     @router.get("/production-plans", response_model=List[ProductionPlan])
     async def list_plans(_: dict = Depends(auth_dep)):
