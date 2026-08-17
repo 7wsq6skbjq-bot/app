@@ -264,3 +264,5 @@ User language: **French**.
 - MAJ 2026-08-17 (Dessins de production, lot 5) : barre anti-panique horizontale sur battant actif (panic_bar/panic_height_in, std 40po modifiable) ; cote Fab. auto = ouverture + jeu configurable (fab_auto/fab_allowance_in au niveau projet, override manuel par porte toujours possible).
 
 - MAJ 2026-08-17 (Dessins de production, lot 6) : cote hauteur de poignee corrigee - mesuree du bas de la porte au BAS de la poignee (la poignee s etend vers le haut ; 9po/12po = meme bas, fin plus haute).
+
+- MAJ 2026-08-17 (Dessins de production, lot 7) : cotes de quincaillerie reorganisees en colonnes espacees au-dessus du vitrage (vers le centre du battant) - plus de chevauchement avec la bulle de detail ni entre elles. Hauteur poignee + longueur empilees en colonne 1, serrure en colonne 2.

@@ -672,17 +672,26 @@ def _elevation_page(c, plan, door, page_no):
 
     gap = 3
     if is_pair:
+        lw2 = (dw - gap) / 2
         active = door.get("active_leaf") or "right"
         cxm = ox + dw / 2
         lx_right = cxm + gap / 2 + lock_pt * 0.5
         lx_left = cxm - gap / 2 - lock_pt * 0.5
         lock_x = lx_right if active == "right" else lx_left
         handle_xs = [lx_left, lx_right] if door.get("handle_both") else [lock_x]
+        ax0, ax1 = (ox + lw2 + gap, ox + dw) if active == "right" else (ox, ox + lw2)
     else:
         hl = (door.get("handing") or "MD").upper() in ("MD", "MGR")
         lock_x = (ox + dw - lock_pt * 0.5) if hl else (ox + lock_pt * 0.5)
         handle_xs = [lock_x]
-    dim_x = min(lock_x + 22, ox + dw + fo + 4)
+        ax0, ax1 = ox, ox + dw
+
+    # dimension columns over the glass (toward the leaf centre), spaced apart so
+    # they never overlap each other nor the frame-edge detail bubbles.
+    leaf_c = (ax0 + ax1) / 2
+    ddir = 1 if leaf_c >= lock_x else -1
+    dcol1 = max(ax0 + 6, min(ax1 - 6, lock_x + ddir * 22))   # handle heights (stacked)
+    dcol2 = max(ax0 + 6, min(ax1 - 6, lock_x + ddir * 44))   # lock height (separate)
 
     if handle_h > 0:
         hy0 = oy + handle_h * scale               # bottom of the handle (from door bottom)
@@ -699,8 +708,8 @@ def _elevation_page(c, plan, door, page_no):
             c.line(hxp, hy1, hxp + off, hy1)
             c.circle(hxp, hy0, 1.6, fill=1, stroke=0)
             c.circle(hxp, hy1, 1.6, fill=1, stroke=0)
-        _dim_v(c, oy, hy0, dim_x, f"{_dual(handle_h)}")     # door bottom -> handle bottom
-        _dim_v(c, hy0, hy1, dim_x + 16, f"{_dual(handle_len)}")
+        _dim_v(c, oy, hy0, dcol1, f"{_dual(handle_h)}")     # door bottom -> handle bottom
+        _dim_v(c, hy0, hy1, dcol1, f"{_dual(handle_len)}")  # handle length (stacked above)
 
     if lock_h > 0:
         ly = oy + lock_h * scale
@@ -708,7 +717,7 @@ def _elevation_page(c, plan, door, page_no):
         c.rect(lock_x - 3, ly - 5, 6, 10, fill=1, stroke=0)
         c.setFillColor(colors.white)
         c.circle(lock_x, ly, 1.6, fill=1, stroke=0)
-        _dim_v(c, oy, ly, dim_x + 32, f"{_dual(lock_h)}")
+        _dim_v(c, oy, ly, dcol2, f"{_dual(lock_h)}")
 
     # panic bar (barre anti-panique) — horizontal push bar on the active leaf
     if door.get("panic_bar"):
