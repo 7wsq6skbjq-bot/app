@@ -55,6 +55,23 @@ class DoorPlan(BaseModel):
     lock_height_in: float = 40
     panic_bar: bool = False
     panic_height_in: float = 40
+    no_hardware: bool = False
+    show_handle: bool = True
+    show_lock: bool = True
+    lever: bool = False
+    lever_height_in: float = 40
+    push_paddle: bool = False
+    paddle_height_in: float = 40
+    protection_plate: bool = False
+    plate_height_in: float = 40
+    flush_bolt: bool = False
+    handle_leaf: Literal["active", "inactive"] = "active"
+    lock_leaf: Literal["active", "inactive"] = "active"
+    lever_leaf: Literal["active", "inactive"] = "active"
+    paddle_leaf: Literal["active", "inactive"] = "active"
+    plate_leaf: Literal["active", "inactive"] = "active"
+    panic_leaf: Literal["active", "inactive"] = "active"
+    flush_leaf: Literal["active", "inactive"] = "inactive"
     undercut_mm: float = 17.5
     finish_ext: str = ""
     finish_int: str = ""
@@ -100,6 +117,17 @@ class ProductionPlan(ProductionPlanIn):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class ProductionHardwareIn(BaseModel):
+    name: str = Field("", max_length=120)
+    part_number: str = Field("", max_length=60)
+    category: str = Field("", max_length=60)
+
+
+class ProductionHardware(ProductionHardwareIn):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 def _format_number(year: int, seq: int) -> str:
     return f"PLAN-{year}-{seq:03d}"
 
@@ -114,6 +142,62 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             upsert=True, return_document=True,
         )
         return _format_number(year, counter.get("seq") or 1)
+
+    async def _sync_hardware_catalog(doors: list) -> None:
+        """Auto-add any new hardware descriptions used on a plan to the catalog."""
+        for d in doors or []:
+            for hw in (d.get("hardware") or []):
+                name = (hw.get("description") or "").strip()
+                if not name:
+                    continue
+                existing = await db.erp_production_hardware.find_one({"name": name})
+                if not existing:
+                    item = ProductionHardware(
+                        name=name, part_number=(hw.get("part_number") or "").strip())
+                    await db.erp_production_hardware.insert_one(item.model_dump(mode="json"))
+
+    # ── hardware catalog (searchable dropdown source) ──────────────
+    @router.get("/production-hardware", response_model=List[ProductionHardware])
+    async def list_hardware(_: dict = Depends(auth_dep)):
+        cur = db.erp_production_hardware.find({}, {"_id": 0}).sort("name", 1)
+        return [ProductionHardware(**d) async for d in cur]
+
+    @router.post("/production-hardware", response_model=ProductionHardware, status_code=201)
+    async def create_hardware(data: ProductionHardwareIn, _: dict = Depends(auth_dep)):
+        name = (data.name or "").strip()
+        if not name:
+            raise HTTPException(400, "Le nom est requis.")
+        existing = await db.erp_production_hardware.find_one({"name": name}, {"_id": 0})
+        if existing:
+            patch = {"part_number": data.part_number.strip(), "category": data.category.strip()}
+            await db.erp_production_hardware.update_one({"id": existing["id"]}, {"$set": patch})
+            existing.update(patch)
+            return ProductionHardware(**existing)
+        item = ProductionHardware(name=name,
+                                  part_number=data.part_number.strip(),
+                                  category=data.category.strip())
+        await db.erp_production_hardware.insert_one(item.model_dump(mode="json"))
+        return item
+
+    @router.put("/production-hardware/{item_id}", response_model=ProductionHardware)
+    async def update_hardware(item_id: str, data: ProductionHardwareIn,
+                              _: dict = Depends(auth_dep)):
+        existing = await db.erp_production_hardware.find_one({"id": item_id}, {"_id": 0})
+        if not existing:
+            raise HTTPException(404, "Quincaillerie introuvable.")
+        patch = {"name": (data.name or "").strip(),
+                 "part_number": data.part_number.strip(),
+                 "category": data.category.strip()}
+        await db.erp_production_hardware.update_one({"id": item_id}, {"$set": patch})
+        existing.update(patch)
+        return ProductionHardware(**existing)
+
+    @router.delete("/production-hardware/{item_id}", status_code=204)
+    async def delete_hardware(item_id: str, _: dict = Depends(auth_dep)):
+        res = await db.erp_production_hardware.delete_one({"id": item_id})
+        if not res.deleted_count:
+            raise HTTPException(404, "Quincaillerie introuvable.")
+        return Response(status_code=204)
 
     @router.get("/production-plans/profile-catalog")
     async def profile_catalog(_: dict = Depends(auth_dep)):
@@ -143,6 +227,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
     async def create_plan(data: ProductionPlanIn, _: dict = Depends(auth_dep)):
         plan = ProductionPlan(**data.model_dump(), plan_number=await _next_number())
         await db.erp_production_plans.insert_one(plan.model_dump(mode="json"))
+        await _sync_hardware_catalog(plan.model_dump(mode="json").get("doors") or [])
         return plan
 
     @router.get("/production-plans/{plan_id}", response_model=ProductionPlan)
@@ -161,6 +246,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         await db.erp_production_plans.update_one(
             {"id": plan_id}, {"$set": data.model_dump(mode="json")},
         )
+        await _sync_hardware_catalog(data.model_dump(mode="json").get("doors") or [])
         doc = await db.erp_production_plans.find_one({"id": plan_id}, {"_id": 0})
         return ProductionPlan(**doc)
 

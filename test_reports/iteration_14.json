@@ -1,0 +1,22 @@
+{
+  "summary": "Iteration 14 — validated the new Production-Plans (Dessins de production) module. Backend: 9/9 pytest cases pass covering hardware-catalog CRUD (create, upsert-on-duplicate-name, update, delete), production-plan create/update round-trip persistence for ALL new door fields (no_hardware, show_handle, show_lock, lever, lever_height_in, push_paddle, paddle_height_in, protection_plate, plate_height_in, flush_bolt, leaf_active_width_in, leaf_inactive_width_in), auto-sync of hardware descriptions into the catalog after save, preview-pdf and saved-plan pdf endpoints both returning 200 application/pdf. Frontend: end-to-end flow verified via Playwright — login → GESTION → Fabrication → Dessins de production; hardware-catalog card add & delete work; new plan with expanded door exposes ALL 8 toggle testids (pp-door-showhandle-0, pp-door-showlock-0, pp-door-lever-0, pp-door-paddle-0, pp-door-plate-0, pp-door-flushbolt-0, pp-door-panic-0, pp-door-nohw-0); toggling lever/paddle/plate/panic reveals the corresponding height inputs (pp-door-leverh-0 / -paddleh-0 / -plateh-0 / -panich-0); typing an existing catalog name into pp-hw-desc-0 auto-fills the N° pièce field (autofill returned AUTOPN-42 as expected); pp-save produces a success toast and the plan appears in pp-list-table; no JS pageerrors observed on the panel. PDF preview button opens a PDF (backend endpoint already asserted 200 application/pdf by pytest). Test data (TEST_UI_* plans and hardware) cleaned up via API afterwards.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_production_plans.py",
+    "/app/test_reports/pytest/production_plans.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ProductionPlansPanel.jsx is 1083 lines — split into sub-components (DoorEditor, HardwareCatalogCard, PlansList) for maintainability.",
+    "The datalist #pp-hw-catalog is shared but pp-hw-desc-${idx} uses door index (not hardware index), so multiple hardware rows on the same door share the same testid. Fine for tests targeting row 0 but consider `pp-hw-desc-${dk}-${hk}` for future robustness."
+  ],
+  "updated_files": ["/app/backend/tests/test_production_plans.py"],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "100% — all data-testids present, all flows exercised"},
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created and later removed: hardware TEST_HW_Poignee_ABC, TEST_UI_HW_XYZ, TEST_UI_HW_AUTO; plans TEST_UI_PP (PLAN-2026-009) and TEST_UI_PDF (PLAN-2026-010). All deleted post-test.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file /app/backend/tests/test_production_plans.py covers hardware catalog CRUD, plan field persistence, auto-sync, and both PDF endpoints. Frontend has robust data-testid coverage on pp-* elements. AdminLogin requires ~1.5s wait after the page loads before filling — the initial /auth/me check races the form submission if you don't wait.",
+  "rca_of_the_issue": "No functional issues found."
+}

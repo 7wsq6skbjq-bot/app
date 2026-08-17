@@ -30,6 +30,9 @@ export const ProductionPlansPanel = () => {
     const { http, getToken } = useAuth();
     const [plans, setPlans] = useState([]);
     const [catalog, setCatalog] = useState(null);
+    const [hwCatalog, setHwCatalog] = useState([]);
+    const [hwForm, setHwForm] = useState({ name: "", part_number: "" });
+    const [showHwMgr, setShowHwMgr] = useState(false);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState(emptyProductionPlan());
     const [editingId, setEditingId] = useState(null);
@@ -77,9 +80,58 @@ export const ProductionPlansPanel = () => {
         return () => { cancelled = true; };
     }, [http]);
 
+    const reloadHwCatalog = useCallback(async () => {
+        try {
+            const { data } = await http.get("/admin/production-hardware");
+            setHwCatalog(Array.isArray(data) ? data : []);
+        } catch (_) { /* silent */ }
+    }, [http]);
+
+    useEffect(() => { reloadHwCatalog(); }, [reloadHwCatalog]);
+
+    const saveHwCatalogItem = async () => {
+        const name = (hwForm.name || "").trim();
+        if (!name) return;
+        try {
+            await http.post("/admin/production-hardware",
+                { name, part_number: (hwForm.part_number || "").trim() });
+            setHwForm({ name: "", part_number: "" });
+            await reloadHwCatalog();
+        } catch (e) {
+            setErrorMsg(e?.response?.data?.detail || "Erreur d'ajout au catalogue.");
+        }
+    };
+
+    const deleteHwCatalogItem = async (id) => {
+        try {
+            await http.delete(`/admin/production-hardware/${id}`);
+            await reloadHwCatalog();
+        } catch (_) { /* silent */ }
+    };
+
+    // when a description matches a catalog entry, auto-fill the part number
+    const onHwDescription = (dk, hk, value) => {
+        updateHw(dk, hk, "description", value);
+        const match = hwCatalog.find(
+            (it) => (it.name || "").toLowerCase() === (value || "").trim().toLowerCase());
+        if (match && match.part_number) updateHw(dk, hk, "part_number", match.part_number);
+    };
+
     const effProfile = (d, field, key) =>
         d[field] || catalog?.defaults?.[d.series]?.[key] || "";
     const optLabel = (o) => `${o.code} · ${o.face_mm} mm`;
+
+    // per-item leaf selector (pairs only) — choose active/inactive leaf
+    const leafSelect = (d, field, testid) => (
+        d.config === "pair" ? (
+            <select value={d[field] || "active"} data-testid={testid}
+                onChange={(e) => updateDoor(d._key, field, e.target.value)}
+                className="ml-1 px-1 py-0.5 border border-[#dde5f0] text-xs bg-white cursor-pointer">
+                <option value="active">actif</option>
+                <option value="inactive">inactif</option>
+            </select>
+        ) : null
+    );
 
     // ─── door helpers ────────────────────────────────────
     const addDoor = () => {
@@ -189,6 +241,23 @@ export const ProductionPlansPanel = () => {
             lock_height_in: Number(d.lock_height_in ?? 40) || 0,
             panic_bar: !!d.panic_bar,
             panic_height_in: Number(d.panic_height_in ?? 40) || 0,
+            no_hardware: !!d.no_hardware,
+            show_handle: d.show_handle !== false,
+            show_lock: d.show_lock !== false,
+            lever: !!d.lever,
+            lever_height_in: Number(d.lever_height_in ?? 40) || 0,
+            push_paddle: !!d.push_paddle,
+            paddle_height_in: Number(d.paddle_height_in ?? 40) || 0,
+            protection_plate: !!d.protection_plate,
+            plate_height_in: Number(d.plate_height_in ?? 40) || 0,
+            flush_bolt: !!d.flush_bolt,
+            handle_leaf: d.handle_leaf || "active",
+            lock_leaf: d.lock_leaf || "active",
+            lever_leaf: d.lever_leaf || "active",
+            paddle_leaf: d.paddle_leaf || "active",
+            plate_leaf: d.plate_leaf || "active",
+            panic_leaf: d.panic_leaf || "active",
+            flush_leaf: d.flush_leaf || "inactive",
             undercut_mm: Number(d.undercut_mm ?? 17.5) || 0,
             finish_ext: d.finish_ext || "",
             finish_int: d.finish_int || "",
@@ -683,26 +752,109 @@ export const ProductionPlansPanel = () => {
                                                             className={`${inputCls} text-right`} />
                                                     </div>
                                                 </div>
-                                                <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer mt-2">
-                                                    <input type="checkbox" data-testid={`pp-door-handleboth-${idx}`}
-                                                        checked={!!d.handle_both}
-                                                        onChange={(e) => updateDoor(d._key, "handle_both", e.target.checked)} />
-                                                    Poignée sur les 2 battants (paire)
-                                                </label>
-                                                <div className="flex flex-wrap items-center gap-3 mt-2">
-                                                    <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
-                                                        <input type="checkbox" data-testid={`pp-door-panic-${idx}`}
-                                                            checked={!!d.panic_bar}
-                                                            onChange={(e) => updateDoor(d._key, "panic_bar", e.target.checked)} />
-                                                        Barre anti-panique (battant actif)
-                                                    </label>
-                                                    <label className="inline-flex items-center gap-1 text-sm text-[#0c182b]">
-                                                        Haut. barre (po)
-                                                        <input type="number" min="0" step="0.5" value={d.panic_height_in}
-                                                            data-testid={`pp-door-panich-${idx}`}
-                                                            onChange={(e) => updateDoor(d._key, "panic_height_in", e.target.value)}
-                                                            className="w-20 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
-                                                    </label>
+                                                <div className="mt-3 border border-[#dde5f0] bg-[#f7f9fc] p-2 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] uppercase text-[#4b5d7a] font-bold tracking-wider">Afficher sur le dessin</span>
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#a31a1a] cursor-pointer font-medium">
+                                                            <input type="checkbox" data-testid={`pp-door-nohw-${idx}`}
+                                                                checked={!!d.no_hardware}
+                                                                onChange={(e) => updateDoor(d._key, "no_hardware", e.target.checked)} />
+                                                            Aucune quincaillerie
+                                                        </label>
+                                                    </div>
+                                                    <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 ${d.no_hardware ? "opacity-40 pointer-events-none" : ""}`}>
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-showhandle-${idx}`}
+                                                                checked={d.show_handle !== false}
+                                                                onChange={(e) => updateDoor(d._key, "show_handle", e.target.checked)} />
+                                                            Poignée
+                                                        </label>
+                                                        {d.show_handle !== false && leafSelect(d, "handle_leaf", `pp-door-handleleaf-${idx}`)}
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-handleboth-${idx}`}
+                                                                checked={!!d.handle_both}
+                                                                onChange={(e) => updateDoor(d._key, "handle_both", e.target.checked)} />
+                                                            Poignée sur 2 battants
+                                                        </label>
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-showlock-${idx}`}
+                                                                checked={d.show_lock !== false}
+                                                                onChange={(e) => updateDoor(d._key, "show_lock", e.target.checked)} />
+                                                            Serrure / cylindre
+                                                        </label>
+                                                        {d.show_lock !== false && leafSelect(d, "lock_leaf", `pp-door-lockleaf-${idx}`)}
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-lever-${idx}`}
+                                                                checked={!!d.lever}
+                                                                onChange={(e) => updateDoor(d._key, "lever", e.target.checked)} />
+                                                            Levier (Adams Rite)
+                                                        </label>
+                                                        {d.lever && leafSelect(d, "lever_leaf", `pp-door-leverleaf-${idx}`)}
+                                                        {d.lever && (
+                                                            <label className="inline-flex items-center gap-1 text-xs text-[#4b5d7a]">
+                                                                Haut. (po)
+                                                                <input type="number" min="0" step="0.5" value={d.lever_height_in}
+                                                                    data-testid={`pp-door-leverh-${idx}`}
+                                                                    onChange={(e) => updateDoor(d._key, "lever_height_in", e.target.value)}
+                                                                    className="w-16 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
+                                                            </label>
+                                                        )}
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-paddle-${idx}`}
+                                                                checked={!!d.push_paddle}
+                                                                onChange={(e) => updateDoor(d._key, "push_paddle", e.target.checked)} />
+                                                            Palette de relâche
+                                                        </label>
+                                                        {d.push_paddle && leafSelect(d, "paddle_leaf", `pp-door-paddleleaf-${idx}`)}
+                                                        {d.push_paddle && (
+                                                            <label className="inline-flex items-center gap-1 text-xs text-[#4b5d7a]">
+                                                                Haut. (po)
+                                                                <input type="number" min="0" step="0.5" value={d.paddle_height_in}
+                                                                    data-testid={`pp-door-paddleh-${idx}`}
+                                                                    onChange={(e) => updateDoor(d._key, "paddle_height_in", e.target.value)}
+                                                                    className="w-16 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
+                                                            </label>
+                                                        )}
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-plate-${idx}`}
+                                                                checked={!!d.protection_plate}
+                                                                onChange={(e) => updateDoor(d._key, "protection_plate", e.target.checked)} />
+                                                            Plaque de protection (KROME)
+                                                        </label>
+                                                        {d.protection_plate && leafSelect(d, "plate_leaf", `pp-door-plateleaf-${idx}`)}
+                                                        {d.protection_plate && (
+                                                            <label className="inline-flex items-center gap-1 text-xs text-[#4b5d7a]">
+                                                                Haut. (po)
+                                                                <input type="number" min="0" step="0.5" value={d.plate_height_in}
+                                                                    data-testid={`pp-door-plateh-${idx}`}
+                                                                    onChange={(e) => updateDoor(d._key, "plate_height_in", e.target.value)}
+                                                                    className="w-16 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
+                                                            </label>
+                                                        )}
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-flushbolt-${idx}`}
+                                                                checked={!!d.flush_bolt}
+                                                                onChange={(e) => updateDoor(d._key, "flush_bolt", e.target.checked)} />
+                                                            Verrou affleuré
+                                                        </label>
+                                                        {d.flush_bolt && leafSelect(d, "flush_leaf", `pp-door-flushleaf-${idx}`)}
+                                                        <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer">
+                                                            <input type="checkbox" data-testid={`pp-door-panic-${idx}`}
+                                                                checked={!!d.panic_bar}
+                                                                onChange={(e) => updateDoor(d._key, "panic_bar", e.target.checked)} />
+                                                            Barre anti-panique
+                                                        </label>
+                                                        {d.panic_bar && leafSelect(d, "panic_leaf", `pp-door-panicleaf-${idx}`)}
+                                                        {d.panic_bar && (
+                                                            <label className="inline-flex items-center gap-1 text-xs text-[#4b5d7a]">
+                                                                Haut. barre (po)
+                                                                <input type="number" min="0" step="0.5" value={d.panic_height_in}
+                                                                    data-testid={`pp-door-panich-${idx}`}
+                                                                    onChange={(e) => updateDoor(d._key, "panic_height_in", e.target.value)}
+                                                                    className="w-16 px-2 py-1 border border-[#dde5f0] text-sm text-right" />
+                                                            </label>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -736,9 +888,10 @@ export const ProductionPlansPanel = () => {
                                                                         className="w-full px-2 py-1 border border-[#dde5f0] text-sm text-right" />
                                                                 </td>
                                                                 <td className="px-1 py-1">
-                                                                    <input type="text" value={h.description}
-                                                                        onChange={(e) => updateHw(d._key, h._key, "description", e.target.value)}
-                                                                        placeholder="Ex : Barre panique 8400 AR"
+                                                                    <input type="text" value={h.description} list="pp-hw-catalog"
+                                                                        data-testid={`pp-hw-desc-${idx}`}
+                                                                        onChange={(e) => onHwDescription(d._key, h._key, e.target.value)}
+                                                                        placeholder="Choisir ou taper — ex : Barre panique 8400 AR"
                                                                         className="w-full px-2 py-1 border border-[#dde5f0] text-sm" />
                                                                 </td>
                                                                 <td className="px-1 py-1">
@@ -785,6 +938,13 @@ export const ProductionPlansPanel = () => {
                     <datalist id="pp-finishes">
                         {PRODUCTION_FINISHES.map((f) => <option key={f} value={f} />)}
                     </datalist>
+                    <datalist id="pp-hw-catalog">
+                        {hwCatalog.map((it) => (
+                            <option key={it.id} value={it.name}>
+                                {it.part_number ? `${it.part_number}` : ""}
+                            </option>
+                        ))}
+                    </datalist>
                     <div className="mt-2 text-xs text-[#4b5d7a]">
                         {form.doors.length} type(s) de porte · {totalDoors} unité(s) au total
                     </div>
@@ -809,6 +969,73 @@ export const ProductionPlansPanel = () => {
                         </button>
                     )}
                 </div>
+            </div>
+
+            {/* ─── Hardware catalog manager ─────────────────── */}
+            <div className="bg-white border border-[#dde5f0] p-4" data-testid="pp-hw-catalog-card">
+                <button type="button" onClick={() => setShowHwMgr((v) => !v)}
+                    className="w-full flex items-center gap-2 text-left" data-testid="pp-hw-mgr-toggle">
+                    {showHwMgr ? <ChevronDown className="w-4 h-4 text-[#4b5d7a]" />
+                              : <ChevronRight className="w-4 h-4 text-[#4b5d7a]" />}
+                    <h3 className="tech-stamp text-[#0c182b] font-bold">Catalogue de quincaillerie</h3>
+                    <span className="text-xs text-[#4b5d7a]">
+                        {hwCatalog.length} produit(s) · réutilisables dans le menu déroulant
+                    </span>
+                </button>
+                {showHwMgr && (
+                    <div className="mt-3 space-y-3">
+                        <div className="flex flex-wrap items-end gap-2">
+                            <div className="flex-1 min-w-[200px]">
+                                <label className={labelCls}>Nom / description</label>
+                                <input type="text" value={hwForm.name} data-testid="pp-hw-new-name"
+                                    onChange={(e) => setHwForm((f) => ({ ...f, name: e.target.value }))}
+                                    placeholder="Ex : Barre panique Von Duprin 99" className={inputCls} />
+                            </div>
+                            <div className="w-40">
+                                <label className={labelCls}>N° de pièce</label>
+                                <input type="text" value={hwForm.part_number} data-testid="pp-hw-new-pn"
+                                    onChange={(e) => setHwForm((f) => ({ ...f, part_number: e.target.value }))}
+                                    placeholder="Ex : 9957" className={`${inputCls} font-mono`} />
+                            </div>
+                            <button onClick={saveHwCatalogItem} data-testid="pp-hw-add"
+                                className="btn-secondary !py-2 !px-3 !text-sm">
+                                <Plus className="w-4 h-4" /> Ajouter
+                            </button>
+                        </div>
+                        {hwCatalog.length === 0 ? (
+                            <div className="text-sm italic text-[#4b5d7a]">
+                                Aucun produit. Les descriptions saisies sur un plan s&apos;ajoutent aussi automatiquement ici.
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm" data-testid="pp-hw-catalog-table">
+                                    <thead className="text-[10px] uppercase text-[#4b5d7a] border-b border-[#dde5f0]">
+                                        <tr>
+                                            <th className="text-left px-2 py-1.5">Nom / description</th>
+                                            <th className="text-left px-2 py-1.5 w-40">N° de pièce</th>
+                                            <th className="px-2 py-1.5 w-10"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {hwCatalog.map((it) => (
+                                            <tr key={it.id} className="border-b border-[#f3f6fb] hover:bg-[#f7f9fc]">
+                                                <td className="px-2 py-1.5 text-[#0c182b]">{it.name}</td>
+                                                <td className="px-2 py-1.5 font-mono text-[#4b5d7a]">{it.part_number || "—"}</td>
+                                                <td className="px-2 py-1.5 text-right">
+                                                    <button onClick={() => deleteHwCatalogItem(it.id)}
+                                                        className="p-1 hover:bg-[#fde7e7] text-[#a31a1a]" title="Supprimer"
+                                                        data-testid={`pp-hw-del-${it.id}`}>
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* ─── List ───────────────────────────────────── */}

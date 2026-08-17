@@ -128,6 +128,158 @@ def _face_in(code, fallback=2.0):
     return (p["face_w"] / 25.4) if p else fallback
 
 
+# ── glass + parclose (moulure) sizing — reuse the Cut-List calculation ──
+def _glass_thickness_mm(door) -> float:
+    """Detect glass thickness: insulated series or thermos glass -> 25.4, else 6."""
+    s = (door.get("series") or "").upper().replace(" ", "")
+    if s.startswith("ATI"):
+        return 25.4
+    g = (door.get("glass") or "").lower()
+    if "thermo" in g or "25" in g or '1"' in g or "1 po" in g or "1po" in g:
+        return 25.4
+    return 6.0
+
+
+# Opening (rough) -> finished-leaf offsets (mm), per series — same values the
+# Cut-List / AT-order conversion uses (profile_catalog.SYSTEMS.offsets_mm).
+OPENING_TO_LEAF_OFFSET_MM = {
+    "AT1000":  {"width": 115.1, "height": 22.2},
+    "ATI1000": {"width": 115.1, "height": 22.2},
+    "AT2000":  {"width": 191.3, "height": 22.2},
+    "ATI2000": {"width": 191.3, "height": 22.2},
+}
+
+
+def _leaf_offset(series):
+    s = (series or "AT1000").upper().replace(" ", "").replace("_", "")
+    if s.startswith("ATI2000"):
+        return OPENING_TO_LEAF_OFFSET_MM["ATI2000"]
+    if s.startswith("ATI1000"):
+        return OPENING_TO_LEAF_OFFSET_MM["ATI1000"]
+    if s.startswith("AT2000"):
+        return OPENING_TO_LEAF_OFFSET_MM["AT2000"]
+    return OPENING_TO_LEAF_OFFSET_MM["AT1000"]
+
+
+def _glass_moulure(door, leaf_w_mm: float, leaf_h_mm: float):
+    """Return glass H/W + parclose V/H lengths (mm) using the SAME formula as
+    the Cut-List module. `leaf_w_mm`/`leaf_h_mm` must already be the FINISHED
+    leaf dimensions (opening minus the per-series offset)."""
+    try:
+        from cut_door_breakdown import decompose_at_door
+        gt = _glass_thickness_mm(door)
+        bd = decompose_at_door(
+            max(float(leaf_w_mm), 1), max(float(leaf_h_mm), 1),
+            series=door.get("series") or "AT1000",
+            glass_thickness_mm=gt, qty=1)
+        glass = mv = mh = None
+        for it in bd.items:
+            lbl = (it.get("label") or "").lower()
+            if it.get("item_type") == "glass":
+                glass = it
+            elif "parclose verticale" in lbl:
+                mv = it
+            elif "parclose horizontale" in lbl:
+                mh = it
+        return {
+            "gh": (glass or {}).get("length_mm", 0),
+            "gw": (glass or {}).get("width_mm", 0),
+            "mv": (mv or {}).get("length_mm", 0),
+            "mh": (mh or {}).get("length_mm", 0),
+            "pn": (mv or {}).get("part_number") or "",
+            "gt": gt,
+        }
+    except Exception:
+        return None
+
+
+# ── drawn-hardware symbols (vector) ────────────────────────────────
+def _draw_lever(c, x, y, facing=1):
+    """Adams Rite style lever handle on a small escutcheon plate.
+    x = stile centre, y = lever centre height, facing +1 = arm toward glass."""
+    pw, ph = 8, 30
+    c.saveState()
+    c.setFillColor(colors.HexColor("#39414f"))
+    c.setStrokeColor(LINE)
+    c.setLineWidth(0.6)
+    c.roundRect(x - pw / 2, y - ph / 2, pw, ph, 2, fill=1, stroke=1)
+    c.setFillColor(colors.white)
+    c.circle(x, y + ph / 2 - 4, 1.1, fill=1, stroke=0)
+    c.circle(x, y - ph / 2 + 4, 1.1, fill=1, stroke=0)
+    # horizontal lever arm (tapered)
+    c.setStrokeColor(colors.HexColor("#1c2330"))
+    c.setLineCap(1)
+    c.setLineWidth(3.6)
+    c.line(x, y, x + facing * 15, y)
+    c.setLineWidth(2.2)
+    c.line(x + facing * 7, y, x + facing * 15, y)
+    c.restoreState()
+
+
+def _draw_paddle(c, x0, x1, y, hidden=False):
+    """Push paddle (palette de relâche) — a push pad on a mounting chassis.
+    `hidden` draws it as a dashed hidden line (behind-the-door, reverse hands)."""
+    w = min(max((x1 - x0) * 0.55, 26), 80)
+    cx = (x0 + x1) / 2
+    c.saveState()
+    c.setStrokeColor(LINE)
+    if hidden:
+        c.setDash(2, 2)
+        c.setLineWidth(0.8)
+        c.setFillColor(colors.white)
+        c.roundRect(x0, y - 6, x1 - x0, 12, 2, fill=0, stroke=1)   # chassis
+        c.roundRect(cx - w / 2, y - 4, w, 8, 3.5, fill=0, stroke=1)  # paddle
+    else:
+        c.setLineWidth(0.9)
+        c.setFillColor(colors.HexColor("#b9c2cf"))
+        c.roundRect(x0, y - 6, x1 - x0, 12, 2, fill=1, stroke=1)   # chassis rail
+        c.setFillColor(colors.HexColor("#8b98ab"))
+        c.roundRect(cx - w / 2, y - 4.5, w, 9, 3.5, fill=1, stroke=1)  # paddle pad
+    c.restoreState()
+    return w
+
+
+def _draw_protection_plate(c, cyl_x, meeting_x, y, ph_pts, toward):
+    """KROME protection plate. The cylinder hole sits over the ACTIVE leaf
+    cylinder (cyl_x); the body extends `toward` (+1/-1) across the meeting so it
+    rides ONTO the inactive leaf / frame (never split 50/50 on the meeting)."""
+    ph = max(ph_pts, 46)
+    top = y + ph * 0.30
+    bot = y - ph * 0.60
+    overlap = 15                       # how far it rides onto the inactive/frame
+    active_end = cyl_x - toward * 5     # just beyond the cylinder on the active side
+    far_end = meeting_x + toward * overlap
+    left = min(active_end, far_end)
+    right = max(active_end, far_end)
+    width = max(right - left, 12)
+    c.saveState()
+    c.setFillColor(colors.HexColor("#cdd4dd"))
+    c.setStrokeColor(LINE)
+    c.setLineWidth(0.7)
+    c.roundRect(left, bot, width, top - bot, 2.5, fill=1, stroke=1)
+    # cylinder hole (upper area, over the active-leaf cylinder)
+    c.setFillColor(colors.white)
+    c.circle(cyl_x, y + ph * 0.14, 2.6, fill=1, stroke=1)
+    # screw holes
+    c.setFillColor(colors.HexColor("#8a97a8"))
+    for yy in (top - 3, (y + bot) / 2, bot + 3):
+        c.circle(left + 3, yy, 0.8, fill=1, stroke=0)
+        c.circle(right - 3, yy, 0.8, fill=1, stroke=0)
+    c.restoreState()
+
+
+def _draw_flush_bolt(c, x, y):
+    """Flush bolt (verrou affleuré) faceplate + thumb-turn on the inactive leaf."""
+    c.saveState()
+    c.setFillColor(colors.HexColor("#5a6678"))
+    c.setStrokeColor(LINE)
+    c.setLineWidth(0.6)
+    c.roundRect(x - 2.6, y - 10, 5.2, 20, 1.4, fill=1, stroke=1)
+    c.setFillColor(colors.white)
+    c.circle(x, y, 1.3, fill=1, stroke=0)
+    c.restoreState()
+
+
 # ── unit / text helpers ────────────────────────────────────────────
 def _inch_fmt(v: float) -> str:
     """Format inches as a mixed fraction (nearest 1/16), e.g. 34.5 -> 34 1/2\"."""
@@ -151,6 +303,15 @@ def _dual(inches: float) -> str:
     except (TypeError, ValueError):
         return "—"
     return f'{inches * 25.4:.1f} [{_inch_fmt(inches)}]'
+
+
+def _dual_mm(mm) -> str:
+    """Return 'mm [inch]' from a millimetre value."""
+    try:
+        mm = float(mm)
+    except (TypeError, ValueError):
+        return "—"
+    return f'{mm:.1f} [{_inch_fmt(mm / 25.4)}]'
 
 
 _FR_MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
@@ -566,7 +727,7 @@ def _draw_leaf(c, x, y, lw, lh, glass_label, insulated,
         if glass_label:
             c.setFillColor(NAVY)
             c.setFont("Helvetica-Bold", 7)
-            c.drawCentredString(gx + gw / 2, gy + gh / 2 - 3, glass_label[:12])
+            c.drawCentredString(gx + gw / 2, gy + gh - 10, glass_label[:12])
     if insulated:
         c.setFillColor(NAVY_LIGHT)
         c.setFont("Helvetica-Oblique", 5.5)
@@ -699,37 +860,45 @@ def _elevation_page(c, plan, door, page_no):
     handle_len = _num("handle_length_in", 9.0)
     lock_h = _num("lock_height_in", 40.0)
     undercut = _num("undercut_mm", 17.5)
+    no_hw = bool(door.get("no_hardware"))
+    show_handle = (not no_hw) and door.get("show_handle", True)
+    show_lock = (not no_hw) and door.get("show_lock", True)
 
     gap = 3
-    if is_pair:
-        active = door.get("active_leaf") or "right"
-        lx_right = pair_meet + gap / 2 + lock_pt * 0.5
-        lx_left = pair_meet - gap / 2 - lock_pt * 0.5
-        lock_x = lx_right if active == "right" else lx_left
-        handle_xs = [lx_left, lx_right] if door.get("handle_both") else [lock_x]
-        lk_off = 1.125 * scale                       # lock 1⅛" from the meeting edge
-        lock_cx = (pair_meet + gap / 2 + lk_off) if active == "right" else (pair_meet - gap / 2 - lk_off)
-        ax0, ax1 = ((ox + pair_lwL + gap, ox + pair_lwL + gap + pair_lwR)
-                    if active == "right" else (ox, ox + pair_lwL))
-    else:
-        hl = (door.get("handing") or "MD").upper() in ("MD", "MGR")
-        lock_x = (ox + dw - lock_pt * 0.5) if hl else (ox + lock_pt * 0.5)
-        handle_xs = [lock_x]
-        lk_off = 1.125 * scale                       # lock 1⅛" from the strike edge
-        lock_cx = (ox + dw - lk_off) if hl else (ox + lk_off)
-        ax0, ax1 = ox, ox + dw
+    handing = (door.get("handing") or "MD").upper()
+    active = door.get("active_leaf") or "right"
+    hidden_push = handing in ("MGR", "MDR")   # reverse hands → push trim behind door
 
-    # dimension columns over the glass (toward the leaf centre), spaced apart so
-    # they never overlap each other nor the frame-edge detail bubbles.
-    leaf_c = (ax0 + ax1) / 2
-    ddir = 1 if leaf_c >= lock_x else -1
-    dcol1 = max(ax0 + 6, min(ax1 - 6, lock_x + ddir * 22))   # handle heights (stacked)
-    dcol2 = max(ax0 + 6, min(ax1 - 6, lock_x + ddir * 44))   # lock height (separate)
+    def _leaf_geom(role):
+        """Geometry for the leaf a given item sits on (role 'active'|'inactive').
+        Returns (x0, x1, meet_x, cyl_x, toward); toward points from the meeting/
+        strike edge outward (onto the other leaf / frame)."""
+        if is_pair:
+            side = active if role == "active" else ("left" if active == "right" else "right")
+            if side == "left":
+                return ox, ox + pair_lwL, pair_meet - gap / 2, pair_meet - gap / 2 - 1.125 * scale, 1
+            return ox + pair_lwL + gap, ox + dw, pair_meet + gap / 2, pair_meet + gap / 2 + 1.125 * scale, -1
+        hl = handing in ("MD", "MGR")   # hinge left ⇒ strike right
+        if hl:
+            return ox, ox + dw, ox + dw, ox + dw - 1.125 * scale, 1
+        return ox, ox + dw, ox, ox + 1.125 * scale, -1
 
-    if handle_h > 0:
-        hy0 = oy + handle_h * scale               # bottom of the handle (from door bottom)
+    def _dim_cols(x0, x1, cyl):
+        lc = (x0 + x1) / 2
+        d = 1 if lc >= cyl else -1
+        return (max(x0 + 6, min(x1 - 6, cyl + d * 22)),
+                max(x0 + 6, min(x1 - 6, cyl + d * 44)))
+
+    if show_handle and handle_h > 0:
+        hx0, hx1, _hm, hcyl, _tw = _leaf_geom(door.get("handle_leaf") or "active")
+        hdcol1, _ = _dim_cols(hx0, hx1, hcyl)
+        hy0 = oy + handle_h * scale
         lpt = max(handle_len * scale, 10)
-        hy1 = hy0 + lpt                            # handle extends upward
+        hy1 = hy0 + lpt
+        handle_xs = [hcyl]
+        if is_pair and door.get("handle_both"):
+            _, _, _, hcyl2, _ = _leaf_geom("inactive")
+            handle_xs = [hcyl, hcyl2]
         for hxp in handle_xs:
             if is_pair:
                 lc = (ox + pair_lwL / 2) if hxp < pair_meet else (ox + pair_lwL + gap + pair_lwR / 2)
@@ -745,42 +914,88 @@ def _elevation_page(c, plan, door, page_no):
             c.line(hxp, hy1, hxp + off, hy1)
             c.circle(hxp, hy0, 1.6, fill=1, stroke=0)
             c.circle(hxp, hy1, 1.6, fill=1, stroke=0)
-        _dim_v(c, oy, hy0, dcol1, f"{_dual(handle_h)}")     # door bottom -> handle bottom
-        _dim_v(c, hy0, hy1, dcol1, f"{_dual(handle_len)}")  # handle length (stacked above)
+        _dim_v(c, oy, hy0, hdcol1, f"{_dual(handle_h)}")
+        _dim_v(c, hy0, hy1, hdcol1, f"{_dual(handle_len)}")
 
-    if lock_h > 0:
+    if show_lock and lock_h > 0:
+        lx0, lx1, _lm, lcyl, _tw = _leaf_geom(door.get("lock_leaf") or "active")
+        _, ldcol2 = _dim_cols(lx0, lx1, lcyl)
         ly = oy + lock_h * scale
         c.setFillColor(NAVY)
-        c.rect(lock_cx - 3, ly - 5, 6, 10, fill=1, stroke=0)
+        c.rect(lcyl - 3, ly - 5, 6, 10, fill=1, stroke=0)
         c.setFillColor(colors.white)
-        c.circle(lock_cx, ly, 1.6, fill=1, stroke=0)
-        _dim_v(c, oy, ly, dcol2, f"{_dual(lock_h)}")
+        c.circle(lcyl, ly, 1.6, fill=1, stroke=0)
+        _dim_v(c, oy, ly, ldcol2, f"{_dual(lock_h)}")
 
-    # panic bar (barre anti-panique) — horizontal push bar on the active leaf
-    if door.get("panic_bar"):
+    # Adams Rite lever
+    if (not no_hw) and door.get("lever"):
+        vx0, vx1, _vm, vcyl, _tw = _leaf_geom(door.get("lever_leaf") or "active")
+        vdcol1, _ = _dim_cols(vx0, vx1, vcyl)
+        lv_h = _num("lever_height_in", 40.0)
+        lvy = oy + lv_h * scale
+        facing = 1 if (vx0 + vx1) / 2 >= vcyl else -1
+        _draw_lever(c, vcyl, lvy, facing)
+        _dim_v(c, oy, lvy, vdcol1, f"{_dual(lv_h)}")
+
+    # KROME protection plate — cylinder over its leaf, body rides onto the other
+    if (not no_hw) and door.get("protection_plate"):
+        px0, px1, pmeet, pcyl, ptoward = _leaf_geom(door.get("plate_leaf") or "active")
+        _, pdcol2 = _dim_cols(px0, px1, pcyl)
+        pl_h = _num("plate_height_in", 40.0)
+        ply = oy + pl_h * scale
+        _draw_protection_plate(c, pcyl, pmeet, ply, max(dh * 0.14, 46), ptoward)
+        _dim_v(c, oy, ply, pdcol2, f"{_dual(pl_h)}")
+
+    # push paddle (palette de relâche) — chosen leaf; hidden line for reverse hands
+    if (not no_hw) and door.get("push_paddle"):
+        qx0, qx1, _qm, qcyl, _tw = _leaf_geom(door.get("paddle_leaf") or "active")
+        qdcol1, _ = _dim_cols(qx0, qx1, qcyl)
+        pd_h = _num("paddle_height_in", 40.0)
+        pdy = oy + pd_h * scale
+        s0 = qx0 + max(hinge_pt, 8) + 3
+        s1 = qx1 - max(hinge_pt, 8) - 3
+        if s1 - s0 > 12:
+            _draw_paddle(c, s0, s1, pdy, hidden_push)
+            _dim_v(c, oy, pdy, qdcol1, f"{_dual(pd_h)}")
+
+    # flush bolts (verrou affleuré) — inactive leaf meeting stile (top & bottom)
+    if (not no_hw) and door.get("flush_bolt") and is_pair:
+        _, _, fmeet, _, ftoward = _leaf_geom(door.get("flush_leaf") or "inactive")
+        fb_x = fmeet + ftoward * (lock_inactive_pt * 0.5)
+        _draw_flush_bolt(c, fb_x, oy + dh - 14)
+        _draw_flush_bolt(c, fb_x, oy + 14)
+
+    # panic bar (barre anti-panique) — chosen leaf, edge to edge (touches both
+    # sides of that leaf); hidden line for reverse hands (MGR/MDR)
+    if (not no_hw) and door.get("panic_bar"):
+        nx0, nx1, _nm, ncyl, _tw = _leaf_geom(door.get("panic_leaf") or "active")
+        _, ndcol2 = _dim_cols(nx0, nx1, ncyl)
         ph = _num("panic_height_in", 40.0)
         py = oy + ph * scale
-        if is_pair:
-            if (door.get("active_leaf") or "right") == "right":
-                ax0, ax1 = ox + pair_lwL + gap, ox + pair_lwL + gap + pair_lwR
-            else:
-                ax0, ax1 = ox, ox + pair_lwL
-        else:
-            ax0, ax1 = ox, ox + dw
-        bx0 = ax0 + max(hinge_pt, 8) + 3
-        bx1 = ax1 - max(lock_pt, 8) - 3
-        if bx1 - bx0 > 12:
+
+        def _panic_seg(bx0, bx1, hidden):
+            if bx1 - bx0 <= 12:
+                return
+            c.saveState()
             c.setStrokeColor(NAVY)
-            c.setFillColor(colors.HexColor("#7f8fa6"))
-            c.setLineWidth(1)
-            c.rect(bx0, py - 3, bx1 - bx0, 6, fill=1, stroke=1)      # push pad
-            c.setFillColor(NAVY)
-            c.rect(bx0, py - 5, 5, 10, fill=1, stroke=0)             # end brackets
-            c.rect(bx1 - 5, py - 5, 5, 10, fill=1, stroke=0)
-            c.setFillColor(NAVY)
-            c.setFont("Helvetica-Oblique", 5.5)
-            c.drawCentredString((bx0 + bx1) / 2, py + 6,
-                                f"Barre anti-panique · {_dual(ph)}")
+            if hidden:
+                c.setDash(2, 2)
+                c.setFillColor(colors.white)
+                c.setLineWidth(0.8)
+                c.rect(bx0, py - 3, bx1 - bx0, 6, fill=0, stroke=1)
+                c.rect(bx0, py - 5, 5, 10, fill=0, stroke=1)
+                c.rect(bx1 - 5, py - 5, 5, 10, fill=0, stroke=1)
+            else:
+                c.setFillColor(colors.HexColor("#7f8fa6"))
+                c.setLineWidth(1)
+                c.rect(bx0, py - 3, bx1 - bx0, 6, fill=1, stroke=1)
+                c.setFillColor(NAVY)
+                c.rect(bx0, py - 5, 5, 10, fill=1, stroke=0)
+                c.rect(bx1 - 5, py - 5, 5, 10, fill=1, stroke=0)
+            c.restoreState()
+
+        _panic_seg(nx0, nx1, hidden_push)
+        _dim_v(c, oy, py, ndcol2, f"{_dual(ph)}")
 
     if undercut > 0:
         ucp = (undercut / 25.4) * scale
@@ -861,6 +1076,38 @@ def _elevation_page(c, plan, door, page_no):
         ry = _spec_block(c, rx, ry, rw_col, "Vitrage (fourni et installé par autres)", [
             ("Type", door.get("glass") or "—"),
         ], tint=colors.HexColor("#eef4ff"))
+
+    # Verre & moulures — same calculation as the Cut-List module. Convert the
+    # OPENING into the FINISHED-LEAF dimensions with the per-series offsets first.
+    _off = _leaf_offset(series)
+    _leaf_h_mm = max(rh * 25.4 - _off["height"], 1)
+    if is_pair:
+        _tot_leaf_w_mm = max(rw * 25.4 - _off["width"], 1)
+        _sumw = (aw_in + iw_in) if (aw_in + iw_in) > 0 else rw
+        _fa = (aw_in / _sumw) if _sumw else 0.5
+        _wa = _tot_leaf_w_mm * (_fa if _fa > 0 else 0.5)
+        _wi = _tot_leaf_w_mm - _wa
+        _gmA = _glass_moulure(door, _wa, _leaf_h_mm)
+        _gmI = _glass_moulure(door, _wi, _leaf_h_mm)
+        if _gmA and _gmI:
+            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (calc. coupe)", [
+                ("Verre actif", f"{_gmA['gh']:.0f} × {_gmA['gw']:.0f} mm"),
+                ("Verre inact.", f"{_gmI['gh']:.0f} × {_gmI['gw']:.0f} mm"),
+                ("Moulure V ×4", _dual_mm(_gmA['mv'])),
+                ("Moul. H actif", _dual_mm(_gmA['mh'])),
+                ("Moul. H inact.", _dual_mm(_gmI['mh'])),
+                ("Parclose", f"{_gmA['pn'] or '—'} · verre {_gmA['gt']:.0f} mm"),
+            ], tint=colors.HexColor("#eef7ee"))
+    else:
+        _leaf_w_mm = max(rw * 25.4 - _off["width"], 1)
+        _gm = _glass_moulure(door, _leaf_w_mm, _leaf_h_mm)
+        if _gm:
+            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (calc. coupe)", [
+                ("Verre (H×L)", f"{_gm['gh']:.0f} × {_gm['gw']:.0f} mm"),
+                ("Moulure V ×4", _dual_mm(_gm['mv'])),
+                ("Moulure H ×4", _dual_mm(_gm['mh'])),
+                ("Parclose", f"{_gm['pn'] or '—'} · verre {_gm['gt']:.0f} mm"),
+            ], tint=colors.HexColor("#eef7ee"))
     if door.get("hinges"):
         ry = _spec_block(c, rx, ry, rw_col, "Charnières / Pentures", [
             ("Détail", door.get("hinges") or "—"),
