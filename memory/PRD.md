@@ -268,3 +268,5 @@ User language: **French**.
 - MAJ 2026-08-17 (Dessins de production, lot 7) : cotes de quincaillerie reorganisees en colonnes espacees au-dessus du vitrage (vers le centre du battant) - plus de chevauchement avec la bulle de detail ni entre elles. Hauteur poignee + longueur empilees en colonne 1, serrure en colonne 2.
 
 - MAJ 2026-08-17 (Dessins de production, lot 8) : poignee - courbe orientee vers le vitrage (miroir corrige, par battant) ; profils par defaut AT1000/ATi1000 - montant charniere ATV1025 (ajoute a at_profile_library), serrure actif ATV1015, inactif ATV1010 (nouveau champ profile_lock_stile_inactive + 5e menu) ; base substituee ATT1005 ajoutee aux options de base ; bulles de detail (300/400) masquees quand les pages de detail correspondantes sont decochees.
+
+- MAJ 2026-08-17 (Dessins de production, lot 9) : serrure positionnee horizontalement a 1-1/8 po (28.6mm) du bord meeting/serrure du battant (lock_cx dedie), distincte de la poignee (sur le montant) - fini le chevauchement des symboles.

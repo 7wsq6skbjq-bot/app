@@ -685,11 +685,15 @@ def _elevation_page(c, plan, door, page_no):
         lx_left = cxm - gap / 2 - lock_pt * 0.5
         lock_x = lx_right if active == "right" else lx_left
         handle_xs = [lx_left, lx_right] if door.get("handle_both") else [lock_x]
+        lk_off = 1.125 * scale                       # lock 1⅛" from the meeting edge
+        lock_cx = (cxm + gap / 2 + lk_off) if active == "right" else (cxm - gap / 2 - lk_off)
         ax0, ax1 = (ox + lw2 + gap, ox + dw) if active == "right" else (ox, ox + lw2)
     else:
         hl = (door.get("handing") or "MD").upper() in ("MD", "MGR")
         lock_x = (ox + dw - lock_pt * 0.5) if hl else (ox + lock_pt * 0.5)
         handle_xs = [lock_x]
+        lk_off = 1.125 * scale                       # lock 1⅛" from the strike edge
+        lock_cx = (ox + dw - lk_off) if hl else (ox + lk_off)
         ax0, ax1 = ox, ox + dw
 
     # dimension columns over the glass (toward the leaf centre), spaced apart so
@@ -725,9 +729,9 @@ def _elevation_page(c, plan, door, page_no):
     if lock_h > 0:
         ly = oy + lock_h * scale
         c.setFillColor(NAVY)
-        c.rect(lock_x - 3, ly - 5, 6, 10, fill=1, stroke=0)
+        c.rect(lock_cx - 3, ly - 5, 6, 10, fill=1, stroke=0)
         c.setFillColor(colors.white)
-        c.circle(lock_x, ly, 1.6, fill=1, stroke=0)
+        c.circle(lock_cx, ly, 1.6, fill=1, stroke=0)
         _dim_v(c, oy, ly, dcol2, f"{_dual(lock_h)}")
 
     # panic bar (barre anti-panique) — horizontal push bar on the active leaf
