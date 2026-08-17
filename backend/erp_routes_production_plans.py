@@ -32,6 +32,8 @@ class HardwareLine(BaseModel):
     description: str = ""
     part_number: str = ""
     note: str = ""
+    on_active: bool = False
+    on_inactive: bool = False
 
 
 class DoorPlan(BaseModel):
@@ -42,8 +44,14 @@ class DoorPlan(BaseModel):
     opening_height_in: float = Field(84, ge=1)
     qty: int = Field(1, ge=1)
     handing: Literal["MG", "MD", "MGR", "MDR"] = "MD"
+    active_leaf: Literal["left", "right"] = "right"
     fab_width_in: float = 0
     fab_height_in: float = 0
+    handle_height_in: float = 34.5
+    handle_length_in: float = 9
+    handle_both: bool = False
+    lock_height_in: float = 40
+    undercut_mm: float = 17.5
     finish_ext: str = ""
     finish_int: str = ""
     glass: str = ""

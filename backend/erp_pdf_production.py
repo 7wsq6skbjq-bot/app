@@ -485,7 +485,7 @@ def _spec_block(c, x, y, w, title, rows, tint=BG_LIGHT):
 
 def _hardware_table(c, x, y, w, hardware, machining_by="A.T. Fabrication",
                     installer="Portech"):
-    """Quincaillerie table. Returns y after the table."""
+    """Quincaillerie table with ACTIF / INACT. placement columns."""
     c.setFillColor(NAVY)
     c.rect(x, y - 12, w, 12, fill=1, stroke=0)
     c.setFillColor(colors.white)
@@ -493,16 +493,31 @@ def _hardware_table(c, x, y, w, hardware, machining_by="A.T. Fabrication",
     hdr = (f"QUINCAILLERIE  ·  USINAGE : {machining_by.upper()}"
            f"  ·  INSTALLATION : {installer.upper()}")
     c.drawString(x + 4, y - 8.5, hdr[:82])
-    yy = y - 12
+
+    col_qty, col_no = 16, w - 118
+    col_act, col_inact = w - 54, w - 24
+
+    # column-label row
+    yh = y - 12
+    c.setFillColor(NAVY_LIGHT)
+    c.rect(x, yh - 9, w, 9, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 5.3)
+    c.drawString(x + 3, yh - 6.5, "QTÉ")
+    c.drawString(x + col_qty, yh - 6.5, "DESCRIPTION")
+    c.drawString(x + col_no, yh - 6.5, "N° PIÈCE")
+    c.drawCentredString(x + col_act, yh - 6.5, "ACTIF")
+    c.drawCentredString(x + col_inact, yh - 6.5, "INACT.")
+    yy = yh - 9
+
     c.setFont("Helvetica", 6.5)
-    col_qty, col_no = 16, w - 96
     if not hardware:
         yy -= 12
         c.setFillColor(TEXT_MUTED)
         c.setFont("Helvetica-Oblique", 6.5)
         c.drawString(x + 4, yy + 3.5, "Aucune quincaillerie saisie.")
         c.setStrokeColor(NAVY_BORDER)
-        c.rect(x, yy, w, 12, fill=0, stroke=1)
+        c.rect(x, yy, w, (y - 12) - yy, fill=0, stroke=1)
         return yy - 6
     for i, hw in enumerate(hardware):
         rh = 12
@@ -514,13 +529,16 @@ def _hardware_table(c, x, y, w, hardware, machining_by="A.T. Fabrication",
         c.setFont("Helvetica-Bold", 6.5)
         c.drawString(x + 3, yy + 3.5, str(hw.get("qty") or "1"))
         c.setFont("Helvetica", 6.5)
-        desc = str(hw.get("description") or "—")
-        c.drawString(x + col_qty, yy + 3.5, desc[:58])
+        c.drawString(x + col_qty, yy + 3.5, str(hw.get("description") or "—")[:48])
         c.setFont("Courier", 6)
         c.setFillColor(TEXT_MUTED)
-        c.drawString(x + col_no, yy + 3.5, str(hw.get("part_number") or "")[:16])
+        c.drawString(x + col_no, yy + 3.5, str(hw.get("part_number") or "")[:13])
+        for flag, cx in ((hw.get("on_active"), col_act), (hw.get("on_inactive"), col_inact)):
+            if flag:
+                c.setFillColor(NAVY)
+                c.circle(x + cx, yy + 5.5, 2.4, fill=1, stroke=0)
     c.setStrokeColor(NAVY_BORDER)
-    c.rect(x, yy, w, (y - 12) - yy, fill=0, stroke=1)
+    c.rect(x, yy, w, (yh - 9) - yy, fill=0, stroke=1)
     return yy - 6
 
 
@@ -606,8 +624,7 @@ def _elevation_page(c, plan, door, page_no):
 
     if is_pair:
         gap = 3
-        leaf_w = (dw - gap) / 2
-        # left leaf: hinge (outer/left) + lock (inner/right)
+        leaf_w = (dw - gap) / 2        # left leaf: hinge (outer/left) + lock (inner/right)
         _draw_leaf(c, ox, oy, leaf_w, dh, glass_label, spec["insulated"],
                    hinge_pt, lock_pt, head_pt, base_pt)
         # right leaf: lock (inner/left) + hinge (outer/right)
@@ -640,6 +657,67 @@ def _elevation_page(c, plan, door, page_no):
         for hx, _side in hinge_xs:
             c.rect(hx - 2, oy + inset, 4, dh - 2 * inset, fill=1, stroke=0)
     # hinge_type == "none" -> no hinge marks
+
+    # ── door hardware on the drawing (pull handle + lock) + undercut ──
+    def _num(key, dflt=0.0):
+        try:
+            return float(door.get(key) if door.get(key) not in (None, "") else dflt)
+        except (TypeError, ValueError):
+            return dflt
+
+    handle_h = _num("handle_height_in", 34.5)
+    handle_len = _num("handle_length_in", 9.0)
+    lock_h = _num("lock_height_in", 40.0)
+    undercut = _num("undercut_mm", 17.5)
+
+    gap = 3
+    if is_pair:
+        active = door.get("active_leaf") or "right"
+        cxm = ox + dw / 2
+        lx_right = cxm + gap / 2 + lock_pt * 0.5
+        lx_left = cxm - gap / 2 - lock_pt * 0.5
+        lock_x = lx_right if active == "right" else lx_left
+        handle_xs = [lx_left, lx_right] if door.get("handle_both") else [lock_x]
+    else:
+        hl = (door.get("handing") or "MD").upper() in ("MD", "MGR")
+        lock_x = (ox + dw - lock_pt * 0.5) if hl else (ox + lock_pt * 0.5)
+        handle_xs = [lock_x]
+    dim_x = min(lock_x + 22, ox + dw + fo + 4)
+
+    if handle_h > 0:
+        hy = oy + handle_h * scale
+        lpt = max(handle_len * scale, 10)
+        for hxp in handle_xs:
+            off = -4 if hxp >= (ox + dw / 2) else 4       # grip toward meeting/edge
+            c.setStrokeColor(NAVY)
+            c.setFillColor(NAVY)
+            c.setLineWidth(2)
+            c.line(hxp + off, hy - lpt / 2, hxp + off, hy + lpt / 2)      # grip
+            c.setLineWidth(1.2)
+            c.line(hxp, hy - lpt / 2, hxp + off, hy - lpt / 2)           # stand-offs
+            c.line(hxp, hy + lpt / 2, hxp + off, hy + lpt / 2)
+            c.circle(hxp, hy - lpt / 2, 1.6, fill=1, stroke=0)
+            c.circle(hxp, hy + lpt / 2, 1.6, fill=1, stroke=0)
+        _dim_v(c, oy, hy, dim_x, f"{_dual(handle_h)}")
+        _dim_v(c, hy - lpt / 2, hy + lpt / 2, dim_x + 16, f"{_dual(handle_len)}")
+
+    if lock_h > 0:
+        ly = oy + lock_h * scale
+        c.setFillColor(NAVY)
+        c.rect(lock_x - 3, ly - 5, 6, 10, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.circle(lock_x, ly, 1.6, fill=1, stroke=0)
+        _dim_v(c, oy, ly, dim_x + 32, f"{_dual(lock_h)}")
+
+    if undercut > 0:
+        ucp = (undercut / 25.4) * scale
+        yf = oy - ucp
+        c.setStrokeColor(LINE)
+        c.setLineWidth(0.8)
+        c.line(ox - fo, yf, ox + dw + fo, yf)
+        for hx in range(int(ox - fo), int(ox + dw + fo), 8):
+            c.line(hx, yf, hx - 3, yf - 3)
+        _dim_v(c, yf, oy, ox - fo - 26, f"{_dual(undercut / 25.4)}")
 
     # detail bubbles (jamb + head refs)
     _bubble(c, ox - fo - 8, oy + dh * 0.5, "01", "300")

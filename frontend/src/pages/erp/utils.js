@@ -261,6 +261,8 @@ export const emptyHardwareLine = () => ({
     description: "",
     part_number: "",
     note: "",
+    on_active: false,
+    on_inactive: false,
 });
 
 export const emptyProductionDoor = () => ({
@@ -272,8 +274,14 @@ export const emptyProductionDoor = () => ({
     opening_height_in: 84,
     qty: 1,
     handing: "MD",
+    active_leaf: "right",
     fab_width_in: 0,
     fab_height_in: 0,
+    handle_height_in: 34.5,
+    handle_length_in: 9,
+    handle_both: false,
+    lock_height_in: 40,
+    undercut_mm: 17.5,
     finish_ext: "Anodisé clair",
     finish_int: "Anodisé clair",
     glass: "VT6 · 6mm trempé clair",

@@ -175,8 +175,14 @@ export const ProductionPlansPanel = () => {
             opening_height_in: Number(d.opening_height_in || 0) || 1,
             qty: parseInt(d.qty, 10) || 1,
             handing: d.handing || "MD",
+            active_leaf: d.active_leaf || "right",
             fab_width_in: Number(d.fab_width_in || 0) || 0,
             fab_height_in: Number(d.fab_height_in || 0) || 0,
+            handle_height_in: Number(d.handle_height_in ?? 34.5) || 0,
+            handle_length_in: Number(d.handle_length_in ?? 9) || 0,
+            handle_both: !!d.handle_both,
+            lock_height_in: Number(d.lock_height_in ?? 40) || 0,
+            undercut_mm: Number(d.undercut_mm ?? 17.5) || 0,
             finish_ext: d.finish_ext || "",
             finish_int: d.finish_int || "",
             glass: d.glass || "",
@@ -193,6 +199,8 @@ export const ProductionPlansPanel = () => {
                 description: h.description || "",
                 part_number: h.part_number || "",
                 note: h.note || "",
+                on_active: !!h.on_active,
+                on_inactive: !!h.on_inactive,
             })),
         })),
     });
@@ -591,6 +599,54 @@ export const ProductionPlansPanel = () => {
                                                 </div>
                                             </div>
 
+                                            {/* Hardware placement on the elevation (editable heights) */}
+                                            <div>
+                                                <label className={labelCls}>Quincaillerie sur le dessin (hauteurs modifiables · 0 = masquer)</label>
+                                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                                    <div>
+                                                        <label className={labelCls}>Battant actif (paire)</label>
+                                                        <select value={d.active_leaf || "right"} data-testid={`pp-door-active-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "active_leaf", e.target.value)}
+                                                            className={`${inputCls} bg-white`}>
+                                                            <option value="right">Droite</option>
+                                                            <option value="left">Gauche</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelCls}>Haut. poignée (po)</label>
+                                                        <input type="number" min="0" step="0.125" value={d.handle_height_in}
+                                                            data-testid={`pp-door-handleh-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "handle_height_in", e.target.value)}
+                                                            className={`${inputCls} text-right`} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelCls}>Long. poignée (po)</label>
+                                                        <input type="number" min="0" step="0.5" value={d.handle_length_in}
+                                                            onChange={(e) => updateDoor(d._key, "handle_length_in", e.target.value)}
+                                                            className={`${inputCls} text-right`} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelCls}>Haut. serrure (po)</label>
+                                                        <input type="number" min="0" step="0.125" value={d.lock_height_in}
+                                                            data-testid={`pp-door-lockh-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "lock_height_in", e.target.value)}
+                                                            className={`${inputCls} text-right`} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelCls}>Jeu sous porte (mm)</label>
+                                                        <input type="number" min="0" step="0.5" value={d.undercut_mm}
+                                                            onChange={(e) => updateDoor(d._key, "undercut_mm", e.target.value)}
+                                                            className={`${inputCls} text-right`} />
+                                                    </div>
+                                                </div>
+                                                <label className="inline-flex items-center gap-2 text-sm text-[#0c182b] cursor-pointer mt-2">
+                                                    <input type="checkbox" data-testid={`pp-door-handleboth-${idx}`}
+                                                        checked={!!d.handle_both}
+                                                        onChange={(e) => updateDoor(d._key, "handle_both", e.target.checked)} />
+                                                    Poignée sur les 2 battants (paire)
+                                                </label>
+                                            </div>
+
                                             {/* Hardware */}
                                             <div>
                                                 <div className="flex items-center justify-between mb-1">
@@ -606,7 +662,9 @@ export const ProductionPlansPanel = () => {
                                                         <tr>
                                                             <th className="text-left px-2 py-1 w-14">Qté</th>
                                                             <th className="text-left px-2 py-1">Description</th>
-                                                            <th className="text-left px-2 py-1 w-40">N° de pièce</th>
+                                                            <th className="text-left px-2 py-1 w-36">N° de pièce</th>
+                                                            <th className="text-center px-1 py-1 w-12">Actif</th>
+                                                            <th className="text-center px-1 py-1 w-12">Inact.</th>
                                                             <th className="w-8"></th>
                                                         </tr>
                                                     </thead>
@@ -629,6 +687,16 @@ export const ProductionPlansPanel = () => {
                                                                         onChange={(e) => updateHw(d._key, h._key, "part_number", e.target.value)}
                                                                         placeholder="Ex : 8400"
                                                                         className="w-full px-2 py-1 border border-[#dde5f0] text-sm font-mono" />
+                                                                </td>
+                                                                <td className="px-1 py-1 text-center">
+                                                                    <input type="checkbox" data-testid={`pp-hw-active-${idx}`}
+                                                                        checked={!!h.on_active}
+                                                                        onChange={(e) => updateHw(d._key, h._key, "on_active", e.target.checked)} />
+                                                                </td>
+                                                                <td className="px-1 py-1 text-center">
+                                                                    <input type="checkbox" data-testid={`pp-hw-inactive-${idx}`}
+                                                                        checked={!!h.on_inactive}
+                                                                        onChange={(e) => updateHw(d._key, h._key, "on_inactive", e.target.checked)} />
                                                                 </td>
                                                                 <td className="px-1 py-1 text-right">
                                                                     <button onClick={() => removeHw(d._key, h._key)}
