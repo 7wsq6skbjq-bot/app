@@ -626,17 +626,41 @@ def _elevation_page(c, plan, door, page_no):
 
     if is_pair:
         gap = 3
-        leaf_w = (dw - gap) / 2
+
+        def _lw(k):
+            try:
+                return float(door.get(k) or 0)
+            except (TypeError, ValueError):
+                return 0.0
         active = door.get("active_leaf") or "right"
+        aw_in, iw_in = _lw("leaf_active_width_in"), _lw("leaf_inactive_width_in")
+        # auto-complete the missing leaf from the opening when only one is given
+        if aw_in > 0 and iw_in <= 0:
+            iw_in = max(rw - aw_in, 0)
+        elif iw_in > 0 and aw_in <= 0:
+            aw_in = max(rw - iw_in, 0)
+        # map active/inactive role -> physical left/right leaf
+        if active == "right":
+            leaf_R_in, leaf_L_in = aw_in, iw_in
+        else:
+            leaf_L_in, leaf_R_in = aw_in, iw_in
+        if leaf_L_in > 0 and leaf_R_in > 0:
+            frac_L = leaf_L_in / (leaf_L_in + leaf_R_in)
+        else:
+            frac_L = 0.5
+            leaf_L_in = leaf_R_in = rw / 2
+        pair_lwL = (dw - gap) * frac_L
+        pair_lwR = (dw - gap) - pair_lwL
+        pair_meet = ox + pair_lwL + gap / 2
         left_lock = lock_pt if active == "left" else lock_inactive_pt
         right_lock = lock_pt if active == "right" else lock_inactive_pt
         # left leaf: hinge (outer/left) + lock (inner/right)
-        _draw_leaf(c, ox, oy, leaf_w, dh, glass_label, spec["insulated"],
+        _draw_leaf(c, ox, oy, pair_lwL, dh, glass_label, spec["insulated"],
                    hinge_pt, left_lock, head_pt, base_pt)
         # right leaf: lock (inner/left) + hinge (outer/right)
-        _draw_leaf(c, ox + leaf_w + gap, oy, leaf_w, dh, glass_label, spec["insulated"],
+        _draw_leaf(c, ox + pair_lwL + gap, oy, pair_lwR, dh, glass_label, spec["insulated"],
                    right_lock, hinge_pt, head_pt, base_pt)
-        hinge_xs = [(ox, "L"), (ox + dw, "R")]
+        hinge_xs = [(ox, "L"), (ox + pair_lwL + gap + pair_lwR, "R")]
     else:
         # simple door — hinge side follows the handing (sens d'ouverture)
         handing = (door.get("handing") or "MD").upper()
@@ -678,16 +702,15 @@ def _elevation_page(c, plan, door, page_no):
 
     gap = 3
     if is_pair:
-        lw2 = (dw - gap) / 2
         active = door.get("active_leaf") or "right"
-        cxm = ox + dw / 2
-        lx_right = cxm + gap / 2 + lock_pt * 0.5
-        lx_left = cxm - gap / 2 - lock_pt * 0.5
+        lx_right = pair_meet + gap / 2 + lock_pt * 0.5
+        lx_left = pair_meet - gap / 2 - lock_pt * 0.5
         lock_x = lx_right if active == "right" else lx_left
         handle_xs = [lx_left, lx_right] if door.get("handle_both") else [lock_x]
         lk_off = 1.125 * scale                       # lock 1⅛" from the meeting edge
-        lock_cx = (cxm + gap / 2 + lk_off) if active == "right" else (cxm - gap / 2 - lk_off)
-        ax0, ax1 = (ox + lw2 + gap, ox + dw) if active == "right" else (ox, ox + lw2)
+        lock_cx = (pair_meet + gap / 2 + lk_off) if active == "right" else (pair_meet - gap / 2 - lk_off)
+        ax0, ax1 = ((ox + pair_lwL + gap, ox + pair_lwL + gap + pair_lwR)
+                    if active == "right" else (ox, ox + pair_lwL))
     else:
         hl = (door.get("handing") or "MD").upper() in ("MD", "MGR")
         lock_x = (ox + dw - lock_pt * 0.5) if hl else (ox + lock_pt * 0.5)
@@ -709,8 +732,7 @@ def _elevation_page(c, plan, door, page_no):
         hy1 = hy0 + lpt                            # handle extends upward
         for hxp in handle_xs:
             if is_pair:
-                lw2 = (dw - gap) / 2
-                lc = (ox + lw2 / 2) if hxp < (ox + dw / 2) else (ox + dw - lw2 / 2)
+                lc = (ox + pair_lwL / 2) if hxp < pair_meet else (ox + pair_lwL + gap + pair_lwR / 2)
             else:
                 lc = ox + dw / 2
             off = 4 if lc >= hxp else -4              # grip curves toward the glass
@@ -739,11 +761,10 @@ def _elevation_page(c, plan, door, page_no):
         ph = _num("panic_height_in", 40.0)
         py = oy + ph * scale
         if is_pair:
-            lw2 = (dw - gap) / 2
             if (door.get("active_leaf") or "right") == "right":
-                ax0, ax1 = ox + lw2 + gap, ox + dw
+                ax0, ax1 = ox + pair_lwL + gap, ox + pair_lwL + gap + pair_lwR
             else:
-                ax0, ax1 = ox, ox + lw2
+                ax0, ax1 = ox, ox + pair_lwL
         else:
             ax0, ax1 = ox, ox + dw
         bx0 = ax0 + max(hinge_pt, 8) + 3
@@ -779,9 +800,16 @@ def _elevation_page(c, plan, door, page_no):
     if plan.get("include_section_details", True):
         _bubble(c, ox + dw / 2, oy + dh + fo + 12, "01", "400")
 
-    # dimensions — width (top), height (left)
-    _dim_h(c, ox, ox + dw, oy + dh + 22,
-           f"{_dual(rw)} Ouverture libre", ext_from=oy + dh)
+    # dimensions — per-leaf width (pairs), opening width (top), height (left)
+    if is_pair:
+        _dim_h(c, ox, ox + pair_lwL, oy + dh + 9, _dual(leaf_L_in), ext_from=oy + dh)
+        _dim_h(c, ox + pair_lwL + gap, ox + pair_lwL + gap + pair_lwR,
+               oy + dh + 9, _dual(leaf_R_in), ext_from=oy + dh)
+        _dim_h(c, ox, ox + dw, oy + dh + 27,
+               f"{_dual(rw)} Ouverture libre", ext_from=oy + dh + 9)
+    else:
+        _dim_h(c, ox, ox + dw, oy + dh + 22,
+               f"{_dual(rw)} Ouverture libre", ext_from=oy + dh)
     _dim_v(c, oy, oy + dh, ox - fo - 26,
            f"{_dual(rh)} Ouverture libre", ext_from=ox - fo)
 

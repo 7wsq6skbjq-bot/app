@@ -275,6 +275,8 @@ export const emptyProductionDoor = () => ({
     qty: 1,
     handing: "MD",
     active_leaf: "right",
+    leaf_active_width_in: 0,
+    leaf_inactive_width_in: 0,
     fab_width_in: 0,
     fab_height_in: 0,
     handle_height_in: 34.5,

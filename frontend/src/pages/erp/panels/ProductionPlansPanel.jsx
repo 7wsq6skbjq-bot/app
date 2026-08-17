@@ -179,6 +179,8 @@ export const ProductionPlansPanel = () => {
             qty: parseInt(d.qty, 10) || 1,
             handing: d.handing || "MD",
             active_leaf: d.active_leaf || "right",
+            leaf_active_width_in: Number(d.leaf_active_width_in || 0) || 0,
+            leaf_inactive_width_in: Number(d.leaf_inactive_width_in || 0) || 0,
             fab_width_in: Number(d.fab_width_in || 0) || 0,
             fab_height_in: Number(d.fab_height_in || 0) || 0,
             handle_height_in: Number(d.handle_height_in ?? 34.5) || 0,
@@ -631,6 +633,29 @@ export const ProductionPlansPanel = () => {
                                                             <option value="left">Gauche</option>
                                                         </select>
                                                     </div>
+                                                    {d.config === "pair" && (
+                                                        <>
+                                                            <div>
+                                                                <label className={labelCls}>Batt. actif — larg. (po)</label>
+                                                                <input type="number" min="0" step="0.125" value={d.leaf_active_width_in}
+                                                                    data-testid={`pp-door-leaf-active-${idx}`}
+                                                                    onChange={(e) => updateDoor(d._key, "leaf_active_width_in", e.target.value)}
+                                                                    className={`${inputCls} text-right`} />
+                                                                <span className="text-[10px] text-[#4b5d7a]">{inLabel(d.leaf_active_width_in)}</span>
+                                                            </div>
+                                                            <div>
+                                                                <label className={labelCls}>Batt. inactif — larg. (po)</label>
+                                                                <input type="number" min="0" step="0.125" value={d.leaf_inactive_width_in}
+                                                                    data-testid={`pp-door-leaf-inactive-${idx}`}
+                                                                    onChange={(e) => updateDoor(d._key, "leaf_inactive_width_in", e.target.value)}
+                                                                    className={`${inputCls} text-right`} />
+                                                                <span className="text-[10px] text-[#4b5d7a]">{inLabel(d.leaf_inactive_width_in)}</span>
+                                                            </div>
+                                                            <div className="col-span-2 sm:col-span-5 text-[10px] text-[#4b5d7a] -mt-1">
+                                                                Laissez un champ à 0 pour l&apos;auto-compléter (ouverture − autre battant). Les deux à 0 = partage 50/50.
+                                                            </div>
+                                                        </>
+                                                    )}
                                                     <div>
                                                         <label className={labelCls}>Haut. poignée (po)</label>
                                                         <input type="number" min="0" step="0.125" value={d.handle_height_in}

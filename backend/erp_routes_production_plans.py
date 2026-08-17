@@ -45,6 +45,8 @@ class DoorPlan(BaseModel):
     qty: int = Field(1, ge=1)
     handing: Literal["MG", "MD", "MGR", "MDR"] = "MD"
     active_leaf: Literal["left", "right"] = "right"
+    leaf_active_width_in: float = 0
+    leaf_inactive_width_in: float = 0
     fab_width_in: float = 0
     fab_height_in: float = 0
     handle_height_in: float = 34.5
