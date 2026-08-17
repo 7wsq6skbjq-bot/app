@@ -248,6 +248,12 @@ export const HINGE_TYPES = [
     { v: "none", lbl: "Aucune / autre" },
 ];
 export const INSTALL_PARTIES = ["Portech", "A.T. Fabrication"];
+export const HANDING_OPTIONS = [
+    { v: "MG", lbl: "MG — Main gauche" },
+    { v: "MD", lbl: "MD — Main droite" },
+    { v: "MGR", lbl: "MGR — Main gauche renversée" },
+    { v: "MDR", lbl: "MDR — Main droite renversée" },
+];
 
 export const emptyHardwareLine = () => ({
     _key: newKey(),
@@ -265,6 +271,9 @@ export const emptyProductionDoor = () => ({
     opening_width_in: 36,
     opening_height_in: 84,
     qty: 1,
+    handing: "MD",
+    fab_width_in: 0,
+    fab_height_in: 0,
     finish_ext: "Anodisé clair",
     finish_int: "Anodisé clair",
     glass: "VT6 · 6mm trempé clair",

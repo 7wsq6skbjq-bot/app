@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
     emptyProductionPlan, emptyProductionDoor, emptyHardwareLine,
     PRODUCTION_SERIES, PRODUCTION_CONFIGS, PRODUCTION_STATUSES, PRODUCTION_FINISHES,
-    HINGE_TYPES, INSTALL_PARTIES,
+    HINGE_TYPES, INSTALL_PARTIES, HANDING_OPTIONS,
     newKey, stripKeys, todayISO, formatDate,
 } from "../utils";
 
@@ -174,6 +174,9 @@ export const ProductionPlansPanel = () => {
             opening_width_in: Number(d.opening_width_in || 0) || 1,
             opening_height_in: Number(d.opening_height_in || 0) || 1,
             qty: parseInt(d.qty, 10) || 1,
+            handing: d.handing || "MD",
+            fab_width_in: Number(d.fab_width_in || 0) || 0,
+            fab_height_in: Number(d.fab_height_in || 0) || 0,
             finish_ext: d.finish_ext || "",
             finish_int: d.finish_int || "",
             glass: d.glass || "",
@@ -484,6 +487,14 @@ export const ProductionPlansPanel = () => {
                                                         className={`${inputCls} text-right`} />
                                                 </div>
                                                 <div>
+                                                    <label className={labelCls}>Sens d&apos;ouverture (main)</label>
+                                                    <select value={d.handing || "MD"} data-testid={`pp-door-handing-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "handing", e.target.value)}
+                                                        className={`${inputCls} bg-white`}>
+                                                        {HANDING_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.lbl}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
                                                     <label className={labelCls}>Ouverture — largeur (po)</label>
                                                     <input type="number" min="1" step="0.125" value={d.opening_width_in}
                                                         data-testid={`pp-door-width-${idx}`}
@@ -498,6 +509,22 @@ export const ProductionPlansPanel = () => {
                                                         onChange={(e) => updateDoor(d._key, "opening_height_in", e.target.value)}
                                                         className={`${inputCls} text-right`} />
                                                     <span className="text-[10px] text-[#4b5d7a]">{inLabel(d.opening_height_in)}</span>
+                                                </div>
+                                                <div>
+                                                    <label className={labelCls}>Fab. — largeur (po, optionnel)</label>
+                                                    <input type="number" min="0" step="0.125" value={d.fab_width_in}
+                                                        data-testid={`pp-door-fabw-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "fab_width_in", e.target.value)}
+                                                        className={`${inputCls} text-right`} />
+                                                    <span className="text-[10px] text-[#4b5d7a]">{inLabel(d.fab_width_in)}</span>
+                                                </div>
+                                                <div>
+                                                    <label className={labelCls}>Fab. — hauteur (po, optionnel)</label>
+                                                    <input type="number" min="0" step="0.125" value={d.fab_height_in}
+                                                        data-testid={`pp-door-fabh-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "fab_height_in", e.target.value)}
+                                                        className={`${inputCls} text-right`} />
+                                                    <span className="text-[10px] text-[#4b5d7a]">{inLabel(d.fab_height_in)}</span>
                                                 </div>
                                                 <div>
                                                     <label className={labelCls}>Échelle (note)</label>

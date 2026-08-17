@@ -567,7 +567,8 @@ def _elevation_page(c, plan, door, page_no):
     c.drawString(20, H - 62,
                  f"Échelle : {door.get('scale_note') or '1:30'}   ·   "
                  f"Qté : {door.get('qty') or 1}   ·   Série : {series}   ·   "
-                 f"Config. : {'Paire de portes' if door.get('config') == 'pair' else 'Porte simple'}")
+                 f"Config. : {'Paire de portes' if door.get('config') == 'pair' else 'Porte simple'}"
+                 f"   ·   Main : {(door.get('handing') or 'MD').upper()}")
 
     # ── drawing area (left) ──
     ax0, ay0, ax1, ay1 = 40, 46, 430, H - 78
@@ -614,9 +615,17 @@ def _elevation_page(c, plan, door, page_no):
                    lock_pt, hinge_pt, head_pt, base_pt)
         hinge_xs = [(ox, "L"), (ox + dw, "R")]
     else:
-        _draw_leaf(c, ox, oy, dw, dh, glass_label, spec["insulated"],
-                   hinge_pt, lock_pt, head_pt, base_pt)
-        hinge_xs = [(ox, "L")]
+        # simple door — hinge side follows the handing (sens d'ouverture)
+        handing = (door.get("handing") or "MD").upper()
+        hinge_left = handing in ("MD", "MGR")
+        if hinge_left:
+            _draw_leaf(c, ox, oy, dw, dh, glass_label, spec["insulated"],
+                       hinge_pt, lock_pt, head_pt, base_pt)
+            hinge_xs = [(ox, "L")]
+        else:
+            _draw_leaf(c, ox, oy, dw, dh, glass_label, spec["insulated"],
+                       lock_pt, hinge_pt, head_pt, base_pt)
+            hinge_xs = [(ox + dw, "R")]
 
     # hinges — rendered according to the hinge type
     hinge_type = door.get("hinge_type") or "butt45"
@@ -642,6 +651,20 @@ def _elevation_page(c, plan, door, page_no):
            f"{_dual(rw)} Ouverture libre", ext_from=oy + dh)
     _dim_v(c, oy, oy + dh, ox - fo - 26,
            f"{_dual(rh)} Ouverture libre", ext_from=ox - fo)
+
+    # optional fabrication dimensions ("Fab.") drawn as an outer reference
+    try:
+        fw = float(door.get("fab_width_in") or 0)
+    except (TypeError, ValueError):
+        fw = 0
+    try:
+        fh = float(door.get("fab_height_in") or 0)
+    except (TypeError, ValueError):
+        fh = 0
+    if fw > 0:
+        _dim_h(c, ox - 8, ox + dw + 8, oy + dh + 40, f"{_dual(fw)} Fab.")
+    if fh > 0:
+        _dim_v(c, oy - 8, oy + dh + 8, ox - fo - 46, f"{_dual(fh)} Fab.")
 
     # tag label under drawing
     c.setFillColor(NAVY)

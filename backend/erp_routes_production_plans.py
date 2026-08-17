@@ -41,6 +41,9 @@ class DoorPlan(BaseModel):
     opening_width_in: float = Field(36, ge=1)
     opening_height_in: float = Field(84, ge=1)
     qty: int = Field(1, ge=1)
+    handing: Literal["MG", "MD", "MGR", "MDR"] = "MD"
+    fab_width_in: float = 0
+    fab_height_in: float = 0
     finish_ext: str = ""
     finish_int: str = ""
     glass: str = ""
