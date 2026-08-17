@@ -923,91 +923,118 @@ def _elevation_page(c, plan, door, page_no):
         return (max(x0 + 6, min(x1 - 6, cyl + d * 22)),
                 max(x0 + 6, min(x1 - 6, cyl + d * 44)))
 
+    def _roles(v):
+        """Which leaves to draw an item on. 'both' → active + inactive (pairs
+        only); a simple door always has a single leaf."""
+        if not is_pair:
+            return ["active"]
+        return ["active", "inactive"] if (v or "active") == "both" else [(v or "active")]
+
     if show_handle and handle_h > 0:
-        hx0, hx1, _hm, hcyl, _tw = _leaf_geom(door.get("handle_leaf") or "active")
-        hdcol1, _ = _dim_cols(hx0, hx1, hcyl)
         hy0 = oy + handle_h * scale
         lpt = max(handle_len * scale, 10)
         hy1 = hy0 + lpt
-        handle_xs = [hcyl]
-        if is_pair and door.get("handle_both"):
-            _, _, _, hcyl2, _ = _leaf_geom("inactive")
-            handle_xs = [hcyl, hcyl2]
-        for hxp in handle_xs:
+        h_roles = _roles(door.get("handle_leaf") or "active")
+        if is_pair and door.get("handle_both") and h_roles == ["active"]:
+            h_roles = ["active", "inactive"]
+        first = True
+        for role in h_roles:
+            hx0, hx1, _hm, hcyl, _tw = _leaf_geom(role)
             if is_pair:
-                lc = (ox + pair_lwL / 2) if hxp < pair_meet else (ox + pair_lwL + gap + pair_lwR / 2)
+                lc = (ox + pair_lwL / 2) if hcyl < pair_meet else (ox + pair_lwL + gap + pair_lwR / 2)
             else:
                 lc = ox + dw / 2
-            off = 4 if lc >= hxp else -4              # grip curves toward the glass
+            off = 4 if lc >= hcyl else -4              # grip curves toward the glass
             c.setStrokeColor(NAVY)
             c.setFillColor(NAVY)
             c.setLineWidth(2)
-            c.line(hxp + off, hy0, hxp + off, hy1)          # grip
+            c.line(hcyl + off, hy0, hcyl + off, hy1)          # grip
             c.setLineWidth(1.2)
-            c.line(hxp, hy0, hxp + off, hy0)                # stand-offs
-            c.line(hxp, hy1, hxp + off, hy1)
-            c.circle(hxp, hy0, 1.6, fill=1, stroke=0)
-            c.circle(hxp, hy1, 1.6, fill=1, stroke=0)
-        _dim_v(c, oy, hy0, hdcol1, f"{_dual(handle_h)}")
-        _dim_v(c, hy0, hy1, hdcol1, f"{_dual(handle_len)}")
+            c.line(hcyl, hy0, hcyl + off, hy0)                # stand-offs
+            c.line(hcyl, hy1, hcyl + off, hy1)
+            c.circle(hcyl, hy0, 1.6, fill=1, stroke=0)
+            c.circle(hcyl, hy1, 1.6, fill=1, stroke=0)
+            if first:
+                hdcol1, _ = _dim_cols(hx0, hx1, hcyl)
+                _dim_v(c, oy, hy0, hdcol1, f"{_dual(handle_h)}")
+                _dim_v(c, hy0, hy1, hdcol1, f"{_dual(handle_len)}")
+                first = False
 
     if show_lock and lock_h > 0:
-        lx0, lx1, _lm, lcyl, _tw = _leaf_geom(door.get("lock_leaf") or "active")
-        _, ldcol2 = _dim_cols(lx0, lx1, lcyl)
         ly = oy + lock_h * scale
-        c.setFillColor(NAVY)
-        c.rect(lcyl - 3, ly - 5, 6, 10, fill=1, stroke=0)
-        c.setFillColor(colors.white)
-        c.circle(lcyl, ly, 1.6, fill=1, stroke=0)
-        _dim_v(c, oy, ly, ldcol2, f"{_dual(lock_h)}")
+        first = True
+        for role in _roles(door.get("lock_leaf") or "active"):
+            lx0, lx1, _lm, lcyl, _tw = _leaf_geom(role)
+            c.setFillColor(NAVY)
+            c.rect(lcyl - 3, ly - 5, 6, 10, fill=1, stroke=0)
+            c.setFillColor(colors.white)
+            c.circle(lcyl, ly, 1.6, fill=1, stroke=0)
+            if first:
+                _, ldcol2 = _dim_cols(lx0, lx1, lcyl)
+                _dim_v(c, oy, ly, ldcol2, f"{_dual(lock_h)}")
+                first = False
 
     # Adams Rite lever
     if (not no_hw) and door.get("lever"):
-        vx0, vx1, _vm, vcyl, _tw = _leaf_geom(door.get("lever_leaf") or "active")
-        vdcol1, _ = _dim_cols(vx0, vx1, vcyl)
         lv_h = _num("lever_height_in", 40.0)
         lvy = oy + lv_h * scale
-        facing = 1 if (vx0 + vx1) / 2 >= vcyl else -1
-        _draw_lever(c, vcyl, lvy, facing)
-        _dim_v(c, oy, lvy, vdcol1, f"{_dual(lv_h)}")
+        first = True
+        for role in _roles(door.get("lever_leaf") or "active"):
+            vx0, vx1, _vm, vcyl, _tw = _leaf_geom(role)
+            facing = 1 if (vx0 + vx1) / 2 >= vcyl else -1
+            _draw_lever(c, vcyl, lvy, facing)
+            if first:
+                vdcol1, _ = _dim_cols(vx0, vx1, vcyl)
+                _dim_v(c, oy, lvy, vdcol1, f"{_dual(lv_h)}")
+                first = False
 
     # KROME protection plate — cylinder over its leaf, body rides onto the other
     if (not no_hw) and door.get("protection_plate"):
-        px0, px1, pmeet, pcyl, ptoward = _leaf_geom(door.get("plate_leaf") or "active")
-        _, pdcol2 = _dim_cols(px0, px1, pcyl)
         pl_h = _num("plate_height_in", 40.0)
         ply = oy + pl_h * scale
-        _draw_protection_plate(c, pcyl, pmeet, ply, max(dh * 0.14, 46), ptoward)
-        _dim_v(c, oy, ply, pdcol2, f"{_dual(pl_h)}")
+        first = True
+        for role in _roles(door.get("plate_leaf") or "active"):
+            px0, px1, pmeet, pcyl, ptoward = _leaf_geom(role)
+            _draw_protection_plate(c, pcyl, pmeet, ply, max(dh * 0.14, 46), ptoward)
+            if first:
+                _, pdcol2 = _dim_cols(px0, px1, pcyl)
+                _dim_v(c, oy, ply, pdcol2, f"{_dual(pl_h)}")
+                first = False
 
     # push paddle (palette de relâche) — chosen leaf; hidden line for reverse hands
     if (not no_hw) and door.get("push_paddle"):
-        qx0, qx1, _qm, qcyl, _tw = _leaf_geom(door.get("paddle_leaf") or "active")
-        qdcol1, _ = _dim_cols(qx0, qx1, qcyl)
         pd_h = _num("paddle_height_in", 40.0)
         pdy = oy + pd_h * scale
-        s0 = qx0 + max(hinge_pt, 8) + 3
-        s1 = qx1 - max(hinge_pt, 8) - 3
-        if s1 - s0 > 12:
-            _draw_paddle(c, s0, s1, pdy, hidden_push)
-            _dim_v(c, oy, pdy, qdcol1, f"{_dual(pd_h)}")
+        first = True
+        for role in _roles(door.get("paddle_leaf") or "active"):
+            qx0, qx1, _qm, qcyl, _tw = _leaf_geom(role)
+            s0 = qx0 + max(hinge_pt, 8) + 3
+            s1 = qx1 - max(hinge_pt, 8) - 3
+            if s1 - s0 > 12:
+                _draw_paddle(c, s0, s1, pdy, hidden_push)
+                if first:
+                    qdcol1, _ = _dim_cols(qx0, qx1, qcyl)
+                    _dim_v(c, oy, pdy, qdcol1, f"{_dual(pd_h)}")
+                    first = False
 
-    # flush bolts (verrou affleuré) — inactive leaf meeting stile (top & bottom)
+    # flush bolts (verrou affleuré) — meeting stile (top & bottom) on chosen leaf(s)
     if (not no_hw) and door.get("flush_bolt") and is_pair:
-        _, _, fmeet, _, ftoward = _leaf_geom(door.get("flush_leaf") or "inactive")
-        fb_x = fmeet + ftoward * (lock_inactive_pt * 0.5)
-        _draw_flush_bolt(c, fb_x, oy + dh - 14)
-        _draw_flush_bolt(c, fb_x, oy + 14)
+        for role in _roles(door.get("flush_leaf") or "inactive"):
+            _, _, fmeet, _, ftoward = _leaf_geom(role)
+            fb_x = fmeet + ftoward * (lock_inactive_pt * 0.5)
+            _draw_flush_bolt(c, fb_x, oy + dh - 14)
+            _draw_flush_bolt(c, fb_x, oy + 14)
 
-    # door closer (ferme-porte) — top of the chosen leaf, hinge side, arm inward
+    # door closer (ferme-porte) — top of the chosen leaf(s), hinge side, arm inward
     if (not no_hw) and door.get("door_closer"):
-        cx0, cx1, cmeet, _cc, _tw = _leaf_geom(door.get("closer_leaf") or "active")
-        if abs(cmeet - cx1) < abs(cmeet - cx0):
-            hinge_x, cfacing = cx0, 1
-        else:
-            hinge_x, cfacing = cx1, -1
-        hinge_x = hinge_x + cfacing * (hinge_pt + 2)
-        _draw_closer(c, hinge_x, oy + dh - head_pt - 10, cfacing)
+        for role in _roles(door.get("closer_leaf") or "active"):
+            cx0, cx1, cmeet, _cc, _tw = _leaf_geom(role)
+            if abs(cmeet - cx1) < abs(cmeet - cx0):
+                hinge_x, cfacing = cx0, 1
+            else:
+                hinge_x, cfacing = cx1, -1
+            hinge_x = hinge_x + cfacing * (hinge_pt + 2)
+            _draw_closer(c, hinge_x, oy + dh - head_pt - 10, cfacing)
 
     # astragal (astragale) — vertical meeting-gap cover on a pair
     if (not no_hw) and door.get("astragal") and is_pair:
@@ -1023,11 +1050,9 @@ def _elevation_page(c, plan, door, page_no):
         c.drawString(0, 0, "Astragale")
         c.restoreState()
 
-    # panic bar (barre anti-panique) — chosen leaf, edge to edge (touches both
-    # sides of that leaf); hidden line for reverse hands (MGR/MDR)
+    # panic bar (barre anti-panique) — chosen leaf(s), edge to edge (touches both
+    # sides of the leaf); hidden line for reverse hands (MGR/MDR)
     if (not no_hw) and door.get("panic_bar"):
-        nx0, nx1, _nm, ncyl, _tw = _leaf_geom(door.get("panic_leaf") or "active")
-        _, ndcol2 = _dim_cols(nx0, nx1, ncyl)
         ph = _num("panic_height_in", 40.0)
         py = oy + ph * scale
 
@@ -1052,8 +1077,14 @@ def _elevation_page(c, plan, door, page_no):
                 c.rect(bx1 - 5, py - 5, 5, 10, fill=1, stroke=0)
             c.restoreState()
 
-        _panic_seg(nx0, nx1, hidden_push)
-        _dim_v(c, oy, py, ndcol2, f"{_dual(ph)}")
+        first = True
+        for role in _roles(door.get("panic_leaf") or "active"):
+            nx0, nx1, _nm, ncyl, _tw = _leaf_geom(role)
+            _panic_seg(nx0, nx1, hidden_push)
+            if first:
+                _, ndcol2 = _dim_cols(nx0, nx1, ncyl)
+                _dim_v(c, oy, py, ndcol2, f"{_dual(ph)}")
+                first = False
 
     if undercut > 0:
         ucp = (undercut / 25.4) * scale

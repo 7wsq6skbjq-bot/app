@@ -132,6 +132,7 @@ export const ProductionPlansPanel = () => {
                 className="ml-1 px-1 py-0.5 border border-[#dde5f0] text-xs bg-white cursor-pointer">
                 <option value="active">actif</option>
                 <option value="inactive">inactif</option>
+                <option value="both">les deux</option>
             </select>
         ) : null
     );
