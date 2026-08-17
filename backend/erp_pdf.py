@@ -200,8 +200,9 @@ def _meta_grid(styles, entries: Iterable[tuple]):
     return t
 
 
-def _items_table_money(items: list[dict]) -> Table:
-    """Items table for invoice & PO (with prices)."""
+def _items_table_money(items: list[dict], hide_zero: bool = False) -> Table:
+    """Items table for invoice & PO (with prices). When ``hide_zero`` is set,
+    lines without a price show nothing instead of "0,00 $"."""
     header = ["Description", "Qté", "Prix unitaire", "Total"]
     data = [header]
     for it in items or []:
@@ -210,11 +211,13 @@ def _items_table_money(items: list[dict]) -> Table:
         total = it.get("total")
         if total is None:
             total = float(qty) * float(unit)
+        unit_s = "" if (hide_zero and not float(unit or 0)) else _money(unit)
+        total_s = "" if (hide_zero and not float(total or 0)) else _money(total)
         data.append([
             Paragraph(it.get("description") or "—", _styles()["body"]),
             f"{qty}",
-            _money(unit),
-            _money(total),
+            unit_s,
+            total_s,
         ])
     t = Table(data, colWidths=[95 * mm, 18 * mm, 32 * mm, 32 * mm], repeatRows=1)
     t.setStyle(TableStyle([
@@ -381,7 +384,7 @@ def render_quote_pdf(q: dict) -> bytes:
     story.append(side_by_side)
     story.append(Spacer(1, 6 * mm))
 
-    story.append(_items_table_money(q.get("items", [])))
+    story.append(_items_table_money(q.get("items", []), hide_zero=True))
     story.append(Spacer(1, 4 * mm))
     story.append(_totals_box(
         q.get("subtotal", 0), q.get("tps", 0),
