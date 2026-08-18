@@ -360,6 +360,99 @@ def render_invoice_pdf(inv: dict) -> bytes:
     return buf.read()
 
 
+SALES_CONDITIONS = [
+    ("1. ACCEPTATION DE LA SOUMISSION",
+     "L'acceptation de la soumission par le client constitue une autorisation ferme de procéder à la commande des matériaux, à la fabrication et/ou à l'exécution des travaux décrits à la soumission. Toute acceptation écrite, électronique ou toute autorisation permettant à Portech de débuter les travaux ou de commander les matériaux sera considérée comme une acceptation des présentes conditions. La soumission est valide pour une période de 30 jours, sauf indication contraire."),
+    ("2. DESCRIPTION DES PRODUITS",
+     "Les produits fournis sont ceux décrits à la soumission. Les dimensions, modèles, finis, couleurs, types de portes, cadres, vitrages, quincailleries et autres caractéristiques doivent être vérifiés et approuvés par le client avant la mise en production. Les représentations, images, dessins ou illustrations présentés dans une soumission sont à titre indicatif seulement et peuvent différer légèrement du produit final."),
+    ("3. PORTES SUR MESURE",
+     "Toute porte fabriquée ou commandée selon des dimensions, spécifications ou exigences particulières du client est considérée comme un produit sur mesure. Une fois la commande approuvée et/ou la fabrication débutée, les portes sur mesure ne peuvent être annulées, retournées ou remboursées, sauf entente écrite contraire de Portech. Le client est responsable de vérifier les dimensions, le sens d'ouverture, le type de porte, le fini, les ouvertures, la quincaillerie et toute autre spécification avant l'approbation finale."),
+    ("4. PRISE DE MESURES",
+     "Lorsque la prise de mesures est effectuée par Portech, les dimensions relevées servent de référence pour la fabrication. Lorsque les dimensions sont fournies par le client, un entrepreneur, un chargé de projet ou tout autre intervenant, la responsabilité de leur exactitude revient à la partie ayant fourni ces informations. Toute modification nécessaire en raison de dimensions incorrectes, de conditions existantes non divulguées ou de renseignements inexacts pourra entraîner des frais supplémentaires."),
+    ("5. CONDITIONS EXISTANTES",
+     "Le client reconnaît que les travaux peuvent être effectués sur des bâtiments et installations existants présentant certaines conditions imprévues. Portech ne peut être tenue responsable des conditions cachées, des défauts de structure, des murs hors niveau, des ouvertures non conformes, des problèmes de plomberie, d'électricité ou de structure, ni de toute autre condition existante qui n'était pas raisonnablement identifiable au moment de la soumission. Lorsque de telles conditions nécessitent du travail supplémentaire, celui-ci pourra faire l'objet d'une facturation additionnelle."),
+    ("6. MODIFICATIONS ET TRAVAUX SUPPLÉMENTAIRES",
+     "Toute modification demandée par le client après l'acceptation de la soumission, de même que tout travail non prévu dans celle-ci, pourra entraîner des frais supplémentaires. Les travaux supplémentaires seront, lorsque possible, soumis à l'approbation du client avant leur exécution. Toutefois, lorsqu'une intervention immédiate est nécessaire afin de poursuivre correctement les travaux ou d'assurer la sécurité des lieux, Portech pourra effectuer les travaux nécessaires et les facturer au client."),
+    ("7. DÉLAIS",
+     "Les délais de fabrication, d'approvisionnement, de livraison et d'installation sont donnés à titre estimatif. Portech ne peut être tenue responsable des retards causés par les fabricants, fournisseurs, transporteurs, conditions de chantier, retards d'autres intervenants, force majeure ou toute autre circonstance indépendante de son contrôle. Un retard dans la réception des matériaux ou composantes ne constitue pas un motif d'annulation sans l'accord écrit de Portech."),
+    ("8. LIVRAISON",
+     "La livraison est incluse uniquement lorsqu'elle est expressément indiquée dans la soumission. Le client doit s'assurer que les lieux sont accessibles et prêts à recevoir les matériaux. Toute livraison supplémentaire occasionnée par une absence du client, un accès impossible, un chantier non prêt ou toute autre situation indépendante de Portech pourra être facturée en supplément."),
+    ("9. INSTALLATION",
+     "Lorsque l'installation est incluse, celle-ci comprend uniquement les travaux expressément décrits à la soumission. Les travaux de finition, de peinture, de réparation de murs, de maçonnerie, de modification structurale, d'électricité ou tout autre travail non spécifiquement indiqué sont exclus, sauf mention contraire."),
+    ("10. QUINCAILLERIE ET ACCESSOIRES",
+     "Les portes et leurs composantes sont fournies avec la quincaillerie spécifiée dans la soumission. Toute modification de modèle, de finition, de fonction ou de quantité après l'approbation de la commande peut entraîner des frais supplémentaires ainsi qu'un délai additionnel. La compatibilité de la quincaillerie avec les systèmes existants doit être confirmée avant la commande lorsque celle-ci dépend d'une installation existante."),
+    ("11. PRIX ET TAXES",
+     "Les prix indiqués dans la soumission sont ceux applicables au moment de son émission et selon les conditions qui y sont décrites. Les taxes applicables sont facturées en sus, lorsqu'elles sont exigibles. Toute augmentation imposée par un fabricant ou fournisseur après l'expiration de la période de validité de la soumission pourra être répercutée au client."),
+    ("12. CONDITIONS DE PAIEMENT",
+     "Sauf indication contraire dans la soumission : dépôt de 30 % à l'acceptation de la commande ; solde payable à la livraison. Les produits fabriqués sur mesure peuvent nécessiter le paiement du dépôt avant leur mise en production. Tout montant en souffrance pourra entraîner la suspension des travaux, des commandes ou des livraisons jusqu'au règlement du compte."),
+    ("13. PROPRIÉTÉ DES MATÉRIAUX",
+     "Les matériaux demeurent la propriété de Portech jusqu'au paiement complet des sommes dues, dans la mesure permise par la loi. Aucune propriété sur les matériaux non entièrement payés ne sera transférée au client."),
+    ("14. INSPECTION ET ACCEPTATION",
+     "Le client doit inspecter les produits dès leur réception et signaler toute anomalie apparente dans un délai raisonnable. Les dommages visibles lors de la livraison doivent être signalés immédiatement afin de permettre les démarches nécessaires auprès du transporteur ou du fournisseur. Une installation ou une utilisation du produit sans réserve pourra être considérée comme une acceptation de son état apparent."),
+    ("15. GARANTIE",
+     "Les produits sont couverts, lorsqu'applicable, par la garantie offerte par leur fabricant respectif. La garantie ne couvre pas les dommages résultant notamment d'une mauvaise utilisation, d'une installation inadéquate effectuée par un tiers, de modifications non autorisées, d'un entretien insuffisant, d'un usage abusif ou de conditions anormales. La garantie de Portech, lorsqu'elle s'applique, est limitée aux travaux et produits fournis par Portech et ne couvre pas les dommages indirects, pertes d'exploitation ou autres dommages consécutifs."),
+    ("16. ANNULATION",
+     "Une commande peut être annulée uniquement avec l'accord écrit de Portech. Lorsque des matériaux ont déjà été commandés, fabriqués ou mis en production, les frais engagés ainsi que les frais d'annulation, de retour ou de restockage applicables pourront être facturés au client. Les produits fabriqués sur mesure ne sont généralement pas annulables ni retournables après le début de leur fabrication."),
+    ("17. RESPONSABILITÉ DU CLIENT",
+     "Le client demeure responsable de fournir à Portech toutes les informations nécessaires à la bonne exécution du mandat, notamment les dimensions, plans, exigences particulières, restrictions d'accès, conditions de chantier et spécifications applicables. Le client doit également s'assurer que les lieux sont accessibles, sécuritaires et prêts pour l'exécution des travaux."),
+    ("18. EXCLUSIONS",
+     "Sauf indication contraire dans la soumission, sont notamment exclus : les travaux structuraux ; les travaux électriques ; la peinture et les travaux de finition ; les réparations de murs ou de maçonnerie ; les travaux de cadrage non spécifiés ; les permis et autorisations ; les travaux effectués par d'autres entrepreneurs ; toute modification rendue nécessaire par une condition existante non connue au moment de la soumission."),
+    ("19. CONFORMITÉ",
+     "Le client reconnaît que les produits doivent être utilisés conformément à leur fonction prévue et aux exigences applicables au projet. Lorsque des exigences particulières de code, d'accessibilité, de sécurité incendie ou autres normes spécifiques s'appliquent au projet, celles-ci doivent être communiquées à Portech avant la commande afin de permettre leur prise en considération dans la soumission."),
+    ("20. LIMITATION DE RESPONSABILITÉ",
+     "Portech ne pourra être tenue responsable des dommages indirects, pertes de profits, pertes d'exploitation, pertes de revenus ou autres dommages consécutifs découlant d'un retard, d'une interruption de travaux ou d'un défaut d'un produit fourni par un fabricant tiers, sous réserve des droits impératifs prévus par la loi."),
+    ("21. ACCEPTATION DES CONDITIONS",
+     "En acceptant la soumission, le client reconnaît avoir pris connaissance des présentes conditions de vente et les accepter intégralement. Les présentes conditions prévalent sur toute condition d'achat ou autre condition provenant du client, à moins qu'une entente écrite contraire ait été conclue avec Portech."),
+]
+
+
+def _sales_conditions_story(styles: dict, q: dict) -> list:
+    """Annexe des conditions de vente (contrat) ajoutee a chaque soumission."""
+    clause_title = ParagraphStyle(
+        "cond_title", parent=styles["body"], fontName="Helvetica-Bold",
+        fontSize=8.5, spaceBefore=5, spaceAfter=1, textColor=NAVY)
+    clause_body = ParagraphStyle(
+        "cond_body", parent=styles["body"], fontSize=7.5, leading=9.5,
+        alignment=4, spaceAfter=2)
+    out = [PageBreak(),
+           Paragraph("PORTECH — CONDITIONS DE VENTE", styles["title"]),
+           Paragraph("Portes commerciales — Annexe à la soumission", styles["label"]),
+           Spacer(1, 3 * mm),
+           Paragraph(
+               "Les présentes conditions de vente font partie intégrante de "
+               "toute soumission émise par Portech relativement à la fourniture, "
+               "la fabrication, la modification, la livraison ou l'installation "
+               "de portes commerciales et de leurs composantes.", clause_body),
+           Spacer(1, 2 * mm)]
+    for title, body in SALES_CONDITIONS:
+        out.append(Paragraph(title, clause_title))
+        out.append(Paragraph(body, clause_body))
+    out.append(Spacer(1, 4 * mm))
+    out.append(Paragraph("ACCEPTATION DU CLIENT", clause_title))
+    out.append(Paragraph(
+        "Par la présente, le client confirme avoir pris connaissance de la "
+        "soumission et des présentes conditions de vente et accepte les "
+        "produits, prix, modalités et conditions qui y sont indiqués.", clause_body))
+    num = q.get("number")
+    num_s = f"SOU-{num:05d}" if isinstance(num, int) else (str(num) if num else "____________")
+    sig_rows = [
+        ["Soumission no :", num_s, "Date :", str(q.get("date") or "____________")],
+        ["Projet :", str(q.get("project") or "____________________"), "", ""],
+        ["Nom :", "____________________", "Signature :", "____________________"],
+    ]
+    sig = Table(sig_rows, colWidths=[26 * mm, 60 * mm, 26 * mm, 60 * mm])
+    sig.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("TEXTCOLOR", (0, 0), (-1, -1), NAVY),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    out.append(Spacer(1, 3 * mm))
+    out.append(sig)
+    return out
+
+
+
 def render_quote_pdf(q: dict) -> bytes:
     """Render a quote / soumission PDF — same layout family as invoices
     but with 'SOUMISSION' branding and a validity window instead of a
@@ -406,6 +499,9 @@ def render_quote_pdf(q: dict) -> bytes:
         "document — info@portech.info",
         s["footer"],
     ))
+
+    # Annexe — conditions de vente (contrat) sur chaque soumission
+    story += _sales_conditions_story(s, q)
 
     doc.build(story)
     buf.seek(0)
