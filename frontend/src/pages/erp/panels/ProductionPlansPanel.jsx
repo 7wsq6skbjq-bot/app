@@ -31,7 +31,7 @@ export const ProductionPlansPanel = () => {
     const [plans, setPlans] = useState([]);
     const [catalog, setCatalog] = useState(null);
     const [hwCatalog, setHwCatalog] = useState([]);
-    const [hwForm, setHwForm] = useState({ name: "", part_number: "", price: "" });
+    const [hwForm, setHwForm] = useState({ name: "", part_number: "", cost: "", price: "" });
     const [showHwMgr, setShowHwMgr] = useState(false);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState(emptyProductionPlan());
@@ -94,8 +94,8 @@ export const ProductionPlansPanel = () => {
         if (!name) return;
         try {
             await http.post("/admin/production-hardware",
-                { name, part_number: (hwForm.part_number || "").trim(), price: Number(hwForm.price || 0) || 0 });
-            setHwForm({ name: "", part_number: "", price: "" });
+                { name, part_number: (hwForm.part_number || "").trim(), cost: Number(hwForm.cost || 0) || 0, price: Number(hwForm.price || 0) || 0 });
+            setHwForm({ name: "", part_number: "", cost: "", price: "" });
             await reloadHwCatalog();
         } catch (e) {
             setErrorMsg(e?.response?.data?.detail || "Erreur d'ajout au catalogue.");
@@ -1061,7 +1061,13 @@ export const ProductionPlansPanel = () => {
                                     placeholder="Ex : 9957" className={`${inputCls} font-mono`} />
                             </div>
                             <div className="w-28">
-                                <label className={labelCls}>Prix ($)</label>
+                                <label className={labelCls}>Coût ($)</label>
+                                <input type="number" min="0" step="0.01" value={hwForm.cost} data-testid="pp-hw-new-cost"
+                                    onChange={(e) => setHwForm((f) => ({ ...f, cost: e.target.value }))}
+                                    placeholder="0.00" className={`${inputCls} text-right`} />
+                            </div>
+                            <div className="w-28">
+                                <label className={labelCls}>Prix vente ($)</label>
                                 <input type="number" min="0" step="0.01" value={hwForm.price} data-testid="pp-hw-new-price"
                                     onChange={(e) => setHwForm((f) => ({ ...f, price: e.target.value }))}
                                     placeholder="0.00" className={`${inputCls} text-right`} />
@@ -1082,7 +1088,8 @@ export const ProductionPlansPanel = () => {
                                         <tr>
                                             <th className="text-left px-2 py-1.5">Nom / description</th>
                                             <th className="text-left px-2 py-1.5 w-40">N° de pièce</th>
-                                            <th className="text-right px-2 py-1.5 w-24">Prix ($)</th>
+                                            <th className="text-right px-2 py-1.5 w-20">Coût ($)</th>
+                                            <th className="text-right px-2 py-1.5 w-24">Vente ($)</th>
                                             <th className="px-2 py-1.5 w-10"></th>
                                         </tr>
                                     </thead>
@@ -1091,6 +1098,7 @@ export const ProductionPlansPanel = () => {
                                             <tr key={it.id} className="border-b border-[#f3f6fb] hover:bg-[#f7f9fc]">
                                                 <td className="px-2 py-1.5 text-[#0c182b]">{it.name}</td>
                                                 <td className="px-2 py-1.5 font-mono text-[#4b5d7a]">{it.part_number || "—"}</td>
+                                                <td className="px-2 py-1.5 text-right text-[#4b5d7a]">{it.cost ? `${Number(it.cost).toFixed(2)}` : "—"}</td>
                                                 <td className="px-2 py-1.5 text-right text-[#4b5d7a]">{it.price ? `${Number(it.price).toFixed(2)}` : "—"}</td>
                                                 <td className="px-2 py-1.5 text-right">
                                                     <button onClick={() => deleteHwCatalogItem(it.id)}

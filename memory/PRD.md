@@ -292,3 +292,13 @@ User language: **French**.
   * Tests : agent iteration_15 = 100% (10/10 backend, frontend e2e, aucun JS error).
 
 - MAJ 2026-06 (Dessins de production, lot 13 - Option « les deux » battants) : chaque quincaillerie dessinee peut maintenant etre placee sur actif / inactif / LES DEUX (Literal["active","inactive","both"] pour handle/lock/lever/paddle/plate/panic/flush/closer). Helper _roles() dans _elevation_page : chaque element boucle sur les battants choisis (cote + dim uniquement sur le 1er). Selecteur UI leafSelect a une 3e option « les deux ». Verifie au rendu (levier + barre panique + ferme-porte sur les 2 battants d'une paire).
+
+- MAJ 2026-06 (Soumission - lignes sans prix) : le PDF de soumission (render_quote_pdf) n'affiche plus « 0,00 $ » pour les lignes sans prix (_items_table_money(hide_zero=True) pour la soumission uniquement ; factures/BC inchanges). Editeur : total coût par porte affiche « — » si 0.
+
+- MAJ 2026-06 (PRICING - Phase 1 : moteur de prix & rentabilite) :
+  * Nouveau module erp_pricing.py (moteur EXACT + teste) : markup=profit/cout, marge=profit/vente (JAMAIS confondus), prix depuis marge cible = cout/(1-marge), simulateur markup, « 1 pour N portes » (ceil), ventilation par categorie, alerte marge < mini. markup/marge = None si base 0.
+  * Endpoints /api/admin/pricing/settings (GET/PUT singleton erp_pricing_settings) + /api/admin/pricing/compute. Parametres : taux (standard=90 confirme ; specialisee/fabrication/usinage/expertise = None => DONNEE MANQUANTE), km_rate=0.85, margin_min/target=None (a definir par le client, JAMAIS inventes).
+  * Catalogue quincaillerie : DEUX champs Cout + Prix de vente (ProductionHardware.cost + price ; UI gestionnaire mise a jour).
+  * Frontend : composant PricingCalculator.jsx integre dans l'onglet Soumissions (QuotesPanel) — parametres editables, table de lignes (categorie, qty, 1/N portes, cout U, vente U), tableau de rentabilite global + par categorie, simulateur (+5..+100 % + perso), solveur de marge cible (30..60 % + perso), alerte « MARGE SOUS LA CIBLE ». Style pro bleu foncé/turquoise.
+  * Verifie : backend (curl projet 12 portes : markup 185 %, marge 64,9 %, qty 1-pour-2=6 ; solveur 50 %→prix=2×cout, markup 100 %) + UI e2e (capture). Formulaire facture/BC partage NON touche.
+  * RESTE (Phase 2) : catalogue B2B fabricants (prix/operation, temps, capacite/jour), capacite de production (portes/jour-semaine-mois). Phase 3 : analytics de rentabilite (par type de projet/produit/client). Main-d'oeuvre : taux inseres manuellement dans les lignes pour l'instant (pas encore de picker auto depuis les parametres).

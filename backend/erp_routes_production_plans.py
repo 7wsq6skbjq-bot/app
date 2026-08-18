@@ -127,6 +127,7 @@ class ProductionHardwareIn(BaseModel):
     name: str = Field("", max_length=120)
     part_number: str = Field("", max_length=60)
     category: str = Field("", max_length=60)
+    cost: float = 0
     price: float = 0
 
 
@@ -178,13 +179,15 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         existing = await db.erp_production_hardware.find_one({"name": name}, {"_id": 0})
         if existing:
             patch = {"part_number": data.part_number.strip(),
-                     "category": data.category.strip(), "price": float(data.price or 0)}
+                     "category": data.category.strip(),
+                     "cost": float(data.cost or 0), "price": float(data.price or 0)}
             await db.erp_production_hardware.update_one({"id": existing["id"]}, {"$set": patch})
             existing.update(patch)
             return ProductionHardware(**existing)
         item = ProductionHardware(name=name,
                                   part_number=data.part_number.strip(),
                                   category=data.category.strip(),
+                                  cost=float(data.cost or 0),
                                   price=float(data.price or 0))
         await db.erp_production_hardware.insert_one(item.model_dump(mode="json"))
         return item
@@ -197,7 +200,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             raise HTTPException(404, "Quincaillerie introuvable.")
         patch = {"name": (data.name or "").strip(),
                  "part_number": data.part_number.strip(),
-                 "category": data.category.strip(), "price": float(data.price or 0)}
+                 "category": data.category.strip(),
+                 "cost": float(data.cost or 0), "price": float(data.price or 0)}
         await db.erp_production_hardware.update_one({"id": item_id}, {"$set": patch})
         existing.update(patch)
         return ProductionHardware(**existing)
