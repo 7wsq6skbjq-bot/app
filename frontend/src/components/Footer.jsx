@@ -19,7 +19,8 @@ const Footer = () => {
                         />
                         <p className="text-[#b2c3dd] max-w-md leading-relaxed">
                             Installation, réparation et modification de
-                            quincaillerie pour portes commerciales. Un travail
+                            quincaillerie pour portes commerciales en
+                            aluminium. Un travail
                             précis, rapide et durable — partout dans le Grand
                             Montréal.
                         </p>

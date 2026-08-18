@@ -58,7 +58,7 @@ const Legal = () => {
                                 <p>
                                     <strong>Portech</strong>
                                     <br />
-                                    Quincaillerie et porte commerciale
+                                    Quincaillerie et portes commerciales en aluminium
                                     <br />
                                     Fondateur : Cédrick Pimparé
                                     <br />

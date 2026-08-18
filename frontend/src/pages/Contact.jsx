@@ -43,9 +43,9 @@ const Contact = () => {
     const [errorMsg, setErrorMsg] = useState("");
 
     useSeo({
-        title: "Contact · Demander une soumission — Quincaillerie et porte commerciale | Portech",
+        title: "Contact · Demander une soumission — Quincaillerie et portes commerciales en aluminium | Portech",
         description:
-            "Contactez Portech pour une soumission gratuite : installation, entretien, réparation ou remplacement de quincaillerie et porte commerciale. Grand Montréal, Laval, Rive-Sud et Rive-Nord. Réponse sous 24 h ouvrables.",
+            "Contactez Portech pour une soumission gratuite : installation, entretien, réparation ou remplacement de quincaillerie et portes commerciales en aluminium. Grand Montréal, Laval, Rive-Sud et Rive-Nord. Réponse sous 24 h ouvrables.",
         canonical: "https://portech.info/contact",
     });
 

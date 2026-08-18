@@ -30,11 +30,13 @@ export const HomeHero = () => (
                         <br />
                         en quincaillerie
                         <br />
-                        de portes commerciales.
+                        de portes commerciales
+                        <br />
+                        en aluminium.
                     </h1>
                     <p className="mt-8 max-w-2xl text-lg md:text-xl text-[#b2c3dd] leading-relaxed">
                         Installation, réparation et modification de
-                        quincaillerie pour portes commerciales. On s'occupe des
+                        quincaillerie pour portes commerciales en aluminium. On s'occupe des
                         barres antipaniques, ferme-portes, serrures et
                         accessoires — partout dans le Grand Montréal.
                     </p>

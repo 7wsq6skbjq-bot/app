@@ -31,7 +31,7 @@ const serviceDetails = [
         title: "Installation de quincaillerie",
         img: IMG.install,
         summary:
-            "Installation complète de quincaillerie et porte commerciale, alignement parfait, fonctionnement optimal dès la mise en service.",
+            "Installation complète de quincaillerie et portes commerciales en aluminium, alignement parfait, fonctionnement optimal dès la mise en service.",
         items: [
             "Barres antipaniques (simples, verticales, rim)",
             "Ferme-portes hydrauliques (au dessus, au sol, concealed)",
@@ -120,9 +120,9 @@ const serviceDetails = [
 
 const Services = () => {
     useSeo({
-        title: "Services · Installation, entretien, réparation et remplacement de quincaillerie et porte commerciale | Portech",
+        title: "Services · Installation, entretien, réparation et remplacement de quincaillerie et portes commerciales en aluminium | Portech",
         description:
-            "Services Portech : installation, entretien, réparation et remplacement de quincaillerie et porte commerciale. Barres antipaniques, ferme-portes, serrures mortaise, dispositifs de sortie. Grand Montréal, Laval, Rive-Sud et Rive-Nord.",
+            "Services Portech : installation, entretien, réparation et remplacement de quincaillerie et portes commerciales en aluminium. Barres antipaniques, ferme-portes, serrures mortaise, dispositifs de sortie. Grand Montréal, Laval, Rive-Sud et Rive-Nord.",
         canonical: "https://portech.info/services",
     });
     return (
@@ -145,7 +145,7 @@ const Services = () => {
                         02 / Nos services
                     </div>
                     <h1 className="font-display font-bold uppercase tracking-tight text-5xl md:text-6xl lg:text-7xl leading-[0.92] max-w-4xl">
-                        La quincaillerie et porte commerciale, c'est notre spécialité.
+                        La quincaillerie et les portes commerciales en aluminium, c'est notre spécialité.
                     </h1>
                     <p className="mt-8 max-w-2xl text-lg md:text-xl text-[#b2c3dd] leading-relaxed">
                         Installation, modification, réparation et mise à

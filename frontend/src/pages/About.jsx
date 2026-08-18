@@ -13,7 +13,7 @@ const storyBlocks = [
         paragraphs: [
             "Il y a des parcours qui ne s'inventent pas.",
             "Le mien s'est construit en atelier, jour après jour, pendant plus de 10 ans — aux côtés d'un homme qui avait déjà consacré 45 années de sa vie à ce métier.",
-            "Un homme de rigueur. Un homme de précision. Un homme qui m'a appris qu'une porte commerciale, ce n'est jamais « juste une porte ».",
+            "Un homme de rigueur. Un homme de précision. Un homme qui m'a appris qu'une porte commerciale en aluminium, ce n'est jamais « juste une porte ».",
         ],
     },
     {
@@ -56,9 +56,9 @@ const storyBlocks = [
 
 const About = () => {
     useSeo({
-        title: "À propos · Cédrick Pimparé, fondateur de Portech | Quincaillerie et porte commerciale",
+        title: "À propos · Cédrick Pimparé, fondateur de Portech | Quincaillerie et portes commerciales en aluminium",
         description:
-            "Portech a été fondée par Cédrick Pimparé après 10 ans en atelier auprès d'un mentor avec 45 ans de métier. Spécialiste de la quincaillerie et porte commerciale, Grand Montréal, Laval, Rive-Sud et Rive-Nord.",
+            "Portech a été fondée par Cédrick Pimparé après 10 ans en atelier auprès d'un mentor avec 45 ans de métier. Spécialiste de la quincaillerie et des portes commerciales en aluminium, Grand Montréal, Laval, Rive-Sud et Rive-Nord.",
         canonical: "https://portech.info/a-propos",
     });
     return (
@@ -89,7 +89,7 @@ const About = () => {
                     </h1>
                     <p className="mt-8 max-w-2xl text-lg md:text-xl text-[#b2c3dd] leading-relaxed">
                         Portech est une entreprise spécialisée dans la
-                        quincaillerie de portes commerciales. Notre mission est
+                        quincaillerie de portes commerciales en aluminium. Notre mission est
                         simple : offrir des installations fiables, précises et
                         durables — partout dans le Grand Montréal.
                     </p>

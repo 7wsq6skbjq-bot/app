@@ -93,9 +93,9 @@ export const testimonials = [
 ];
 
 export const showcaseTiles = [
-    { to: "/galerie/interventions",       testId: "showcase-interventions", img: IMG.hands,       caption: "Intervention · Installation",     hoverLabel: "Voir la galerie →", className: "md:col-span-5 md:row-span-2", imgClass: "min-h-[26rem]", alt: "Technicien installant de la quincaillerie sur une porte commerciale" },
+    { to: "/galerie/interventions",       testId: "showcase-interventions", img: IMG.hands,       caption: "Intervention · Installation",     hoverLabel: "Voir la galerie →", className: "md:col-span-5 md:row-span-2", imgClass: "min-h-[26rem]", alt: "Technicien installant de la quincaillerie sur une porte commerciale en aluminium" },
     { to: "/galerie/chantiers",           testId: "showcase-chantiers",     img: IMG.luxuryGlass, caption: "Chantier réel · Haut de gamme",   hoverLabel: "Voir la galerie →", className: "md:col-span-4", imgClass: "h-64", alt: "Installation de quincaillerie sur porte pivot vitrée haut de gamme" },
-    { to: "/galerie/dispositifs-sortie",  testId: "showcase-exit-device",   img: IMG.exitDevice,  caption: "Dispositif de sortie",            hoverLabel: "Voir →",            className: "md:col-span-3", imgClass: "h-64", alt: "Dispositif de sortie sur porte commerciale" },
+    { to: "/galerie/dispositifs-sortie",  testId: "showcase-exit-device",   img: IMG.exitDevice,  caption: "Dispositif de sortie",            hoverLabel: "Voir →",            className: "md:col-span-3", imgClass: "h-64", alt: "Dispositif de sortie sur porte commerciale en aluminium" },
     { to: "/galerie/barres-antipaniques", testId: "showcase-panic-bar",     img: IMG.panicBar,    caption: "Barre antipanique",               hoverLabel: "Voir →",            className: "md:col-span-4", imgClass: "h-64", alt: "Barre antipanique commerciale" },
     { to: "/galerie/serrures",            testId: "showcase-lock",          img: IMG.lockCloseup, caption: "Serrure",                         hoverLabel: "Voir →",            className: "md:col-span-3", imgClass: "h-64", alt: "Serrure commerciale" },
 ];

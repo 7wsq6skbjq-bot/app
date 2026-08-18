@@ -44,7 +44,7 @@ const Navbar = () => {
                 >
                     <img
                         src="/brand/logo-portech.png"
-                        alt="Portech — quincaillerie de portes commerciales"
+                        alt="Portech — quincaillerie de portes commerciales en aluminium"
                         className="h-12 md:h-16 w-auto"
                     />
                 </Link>

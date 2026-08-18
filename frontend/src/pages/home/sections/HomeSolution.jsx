@@ -20,7 +20,7 @@ export const HomeSolution = () => (
                     <div className="mt-8 space-y-5 text-lg md:text-xl text-[#b2c3dd] leading-relaxed max-w-2xl">
                         <p>
                             Chez Portech, on s'occupe de votre quincaillerie de
-                            portes commerciales{" "}
+                            portes commerciales en aluminium{" "}
                             <strong className="text-white">de A à Z</strong>.
                         </p>
                         <p>On ne fait pas juste installer des pièces.</p>
@@ -38,7 +38,7 @@ export const HomeSolution = () => (
                     <div className="border border-[#1e3457] relative">
                         <img
                             src={IMG.grid}
-                            alt="Grille de composants de quincaillerie et porte commerciale"
+                            alt="Grille de composants de quincaillerie et porte commerciale en aluminium"
                             className="w-full h-72 md:h-96 object-cover"
                         />
                         <div className="absolute top-4 left-4 tech-stamp bg-[#0c182b]/85 backdrop-blur border border-[#1e3457] px-3 py-2">
