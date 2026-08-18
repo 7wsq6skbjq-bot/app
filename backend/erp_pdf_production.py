@@ -1234,8 +1234,8 @@ def _elevation_page(c, plan, door, page_no):
                 ("Verre actif", f"{_ghA:.0f} × {_gwA:.0f} mm"),
                 ("Verre inact.", f"{_ghI:.0f} × {_gwI:.0f} mm"),
                 ("Jambage V (long.)", _dual_mm(_gmA['mv'])),
-                ("Horiz. actif (larg.)", _dual_mm(_gmA['mh'])),
-                ("Horiz. inact. (larg.)", _dual_mm(_gmI['mh'])),
+                ("Horiz. actif (long.)", _dual_mm(_gmA['mh'])),
+                ("Horiz. inact. (long.)", _dual_mm(_gmI['mh'])),
                 ("Parclose", f"{_gmA['pn'] or '—'} · verre {_gmA['gt']:.0f} mm"),
             ], tint=colors.HexColor("#eef7ee"))
     else:
@@ -1247,7 +1247,7 @@ def _elevation_page(c, plan, door, page_no):
             ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures" + _warn, [
                 ("Verre (H×L)", f"{_gh:.0f} × {_gw:.0f} mm"),
                 ("Jambage V (long.)", _dual_mm(_gm['mv'])),
-                ("Horiz. h/b (larg.)", _dual_mm(_gm['mh'])),
+                ("Horiz. h/b (long.)", _dual_mm(_gm['mh'])),
                 ("Parclose", f"{_gm['pn'] or '—'} · verre {_gm['gt']:.0f} mm"),
             ], tint=colors.HexColor("#eef7ee"))
     if door.get("hinges"):
