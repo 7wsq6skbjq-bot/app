@@ -1174,10 +1174,13 @@ def _elevation_page(c, plan, door, page_no):
     fab_auto = plan.get("fab_auto", True)
     allow = _fnum(plan.get("fab_allowance_in"), 0.0)
     _foff = _leaf_offset(series)
+    # Une paire déduit l'offset largeur PAR BATTANT (2×), comme la bible verre
+    # (wp = 2×ws). Sinon chaque battant sortirait ~57 mm trop large.
+    _foff_w = _foff["width"] * (2 if is_pair else 1)
     fw = _fnum(door.get("fab_width_in"), 0.0)
     fh = _fnum(door.get("fab_height_in"), 0.0)
     if fw <= 0 and fab_auto:
-        fw = rw - _foff["width"] / 25.4 + allow
+        fw = rw - _foff_w / 25.4 + allow
     if fh <= 0 and fab_auto:
         fh = rh - _foff["height"] / 25.4 + allow
     if fw > 0:
@@ -1219,7 +1222,8 @@ def _elevation_page(c, plan, door, page_no):
     _off = _leaf_offset(series)
     _leaf_h_mm = max(rh * 25.4 - _off["height"], 1)
     if is_pair:
-        _tot_leaf_w_mm = max(rw * 25.4 - _off["width"], 1)
+        # Offset largeur déduit PAR BATTANT (2×) pour une paire — voir _foff_w.
+        _tot_leaf_w_mm = max(rw * 25.4 - _off["width"] * 2, 1)
         _sumw = (aw_in + iw_in) if (aw_in + iw_in) > 0 else rw
         _fa = (aw_in / _sumw) if _sumw else 0.5
         _wa = _tot_leaf_w_mm * (_fa if _fa > 0 else 0.5)

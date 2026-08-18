@@ -324,3 +324,9 @@ User language: **French**.
   * Backend : POST /api/admin/production-plans/{id}/send-email (EmailSendRequest : to_email, subject?, message?). Rend le PDF via render_production_plan_pdf et l'envoie en pièce jointe avec send_pdf_email (Resend, expéditeur info@portech.info). Sujet/message par défaut en français (préremplis avec plan_number + project_name + client). 404 si plan introuvable, 422 si email invalide. erp_routes_production_plans.py.
   * Frontend (ProductionPlansPanel.jsx) : bouton Mail « Envoyer au client » dans chaque ligne de la liste (data-testid pp-email-{id}) + dans la barre d'action de l'éditeur (pp-email-editor). Modale inline (pp-email-modal) : destinataire (pp-email-to, prérempli depuis client_contact si c'est un email), message optionnel (pp-email-message), bouton envoyer (pp-email-send). Note : envoie la version ENREGISTRÉE (enregistrer d'abord pour inclure les modifs). Réutilise le pattern éprouvé Factures/BC/Connaissements.
   * Vérifié : route 404/422 corrects, envoi réel vers info@portech.info = 200 {"sent":true} avec PDF joint. Frontend compile OK.
+
+- MAJ 2026-06 (BUG paires — horizontaux/battants trop larges) : CORRIGÉ + VÉRIFIÉ.
+  * Symptôme (job « Poké Monster ») : sur une PAIRE, l'horizontal (traverse) sortait > 840 mm au lieu de 799,30 mm.
+  * Cause : erp_pdf_production.py — pour is_pair, l'offset ouverture→battant (OPENING_TO_LEAF_OFFSET_MM AT1000 = 115,1) n'était déduit qu'1× de l'ouverture totale (_tot_leaf_w_mm) puis /2 → 856,85 par battant. La déduction verre (wp=244,4) était déjà doublée mais pas l'offset battant.
+  * Fix : offset largeur déduit PAR BATTANT (×2 = 230,2) pour les paires — lignes ~1176 (_foff_w pour cote « Fab. ») et ~1222 (_tot_leaf_w_mm). Porte simple inchangée.
+  * Vérif : paire 72×84 AT1000 → 799,30/battant, horizontal 799,30 ✓ ; simple 36 po → 799,30 ✓ ; PDF paire+simple rendus OK. Correction en PREVIEW — redéployer pour portech.info.
