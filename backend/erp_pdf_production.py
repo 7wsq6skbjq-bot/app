@@ -130,7 +130,13 @@ def _face_in(code, fallback=2.0):
 
 # ── glass + parclose (moulure) sizing — reuse the Cut-List calculation ──
 def _glass_thickness_mm(door) -> float:
-    """Detect glass thickness: insulated series or thermos glass -> 25.4, else 6."""
+    """Detect glass thickness. Explicit glass_type wins; else insulated series
+    or thermos text -> 25.4, otherwise 6 mm."""
+    gt = (door.get("glass_type") or "").lower()
+    if gt == "tht":
+        return 25.4
+    if gt == "6mm":
+        return 6.0
     s = (door.get("series") or "").upper().replace(" ", "")
     if s.startswith("ATI"):
         return 25.4
@@ -1223,12 +1229,13 @@ def _elevation_page(c, plan, door, page_no):
         if _gmA and _gmI:
             _ghA, _gwA = _glass_dims_bible(series, rw, rh, True, _fa if _fa > 0 else 0.5)
             _ghI, _gwI = _glass_dims_bible(series, rw, rh, True, (1 - _fa) if _fa > 0 else 0.5)
-            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (bible A.T.)", [
+            _warn = "  ⚠" if (_gmA['mh'] <= _gwA or _gmA['mv'] >= _ghA) else ""
+            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures" + _warn, [
                 ("Verre actif", f"{_ghA:.0f} × {_gwA:.0f} mm"),
                 ("Verre inact.", f"{_ghI:.0f} × {_gwI:.0f} mm"),
-                ("Moulure V ×4", _dual_mm(_gmA['mv'])),
-                ("Moul. H actif", _dual_mm(_gmA['mh'])),
-                ("Moul. H inact.", _dual_mm(_gmI['mh'])),
+                ("Jambage V (long.)", _dual_mm(_gmA['mv'])),
+                ("Horiz. actif (larg.)", _dual_mm(_gmA['mh'])),
+                ("Horiz. inact. (larg.)", _dual_mm(_gmI['mh'])),
                 ("Parclose", f"{_gmA['pn'] or '—'} · verre {_gmA['gt']:.0f} mm"),
             ], tint=colors.HexColor("#eef7ee"))
     else:
@@ -1236,10 +1243,11 @@ def _elevation_page(c, plan, door, page_no):
         _gm = _glass_moulure(door, _leaf_w_mm, _leaf_h_mm)
         if _gm:
             _gh, _gw = _glass_dims_bible(series, rw, rh, False)
-            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (bible A.T.)", [
+            _warn = "  ⚠" if (_gm['mh'] <= _gw or _gm['mv'] >= _gh) else ""
+            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures" + _warn, [
                 ("Verre (H×L)", f"{_gh:.0f} × {_gw:.0f} mm"),
-                ("Moulure V ×4", _dual_mm(_gm['mv'])),
-                ("Moulure H ×4", _dual_mm(_gm['mh'])),
+                ("Jambage V (long.)", _dual_mm(_gm['mv'])),
+                ("Horiz. h/b (larg.)", _dual_mm(_gm['mh'])),
                 ("Parclose", f"{_gm['pn'] or '—'} · verre {_gm['gt']:.0f} mm"),
             ], tint=colors.HexColor("#eef7ee"))
     if door.get("hinges"):

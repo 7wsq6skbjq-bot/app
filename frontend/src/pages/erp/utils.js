@@ -313,6 +313,7 @@ export const emptyProductionDoor = () => ({
     finish_ext: "Anodisé clair",
     finish_int: "Anodisé clair",
     glass: "VT6 · 6mm trempé clair",
+    glass_type: "6mm",
     hinges: "",
     hinge_type: "butt45",
     scale_note: "1:30",

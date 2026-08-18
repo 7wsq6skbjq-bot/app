@@ -271,6 +271,7 @@ export const ProductionPlansPanel = () => {
             finish_ext: d.finish_ext || "",
             finish_int: d.finish_int || "",
             glass: d.glass || "",
+            glass_type: d.glass_type || "6mm",
             hinges: d.hinges || "",
             hinge_type: d.hinge_type || "butt45",
             profile_head: effProfile(d, "profile_head", "head"),
@@ -654,10 +655,19 @@ export const ProductionPlansPanel = () => {
                                                         placeholder="1:30" className={inputCls} />
                                                 </div>
                                                 <div>
-                                                    <label className={labelCls}>Vitrage</label>
+                                                    <label className={labelCls}>Type de vitrage</label>
+                                                    <select value={d.glass_type || "6mm"} data-testid={`pp-door-glasstype-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "glass_type", e.target.value)}
+                                                        className={`${inputCls} bg-white`}>
+                                                        <option value="6mm">Vitré 6 mm</option>
+                                                        <option value="tht">Thermos 25,4 mm (THT)</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className={labelCls}>Vitrage (note)</label>
                                                     <input type="text" value={d.glass}
                                                         onChange={(e) => updateDoor(d._key, "glass", e.target.value)}
-                                                        placeholder="VT6 · 6mm trempé clair" className={inputCls} />
+                                                        placeholder="VT6 · trempé clair" className={inputCls} />
                                                 </div>
                                                 <div>
                                                     <label className={labelCls}>Fini extérieur</label>

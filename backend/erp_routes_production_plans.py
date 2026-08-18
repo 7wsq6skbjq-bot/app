@@ -80,6 +80,7 @@ class DoorPlan(BaseModel):
     finish_ext: str = ""
     finish_int: str = ""
     glass: str = ""
+    glass_type: Literal["6mm", "tht"] = "6mm"
     hinges: str = ""
     hinge_type: Literal["butt45", "continue", "none"] = "butt45"
     profile_head: str = ""
