@@ -161,6 +161,47 @@ def _leaf_offset(series):
     return OPENING_TO_LEAF_OFFSET_MM["AT1000"]
 
 
+# Déductions de vitrage (thermos) — bible A.T. Fabrication (mm).
+# ws = déduction largeur porte simple ; wp = déduction largeur totale d'une paire
+# (répartie ensuite entre les 2 battants) ; h = déduction hauteur.
+GLASS_DEDUCT_MM = {
+    "AT1000":  {"ws": 122.2, "wp": 244.4, "h": 185.7},
+    "ATI1000": {"ws": 122.2, "wp": 244.4, "h": 185.7},
+    "AT2000":  {"ws": 198.4, "wp": 396.8, "h": 303.2},
+    "ATI2000": {"ws": 198.4, "wp": 396.8, "h": 303.2},
+}
+# Lousse agrandi de 2 mm en largeur : le thermos est 2 mm moins large PAR porte
+# (portes simples ET chaque battant des paires).
+GLASS_WIDTH_LOUSSE_MM = 2.0
+
+
+def _glass_deduct(series):
+    s = (series or "AT1000").upper().replace(" ", "").replace("_", "")
+    if s.startswith("ATI2000"):
+        return GLASS_DEDUCT_MM["ATI2000"]
+    if s.startswith("ATI1000"):
+        return GLASS_DEDUCT_MM["ATI1000"]
+    if s.startswith("AT2000"):
+        return GLASS_DEDUCT_MM["AT2000"]
+    return GLASS_DEDUCT_MM["AT1000"]
+
+
+def _glass_dims_bible(series, opening_w_in, opening_h_in, is_pair, leaf_frac=0.5):
+    """Dimensions RÉELLES du thermos (mm) selon la bible A.T. + lousse -2 mm.
+    Retourne (hauteur_mm, largeur_mm). Pour une paire, largeur PAR battant."""
+    d = _glass_deduct(series)
+    ow = float(opening_w_in) * 25.4
+    oh = float(opening_h_in) * 25.4
+    h = oh - d["h"]
+    if is_pair:
+        total_w = ow - d["wp"]                       # largeur vitrage totale (2 battants)
+        w = total_w * float(leaf_frac) - GLASS_WIDTH_LOUSSE_MM
+    else:
+        w = ow - d["ws"] - GLASS_WIDTH_LOUSSE_MM
+    return max(h, 0), max(w, 0)
+
+
+
 def _glass_moulure(door, leaf_w_mm: float, leaf_h_mm: float):
     """Return glass H/W + parclose V/H lengths (mm) using the SAME formula as
     the Cut-List module. `leaf_w_mm`/`leaf_h_mm` must already be the FINISHED
@@ -1180,9 +1221,11 @@ def _elevation_page(c, plan, door, page_no):
         _gmA = _glass_moulure(door, _wa, _leaf_h_mm)
         _gmI = _glass_moulure(door, _wi, _leaf_h_mm)
         if _gmA and _gmI:
-            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (calc. coupe)", [
-                ("Verre actif", f"{_gmA['gh']:.0f} × {_gmA['gw']:.0f} mm"),
-                ("Verre inact.", f"{_gmI['gh']:.0f} × {_gmI['gw']:.0f} mm"),
+            _ghA, _gwA = _glass_dims_bible(series, rw, rh, True, _fa if _fa > 0 else 0.5)
+            _ghI, _gwI = _glass_dims_bible(series, rw, rh, True, (1 - _fa) if _fa > 0 else 0.5)
+            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (bible A.T.)", [
+                ("Verre actif", f"{_ghA:.0f} × {_gwA:.0f} mm"),
+                ("Verre inact.", f"{_ghI:.0f} × {_gwI:.0f} mm"),
                 ("Moulure V ×4", _dual_mm(_gmA['mv'])),
                 ("Moul. H actif", _dual_mm(_gmA['mh'])),
                 ("Moul. H inact.", _dual_mm(_gmI['mh'])),
@@ -1192,8 +1235,9 @@ def _elevation_page(c, plan, door, page_no):
         _leaf_w_mm = max(rw * 25.4 - _off["width"], 1)
         _gm = _glass_moulure(door, _leaf_w_mm, _leaf_h_mm)
         if _gm:
-            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (calc. coupe)", [
-                ("Verre (H×L)", f"{_gm['gh']:.0f} × {_gm['gw']:.0f} mm"),
+            _gh, _gw = _glass_dims_bible(series, rw, rh, False)
+            ry = _spec_block(c, rx, ry, rw_col, "Verre & moulures (bible A.T.)", [
+                ("Verre (H×L)", f"{_gh:.0f} × {_gw:.0f} mm"),
                 ("Moulure V ×4", _dual_mm(_gm['mv'])),
                 ("Moulure H ×4", _dual_mm(_gm['mh'])),
                 ("Parclose", f"{_gm['pn'] or '—'} · verre {_gm['gt']:.0f} mm"),
