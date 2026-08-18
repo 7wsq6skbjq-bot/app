@@ -1222,12 +1222,15 @@ def _elevation_page(c, plan, door, page_no):
     _off = _leaf_offset(series)
     _leaf_h_mm = max(rh * 25.4 - _off["height"], 1)
     if is_pair:
-        # Offset largeur déduit PAR BATTANT (2×) pour une paire — voir _foff_w.
-        _tot_leaf_w_mm = max(rw * 25.4 - _off["width"] * 2, 1)
-        _sumw = (aw_in + iw_in) if (aw_in + iw_in) > 0 else rw
-        _fa = (aw_in / _sumw) if _sumw else 0.5
-        _wa = _tot_leaf_w_mm * (_fa if _fa > 0 else 0.5)
-        _wi = _tot_leaf_w_mm - _wa
+        # Chaque battant = (sa portion d'ouverture en po × 25.4) − offset largeur.
+        # Modèle par-battant (et non un offset total réparti au prorata) : un
+        # battant actif de 36" donne toujours 36×25.4 − 115.1 = 799.30 mm,
+        # peu importe la largeur du battant inactif.
+        _awi = aw_in if aw_in > 0 else rw / 2
+        _iwi = iw_in if iw_in > 0 else rw / 2
+        _wa = max(_awi * 25.4 - _off["width"], 1)
+        _wi = max(_iwi * 25.4 - _off["width"], 1)
+        _fa = _awi / (_awi + _iwi) if (_awi + _iwi) else 0.5
         _gmA = _glass_moulure(door, _wa, _leaf_h_mm)
         _gmI = _glass_moulure(door, _wi, _leaf_h_mm)
         if _gmA and _gmI:

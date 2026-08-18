@@ -330,3 +330,9 @@ User language: **French**.
   * Cause : erp_pdf_production.py — pour is_pair, l'offset ouverture→battant (OPENING_TO_LEAF_OFFSET_MM AT1000 = 115,1) n'était déduit qu'1× de l'ouverture totale (_tot_leaf_w_mm) puis /2 → 856,85 par battant. La déduction verre (wp=244,4) était déjà doublée mais pas l'offset battant.
   * Fix : offset largeur déduit PAR BATTANT (×2 = 230,2) pour les paires — lignes ~1176 (_foff_w pour cote « Fab. ») et ~1222 (_tot_leaf_w_mm). Porte simple inchangée.
   * Vérif : paire 72×84 AT1000 → 799,30/battant, horizontal 799,30 ✓ ; simple 36 po → 799,30 ✓ ; PDF paire+simple rendus OK. Correction en PREVIEW — redéployer pour portech.info.
+
+- MAJ 2026-06 (BUG paires ASYMÉTRIQUES — battant actif ≠ 799) : CORRIGÉ + VÉRIFIÉ (suite à capture prod du client).
+  * Symptôme : paire asymétrique (actif 36" thermos) affichait Horiz. actif 776.3 au lieu de 799.30.
+  * Cause : erp_pdf_production.py répartissait l'offset largeur au PRORATA (_tot_leaf_w_mm * _fa) entre battants → fausse la largeur de chaque battant en asymétrique.
+  * Fix : modèle PAR-BATTANT — _wa = aw_in*25.4 - offset ; _wi = iw_in*25.4 - offset (chaque battant perd l'offset complet 115.1). Un actif 36" = 799.30 quelle que soit la largeur de l'inactif. La cote « Fab. » totale reste opening - 2×offset (cohérent).
+  * Vérif : sym 36+36 → 799.3/799.3 ; asym 36+24 → 799.3/494.5 ; asym 36+20 → 799.3/392.9 ; PDF paire+simple rendus OK. EN PREVIEW — redéployer + régénérer le plan pour portech.info.
