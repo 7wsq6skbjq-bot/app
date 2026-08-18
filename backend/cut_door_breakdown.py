@@ -97,6 +97,12 @@ PARCLOSE_FACE_BY_GLASS_MM = {
 }
 MOULURE_FACE_WIDTH_MM = 13.48  # Legacy default kept for back-compat in tests.
 
+# Lousse (tolérance de coupe) retranché de la LARGEUR du vitrage seulement :
+# le verre/thermos est coupé 2 mm plus étroit par porte (portes simples ET
+# chaque battant des paires). Doit rester identique à GLASS_WIDTH_LOUSSE_MM
+# dans erp_pdf_production.py (plans de production).
+GLASS_WIDTH_LOUSSE_MM = 2.0
+
 # Cladding piece (ATi insulated only) — clad pieces are 5.7 mm shorter on each
 # axis than the leaf itself (per official AT DXF).
 CLADDING_OFFSET_MM = 5.7
@@ -190,6 +196,11 @@ def decompose_at_door(
     stile_cut = leaf_height_mm
     moulure_v = stile_cut - top_rail - base_rail - 2 * moulure_face
     moulure_h = leaf_width_mm  # mitred 45° → spans full leaf width
+
+    # Largeur RÉELLE du vitrage = largeur battant − 2 montants − 2 parcloses V
+    # − lousse (2 mm). Le lousse s'applique UNIQUEMENT en largeur, par porte /
+    # par battant (decompose est appelé une fois par battant sur les paires).
+    glass_width_mm = moulure_h - hinge_stile - lock_stile - 2 * moulure_face - GLASS_WIDTH_LOUSSE_MM
 
     is_insulated = series_key.startswith("ATI")
     is_hybrid = series_key == "AT1000-BASE-AT2000"
@@ -288,10 +299,13 @@ def decompose_at_door(
             "label": f"{label_prefix} — Vitrage",
             "material": f"Verre {'thermos' if glass_thickness_mm >= 12 else 'trempé'} {glass_thickness_mm:.1f}mm",
             "length_mm": round(moulure_v, 2),
-            "width_mm": round(moulure_h - hinge_stile - lock_stile - 2 * moulure_face, 2),
+            "width_mm": round(glass_width_mm, 2),
             "thickness_mm": glass_thickness_mm,
             "qty": qty, "source": "computed",
-            "notes": "Largeur vitrage = largeur battant − 2 montants − 2 parcloses verticales.",
+            "notes": (
+                "Largeur vitrage = largeur battant − 2 montants − 2 parcloses "
+                f"verticales − lousse {GLASS_WIDTH_LOUSSE_MM:.0f} mm (tolérance de coupe)."
+            ),
         },
     ]
 
