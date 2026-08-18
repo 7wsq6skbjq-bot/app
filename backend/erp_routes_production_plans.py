@@ -18,7 +18,8 @@ from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 
-from erp_helpers import csv_response
+from erp_helpers import csv_response, send_pdf_email
+from erp_models import EmailSendRequest
 from erp_pdf_production import render_production_plan_pdf
 
 
@@ -309,3 +310,34 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             content=pdf_bytes, media_type="application/pdf",
             headers={"Content-Disposition": 'inline; filename="apercu-plan.pdf"'},
         )
+
+    @router.post("/production-plans/{plan_id}/send-email")
+    async def send_plan_email(plan_id: str, payload: EmailSendRequest,
+                              _: dict = Depends(auth_dep)):
+        """Email the production-drawing PDF straight to the client."""
+        doc = await db.erp_production_plans.find_one({"id": plan_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Plan introuvable")
+        pdf_bytes = await asyncio.to_thread(render_production_plan_pdf, doc)
+        number = doc.get("plan_number") or "PLAN"
+        project = doc.get("project_name") or ""
+        client = doc.get("client_contact") or doc.get("client_name") or ""
+        subject = payload.subject or (
+            f"Portech — Dessin de production {number}"
+            + (f" · {project}" if project else "")
+        )
+        message_html = payload.message or (
+            f"<p>Bonjour{(' ' + client) if client else ''},</p>"
+            f"<p>Vous trouverez en pièce jointe le dessin de production "
+            f"<b>{number}</b>"
+            + (f" pour le projet <b>{project}</b>" if project else "")
+            + ".</p>"
+            "<p>N'hésitez pas à nous revenir pour toute question ou approbation.</p>"
+        )
+        await send_pdf_email(
+            to_email=payload.to_email, subject=subject,
+            html=message_html, pdf_bytes=pdf_bytes,
+            filename=f"{number}.pdf",
+            footer_note=f"Dessin de production {number} · Portech ERP",
+        )
+        return {"sent": True, "to": payload.to_email}

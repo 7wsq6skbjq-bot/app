@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Plus, Save, Trash2, RefreshCw, Download, Eye, FileText,
     AlertCircle, CheckCircle2, Loader2, DraftingCompass, ChevronDown, ChevronRight,
+    Mail, Send,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -41,6 +42,11 @@ export const ProductionPlansPanel = () => {
     const [previewing, setPreviewing] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
+    const [emailModal, setEmailModal] = useState(null); // null | plan
+    const [emailTo, setEmailTo] = useState("");
+    const [emailMsg, setEmailMsg] = useState("");
+    const [emailSending, setEmailSending] = useState(false);
+    const [emailError, setEmailError] = useState("");
     const formTopRef = useRef(null);
 
     useEffect(() => {
@@ -343,6 +349,32 @@ export const ProductionPlansPanel = () => {
         const url = `${base}/api/admin/production-plans/${id}/pdf?token=${token}`;
         const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) window.location.href = url; else window.open(url, "_blank");
+    };
+
+    // ─── Envoi du plan au client par courriel ────────────
+    const openEmail = (plan) => {
+        setEmailModal(plan);
+        const contact = plan?.client_contact || "";
+        setEmailTo(/\S+@\S+\.\S+/.test(contact) ? contact : "");
+        setEmailMsg("");
+        setEmailError("");
+    };
+    const sendEmail = async () => {
+        if (!emailModal || !emailTo) return;
+        setEmailSending(true);
+        setEmailError("");
+        try {
+            await http.post(
+                `/admin/production-plans/${emailModal.id}/send-email`,
+                { to_email: emailTo, message: emailMsg || undefined },
+            );
+            setEmailModal(null);
+            setSuccessMsg(`Dessin de production ${emailModal.plan_number} envoyé à ${emailTo}.`);
+        } catch (e) {
+            setEmailError(e?.response?.data?.detail || "Échec de l'envoi du courriel.");
+        } finally {
+            setEmailSending(false);
+        }
     };
 
     const previewPdf = async () => {
@@ -1041,6 +1073,12 @@ export const ProductionPlansPanel = () => {
                             <Download className="w-4 h-4" /> Télécharger PDF
                         </button>
                     )}
+                    {editingId && (
+                        <button onClick={() => openEmail({ id: editingId, plan_number: form.plan_number, client_contact: form.client_contact })}
+                            className="btn-secondary !py-2 !px-3 !text-sm" data-testid="pp-email-editor">
+                            <Mail className="w-4 h-4" /> Envoyer au client
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -1179,6 +1217,10 @@ export const ProductionPlansPanel = () => {
                                             <button onClick={() => downloadPdf(p.id)} className="p-1 hover:bg-[#f3f6fb] text-[#0c182b]" title="Télécharger PDF">
                                                 <Download className="w-3.5 h-3.5" />
                                             </button>
+                                            <button onClick={() => openEmail(p)} className="p-1 hover:bg-[#eaf1fb] text-[#2f4f7f]" title="Envoyer au client par courriel"
+                                                data-testid={`pp-email-${p.id}`}>
+                                                <Mail className="w-3.5 h-3.5" />
+                                            </button>
                                             <button onClick={() => removePlan(p.id)} className="p-1 hover:bg-[#fde7e7] text-[#a31a1a]" title="Supprimer">
                                                 <Trash2 className="w-3.5 h-3.5" />
                                             </button>
@@ -1190,6 +1232,59 @@ export const ProductionPlansPanel = () => {
                     </div>
                 )}
             </div>
+
+            {/* ─── Modale d'envoi au client ─────────────────── */}
+            {emailModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                    data-testid="pp-email-modal" onClick={() => !emailSending && setEmailModal(null)}>
+                    <div className="bg-white border border-[#dde5f0] w-full max-w-lg shadow-xl"
+                        onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 py-3 border-b border-[#dde5f0] bg-[#f7f9fc]">
+                            <h3 className="tech-stamp text-[#0c182b] font-bold">
+                                Envoyer le dessin de production {emailModal.plan_number || ""}
+                            </h3>
+                            <button onClick={() => !emailSending && setEmailModal(null)}
+                                className="text-[#4b5d7a] hover:text-[#0c182b] text-xl leading-none">×</button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-[#4b5d7a]">
+                                Le PDF du dessin de production <strong className="text-[#0c182b]">enregistré</strong> sera
+                                envoyé en pièce jointe au client via Resend (info@portech.info).
+                                Enregistrez d&apos;abord vos modifications pour les inclure.
+                            </p>
+                            <div>
+                                <label className={labelCls}>Adresse courriel destinataire *</label>
+                                <input type="email" value={emailTo}
+                                    onChange={(e) => setEmailTo(e.target.value)}
+                                    placeholder="client@exemple.ca" className={inputCls}
+                                    data-testid="pp-email-to" required />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Message personnalisé (optionnel)</label>
+                                <textarea rows={4} value={emailMsg}
+                                    onChange={(e) => setEmailMsg(e.target.value)}
+                                    placeholder="Bonjour, vous trouverez ci-joint le dessin de production…"
+                                    className={inputCls} data-testid="pp-email-message" />
+                            </div>
+                            {emailError && (
+                                <div className="p-3 border border-red-400 bg-red-50 text-red-800 text-sm"
+                                    data-testid="pp-email-error">{emailError}</div>
+                            )}
+                        </div>
+                        <div className="flex justify-end gap-2 px-5 py-3 border-t border-[#dde5f0] bg-[#f7f9fc]">
+                            <button onClick={() => setEmailModal(null)} disabled={emailSending}
+                                className="btn-secondary !py-2 !px-4 !text-sm">Annuler</button>
+                            <button onClick={sendEmail} disabled={!emailTo || emailSending}
+                                className="btn-primary !py-2 !px-4 !text-sm disabled:opacity-40"
+                                data-testid="pp-email-send">
+                                {emailSending
+                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi…</>
+                                    : <><Send className="w-4 h-4" /> Envoyer le PDF</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
