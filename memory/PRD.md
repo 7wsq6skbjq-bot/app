@@ -336,3 +336,9 @@ User language: **French**.
   * Cause : erp_pdf_production.py répartissait l'offset largeur au PRORATA (_tot_leaf_w_mm * _fa) entre battants → fausse la largeur de chaque battant en asymétrique.
   * Fix : modèle PAR-BATTANT — _wa = aw_in*25.4 - offset ; _wi = iw_in*25.4 - offset (chaque battant perd l'offset complet 115.1). Un actif 36" = 799.30 quelle que soit la largeur de l'inactif. La cote « Fab. » totale reste opening - 2×offset (cohérent).
   * Vérif : sym 36+36 → 799.3/799.3 ; asym 36+24 → 799.3/494.5 ; asym 36+20 → 799.3/392.9 ; PDF paire+simple rendus OK. EN PREVIEW — redéployer + régénérer le plan pour portech.info.
+
+- MAJ 2026-06 (Bannières + signatures COURRIEL « en aluminium ») : FAIT + VÉRIFIÉ.
+  * Le client recevait encore « porte commerciale » dans les EN-TÊTES/PIEDS de courriel — c'étaient des IMAGES PNG (email-header.png / email-footer.png) avec le texte incrusté. Réécrit via PIL (grille 40px préservée, police Liberation Sans Bold, couleur 151,176,208) : en-tête « QUINCAILLERIE ET PORTES COMMERCIALES EN ALUMINIUM », pied « Quincaillerie de portes commerciales en aluminium ». Mis à jour dans frontend/public/email/ ET backend/email_assets/.
+  * Signatures texte : erp_helpers.wrap_branded_email (pied courriel), prospection_routes.py (toutes campagnes), erp_monthly_recap.py (pied), gabarits PDF clients erp_pdf.py (tagline COMPANY, annexe conditions de vente, formulaire AT interactif, pied de page) et erp_pdf_production.py (tagline). Tous → « portes commerciales en aluminium ».
+  * Laissé : prompts LLM internes (cut_routes, erp_routes_expenses), inspector_title « Expert Portes Commerciales », « toutes les portes commerciales » (service quincaillerie).
+  * Vérif : imports OK, quote PDF rendu OK, footer courriel contient le nouveau texte, images revues visuellement. EN PREVIEW — redéployer pour portech.info (les courriels prod pointent vers https://portech.info/email/*.png).

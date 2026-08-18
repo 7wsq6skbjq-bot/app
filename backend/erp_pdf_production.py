@@ -42,7 +42,7 @@ LOGO_PATH = "/app/frontend/public/brand/logo-portech.png"
 
 COMPANY = {
     "name": "PORTECH",
-    "tagline": "Quincaillerie et porte commerciale",
+    "tagline": "Quincaillerie et portes commerciales en aluminium",
     "line1": "Grand Montréal, QC",
     "phone": "438-376-4177",
     "email": "info@portech.info",

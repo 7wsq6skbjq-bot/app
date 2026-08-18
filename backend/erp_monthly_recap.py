@@ -164,7 +164,7 @@ def render_recap_html(recap: dict) -> tuple[str, str]:
       </div>
 
       <div style="padding:16px 28px;background:#0c182b;color:#9bb6d8;font-size:11px;text-align:center;letter-spacing:1px;text-transform:uppercase">
-        Portech · Quincaillerie et porte commerciale · Grand Montréal
+        Portech · Quincaillerie et portes commerciales en aluminium · Grand Montréal
       </div>
     </div>
     """

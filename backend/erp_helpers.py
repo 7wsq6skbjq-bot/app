@@ -97,7 +97,7 @@ def wrap_branded_email(body_html: str, footer_note: str = "") -> str:
         + '<p style="margin:0 0 24px 0;"><a href="https://www.portech.info" '
           'style="color:#1d4ed8;">www.portech.info</a></p>'
         + '<p style="margin:16px 0 0 0;"><b>Cédrick Pimparé</b><br/>'
-          'Portech — Quincaillerie et porte commerciale</p>'
+          'Portech — Quincaillerie et portes commerciales en aluminium</p>'
         + '</td></tr>'
         + '<tr><td><img src="https://portech.info/email/email-footer.png" alt="Portech" '
           'style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>'

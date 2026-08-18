@@ -31,7 +31,7 @@ TEXT_MUTED = colors.HexColor("#4b5d7a")
 LOGO_PATH = "/app/frontend/public/brand/logo-portech.png"
 COMPANY = {
     "name": "Portech",
-    "tagline": "Quincaillerie et porte commerciale — Grand Montréal",
+    "tagline": "Quincaillerie et portes commerciales en aluminium — Grand Montréal",
     "email": "info@portech.info",
     "site": "portech.info",
 }
@@ -416,13 +416,13 @@ def _sales_conditions_story(styles: dict, q: dict) -> list:
         alignment=4, spaceAfter=2)
     out = [PageBreak(),
            Paragraph("PORTECH — CONDITIONS DE VENTE", styles["title"]),
-           Paragraph("Portes commerciales — Annexe à la soumission", styles["label"]),
+           Paragraph("Portes commerciales en aluminium — Annexe à la soumission", styles["label"]),
            Spacer(1, 3 * mm),
            Paragraph(
                "Les présentes conditions de vente font partie intégrante de "
                "toute soumission émise par Portech relativement à la fourniture, "
                "la fabrication, la modification, la livraison ou l'installation "
-               "de portes commerciales et de leurs composantes.", clause_body),
+               "de portes commerciales en aluminium et de leurs composantes.", clause_body),
            Spacer(1, 2 * mm)]
     for title, body in SALES_CONDITIONS:
         out.append(Paragraph(title, clause_title))
@@ -1494,7 +1494,7 @@ def render_client_at_order_form_pdf() -> bytes:
         cnv.drawRightString(W - 12 * mm, H - 12 * mm,
                              f"V1  \u00b7  Page {page_num} / 2")
         cnv.drawRightString(W - 12 * mm, H - 17 * mm,
-                             "Quincaillerie et porte commerciale")
+                             "Quincaillerie et portes commerciales en aluminium")
         cnv.restoreState()
 
     def draw_footer(cnv):
@@ -1507,7 +1507,7 @@ def render_client_at_order_form_pdf() -> bytes:
             W / 2, 4 * mm,
             "Retourner \u00e0 info@portech.info  \u00b7  438-376-4177  "
             "\u00b7  portech.info  \u00b7  Portech \u2014 "
-            "Quincaillerie et porte commerciale",
+            "Quincaillerie et portes commerciales en aluminium",
         )
         cnv.restoreState()
 
