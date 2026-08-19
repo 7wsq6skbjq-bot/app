@@ -384,7 +384,7 @@ SALES_CONDITIONS = [
     ("11. PRIX ET TAXES",
      "Les prix indiqués dans la soumission sont ceux applicables au moment de son émission et selon les conditions qui y sont décrites. Les taxes applicables sont facturées en sus, lorsqu'elles sont exigibles. Toute augmentation imposée par un fabricant ou fournisseur après l'expiration de la période de validité de la soumission pourra être répercutée au client."),
     ("12. CONDITIONS DE PAIEMENT",
-     "Sauf indication contraire dans la soumission : dépôt de 30 % à l'acceptation de la commande ; solde payable à la livraison. Les produits fabriqués sur mesure peuvent nécessiter le paiement du dépôt avant leur mise en production. Tout montant en souffrance pourra entraîner la suspension des travaux, des commandes ou des livraisons jusqu'au règlement du compte."),
+     "Sauf indication contraire dans la soumission : dépôt de 50 % à l'acceptation de la commande ; solde payable à la livraison. Les produits fabriqués sur mesure peuvent nécessiter le paiement du dépôt avant leur mise en production. Tout montant en souffrance pourra entraîner la suspension des travaux, des commandes ou des livraisons jusqu'au règlement du compte."),
     ("13. PROPRIÉTÉ DES MATÉRIAUX",
      "Les matériaux demeurent la propriété de Portech jusqu'au paiement complet des sommes dues, dans la mesure permise par la loi. Aucune propriété sur les matériaux non entièrement payés ne sera transférée au client."),
     ("14. INSPECTION ET ACCEPTATION",

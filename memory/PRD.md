@@ -342,3 +342,5 @@ User language: **French**.
   * Signatures texte : erp_helpers.wrap_branded_email (pied courriel), prospection_routes.py (toutes campagnes), erp_monthly_recap.py (pied), gabarits PDF clients erp_pdf.py (tagline COMPANY, annexe conditions de vente, formulaire AT interactif, pied de page) et erp_pdf_production.py (tagline). Tous → « portes commerciales en aluminium ».
   * Laissé : prompts LLM internes (cut_routes, erp_routes_expenses), inspector_title « Expert Portes Commerciales », « toutes les portes commerciales » (service quincaillerie).
   * Vérif : imports OK, quote PDF rendu OK, footer courriel contient le nouveau texte, images revues visuellement. EN PREVIEW — redéployer pour portech.info (les courriels prod pointent vers https://portech.info/email/*.png).
+
+- MAJ 2026-06 (Conditions de vente — dépôt 30% → 50%) : erp_pdf.py SALES_CONDITIONS clause 12 « CONDITIONS DE PAIEMENT » → dépôt de 50% à l acceptation. Seule occurrence dans les conditions de vente. PDF soumission rendu OK. EN PREVIEW — redéployer.
