@@ -169,6 +169,7 @@ class PriceImportIn(BaseModel):
     dry_run: bool = True
     markup_pct: float = 30.0     # majoration sur le coûtant (%)
     vendor: str = "Adams Rite"
+    to_products: bool = False    # aussi créer/maj dans le module Produits (soumissions/factures)
 
 
 DEFAULT_USD_CAD = 1.38
@@ -306,11 +307,11 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             elif existing:
                 patch = {"cost": cost, "price": price}
                 if not (existing.get("name") or "").strip() and desc:
-                    patch["name"] = desc
+                    patch["name"] = desc[:120]
                 await db.erp_production_hardware.update_one({"id": existing["id"]}, {"$set": patch})
                 action = "updated"; updated += 1
             else:
-                item = ProductionHardware(name=desc or pn, part_number=pn,
+                item = ProductionHardware(name=(desc or pn)[:120], part_number=pn,
                                           category=data.vendor, cost=cost, price=price)
                 await db.erp_production_hardware.insert_one(item.model_dump(mode="json"))
                 action = "created"; created += 1
@@ -319,6 +320,24 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
                 "list_price_usd": round(r.list_price_usd or 0, 2),
                 "cost_cad": cost, "price_cad": price, "action": action,
             })
+            # Miroir dans le module Produits (sélectionnable en soumissions/factures)
+            if data.to_products and not data.dry_run and pn:
+                name = f"{pn} · {desc}" if desc else pn
+                existing_p = await db.erp_products.find_one({"sku": pn})
+                if existing_p:
+                    await db.erp_products.update_one(
+                        {"id": existing_p["id"]},
+                        {"$set": {"unit_price": price, "cost_price": cost,
+                                  "category": data.vendor}})
+                else:
+                    prod = {
+                        "id": str(uuid.uuid4()), "sku": pn, "name": name[:200],
+                        "description": desc or None, "unit": "unité",
+                        "unit_price": price, "cost_price": cost,
+                        "category": data.vendor, "is_service": False,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                    await db.erp_products.insert_one(prod)
         return {
             "rate": rate, "markup_pct": data.markup_pct, "dry_run": data.dry_run,
             "count": len(data.rows), "created": created, "updated": updated,

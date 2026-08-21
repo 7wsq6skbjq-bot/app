@@ -379,3 +379,11 @@ User language: **French**.
   * PDF du plan (download, preview-pdf, send-email) annexe désormais les pages détectées (vérifié : plan 5 → 9 pages avec 3600+4591). Nouvel endpoint GET /production-plans/{id}/detect-drawings (aperçu UI : detected, manual_pages, auto, all_drawings).
   * Frontend ProductionPlansPanel : case « Joindre les dessins Adams Rite (auto. selon la quincaillerie) » (data-testid pp-hw-drawings, défaut coché) + defaults utils.js. Compile OK. Case UI pas testée E2E par l'agent (backend prouvé).
   * EN PREVIEW — redéployer pour portech.info.
+
+- MAJ 2026-08 (Import catalogue de prix COMPLET Adams Rite + produits sélectionnables) : FAIT + vérifié (curl).
+  * Fichier complet reçu (Adams_Rite_Feb_2_2026_Pricelist.pdf, 52 p., texte extractible). Parseur /app/backend/parse_adams_rite_pricelist.py → 282 numéros de produit uniques (part_number, description, prix USD).
+  * Endpoint import étendu : param to_products (bool). Import lancé avec to_products=true, taux 1,40, majoration 30% arrondi 0,05$.
+  * Résultat : catalogue quincaillerie erp_production_hardware = 575 articles (294 Parts Manual + 282 pricelist). Module Produits erp_products = 282 produits Adams Rite (sku=part_number, name='<sku> · <desc>', unit_price=vendant, cost_price=coûtant, category='Adams Rite'). Ex. 1004 → 50 USD → coûtant 70 → vendant 91.
+  * Produits sélectionnables en SOUMISSIONS et FACTURES : DocumentPanel.jsx charge /admin/products, DocumentForm.jsx pickProduct → quick-pick. Confirmé.
+  * Fix : ProductionHardware.name limité à 120 car. → troncature dans l'import (une description dépassait). CatalogPanel import par collage envoie désormais to_products=true.
+  * Note technique : les gros POST via l'URL externe sont bloqués par Cloudflare (err 1010) — utiliser localhost:8001 pour les imports en masse côté agent. EN PREVIEW — redéployer pour portech.info.

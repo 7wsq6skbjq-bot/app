@@ -81,7 +81,7 @@ export const CatalogPanel = () => {
         const rows = parsePasted(paste);
         setImporting(true);
         try {
-            const { data } = await http.post("/admin/production-hardware/import", { rows, dry_run: false });
+            const { data } = await http.post("/admin/production-hardware/import", { rows, dry_run: false, to_products: true });
             flash(`Import terminé : ${data.created} créé(s), ${data.updated} mis à jour.`);
             setPreview(null); setPaste("");
             load();
