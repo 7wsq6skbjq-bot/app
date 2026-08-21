@@ -155,6 +155,7 @@ class Quote(BaseModel):
     notes: Optional[str] = None
     status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
     converted_invoice_id: Optional[str] = None       # set when converted → facture
+    drawing_pages: Optional[List[int]] = None         # Adams Rite Parts Manual pages
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -168,6 +169,7 @@ class QuoteIn(BaseModel):
     taxable: bool = True
     notes: Optional[str] = None
     status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
+    drawing_pages: Optional[List[int]] = None         # Adams Rite Parts Manual pages
 
 
 

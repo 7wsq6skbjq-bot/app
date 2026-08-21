@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only E2E testing of the 4 new flows (French UI) via the public preview URL with Playwright: (1) Catalogue quincaillerie tab — exchange rate save + paste import preview/commit/search/delete; (2) Quotes → Adams Rite drawings modal (search, check, save, persistence, reset); (3) Jobs board desktop — create job, link a real quote via picker, click 'ouvrir ↗' (PDF blob + new tab), delete; (4) Jobs mobile 390x844 — compact stacked list grouped by stage with row tap + prev/next stage buttons. ALL 4 flows PASSED. All test data was cleaned up (catalog back to 294 items, quote drawing_pages empty, no ZZ-TEST jobs).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin header @390px (mobile)", "issues": ["'VOIR LE SITE' link wraps onto 3 lines and crowds the top bar; 'GESTION' / 'VOIR LE SITE' / 'DÉCONNEXION' compete for width. Consider hiding 'Voir le site' on mobile or using icon-only."]},
+      {"screen": "Suivi des jobs — mobile row (job-mrow-*)", "issues": ["The ◀ / ▶ stage buttons are stacked vertically at the right edge (▶ above, disabled ◀ below) instead of a horizontal ◀▶ pair; the disabled ◀ at 20% opacity is nearly invisible and the pair overlaps the row's bottom line."]},
+      {"screen": "Jobs detail / create modal", "issues": ["Native browser date input used for 'Échéance' (renders mm/dd/yyyy US format inside a French/CAD UI) instead of a shadcn calendar or a fr-CA formatted control."]},
+      {"screen": "Jobs detail — Documents liés", "issues": ["Linked quote is labelled 'Soumission · 0001' and the picker shows '0001 · Ministère de la Justice' — docNum() drops the SO- prefix used everywhere else (quote modal title says SO-0001). Cosmetic inconsistency."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Cosmetic only: prefix quote numbers with SO- in the jobs document picker/linked list (docNum in JobsPanel.jsx).",
+    "Cosmetic only: lay out the mobile ◀▶ stage buttons horizontally and raise the disabled-state opacity.",
+    "Optional: replace the native date input in JobsPanel modals with the shadcn calendar / fr-CA format."
+  ],
+  "critical_code_review_comments": [
+    "CatalogPanel flash() clears the notice after 3.5s — acceptable UX, but automated tests must assert it within that window (caused one false negative in my first run).",
+    "AuthContext uses sessionStorage Bearer token with withCredentials:false; on a fresh page the first /api/auth/me returns 401 (expected, logged as console error). Occasionally the very first login submit produced no /auth/login request in automation — a retry loop was needed. Worth verifying the submit handler isn't gated on an unsettled state (potential double-submit/no-submit race on slow hydration).",
+    "JobsPanel.jsx is 509 lines and holds the board + detail modal; splitting JobDetail into its own file would help maintainability."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "100% (4/4 flows)"},
+  "seed_data_creation": "Temporary only, all deleted: catalog items ZZ-TEST-1 / ZZ-TEST-2, jobs JOB-0008 'ZZ-TEST job QA' and JOB-0009 'ZZ-TEST mobile job', quote SO-0001 drawing_pages set to [24] then reset to empty. USD→CAD rate left at 1.40 as requested.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md) — works",
+  "context_for_next_testing_agent": "Login helper: fill [data-testid=admin-login-username]/[admin-login-password], click [data-testid=admin-login-submit], then poll sessionStorage key 'portech_access_token' and retry the click up to 3x (first click occasionally doesn't fire the request). Verified values: import 100 USD @1.40 -> cost 140,00 $ / sell 182,00 $; 250,33 -> 350,46 $ / 455,60 $; drawings index returns 39 entries, '3600 Series Concealed Vertical Rod' = quote-drawing-24; only ONE quote exists (SO-0001, Ministère de la Justice); jobs list is empty by default so create a job before testing the mobile list. Never delete the 294 Adams Rite catalog items (guard your delete loop by asserting 'ZZ-TEST' is in the row text — window.confirm must be auto-accepted and the DELETE response awaited).",
+  "rca_of_the_issue": "No product defects found. Two test-harness pitfalls: (a) catalog success notice auto-hides after 3.5s; (b) an unfiltered catalog table plus an auto-accepting dialog handler can delete real items — always filter by search + assert row text before clicking catalog-del-*."
+}

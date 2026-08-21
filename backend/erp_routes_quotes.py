@@ -13,10 +13,12 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pydantic import BaseModel
 
 from erp_helpers import compute_totals, csv_response, send_pdf_email
 from erp_models import EmailSendRequest, Invoice, Party, Quote, QuoteIn
 from erp_pdf import render_invoice_pdf, render_quote_pdf
+from adams_rite_drawings import load_index, merge_drawing_pages
 
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number) -> None:
@@ -38,6 +40,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             items=data.items,
             subtotal=subtotal, tps=tps, tvq=tvq, total=total,
             taxable=data.taxable, notes=data.notes, status=data.status,
+            drawing_pages=data.drawing_pages,
         )
         await db.erp_quotes.insert_one(q.model_dump())
         return q
@@ -63,6 +66,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             "items": [it.model_dump() for it in data.items],
             "subtotal": subtotal, "tps": tps, "tvq": tvq, "total": total,
             "taxable": data.taxable, "notes": data.notes, "status": data.status,
+            "drawing_pages": data.drawing_pages,
         }
         await db.erp_quotes.update_one({"id": quote_id}, {"$set": update_fields})
         doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
@@ -97,12 +101,35 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             })
         return csv_response(rows, "soumissions-portech.csv")
 
+    class DrawingsIn(BaseModel):
+        pages: List[int] = []
+
+    @router.patch("/quotes/{quote_id}/drawings", response_model=Quote)
+    async def set_quote_drawings(quote_id: str, data: DrawingsIn,
+                                 _: dict = Depends(auth_dep)):
+        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Soumission introuvable")
+        pages = sorted({int(p) for p in data.pages})
+        await db.erp_quotes.update_one(
+            {"id": quote_id}, {"$set": {"drawing_pages": pages or None}})
+        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
+        return Quote(**doc)
+
+    @router.get("/adams-rite/drawings")
+    async def adams_rite_drawings(_: dict = Depends(auth_dep)):
+        """Available Adams Rite Parts Manual drawings (label → printed page)."""
+        return {"drawings": list(load_index())}
+
     @router.get("/quotes/{quote_id}/pdf")
     async def download_quote_pdf(quote_id: str, _: dict = Depends(auth_dep)):
         doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
         if not doc:
             raise HTTPException(404, "Soumission introuvable")
         pdf_bytes = await asyncio.to_thread(render_quote_pdf, doc)
+        if doc.get("drawing_pages"):
+            pdf_bytes = await asyncio.to_thread(
+                merge_drawing_pages, pdf_bytes, doc["drawing_pages"])
         filename = f"SO-{int(doc['number']):04d}.pdf"
         return Response(
             content=pdf_bytes,
@@ -117,6 +144,9 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         if not doc:
             raise HTTPException(404, "Soumission introuvable")
         pdf_bytes = await asyncio.to_thread(render_quote_pdf, doc)
+        if doc.get("drawing_pages"):
+            pdf_bytes = await asyncio.to_thread(
+                merge_drawing_pages, pdf_bytes, doc["drawing_pages"])
         number = f"SO-{int(doc['number']):04d}"
         cust = (doc.get("customer_snapshot") or {}).get("name") or ""
         subject = payload.subject or f"Portech — Soumission {number}"

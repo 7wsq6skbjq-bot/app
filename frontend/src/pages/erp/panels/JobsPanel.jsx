@@ -272,9 +272,9 @@ export const JobsPanel = () => {
                                                         {j.target_date ? <span className={overdue ? "text-red-600 font-bold" : ""}> · {formatDate(j.target_date)}{overdue ? " (retard)" : ""}</span> : null}
                                                     </div>
                                                 </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <button data-testid={`job-mnext-${j.id}`} onClick={(e) => { e.stopPropagation(); moveStage(j, 1); }} disabled={s.key === STAGES[STAGES.length - 1].key} className="p-1.5 border border-[#dde5f0] rounded text-[#4b5d7a] disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
-                                                    <button data-testid={`job-mprev-${j.id}`} onClick={(e) => { e.stopPropagation(); moveStage(j, -1); }} disabled={s.key === STAGES[0].key} className="p-1.5 border border-[#dde5f0] rounded text-[#4b5d7a] disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
+                                                <div className="flex items-center gap-1.5">
+                                                    <button data-testid={`job-mprev-${j.id}`} onClick={(e) => { e.stopPropagation(); moveStage(j, -1); }} disabled={s.key === STAGES[0].key} className="p-2 border border-[#dde5f0] rounded text-[#4b5d7a] disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                                                    <button data-testid={`job-mnext-${j.id}`} onClick={(e) => { e.stopPropagation(); moveStage(j, 1); }} disabled={s.key === STAGES[STAGES.length - 1].key} className="p-2 border border-[#dde5f0] rounded text-[#4b5d7a] disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
                                                 </div>
                                             </div>
                                         );
@@ -350,8 +350,9 @@ const PICKABLE = {
     production_plan: "/admin/production-plans",
 };
 const OPENABLE = new Set(["quote", "invoice", "purchase_order", "bol", "production_plan"]);
-const docNum = (d) =>
-    d.plan_number || (d.number != null ? String(d.number).padStart(4, "0") : String(d.id || "").slice(0, 6));
+const DOC_PREFIX = { quote: "SO-", invoice: "FAC-", purchase_order: "BC-", bol: "CN-" };
+const docNum = (type, d) =>
+    d.plan_number || (d.number != null ? `${DOC_PREFIX[type] || ""}${String(d.number).padStart(4, "0")}` : String(d.id || "").slice(0, 6));
 const docName = (d) =>
     d.customer_snapshot?.name || d.supplier_snapshot?.name || d.project_name || d.client_name || "";
 
@@ -413,7 +414,7 @@ const JobDetail = ({ http, job, onClose, onChange, onDeleted, setStageDirect }) 
         if (PICKABLE[linkType]) {
             if (!pickId) return;
             const d = (pickList || []).find((x) => x.id === pickId);
-            const num = d ? docNum(d) : pickId;
+            const num = d ? docNum(linkType, d) : pickId;
             payload = { doc_type: linkType, doc_id: pickId, number: num,
                         label: `${DOC_LABEL[linkType]} ${num}` };
         } else {
@@ -479,7 +480,7 @@ const JobDetail = ({ http, job, onClose, onChange, onDeleted, setStageDirect }) 
                                 <select className={inputClass} value={pickId} onChange={(e) => setPickId(e.target.value)} data-testid="jobs-link-pick">
                                     <option value="">{pickList === null ? "Chargement…" : "— Choisir un document —"}</option>
                                     {(pickList || []).map((d) => (
-                                        <option key={d.id} value={d.id}>{docNum(d)}{docName(d) ? ` · ${docName(d)}` : ""}</option>
+                                        <option key={d.id} value={d.id}>{docNum(linkType, d)}{docName(d) ? ` · ${docName(d)}` : ""}</option>
                                     ))}
                                 </select>
                             ) : (

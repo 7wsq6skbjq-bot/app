@@ -365,3 +365,10 @@ User language: **French**.
 
 - BACKLOG P1 : Dessins Adams Rite dans PDF soumission/fabrication. Parts Manual (adams_rite_parts_manual.pdf, 79 pages, 100% texte, index p.2) → construire un index série/part# → page, permettre de cocher quelles pages inclure selon la quincaillerie choisie, et annexer ces pages au PDF. Auto-détection confirmée faisable.
 - BACKLOG P1 : Import réel du catalogue de prix Adams Rite dès réception du PDF complet.
+
+- MAJ 2026-08 (Import prix Adams Rite + dessins dans soumissions) : FAIT + TESTÉ (frontend 4/4 iteration_17.json, backend curl 100%).
+  * DÉCOUVERTE : le Parts Manual (79 p.) contient AUSSI les prix (colonne « 2026 PRICE »). Parseur /app/backend/parse_adams_rite.py → 480 lignes, 294 numéros de pièce uniques. IMPORTÉS dans le catalogue (erp_production_hardware) via POST /production-hardware/import (taux 1,40 au moment de l'import ; ex. 14 USD → 19,60 coût → 25,50 vendant). Le pricelist PDF fourni ne contenait qu'une page couverture (inutilisable) — les prix viennent du Parts Manual.
+  * DESSINS DANS SOUMISSIONS : nouveau module /app/backend/adams_rite_drawings.py (load_index parse le sommaire p.2 → 39 dessins {label, page} ; merge_drawing_pages annexe la page dessin + page pièces via pypdf). Endpoints : GET /api/admin/adams-rite/drawings ; PATCH /api/admin/quotes/{id}/drawings {pages:[int]}. Champ Quote/QuoteIn.drawing_pages. GET /quotes/{id}/pdf et send-email annexent automatiquement les pages choisies (vérifié : PDF 3→5 pages avec [24]). Auto-détection par série (ex. 3600 CVR → p.24).
+  * Frontend : QuotesPanel — action « Dessins » par soumission (icône compas) ouvre DrawingsModal (recherche + cases à cocher, persistance). Onglet « Catalogue quincaillerie » = CatalogPanel (taux de change, import par collage aperçu+commit, gestion coût/vendant). Vérifiés E2E.
+  * Points cosmétiques corrigés : préfixes SO-/FAC-/BC-/CN- dans le picker de documents liés ; boutons ◀▶ mobiles horizontaux + opacité désactivée relevée. Manuel stocké : /app/backend/vendor_catalogs/adams_rite_parts_manual.pdf.
+  * TOUT EN PREVIEW — redéployer pour portech.info.
