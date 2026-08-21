@@ -10,6 +10,19 @@ import re
 from functools import lru_cache
 from typing import List
 
+
+def _tokens_from_label(label: str) -> set:
+    """Model codes in a TOC label, e.g. '3600', 'MS1850S', '8800' → match keys.
+    We keep codes that contain a run of >=3 digits to avoid false positives."""
+    up = label.upper()
+    toks = set()
+    for m in re.findall(r"[A-Z]{0,3}\d{3,4}[A-Z]{0,2}", up):
+        if re.search(r"\d{3,}", m):
+            toks.add(m)
+            toks.add(re.sub(r"[^0-9]", "", m))  # bare digits e.g. 1850
+    return {t for t in toks if len(t) >= 3}
+
+
 import pypdf
 
 MANUAL_PATH = os.path.join(os.path.dirname(__file__), "vendor_catalogs",
@@ -48,6 +61,25 @@ def load_index() -> tuple:
             seen.add(key)
             entries.append({"label": label, "page": page})
     return tuple(entries)
+
+
+def detect_from_hardware(hardware_texts: List[str]) -> list:
+    """Match plan hardware text (description + part number) to manual drawings.
+    Returns [{"label","page","matched"}] for each detected drawing."""
+    blob = " ".join((t or "").upper() for t in hardware_texts)
+    alnum = re.sub(r"[^A-Z0-9]", " ", blob)
+    padded = " " + alnum + " "
+    out, seen = [], set()
+    for e in load_index():
+        for tok in _tokens_from_label(e["label"]):
+            # match as a bounded token to avoid e.g. 3600 matching 43600
+            if re.search(r"(?<![0-9])" + re.escape(tok) + r"(?![0-9A-Z])", padded) \
+                    or (" " + tok + " ") in padded:
+                if e["page"] not in seen:
+                    seen.add(e["page"])
+                    out.append({"label": e["label"], "page": e["page"], "matched": tok})
+                break
+    return out
 
 
 def merge_drawing_pages(base_pdf: bytes, pages: List[int]) -> bytes:

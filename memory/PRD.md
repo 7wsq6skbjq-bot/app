@@ -372,3 +372,10 @@ User language: **French**.
   * Frontend : QuotesPanel — action « Dessins » par soumission (icône compas) ouvre DrawingsModal (recherche + cases à cocher, persistance). Onglet « Catalogue quincaillerie » = CatalogPanel (taux de change, import par collage aperçu+commit, gestion coût/vendant). Vérifiés E2E.
   * Points cosmétiques corrigés : préfixes SO-/FAC-/BC-/CN- dans le picker de documents liés ; boutons ◀▶ mobiles horizontaux + opacité désactivée relevée. Manuel stocké : /app/backend/vendor_catalogs/adams_rite_parts_manual.pdf.
   * TOUT EN PREVIEW — redéployer pour portech.info.
+
+- MAJ 2026-08 (Dessins auto depuis quincaillerie + dessins dans plan de fabrication) : FAIT + backend vérifié (curl).
+  * adams_rite_drawings.detect_from_hardware(texts) : associe la quincaillerie (description + part_number) aux dessins du manuel via tokens de série (codes à ≥3 chiffres, ex. 3600, MS1850S, 8800, 4591) avec correspondance bornée (évite faux positifs). Vérifié : « 3600 CVR »+« 4591-01 » → p24 + p68 ; générique → aucun.
+  * ProductionPlan : champs include_hardware_drawings (défaut True) + drawing_pages (pages manuelles). _plan_drawing_pages(doc) = union manuelles + auto-détectées.
+  * PDF du plan (download, preview-pdf, send-email) annexe désormais les pages détectées (vérifié : plan 5 → 9 pages avec 3600+4591). Nouvel endpoint GET /production-plans/{id}/detect-drawings (aperçu UI : detected, manual_pages, auto, all_drawings).
+  * Frontend ProductionPlansPanel : case « Joindre les dessins Adams Rite (auto. selon la quincaillerie) » (data-testid pp-hw-drawings, défaut coché) + defaults utils.js. Compile OK. Case UI pas testée E2E par l'agent (backend prouvé).
+  * EN PREVIEW — redéployer pour portech.info.

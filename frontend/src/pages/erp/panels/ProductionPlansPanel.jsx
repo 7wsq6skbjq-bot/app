@@ -232,6 +232,8 @@ export const ProductionPlansPanel = () => {
         include_section_details: !!form.include_section_details,
         include_anchors: !!form.include_anchors,
         show_costs: !!form.show_costs,
+        include_hardware_drawings: form.include_hardware_drawings !== false,
+        drawing_pages: form.drawing_pages || null,
         status: form.status || "brouillon",
         notes: form.notes || "",
         doors: (form.doors || []).map((d) => ({
@@ -567,6 +569,12 @@ export const ProductionPlansPanel = () => {
                         <input type="checkbox" data-testid="pp-show-costs" checked={!!form.show_costs}
                             onChange={(e) => setForm((f) => ({ ...f, show_costs: e.target.checked }))} />
                         Afficher les prix sur le plan (interne)
+                    </label>
+                    <span className="w-px h-5 bg-[#dde5f0]" />
+                    <label className="inline-flex items-center gap-2 text-sm text-[#2f4f7f] cursor-pointer font-medium">
+                        <input type="checkbox" data-testid="pp-hw-drawings" checked={form.include_hardware_drawings !== false}
+                            onChange={(e) => setForm((f) => ({ ...f, include_hardware_drawings: e.target.checked }))} />
+                        Joindre les dessins Adams Rite (auto. selon la quincaillerie)
                     </label>
                     <label className="inline-flex items-center gap-1 text-sm text-[#0c182b]">
                         Jeu Fab. (po)
