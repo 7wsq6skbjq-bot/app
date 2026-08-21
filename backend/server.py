@@ -370,6 +370,13 @@ async def startup_event():
     await db.admin_users.create_index("username", unique=True)
     await db.contact_submissions.create_index([("created_at", -1)])
     await seed_admin()
+    # Seed the Adams Rite catalog (idempotent) so production gets the same
+    # products/hardware that were imported in preview.
+    try:
+        from seed_adams_rite import seed_adams_rite_catalog
+        await seed_adams_rite_catalog(db)
+    except Exception as exc:  # never block startup on a seed failure
+        print(f"[seed] Adams Rite seed skipped: {exc}")
     # Start the daily reminder scheduler unless explicitly disabled
     # (e.g. inside pytest runs where scheduler side-effects are unwanted).
     if os.environ.get("DISABLE_SCHEDULER", "").lower() not in ("1", "true", "yes"):

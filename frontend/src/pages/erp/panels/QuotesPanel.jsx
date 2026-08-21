@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { FileCheck2, DraftingCompass, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { DocumentPanel } from "./DocumentPanel";
-import { PricingCalculator } from "./PricingCalculator";
 import { Modal } from "../components/Modal";
 import { QUOTE_STATUSES, emptyQuote } from "../utils";
 
@@ -101,7 +100,6 @@ export const QuotesPanel = () => {
                     <button onClick={() => setFlash("")} className="text-xs underline">Fermer</button>
                 </div>
             )}
-            <PricingCalculator />
             <DocumentPanel
                 title="Soumissions"
                 eyebrow="Gestion · Ventes"

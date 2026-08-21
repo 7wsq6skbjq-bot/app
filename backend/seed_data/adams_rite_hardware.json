@@ -1,0 +1,5177 @@
+[
+{
+"name": "Spring",
+"part_number": "28-0064-03-MP",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "a3568307-dea9-41ea-913e-048e3ce55a4f",
+"created_at": "2026-08-21T13:33:38.211744Z"
+},
+{
+"name": "Spring",
+"part_number": "28-0064-02-MP",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "6897efe5-04fc-476f-913b-9e6b3224ad69",
+"created_at": "2026-08-21T13:33:38.212544Z"
+},
+{
+"name": "#10-32 × 1-3/4\" flat head screw for 7/8\", 31/32\" back",
+"part_number": "S262-10R28-603-MP",
+"category": "Adams Rite",
+"cost": 19.6,
+"price": 25.5,
+"id": "89a47319-0d47-43e4-ab13-9dd6c2b13eaf",
+"created_at": "2026-08-21T13:33:38.213179Z"
+},
+{
+"name": "#10-32 × 1-7/8\" flat head screw for 1-1/8\" back",
+"part_number": "S262-10R30-603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "4ce3b204-3625-4509-9b58-84c0ab6eed0b",
+"created_at": "2026-08-21T13:33:38.213661Z"
+},
+{
+"name": "#12-24 × 3/4\" flathead combo screw (ANSI hollow metal/wood doors)",
+"part_number": "91-0967-P",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "a8ee7de3-3cd5-4724-ab2f-89ae66442a3f",
+"created_at": "2026-08-21T13:33:38.214125Z"
+},
+{
+"name": "MS1850S radius with weatherstrip faceplate kit for standard bolt,select 313, 335 or 628 finish",
+"part_number": "24-0384-410-XXX",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "de476ef6-0ea6-4ff4-a18d-93c01c78396d",
+"created_at": "2026-08-21T13:33:38.214561Z"
+},
+{
+"name": "#8-32 × 9/32\" slotted",
+"part_number": "S232B8-9/32N-631-MP",
+"category": "Adams Rite",
+"cost": 43.4,
+"price": 56.4,
+"id": "218a17ae-6d7a-449a-be70-aa131fada62c",
+"created_at": "2026-08-21T13:33:38.215010Z"
+},
+{
+"name": "Header strike",
+"part_number": "25-0071",
+"category": "Adams Rite",
+"cost": 12.6,
+"price": 16.4,
+"id": "4357b03e-b55a-4494-a676-424d4f4f3ec0",
+"created_at": "2026-08-21T13:33:38.215443Z"
+},
+{
+"name": "#10-32 × 5/16\" flat head screw, 119 finish",
+"part_number": "S266-10R05N-119-MP",
+"category": "Adams Rite",
+"cost": 29.4,
+"price": 38.2,
+"id": "c89473ed-2d18-4419-b3a1-a73279f966dd",
+"created_at": "2026-08-21T13:33:38.215894Z"
+},
+{
+"name": "#10-32 × 5/16\" flat head screw, 603 finish",
+"part_number": "S266-10R05N-603-MP",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "ca074be7-6ead-4301-8936-0e8e60c9e932",
+"created_at": "2026-08-21T13:33:38.216325Z"
+},
+{
+"name": "Guide bracket",
+"part_number": "22-0157",
+"category": "Adams Rite",
+"cost": 12.6,
+"price": 16.4,
+"id": "93ffac75-3243-4643-a173-0e958feff3ea",
+"created_at": "2026-08-21T13:33:38.216744Z"
+},
+{
+"name": "Adjustable stud",
+"part_number": "25-0318",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "bd375966-f2a2-4fe1-a04a-53edadc9ffae",
+"created_at": "2026-08-21T13:33:38.217171Z"
+},
+{
+"name": "Spider",
+"part_number": "25-0062-01-MP",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "439716a3-0445-4f0a-8e9a-1183fb2c409f",
+"created_at": "2026-08-21T13:33:38.217678Z"
+},
+{
+"name": "#6-32 × 3/8\" flat head self-tapping screw",
+"part_number": "S230-06R06-603-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "ca59d86d-d6dc-4d0c-ab94-1b32a1b0d920",
+"created_at": "2026-08-21T13:33:38.218111Z"
+},
+{
+"name": "#10-32 × 1/2\" flat head screw",
+"part_number": "S262-10R08-603-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "aba72b9f-e5f3-4b57-9c99-b50d04207b29",
+"created_at": "2026-08-21T13:33:38.218530Z"
+},
+{
+"name": "Roll pin",
+"part_number": "P170-05-14-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "d3b5093a-fc74-4b95-a294-34ca0e14591c",
+"created_at": "2026-08-21T13:33:38.218945Z"
+},
+{
+"name": "Rod and bolt assembly, 4016 (cylinder height 53\" max)",
+"part_number": "31-0278-18",
+"category": "Adams Rite",
+"cost": 50.4,
+"price": 65.5,
+"id": "95874616-886a-4cb7-bf7c-a5ed36ed9cf6",
+"created_at": "2026-08-21T13:33:38.219350Z"
+},
+{
+"name": "Bolt guide assembly kit",
+"part_number": "41-0827-02-IP",
+"category": "Adams Rite",
+"cost": 19.6,
+"price": 25.5,
+"id": "dcb94371-0d22-4406-9569-51296d99b62a",
+"created_at": "2026-08-21T13:33:38.219750Z"
+},
+{
+"name": "Snap bushing for 4016 Header Bolt",
+"part_number": "25-0036-MP",
+"category": "Adams Rite",
+"cost": 36.4,
+"price": 47.3,
+"id": "6cc68144-5ac3-4b44-b4b1-5c1a1948a90c",
+"created_at": "2026-08-21T13:33:38.220155Z"
+},
+{
+"name": "Adaptor arm, 4015, 1870, 1870HM, MS1837, 1877",
+"part_number": "22-0282",
+"category": "Adams Rite",
+"cost": 60.2,
+"price": 78.25,
+"id": "ecebc574-857f-4592-9b92-e489da72bcbb",
+"created_at": "2026-08-21T13:33:38.220560Z"
+},
+{
+"name": "Pin for standard MS deadlock",
+"part_number": "26-0138-01",
+"category": "Adams Rite",
+"cost": 12.6,
+"price": 16.4,
+"id": "7fabdaf4-2be3-4582-81e2-93762068bfea",
+"created_at": "2026-08-21T13:33:38.221000Z"
+},
+{
+"name": "Pin for MS two-point (MS deadlock × 4015 configuration)",
+"part_number": "26-0137-02",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "19566f52-b766-4e5f-ad1c-1383708d0c2c",
+"created_at": "2026-08-21T13:33:38.221431Z"
+},
+{
+"name": "#8-32 × 3/8\" flat head screw",
+"part_number": "S227-08R06-603-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "4b91b469-5887-4d62-a115-d03405c379fb",
+"created_at": "2026-08-21T13:33:38.221843Z"
+},
+{
+"name": "Header sign (…DURING BUSINESS HOURS)",
+"part_number": "20-0255-IP",
+"category": "Adams Rite",
+"cost": 1848.0,
+"price": 2402.4,
+"id": "cfe204d6-df05-4c4f-9e29-edaec14a329e",
+"created_at": "2026-08-21T13:33:38.222256Z"
+},
+{
+"name": "Upper arm pin assembly",
+"part_number": "31-0363N",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "31d32a10-6d31-4305-9f85-0ba2bfa1988a",
+"created_at": "2026-08-21T13:33:38.222691Z"
+},
+{
+"name": "Inside trim cover kit, US32D finish",
+"part_number": "91-0201-US32D",
+"category": "Adams Rite",
+"cost": 116.2,
+"price": 151.05,
+"id": "0a7a74cd-dd8c-44c4-858f-51666d30e32c",
+"created_at": "2026-08-21T13:33:38.223104Z"
+},
+{
+"name": "Faceplate kit for 2290, 313 finish",
+"part_number": "91-0266-04-313-IP",
+"category": "Adams Rite",
+"cost": 7827.4,
+"price": 10175.6,
+"id": "2c250872-b6d9-4175-a1bb-f5983d612efc",
+"created_at": "2026-08-21T13:33:38.223506Z"
+},
+{
+"name": "Faceplate kit for 2190, 313 finish",
+"part_number": "91-0266-01-313-IP",
+"category": "Adams Rite",
+"cost": 7827.4,
+"price": 10175.6,
+"id": "dd93bea8-e7cc-4f10-b3d4-e7654e74a8ec",
+"created_at": "2026-08-21T13:33:38.223897Z"
+},
+{
+"name": "Outside trim cover kit, 10B (613) finish",
+"part_number": "91-0200-10B-IP",
+"category": "Adams Rite",
+"cost": 12727.4,
+"price": 16545.6,
+"id": "bcdf49c7-d308-4cb1-8054-454448b09545",
+"created_at": "2026-08-21T13:33:38.224294Z"
+},
+{
+"name": "Standard flat strike with dust box, 2290, 121 finish",
+"part_number": "2206-01-121",
+"category": "Adams Rite",
+"cost": 68.6,
+"price": 89.2,
+"id": "97ce066c-95ce-4979-8729-b9fcb3fdd896",
+"created_at": "2026-08-21T13:33:38.224696Z"
+},
+{
+"name": "Standard flat strike with dust box, 2290, US32D (630) finish",
+"part_number": "2206-01-630",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "79e15121-2619-4510-a87a-9b931927c1ca",
+"created_at": "2026-08-21T13:33:38.225103Z"
+},
+{
+"name": "Standard flat strike with dust box, 2190, 121 finish",
+"part_number": "2101-01-121",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "895fff02-1f2e-4da1-91fa-96a9f5cf69c9",
+"created_at": "2026-08-21T13:33:38.225518Z"
+},
+{
+"name": "Standard flat strike with dust box, 2190, US32D (630) finish",
+"part_number": "2101-01-630",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "3260a3f2-7c52-43df-bdb6-54d8543f5b6c",
+"created_at": "2026-08-21T13:33:38.225910Z"
+},
+{
+"name": "Standard radius strike with dust box, 2190, 121 finish",
+"part_number": "2101-02-121",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "c4003101-07b6-4902-9e69-28691cea0314",
+"created_at": "2026-08-21T13:33:38.226441Z"
+},
+{
+"name": "Standard radius strike with dust box, 2190, US32D (630) finish",
+"part_number": "2101-02-630",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "8c9a78e8-b750-4a08-9b3b-ac852e7af9f2",
+"created_at": "2026-08-21T13:33:38.226880Z"
+},
+{
+"name": "Outside trim hardware kit, 2190",
+"part_number": "91-0202-02-IP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "de1e6dde-1201-4415-9b53-74edec8e0dd3",
+"created_at": "2026-08-21T13:33:38.227303Z"
+},
+{
+"name": "Inside trim hardware kit, 2190",
+"part_number": "91-0202-01-IP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "513c034a-6db7-4b82-979c-69b069da6aeb",
+"created_at": "2026-08-21T13:33:38.227712Z"
+},
+{
+"name": "Strike, 121 finish",
+"part_number": "22-0032-121",
+"category": "Adams Rite",
+"cost": 77.0,
+"price": 100.1,
+"id": "8f66db82-3442-403e-ad19-094a5c15e30e",
+"created_at": "2026-08-21T13:33:38.228115Z"
+},
+{
+"name": "Strike, US3 (605) finish",
+"part_number": "22-0032-605",
+"category": "Adams Rite",
+"cost": 8710.8,
+"price": 11324.05,
+"id": "c7834e37-0164-4da5-bacb-9baaafeae272",
+"created_at": "2026-08-21T13:33:38.228524Z"
+},
+{
+"name": "Strike, US26D (626) finish",
+"part_number": "22-0032-626",
+"category": "Adams Rite",
+"cost": 77.0,
+"price": 100.1,
+"id": "a5a026b7-2029-4139-96f9-c6dbecbde091",
+"created_at": "2026-08-21T13:33:38.228914Z"
+},
+{
+"name": "#8-32 × 15/32\" slotted",
+"part_number": "S232C8-15/32-631-MP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "42979315-71d7-4b35-bfd6-d25bb6421050",
+"created_at": "2026-08-21T13:33:38.229314Z"
+},
+{
+"name": "Faceplate kit with screws, 121 finish",
+"part_number": "22-0170-121",
+"category": "Adams Rite",
+"cost": 77.0,
+"price": 100.1,
+"id": "edf0ce42-6cc3-40c8-9f35-ebd707c7d010",
+"created_at": "2026-08-21T13:33:38.229725Z"
+},
+{
+"name": "Faceplate kit with screws, US3 (605) finish",
+"part_number": "22-0170-605",
+"category": "Adams Rite",
+"cost": 86.8,
+"price": 112.85,
+"id": "91f7c6f4-be84-4d4a-bcf6-e1a7ba64edba",
+"created_at": "2026-08-21T13:33:38.230225Z"
+},
+{
+"name": "Faceplate kit with screws, US26D (626) finish",
+"part_number": "22-0170-626",
+"category": "Adams Rite",
+"cost": 77.0,
+"price": 100.1,
+"id": "9402de9a-9a74-40d7-9d10-44ae78e09a01",
+"created_at": "2026-08-21T13:33:38.230858Z"
+},
+{
+"name": "#6-32 × 3/16\" flat head undercut screw",
+"part_number": "S235B06R03-605-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "91783718-5ba0-4e06-b5df-df06dfe51e77",
+"created_at": "2026-08-21T13:33:38.231360Z"
+},
+{
+"name": "#6-32 × 1/4\" flat head screw",
+"part_number": "S235-06R04N-603-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "498e2662-057c-47c1-90dc-b8895230b528",
+"created_at": "2026-08-21T13:33:38.231806Z"
+},
+{
+"name": "#6-32 × 1/4\" flat head screw",
+"part_number": "S235C06R04-630-MP",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "61c74053-64ae-4789-9deb-6f021457b28b",
+"created_at": "2026-08-21T13:33:38.232245Z"
+},
+{
+"name": "Interior escutcheon operator, 4189, 1-11/16\" — 2\" door",
+"part_number": "41-0942-02-119-IB",
+"category": "Adams Rite",
+"cost": 100.8,
+"price": 131.05,
+"id": "cfb1c81a-604b-491e-9025-cc23e84ff656",
+"created_at": "2026-08-21T13:33:38.232677Z"
+},
+{
+"name": "Interior escutcheon operator, 4190, 1\" — 1-3/8\" door, 119 finish",
+"part_number": "41-0942-09-119-IB",
+"category": "Adams Rite",
+"cost": 12657.4,
+"price": 16454.6,
+"id": "c5f59f6b-5e7c-468d-8f54-1f7f6ca97c8f",
+"created_at": "2026-08-21T13:33:38.233226Z"
+},
+{
+"name": "Interior escutcheon operator, 4190, 1-7/16\" — 1-5/8\" door",
+"part_number": "41-0942-10-119-IB",
+"category": "Adams Rite",
+"cost": 135.8,
+"price": 176.55,
+"id": "4712ce60-e09a-4359-9bda-3d279e66ab73",
+"created_at": "2026-08-21T13:33:38.233694Z"
+},
+{
+"name": "Interior escutcheon operator, 4190, 1-11/16\" — 2\" door, 119 finish",
+"part_number": "41-0942-11-119-IB",
+"category": "Adams Rite",
+"cost": 1503.6,
+"price": 1954.7,
+"id": "67ed899c-0547-4dab-8fe2-44532e71afe9",
+"created_at": "2026-08-21T13:33:38.234134Z"
+},
+{
+"name": "Knob",
+"part_number": "25-0094",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "3e9a2cc1-599a-46e0-9a73-0a32fb4c8d05",
+"created_at": "2026-08-21T13:33:38.234560Z"
+},
+{
+"name": "Barbed stud",
+"part_number": "P191-10-06-MP",
+"category": "Adams Rite",
+"cost": 29.4,
+"price": 38.2,
+"id": "da34cf1d-f857-4c2c-8dc8-4ca4e5d7053c",
+"created_at": "2026-08-21T13:33:38.234979Z"
+},
+{
+"name": "Exterior escutcheon, 4190 Schlage “C”, 119 finish, keyed different",
+"part_number": "41-0943-1-119-01-IB",
+"category": "Adams Rite",
+"cost": 12657.4,
+"price": 16454.6,
+"id": "0eab0151-2e59-49fd-889d-f8136a6023a1",
+"created_at": "2026-08-21T13:33:38.235404Z"
+},
+{
+"name": "Insert cylinder with 2 keys, Schlage “C” keyway, keyed different",
+"part_number": "29-0442-02",
+"category": "Adams Rite",
+"cost": 63.0,
+"price": 81.9,
+"id": "e6c8de5f-8366-4f7e-8b77-cc22319a869b",
+"created_at": "2026-08-21T13:33:38.235844Z"
+},
+{
+"name": "#6-32 × 3/8\" truss head screw",
+"part_number": "S234-06R06N-603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "13927598-124f-4cd2-9424-6183cdcc2900",
+"created_at": "2026-08-21T13:33:38.236289Z"
+},
+{
+"name": "Knob",
+"part_number": "25-0077",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "9e3438a6-351f-4e5b-b035-ebeba0789249",
+"created_at": "2026-08-21T13:33:38.236709Z"
+},
+{
+"name": "#8 × 1\" flat head self-tapping screw",
+"part_number": "S254C08R16-MP",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "72ae9490-9d56-4fd9-9a21-8d7ce6c35179",
+"created_at": "2026-08-21T13:33:38.237114Z"
+},
+{
+"name": "#8 × 1-3/8\" flat head self tapping screw",
+"part_number": "S254-08R22-603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "bdece42b-8f20-4fdd-b419-cade7a8aa0c7",
+"created_at": "2026-08-21T13:33:38.237531Z"
+},
+{
+"name": "#6 × 3/8\" pan head self-tapping screw",
+"part_number": "S280C06R06-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "22361f73-42ae-4dd6-81aa-4e1b302e2c64",
+"created_at": "2026-08-21T13:33:38.237944Z"
+},
+{
+"name": "Insert cylinder with 2 keys, Schlage “C” keyway, keyed different",
+"part_number": "29-0461-03-01",
+"category": "Adams Rite",
+"cost": 60.2,
+"price": 78.25,
+"id": "ba8334ba-9646-434e-8618-028e033f8a58",
+"created_at": "2026-08-21T13:33:38.238349Z"
+},
+{
+"name": "#8 × 3/8\" self-tapping screw",
+"part_number": "S256C08R06-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "900226d1-819f-4f78-b7ca-9362fa6e4186",
+"created_at": "2026-08-21T13:33:38.238756Z"
+},
+{
+"name": "Cylinder retainer",
+"part_number": "22-0212",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "f617018a-3dae-4396-8bde-2a6ed315fa42",
+"created_at": "2026-08-21T13:33:38.239169Z"
+},
+{
+"name": "Exterior escutcheon for 4430",
+"part_number": "25-0087-IB",
+"category": "Adams Rite",
+"cost": 33.6,
+"price": 43.7,
+"id": "ec4ae675-7499-4006-a86d-30eb23e341f8",
+"created_at": "2026-08-21T13:33:38.239577Z"
+},
+{
+"name": "Exterior escutcheon, 4431 Schlage “C” keyway, keyed different",
+"part_number": "41-0405-00-01-IB",
+"category": "Adams Rite",
+"cost": 96.6,
+"price": 125.6,
+"id": "8f24390e-5a63-43d9-98fc-d538869a3dcf",
+"created_at": "2026-08-21T13:33:38.239993Z"
+},
+{
+"name": "Short box strike, flat with dust box, mounting plate, 119 finish",
+"part_number": "4902-01-119",
+"category": "Adams Rite",
+"cost": 4968.6,
+"price": 6459.2,
+"id": "c17eee95-e541-4a7c-9307-b9db8681733f",
+"created_at": "2026-08-21T13:33:38.240426Z"
+},
+{
+"name": "Short box strike, flat with dust box, mounting plate, US32D (630) finish",
+"part_number": "4902-01-630",
+"category": "Adams Rite",
+"cost": 40.6,
+"price": 52.8,
+"id": "c493056c-f6f6-4e43-a01a-a0936eb5649a",
+"created_at": "2026-08-21T13:33:38.240852Z"
+},
+{
+"name": "Short box strike, radius with dust box, mounting plate, 119 finish",
+"part_number": "4902-02-119",
+"category": "Adams Rite",
+"cost": 4968.6,
+"price": 6459.2,
+"id": "88315609-332f-4c17-8587-f8329a67ffb8",
+"created_at": "2026-08-21T13:33:38.241271Z"
+},
+{
+"name": "Short box strike, radius with dust box, mounting plate, US32D (630) finish",
+"part_number": "4902-02-630",
+"category": "Adams Rite",
+"cost": 40.6,
+"price": 52.8,
+"id": "069d9bd2-698e-432d-bba9-2075ea37ad0b",
+"created_at": "2026-08-21T13:33:38.241680Z"
+},
+{
+"name": "Flush mount flat strike mortised with dust box, 119 finish",
+"part_number": "4901-01-119",
+"category": "Adams Rite",
+"cost": 4968.6,
+"price": 6459.2,
+"id": "a7c4aa9a-0143-4d69-b1f7-c662cfcae158",
+"created_at": "2026-08-21T13:33:38.242104Z"
+},
+{
+"name": "Flush mount flat strike mortised with dust box, US32D (630) finish",
+"part_number": "4901-01-630",
+"category": "Adams Rite",
+"cost": 40.6,
+"price": 52.8,
+"id": "f955abce-543b-41f4-b8b5-9750ab017001",
+"created_at": "2026-08-21T13:33:38.242520Z"
+},
+{
+"name": "Flush mount radius strike mortised with dust box, 119 finish",
+"part_number": "4901-02-119",
+"category": "Adams Rite",
+"cost": 4968.6,
+"price": 6459.2,
+"id": "ea6d563a-8d8f-40a6-9eab-70fce906012c",
+"created_at": "2026-08-21T13:33:38.242923Z"
+},
+{
+"name": "Flush mount radius strike mortised with dust box, US32D (630) finish",
+"part_number": "4901-02-630",
+"category": "Adams Rite",
+"cost": 40.6,
+"price": 52.8,
+"id": "b7661dcb-70a9-4af9-8162-d42c048d46bd",
+"created_at": "2026-08-21T13:33:38.243326Z"
+},
+{
+"name": "Cam plug 1-3/4\"",
+"part_number": "4581-01",
+"category": "Adams Rite",
+"cost": 54.6,
+"price": 71.0,
+"id": "8ff58017-c8e4-4975-ad2c-f0ef38252db5",
+"created_at": "2026-08-21T13:33:38.243745Z"
+},
+{
+"name": "Surface mount strike, 121 finish",
+"part_number": "4304-121",
+"category": "Adams Rite",
+"cost": 5800.2,
+"price": 7540.25,
+"id": "672034fa-ffa7-4c1b-ba9a-747d884982db",
+"created_at": "2026-08-21T13:33:38.244187Z"
+},
+{
+"name": "Surface mount strike, US32D (630) finish",
+"part_number": "4304-630",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "10cfc56e-a429-43c7-99bf-53c28d5b8be3",
+"created_at": "2026-08-21T13:33:38.244638Z"
+},
+{
+"name": "Rivnut tool kit assembly",
+"part_number": "41-0975-02",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "bd42076a-d285-4d38-9b41-ce2012059eb2",
+"created_at": "2026-08-21T13:33:38.245070Z"
+},
+{
+"name": "Escutcheon assembly, “PUSH” to left, comes complete with items 13-16, 19-21, 23 below",
+"part_number": "41-0123-02-IP",
+"category": "Adams Rite",
+"cost": 2441.6,
+"price": 3174.1,
+"id": "5782d22c-28a4-4952-a5ca-1ca0faad99e3",
+"created_at": "2026-08-21T13:33:38.245661Z"
+},
+{
+"name": "Dogging key",
+"part_number": "29-0481-MP",
+"category": "Adams Rite",
+"cost": 63.0,
+"price": 81.9,
+"id": "83d49845-8285-4a78-a541-e68718edf41d",
+"created_at": "2026-08-21T13:33:38.246179Z"
+},
+{
+"name": "Dogging screw",
+"part_number": "31-0079-MP",
+"category": "Adams Rite",
+"cost": 57.4,
+"price": 74.6,
+"id": "b4b7cf81-ecc1-4281-811d-ed2d69e94d97",
+"created_at": "2026-08-21T13:33:38.246636Z"
+},
+{
+"name": "Drive shaft",
+"part_number": "26-0413",
+"category": "Adams Rite",
+"cost": 29.4,
+"price": 38.2,
+"id": "7234022e-6f3e-4615-9285-e117566f5d96",
+"created_at": "2026-08-21T13:33:38.247069Z"
+},
+{
+"name": "#10-24 × 1-1/2\" pan head screw",
+"part_number": "S277-10R24-603-MP",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "5ebb2e55-8a59-4987-b544-b923c8ec24f6",
+"created_at": "2026-08-21T13:33:38.247506Z"
+},
+{
+"name": "“PUSH\" & \"PULL” indicator label",
+"part_number": "20-0099",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "24768d41-13f9-478d-8285-cebcd4854502",
+"created_at": "2026-08-21T13:33:38.247935Z"
+},
+{
+"name": "Spring clip",
+"part_number": "28-0070-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "44e83692-63e6-4943-9992-f9fbb2da77a7",
+"created_at": "2026-08-21T13:33:38.248359Z"
+},
+{
+"name": "Return spring kit, includes all four springs",
+"part_number": "91-0060",
+"category": "Adams Rite",
+"cost": 19.6,
+"price": 25.5,
+"id": "87d221d6-d208-4b6e-84d5-216543a0e26b",
+"created_at": "2026-08-21T13:33:38.248780Z"
+},
+{
+"name": "Driver screw",
+"part_number": "26-0383N-MP",
+"category": "Adams Rite",
+"cost": 147.0,
+"price": 191.1,
+"id": "5636f9bf-9e89-4c71-8b7e-609b22821919",
+"created_at": "2026-08-21T13:33:38.249209Z"
+},
+{
+"name": "Shaft",
+"part_number": "26-0055",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "bed2f6ed-93dc-4dc7-9db4-8dd28e7ac9fa",
+"created_at": "2026-08-21T13:33:38.249623Z"
+},
+{
+"name": "3/8\"-24",
+"part_number": "26-0398N-MP",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "a23e1144-c19b-4760-8956-dcb46b27c685",
+"created_at": "2026-08-21T13:33:38.250046Z"
+},
+{
+"name": "Lower bolt guide assembly",
+"part_number": "31-0964",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "66fbba5b-fa3a-4e6a-9bd4-13788c9c37be",
+"created_at": "2026-08-21T13:33:38.250467Z"
+},
+{
+"name": "Bolt guide bushing",
+"part_number": "25-0506-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "21ee0b29-b8db-4732-943f-eaa2e7b925dc",
+"created_at": "2026-08-21T13:33:38.250897Z"
+},
+{
+"name": "CVR final assembly, complete with bolts",
+"part_number": "41-0935",
+"category": "Adams Rite",
+"cost": 333.2,
+"price": 433.15,
+"id": "51636ee6-19e4-4c84-b6ac-6f2fe3337187",
+"created_at": "2026-08-21T13:33:38.251374Z"
+},
+{
+"name": "#6-32 × 1/2\" cap screw, rod piercing",
+"part_number": "S242A06-08-MP",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "8fce878a-98b6-4c1c-b51f-7629b0c494fb",
+"created_at": "2026-08-21T13:33:38.251803Z"
+},
+{
+"name": "Actuator, top assembly",
+"part_number": "31-0944",
+"category": "Adams Rite",
+"cost": 68.6,
+"price": 89.2,
+"id": "d50e790c-289e-4826-9363-d3b3e5d344ce",
+"created_at": "2026-08-21T13:33:38.252225Z"
+},
+{
+"name": "Strike plate assembly",
+"part_number": "31-0945",
+"category": "Adams Rite",
+"cost": 43.4,
+"price": 56.4,
+"id": "3bb88081-05ad-48cf-812c-3f6697082b23",
+"created_at": "2026-08-21T13:33:38.252638Z"
+},
+{
+"name": "Strike plate assembly multipack",
+"part_number": "31-0945-MP",
+"category": "Adams Rite",
+"cost": 390.6,
+"price": 507.8,
+"id": "09fc2535-280f-4203-bd67-88e1c0660afe",
+"created_at": "2026-08-21T13:33:38.253053Z"
+},
+{
+"name": "#8-32 × 5/16\" slotted head screw for 31/32\" back",
+"part_number": "S232C08-05-631-MP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "a38ef2ab-75bb-435e-b1dd-cf5af2edbd15",
+"created_at": "2026-08-21T13:33:38.253462Z"
+},
+{
+"name": "Strike for use with 4920AN",
+"part_number": "4506-02-630",
+"category": "Adams Rite",
+"cost": 75.6,
+"price": 98.3,
+"id": "750cb9ff-2e29-4b40-a8e6-fe51dd59a344",
+"created_at": "2026-08-21T13:33:38.253872Z"
+},
+{
+"name": "Loose parts kit, 4900",
+"part_number": "91-4900-01-628",
+"category": "Adams Rite",
+"cost": 5307.4,
+"price": 6899.6,
+"id": "d8fc837a-2705-4df5-aedf-a78548e8c994",
+"created_at": "2026-08-21T13:33:38.254294Z"
+},
+{
+"name": "Strike plate assembly",
+"part_number": "31-0202",
+"category": "Adams Rite",
+"cost": 61.6,
+"price": 80.1,
+"id": "424a2e24-64b5-45ae-8ca3-acbfdf550fec",
+"created_at": "2026-08-21T13:33:38.254783Z"
+},
+{
+"name": "Actuator assembly",
+"part_number": "31-0331",
+"category": "Adams Rite",
+"cost": 96.6,
+"price": 125.6,
+"id": "18644be2-8436-4f23-96d1-21b2094e16a2",
+"created_at": "2026-08-21T13:33:38.255208Z"
+},
+{
+"name": "Upper cover, US3 (605) finish",
+"part_number": "22-0332-02-605",
+"category": "Adams Rite",
+"cost": 133.0,
+"price": 172.9,
+"id": "b9331da0-476b-46bb-b1e3-a113ac90a0c4",
+"created_at": "2026-08-21T13:33:38.255815Z"
+},
+{
+"name": "Upper cover, US4 (606) finish",
+"part_number": "22-0332-02-606",
+"category": "Adams Rite",
+"cost": 133.0,
+"price": 172.9,
+"id": "0e14a22c-b42d-4969-9a7a-f4012cd6f49b",
+"created_at": "2026-08-21T13:33:38.256301Z"
+},
+{
+"name": "Upper cover, US32 (629) finish",
+"part_number": "22-0332-04-629",
+"category": "Adams Rite",
+"cost": 109.2,
+"price": 141.95,
+"id": "92d52b3c-effe-4e2a-a1c0-1e1793d0e20b",
+"created_at": "2026-08-21T13:33:38.256779Z"
+},
+{
+"name": "Upper cover, US32D (630) finish",
+"part_number": "22-0332-04-630",
+"category": "Adams Rite",
+"cost": 109.2,
+"price": 141.95,
+"id": "d9caa432-f627-4e1f-a0a4-f1e17695ff93",
+"created_at": "2026-08-21T13:33:38.257261Z"
+},
+{
+"name": "Rod guide cover, US3 (605) finish",
+"part_number": "24-0031-605",
+"category": "Adams Rite",
+"cost": 3908.8,
+"price": 5081.45,
+"id": "46b856a3-253a-4842-b2d3-80c153ad753e",
+"created_at": "2026-08-21T13:33:38.257697Z"
+},
+{
+"name": "Rod guide cover, US32 (629) finish",
+"part_number": "24-0033-629",
+"category": "Adams Rite",
+"cost": 2144.8,
+"price": 2788.25,
+"id": "63a8f905-15f3-414d-8212-271fabce6385",
+"created_at": "2026-08-21T13:33:38.258126Z"
+},
+{
+"name": "End cap assembly, hinge end — metal",
+"part_number": "41-0903-119",
+"category": "Adams Rite",
+"cost": 46.2,
+"price": 60.05,
+"id": "d2cc6bf2-a70a-4a5e-b2e4-709c9fb3e30d",
+"created_at": "2026-08-21T13:33:38.258553Z"
+},
+{
+"name": "Lower cover, 313 finish",
+"part_number": "22-0333-01-313",
+"category": "Adams Rite",
+"cost": 6190.8,
+"price": 8048.05,
+"id": "35785dc7-8691-4dff-a721-ae25eac77c8f",
+"created_at": "2026-08-21T13:33:38.258984Z"
+},
+{
+"name": "Strike (ANSI)",
+"part_number": "22-0125",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "58d7ae59-2823-43d0-8d6d-e78da6f3cb5f",
+"created_at": "2026-08-21T13:33:38.259409Z"
+},
+{
+"name": "Lower housing",
+"part_number": "23-0059",
+"category": "Adams Rite",
+"cost": 396.2,
+"price": 515.05,
+"id": "8ae01594-530b-4abf-8bc6-2fd6467cb3d6",
+"created_at": "2026-08-21T13:33:38.259834Z"
+},
+{
+"name": "Bolt guide bushing",
+"part_number": "25-0284-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "9ed89430-cdf2-43b0-a1c5-ffa5bcb4ab45",
+"created_at": "2026-08-21T13:33:38.260265Z"
+},
+{
+"name": "Lower bolt guide assembly",
+"part_number": "31-0175-P",
+"category": "Adams Rite",
+"cost": 36.4,
+"price": 47.3,
+"id": "ea68a1ce-cca5-44b4-948e-59ff0f4f2dad",
+"created_at": "2026-08-21T13:33:38.260681Z"
+},
+{
+"name": "Lower rod assembly",
+"part_number": "31-0192-02",
+"category": "Adams Rite",
+"cost": 74.2,
+"price": 96.45,
+"id": "9a67a957-f8f1-4061-aee4-7f0f26f7de9e",
+"created_at": "2026-08-21T13:33:38.261108Z"
+},
+{
+"name": "End cap assembly, nose end — metal",
+"part_number": "41-0902-04-IP",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "f56cf569-6874-4704-9a3a-66033f192409",
+"created_at": "2026-08-21T13:33:38.261535Z"
+},
+{
+"name": "Molding clip",
+"part_number": "25-0008",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "09e6be81-f686-4890-854e-71525a5abeef",
+"created_at": "2026-08-21T13:33:38.261954Z"
+},
+{
+"name": "SVR final assembly, complete with rods",
+"part_number": "41-0235-01",
+"category": "Adams Rite",
+"cost": 467.6,
+"price": 607.9,
+"id": "49d8689d-4cfe-4ab7-82b7-1d6afbf68550",
+"created_at": "2026-08-21T13:33:38.262366Z"
+},
+{
+"name": "SVR final assembly, complete with rod for top rod devices",
+"part_number": "41-0333-01",
+"category": "Adams Rite",
+"cost": 359.8,
+"price": 467.75,
+"id": "5adf46fc-de55-4925-b0fb-21c37789e66e",
+"created_at": "2026-08-21T13:33:38.262783Z"
+},
+{
+"name": "Upper rod assembly",
+"part_number": "31-0333-01",
+"category": "Adams Rite",
+"cost": 105.0,
+"price": 136.5,
+"id": "e37a5e42-8f3f-4c04-b2f5-50ec0e3e62c1",
+"created_at": "2026-08-21T13:33:38.263205Z"
+},
+{
+"name": "Binder post with screws",
+"part_number": "26-0584-652-MP",
+"category": "Adams Rite",
+"cost": 57.4,
+"price": 74.6,
+"id": "ad08241f-643a-4e35-8120-e306ea5321a4",
+"created_at": "2026-08-21T13:33:38.263639Z"
+},
+{
+"name": "Hardware pack for 313, 335 finishes",
+"part_number": "91-0831-01-335",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "f429cee7-4581-4dba-a214-b7f32fcfed8b",
+"created_at": "2026-08-21T13:33:38.264062Z"
+},
+{
+"name": "Hardware pack for US3 (605), US4 (606) finishes",
+"part_number": "91-0831-01-605",
+"category": "Adams Rite",
+"cost": 37.8,
+"price": 49.15,
+"id": "d5b3d66e-acfa-4f8a-a8f3-4f6a85d7a409",
+"created_at": "2026-08-21T13:33:38.264489Z"
+},
+{
+"name": "Hardware pack for 628, US32 (629), US32D (630) finishes",
+"part_number": "91-0831-01-630",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "2eb1dbc6-9826-48fc-85fe-c7b9d0a34cb9",
+"created_at": "2026-08-21T13:33:38.264907Z"
+},
+{
+"name": "#12-24 × 3/4\" flat head combo screw",
+"part_number": "91-0833-02",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "feafe9af-35a3-47d2-bedd-c293abc9b34f",
+"created_at": "2026-08-21T13:33:38.265330Z"
+},
+{
+"name": "Strike plate",
+"part_number": "22-0398-01-630",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "cf5a3716-1d51-4855-b941-5b5642f746d0",
+"created_at": "2026-08-21T13:33:38.265755Z"
+},
+{
+"name": "End cap assembly, nose end — metal",
+"part_number": "41-0902-05-IP",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "a811ac2f-2f15-4db0-932a-b539dba69dc4",
+"created_at": "2026-08-21T13:33:38.266170Z"
+},
+{
+"name": "#6 hex head cam screw",
+"part_number": "26-0217N-MP",
+"category": "Adams Rite",
+"cost": 32.2,
+"price": 41.85,
+"id": "cb8fce28-d1fc-4ea6-8121-e2f12db0e86d",
+"created_at": "2026-08-21T13:33:38.266587Z"
+},
+{
+"name": "Cam retainer ring (past production)",
+"part_number": "R603-31-MP",
+"category": "Adams Rite",
+"cost": 33.6,
+"price": 43.7,
+"id": "54c122f3-cd2a-49ba-a9cd-32e7ee842055",
+"created_at": "2026-08-21T13:33:38.267017Z"
+},
+{
+"name": "Faceplate kit with screws, 335 finish",
+"part_number": "24-0015-020-335",
+"category": "Adams Rite",
+"cost": 2273.6,
+"price": 2955.7,
+"id": "a1e758cf-a113-4301-99a2-1f6e30fc64f3",
+"created_at": "2026-08-21T13:33:38.267436Z"
+},
+{
+"name": "Latch assembly (LHR)",
+"part_number": "41-0296-01",
+"category": "Adams Rite",
+"cost": 742.0,
+"price": 964.6,
+"id": "78319347-fd5b-4237-804f-d49565450495",
+"created_at": "2026-08-21T13:33:38.267852Z"
+},
+{
+"name": "Latch assembly (RHR)",
+"part_number": "41-0296-02",
+"category": "Adams Rite",
+"cost": 742.0,
+"price": 964.6,
+"id": "e034cc7d-4350-4636-9753-18ed3e53e1c1",
+"created_at": "2026-08-21T13:33:38.268279Z"
+},
+{
+"name": "Cam (latchbolt retract), screw attachment",
+"part_number": "22-0672",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "9b34f866-7bf4-4c1e-80ca-03f6258dddfc",
+"created_at": "2026-08-21T13:33:38.268719Z"
+},
+{
+"name": "CVR final assembly, complete with bolts",
+"part_number": "41-0224",
+"category": "Adams Rite",
+"cost": 305.2,
+"price": 396.75,
+"id": "d846ed3c-113b-40d4-84e5-2e736d71800e",
+"created_at": "2026-08-21T13:33:38.269143Z"
+},
+{
+"name": "CVR final assembly, complete with bolt for top rod devices",
+"part_number": "41-0339",
+"category": "Adams Rite",
+"cost": 341.6,
+"price": 444.1,
+"id": "c08b3d7e-ee02-4bb0-a470-14786285cc1c",
+"created_at": "2026-08-21T13:33:38.269576Z"
+},
+{
+"name": "Lower bolt guide assembly",
+"part_number": "31-0034",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "d5067d1b-8f6f-4779-9181-fa247073464f",
+"created_at": "2026-08-21T13:33:38.270004Z"
+},
+{
+"name": "Top actuator assembly",
+"part_number": "31-0579-02",
+"category": "Adams Rite",
+"cost": 217.0,
+"price": 282.1,
+"id": "0d8bc056-d5d3-4a1a-8ba5-4d1d126f4ab9",
+"created_at": "2026-08-21T13:33:38.270427Z"
+},
+{
+"name": "Strike spacer",
+"part_number": "22-0481-04-MP",
+"category": "Adams Rite",
+"cost": 46.2,
+"price": 60.05,
+"id": "4c143961-7fa5-4de5-a66b-6112435577e2",
+"created_at": "2026-08-21T13:33:38.270847Z"
+},
+{
+"name": "Strike spacer",
+"part_number": "22-0481-03-MP",
+"category": "Adams Rite",
+"cost": 46.2,
+"price": 60.05,
+"id": "2f247b3a-6ff2-48e8-a2b9-b2bc3c54690e",
+"created_at": "2026-08-21T13:33:38.271276Z"
+},
+{
+"name": "Strike plug",
+"part_number": "25-0625-MP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "4ca27674-c09f-406a-b048-2551f3ea2084",
+"created_at": "2026-08-21T13:33:38.271699Z"
+},
+{
+"name": "Strike",
+"part_number": "22-0430",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "441f7aae-f5aa-43e6-a609-bcf0fe38834f",
+"created_at": "2026-08-21T13:33:38.272128Z"
+},
+{
+"name": "#10-32 × 3/4\" flat head screws",
+"part_number": "91-0837-02",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "8777b394-919e-4590-93b4-a2b9c63d72d1",
+"created_at": "2026-08-21T13:33:38.272560Z"
+},
+{
+"name": "End cap assembly, latch end — metal",
+"part_number": "41-0902-03-IP",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "f4480fb3-1093-49c6-bd8d-e79f26a83c9a",
+"created_at": "2026-08-21T13:33:38.272993Z"
+},
+{
+"name": "Cylinder plate for wood door applications",
+"part_number": "22-0480",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "43d2240d-359b-44d3-918a-8e2765b7e009",
+"created_at": "2026-08-21T13:33:38.273409Z"
+},
+{
+"name": "Support plate, 121 finish",
+"part_number": "29-0630-121",
+"category": "Adams Rite",
+"cost": 154.0,
+"price": 200.2,
+"id": "6d401b35-a900-4532-a5e2-7bdb434fad71",
+"created_at": "2026-08-21T13:33:38.273825Z"
+},
+{
+"name": "Support plate, US26D (626) finish",
+"part_number": "29-0630-626",
+"category": "Adams Rite",
+"cost": 176.4,
+"price": 229.3,
+"id": "f35fd37a-e08d-4374-8fc3-a6dfecd211a4",
+"created_at": "2026-08-21T13:33:38.274258Z"
+},
+{
+"name": "Top actuator assembly, 3900",
+"part_number": "31-0579-06",
+"category": "Adams Rite",
+"cost": 273.0,
+"price": 354.9,
+"id": "74ea0eba-92bf-4811-8521-b149ed5e5d45",
+"created_at": "2026-08-21T13:33:38.274676Z"
+},
+{
+"name": "Top actuator assembly, 8900",
+"part_number": "31-0579-05",
+"category": "Adams Rite",
+"cost": 252.0,
+"price": 327.6,
+"id": "c57c6ede-21f6-4ec0-9fea-ec617948b51c",
+"created_at": "2026-08-21T13:33:38.275106Z"
+},
+{
+"name": "Mounting cap spacer",
+"part_number": "22-0585",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "7a9f16fd-a656-4f45-8d7f-fdb492e89434",
+"created_at": "2026-08-21T13:33:38.275550Z"
+},
+{
+"name": "Drive shaft (no trim)",
+"part_number": "26-0355",
+"category": "Adams Rite",
+"cost": 8856.4,
+"price": 11513.3,
+"id": "bac4e673-63aa-4fd1-927a-581a49dfe1bb",
+"created_at": "2026-08-21T13:33:38.275997Z"
+},
+{
+"name": "Tailpiece adapter",
+"part_number": "23-0335",
+"category": "Adams Rite",
+"cost": 18.2,
+"price": 23.65,
+"id": "c153c538-9ad5-47fc-9759-c9fdfb6c2ef8",
+"created_at": "2026-08-21T13:33:38.276420Z"
+},
+{
+"name": "Center block",
+"part_number": "23-0571",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "36a6def3-d383-400c-a41f-8a9f52ca2f7d",
+"created_at": "2026-08-21T13:33:38.276850Z"
+},
+{
+"name": "Cover plate",
+"part_number": "22-0847",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "db83d8da-f36a-4f63-84e2-a136677e475f",
+"created_at": "2026-08-21T13:33:38.277283Z"
+},
+{
+"name": "Fire bolt plate",
+"part_number": "22-0814-119",
+"category": "Adams Rite",
+"cost": 96.6,
+"price": 125.6,
+"id": "2da10687-cff6-45a1-86ee-28a496d21e65",
+"created_at": "2026-08-21T13:33:38.277722Z"
+},
+{
+"name": "Cross pin bolt assembly",
+"part_number": "29-0206",
+"category": "Adams Rite",
+"cost": 147.0,
+"price": 191.1,
+"id": "407ff28f-0880-4960-bc06-c70138c40c60",
+"created_at": "2026-08-21T13:33:38.278153Z"
+},
+{
+"name": "Upper cover, US32 (629) finish",
+"part_number": "22-0332-14-629",
+"category": "Adams Rite",
+"cost": 1542.8,
+"price": 2005.65,
+"id": "c3c1cff3-f6c6-4fc6-9be3-cbd29234bbf3",
+"created_at": "2026-08-21T13:33:38.278585Z"
+},
+{
+"name": "Rod assembly",
+"part_number": "41-0337",
+"category": "Adams Rite",
+"cost": 182.0,
+"price": 236.6,
+"id": "2b9feb2d-713c-482b-b0b9-b13cd73a3a38",
+"created_at": "2026-08-21T13:33:38.279021Z"
+},
+{
+"name": "Top fitting",
+"part_number": "23-0511",
+"category": "Adams Rite",
+"cost": 176.4,
+"price": 229.3,
+"id": "eaebfe35-7faa-488e-9853-fcff206e66e5",
+"created_at": "2026-08-21T13:33:38.279612Z"
+},
+{
+"name": "Bottom fitting",
+"part_number": "23-0512",
+"category": "Adams Rite",
+"cost": 182.0,
+"price": 236.6,
+"id": "bfdb3014-21f7-4c40-9f7a-f34217c92b50",
+"created_at": "2026-08-21T13:33:38.280078Z"
+},
+{
+"name": "Mounting plate",
+"part_number": "22-0690",
+"category": "Adams Rite",
+"cost": 133.0,
+"price": 172.9,
+"id": "78ebf7b3-da88-467b-8ac7-2f5b55160d56",
+"created_at": "2026-08-21T13:33:38.280514Z"
+},
+{
+"name": "Rivnut tool kit assembly",
+"part_number": "41-0975-04",
+"category": "Adams Rite",
+"cost": 30.8,
+"price": 40.05,
+"id": "16388015-e70c-40cd-83ac-deb2f9d132f5",
+"created_at": "2026-08-21T13:33:38.280943Z"
+},
+{
+"name": "#10-32 × 3/4\" flat head screw",
+"part_number": "S272-10-12-119-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "59be86b7-7dca-4b0f-989f-900a0af2b68b",
+"created_at": "2026-08-21T13:33:38.281365Z"
+},
+{
+"name": "Strike",
+"part_number": "22-0329",
+"category": "Adams Rite",
+"cost": 35.0,
+"price": 45.5,
+"id": "46e17ca4-2de5-4887-8652-08025db3bdae",
+"created_at": "2026-08-21T13:33:38.281789Z"
+},
+{
+"name": "Knurled spacer",
+"part_number": "29-0063",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "8f24bc5c-a24a-4277-9b27-e3898a2a3be3",
+"created_at": "2026-08-21T13:33:38.282223Z"
+},
+{
+"name": "#10 × 1-1/4\" pan head self-tapping screw",
+"part_number": "S253-10R20-603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "89e264a8-cc13-4375-a76f-e74faca14528",
+"created_at": "2026-08-21T13:33:38.282691Z"
+},
+{
+"name": "Microswitch assembly with wires",
+"part_number": "41-0193-01",
+"category": "Adams Rite",
+"cost": 147.0,
+"price": 191.1,
+"id": "2ff1b88b-0f95-431a-95fd-1e77be81dbbe",
+"created_at": "2026-08-21T13:33:38.283132Z"
+},
+{
+"name": "#6-32 × 3/8\" round head self-tapping screw",
+"part_number": "S282-06R06-603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "af9b9917-272a-4fb5-b8d1-3a932804af2d",
+"created_at": "2026-08-21T13:33:38.283572Z"
+},
+{
+"name": "#10-32 × 5/8\" self-tapping screw for end cap",
+"part_number": "S292-10R10-603-MP",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "0c8f70d4-f241-4195-9c30-77df30be2948",
+"created_at": "2026-08-21T13:33:38.284014Z"
+},
+{
+"name": "Actuator assembly",
+"part_number": "31-0201",
+"category": "Adams Rite",
+"cost": 81.2,
+"price": 105.55,
+"id": "54a9f2b6-95ca-40f3-b626-5a51e910de96",
+"created_at": "2026-08-21T13:33:38.284451Z"
+},
+{
+"name": "Dogging assembly, complete",
+"part_number": "31-0265-IP",
+"category": "Adams Rite",
+"cost": 42.0,
+"price": 54.6,
+"id": "0f61c0fe-223f-47ec-892a-0934164ca63b",
+"created_at": "2026-08-21T13:33:38.284920Z"
+},
+{
+"name": "Lower cover, US3 (605) finish",
+"part_number": "22-0275-02-605",
+"category": "Adams Rite",
+"cost": 13330.8,
+"price": 17330.05,
+"id": "03c5240e-193c-4d7b-ae8f-6a9b51684f68",
+"created_at": "2026-08-21T13:33:38.285401Z"
+},
+{
+"name": "Lower cover, US32 (629) finish",
+"part_number": "22-0275-04-629",
+"category": "Adams Rite",
+"cost": 10950.8,
+"price": 14236.05,
+"id": "d2469421-5046-4731-ae0c-0ce3bfef2708",
+"created_at": "2026-08-21T13:33:38.285831Z"
+},
+{
+"name": "Lower housing",
+"part_number": "23-0024",
+"category": "Adams Rite",
+"cost": 63.0,
+"price": 81.9,
+"id": "91aa2953-3310-4412-b8dc-2b7546415f11",
+"created_at": "2026-08-21T13:33:38.286511Z"
+},
+{
+"name": "SVR final assembly, complete with rods",
+"part_number": "41-0282-01",
+"category": "Adams Rite",
+"cost": 436.8,
+"price": 567.85,
+"id": "206f93b9-c014-4bd7-b38a-65eeb26cace6",
+"created_at": "2026-08-21T13:33:38.287004Z"
+},
+{
+"name": "SVR final assembly, top rod",
+"part_number": "41-0333-11",
+"category": "Adams Rite",
+"cost": 299.6,
+"price": 389.5,
+"id": "b9394d00-2142-47ae-8033-9b9ad9a6b4a6",
+"created_at": "2026-08-21T13:33:38.287469Z"
+},
+{
+"name": "Upper rod assembly",
+"part_number": "31-0235-01",
+"category": "Adams Rite",
+"cost": 89.6,
+"price": 116.5,
+"id": "c56a2986-40df-4ee8-a338-029eb685a402",
+"created_at": "2026-08-21T13:33:38.287948Z"
+},
+{
+"name": "Strike screw pack for wood frame",
+"part_number": "91-0831-02-630",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "ba1a29db-f5fd-4355-8a75-942a3869f963",
+"created_at": "2026-08-21T13:33:38.288535Z"
+},
+{
+"name": "Header strike for wood frame",
+"part_number": "22-0214",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "15d1a6d4-75cf-449a-9aa0-91837c65a08a",
+"created_at": "2026-08-21T13:33:38.288997Z"
+},
+{
+"name": "#8-32 × 1/4\" flat head screws, 335 finish",
+"part_number": "91-0244-335",
+"category": "Adams Rite",
+"cost": 12.6,
+"price": 16.4,
+"id": "c64e2d6e-370b-4371-b34c-fd872f3491d5",
+"created_at": "2026-08-21T13:33:38.289443Z"
+},
+{
+"name": "#8-32 × 1/4\" flat head screws, 628 finish",
+"part_number": "91-0244-628-P",
+"category": "Adams Rite",
+"cost": 12.6,
+"price": 16.4,
+"id": "fab064fa-1ef0-4904-b890-94045b07fdb3",
+"created_at": "2026-08-21T13:33:38.289888Z"
+},
+{
+"name": "Latchbolt retraction cam with screw attachment",
+"part_number": "22-0066",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "cb335592-d4d3-401f-9d8e-ea0ad0c4312f",
+"created_at": "2026-08-21T13:33:38.290506Z"
+},
+{
+"name": "Latchbolt retraction cam with retainer clip attachment",
+"part_number": "22-0662",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "59ac39e4-a378-426b-9b72-34c94245a18c",
+"created_at": "2026-08-21T13:33:38.291085Z"
+},
+{
+"name": "Back-up plate",
+"part_number": "23-0110",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "c61cc0a5-f3b4-4b1a-98e2-2f40b1f9c2cb",
+"created_at": "2026-08-21T13:33:38.291635Z"
+},
+{
+"name": "#10-32 × 5/8\" flat head screw",
+"part_number": "91-0833-04",
+"category": "Adams Rite",
+"cost": 18.2,
+"price": 23.65,
+"id": "818f4e6e-8e74-4981-bb52-5f619f4f7909",
+"created_at": "2026-08-21T13:33:38.292141Z"
+},
+{
+"name": "Strike assembly",
+"part_number": "31-0561-01-IP",
+"category": "Adams Rite",
+"cost": 35.0,
+"price": 45.5,
+"id": "e259b895-bdbd-414b-b171-f5e63f873e84",
+"created_at": "2026-08-21T13:33:38.292620Z"
+},
+{
+"name": "Faceplate kit with screws, flat or bevel, US26 (672) finish",
+"part_number": "24-0137-01-672",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "b0eb2af3-5090-40d5-ba92-4eba60ad2e94",
+"created_at": "2026-08-21T13:33:38.293109Z"
+},
+{
+"name": "Faceplate kit with screws, flat or bevel, US26D (702) finish",
+"part_number": "24-0137-01-702",
+"category": "Adams Rite",
+"cost": 63.0,
+"price": 81.9,
+"id": "39802f4f-4873-4776-bfed-83d331f758a5",
+"created_at": "2026-08-21T13:33:38.293579Z"
+},
+{
+"name": "Faceplate kit with screws, radius, US26 (672) finish",
+"part_number": "24-0137-02-672",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "727aaf1f-860e-4385-bfdf-1ba00358c841",
+"created_at": "2026-08-21T13:33:38.294043Z"
+},
+{
+"name": "Faceplate kit with screws, radius, US26D (702) finish",
+"part_number": "24-0137-02-702",
+"category": "Adams Rite",
+"cost": 63.0,
+"price": 81.9,
+"id": "7283392f-b0c0-4897-b009-12cde2965cc7",
+"created_at": "2026-08-21T13:33:38.294503Z"
+},
+{
+"name": "Thick door kit for 2\" door",
+"part_number": "91-0995-02-IP",
+"category": "Adams Rite",
+"cost": 3907.4,
+"price": 5079.6,
+"id": "c65ba0b4-d77e-4416-a7d6-a0600dbf8a57",
+"created_at": "2026-08-21T13:33:38.295172Z"
+},
+{
+"name": "Thick door kit for 2-1/2\" door",
+"part_number": "91-0995-04-IP",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "ba60afa6-23fd-410b-ad23-52f8b388d693",
+"created_at": "2026-08-21T13:33:38.295991Z"
+},
+{
+"name": "Thick door kit for 2-3/4\" door",
+"part_number": "91-0995-05-IP",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "d7d99dbe-678d-41af-81e1-b5b78f1ecf3a",
+"created_at": "2026-08-21T13:33:38.296623Z"
+},
+{
+"name": "Thermal clad kit for 1-3/4\" door with 1/4\" cladding",
+"part_number": "91-0325-01",
+"category": "Adams Rite",
+"cost": 159.6,
+"price": 207.5,
+"id": "948780d9-dd9b-47b7-ac0f-cec176aa6e91",
+"created_at": "2026-08-21T13:33:38.297190Z"
+},
+{
+"name": "Thermal clad kit for 1-3/4\" door with 1/2\" cladding",
+"part_number": "91-0325-02",
+"category": "Adams Rite",
+"cost": 285.6,
+"price": 371.3,
+"id": "efc1f14a-780e-4b48-96b0-6f67fc526516",
+"created_at": "2026-08-21T13:33:38.297676Z"
+},
+{
+"name": "#10-32 × 5/8\" flat head screw",
+"part_number": "S262-10R10N-603-MP",
+"category": "Adams Rite",
+"cost": 19.6,
+"price": 25.5,
+"id": "b4d033a8-e0b5-435e-82d4-d32a04f46dbc",
+"created_at": "2026-08-21T13:33:38.298148Z"
+},
+{
+"name": "#8-32 × 1/8\" cup point",
+"part_number": "S232C08H02N-MP",
+"category": "Adams Rite",
+"cost": 36.4,
+"price": 47.3,
+"id": "53c90a3b-0add-4882-b52d-c41fe9370d68",
+"created_at": "2026-08-21T13:33:38.298604Z"
+},
+{
+"name": "End cap (hinge end)",
+"part_number": "25-0471-IP",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "ebc95213-ca0f-4a73-9519-4104706cfbb1",
+"created_at": "2026-08-21T13:33:38.299068Z"
+},
+{
+"name": "#10-32 × 1/2\" pan head SEMS screw",
+"part_number": "S277-10R08-603-MP",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "df5167d2-88d1-44ef-a8dd-d4410927103f",
+"created_at": "2026-08-21T13:33:38.299523Z"
+},
+{
+"name": "#10-32 × 1/4\" pan head screw",
+"part_number": "S261-10R04N603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "b3678257-cdbd-4421-b20b-c9092dddba95",
+"created_at": "2026-08-21T13:33:38.299979Z"
+},
+{
+"name": "#10-32 × 1/4\" pan head SEMS screw (link)",
+"part_number": "S277-10R04-603-MP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "501f2e09-f5f7-4533-b158-339574b022de",
+"created_at": "2026-08-21T13:33:38.300424Z"
+},
+{
+"name": "Upper link for narrow stile",
+"part_number": "22-0551",
+"category": "Adams Rite",
+"cost": 35.0,
+"price": 45.5,
+"id": "8f2d9709-4b5c-471f-a856-dc950a8002be",
+"created_at": "2026-08-21T13:33:38.300889Z"
+},
+{
+"name": "Upper link for medium/wide stile",
+"part_number": "22-0551-01",
+"category": "Adams Rite",
+"cost": 35.0,
+"price": 45.5,
+"id": "0dcae49b-20e7-4b8d-a143-04adb6efdf48",
+"created_at": "2026-08-21T13:33:38.301385Z"
+},
+{
+"name": "Door cover",
+"part_number": "25-0473",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "2b124058-bbbc-464e-8884-ea58219f90f4",
+"created_at": "2026-08-21T13:33:38.301841Z"
+},
+{
+"name": "End cap assembly, nose end — complete",
+"part_number": "31-0572-IP",
+"category": "Adams Rite",
+"cost": 40.6,
+"price": 52.8,
+"id": "d97f1b97-b7c8-408d-a349-c19f76eb541c",
+"created_at": "2026-08-21T13:33:38.302299Z"
+},
+{
+"name": "Mounting plate",
+"part_number": "22-0552",
+"category": "Adams Rite",
+"cost": 18.2,
+"price": 23.65,
+"id": "ce3811d9-0088-41bb-b1b3-49808ffb91bd",
+"created_at": "2026-08-21T13:33:38.302755Z"
+},
+{
+"name": "Upper bolt",
+"part_number": "26-0094",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "0d6fd8f0-8020-48b8-9180-0d2d36fee57f",
+"created_at": "2026-08-21T13:33:38.303216Z"
+},
+{
+"name": "Top actuator assembly",
+"part_number": "31-0579-01-IP",
+"category": "Adams Rite",
+"cost": 189.0,
+"price": 245.7,
+"id": "650f4eb9-250b-4abe-a238-c5170ae7d4d8",
+"created_at": "2026-08-21T13:33:38.303726Z"
+},
+{
+"name": "CVR final assembly, complete with bolts",
+"part_number": "41-0675",
+"category": "Adams Rite",
+"cost": 281.4,
+"price": 365.8,
+"id": "dd120ca0-9bdc-4935-8700-46a7ff5161c4",
+"created_at": "2026-08-21T13:33:38.304268Z"
+},
+{
+"name": "End cap (hinge end)",
+"part_number": "25-0471",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "d25dd719-2785-491d-a501-6c21383f4035",
+"created_at": "2026-08-21T13:33:38.304748Z"
+},
+{
+"name": "Link-crank assembly",
+"part_number": "31-0675",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "65afb090-8729-4e5f-8db2-227ab529ef87",
+"created_at": "2026-08-21T13:33:38.305205Z"
+},
+{
+"name": "#10-32 × 2\" flat head screw",
+"part_number": "S262-10R32-603-MP",
+"category": "Adams Rite",
+"cost": 19.6,
+"price": 25.5,
+"id": "01604441-e8fe-4bfc-a141-1826937e0afd",
+"created_at": "2026-08-21T13:33:38.305651Z"
+},
+{
+"name": "Decal (dogging instructions)",
+"part_number": "20-0035",
+"category": "Adams Rite",
+"cost": 36.4,
+"price": 47.3,
+"id": "bf014e6e-359c-47c3-a126-ba99caced6bb",
+"created_at": "2026-08-21T13:33:38.306113Z"
+},
+{
+"name": "Mounting base kit, includes starwheel",
+"part_number": "91-8800",
+"category": "Adams Rite",
+"cost": 271.6,
+"price": 353.1,
+"id": "1669eb39-fce0-47dd-ba0f-bfa9689d5696",
+"created_at": "2026-08-21T13:33:38.306575Z"
+},
+{
+"name": "Strike kit for center hung door with 4\" jamb",
+"part_number": "91-0993-P",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "544c22ea-83d0-4c38-b02a-5c4a57f476a4",
+"created_at": "2026-08-21T13:33:38.307046Z"
+},
+{
+"name": "Dogging Assembly",
+"part_number": "31-0265-01-IP",
+"category": "Adams Rite",
+"cost": 42.0,
+"price": 54.6,
+"id": "7701d808-5099-4429-add7-69fb178f9c68",
+"created_at": "2026-08-21T13:33:38.307500Z"
+},
+{
+"name": "Cylinder kit",
+"part_number": "91-0099",
+"category": "Adams Rite",
+"cost": 35.0,
+"price": 45.5,
+"id": "860269c1-1b31-4fbf-99a8-55cdeb215582",
+"created_at": "2026-08-21T13:33:38.307952Z"
+},
+{
+"name": "Back cover 1/2\" (7100, 7101, 7110, 7111, 7130, 7131, 7140)",
+"part_number": "23-0350",
+"category": "Adams Rite",
+"cost": 2832.2,
+"price": 3681.85,
+"id": "917ce969-ae42-4c5a-8fb5-de16c8434828",
+"created_at": "2026-08-21T13:33:38.308400Z"
+},
+{
+"name": "Plunger",
+"part_number": "26-0170",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "fb2c70a1-6705-4c53-b160-bd4b922833a9",
+"created_at": "2026-08-21T13:33:38.308879Z"
+},
+{
+"name": "Shuttle return spring",
+"part_number": "28-0150-MP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "6ff337bd-f9ce-44f7-a150-5c358d48a52a",
+"created_at": "2026-08-21T13:33:38.309374Z"
+},
+{
+"name": "Blocking arm",
+"part_number": "27-0086",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "5f107d05-6147-489e-ba9e-0da00be6b4c9",
+"created_at": "2026-08-21T13:33:38.309860Z"
+},
+{
+"name": "Latch",
+"part_number": "27-0085",
+"category": "Adams Rite",
+"cost": 18.2,
+"price": 23.65,
+"id": "3302e58a-c7a9-4beb-adb8-c919b00e0a73",
+"created_at": "2026-08-21T13:33:38.310338Z"
+},
+{
+"name": "Switch plate",
+"part_number": "22-0713",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "bfc5bcde-6a31-4ba5-906d-1e93bff73c57",
+"created_at": "2026-08-21T13:33:38.310798Z"
+},
+{
+"name": "#2 × 3/8\" Phillips hex head",
+"part_number": "29-0342-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "b42cbeb6-75ea-49a5-bbe1-5311a0256a79",
+"created_at": "2026-08-21T13:33:38.311286Z"
+},
+{
+"name": "Nut plate",
+"part_number": "22-0698-MP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "a954b60a-ef51-4f46-b618-78b218287275",
+"created_at": "2026-08-21T13:33:38.311752Z"
+},
+{
+"name": "Microswitch",
+"part_number": "31-0092",
+"category": "Adams Rite",
+"cost": 179.2,
+"price": 232.95,
+"id": "6a2defa2-79d8-4fb7-b10a-da4c6fda2bcc",
+"created_at": "2026-08-21T13:33:38.312227Z"
+},
+{
+"name": "Bolt switch actuator",
+"part_number": "23-0349",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "5ca635a9-6e85-40a7-87c0-3c506cdda981",
+"created_at": "2026-08-21T13:33:38.312682Z"
+},
+{
+"name": "#2 × 5/8\" Phillips hex head",
+"part_number": "29-0341-MP",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "6976f38b-f955-49bb-92e5-994717bf6baa",
+"created_at": "2026-08-21T13:33:38.313265Z"
+},
+{
+"name": "Shoulder screw",
+"part_number": "26-0214-MP",
+"category": "Adams Rite",
+"cost": 91.0,
+"price": 118.3,
+"id": "cb55e1bd-d349-4d7a-b61d-71c485447a32",
+"created_at": "2026-08-21T13:33:38.313939Z"
+},
+{
+"name": "Solenoid retainer plate",
+"part_number": "22-0657",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "159010d4-85c0-4aa4-ab2b-e66c20d698af",
+"created_at": "2026-08-21T13:33:38.314448Z"
+},
+{
+"name": "Blocking arm return spring",
+"part_number": "28-0151-MP",
+"category": "Adams Rite",
+"cost": 18.2,
+"price": 23.65,
+"id": "3f3e68cb-c85e-411b-87e0-89d3740141f6",
+"created_at": "2026-08-21T13:33:38.314926Z"
+},
+{
+"name": "Shuttle",
+"part_number": "23-0356",
+"category": "Adams Rite",
+"cost": 18.2,
+"price": 23.65,
+"id": "f2ef9bc0-6ac2-47af-bcea-54f71d28acbe",
+"created_at": "2026-08-21T13:33:38.315399Z"
+},
+{
+"name": "Subcover, 1/2\" flat (7100, 7110, 7111, 7130, 7140)",
+"part_number": "23-0443",
+"category": "Adams Rite",
+"cost": 3812.2,
+"price": 4955.85,
+"id": "56dca0bc-41c7-4002-a97e-bafdbd5fec0d",
+"created_at": "2026-08-21T13:33:38.315864Z"
+},
+{
+"name": "Subcover, 3/4\" (7160, 7170)",
+"part_number": "23-0445",
+"category": "Adams Rite",
+"cost": 43.4,
+"price": 56.4,
+"id": "2446d33c-c562-42b4-b410-ca08ef03237c",
+"created_at": "2026-08-21T13:33:38.316323Z"
+},
+{
+"name": "nuts, adhesive shims, 2-wire nuts), 335 finish",
+"part_number": "2-press",
+"category": "Adams Rite",
+"cost": 33.6,
+"price": 43.7,
+"id": "bd62a75c-f964-4913-8089-e83c148d407c",
+"created_at": "2026-08-21T13:33:38.316776Z"
+},
+{
+"name": "Curved handle kit, US10B (613) finish",
+"part_number": "31-0991-01-10B-IP",
+"category": "Adams Rite",
+"cost": 169.4,
+"price": 220.2,
+"id": "9b132148-c0d6-4b91-bc7d-3d7d03c0d14b",
+"created_at": "2026-08-21T13:33:38.317247Z"
+},
+{
+"name": "Curved handle kit, US32D (630) finish",
+"part_number": "31-0991-01-630-IP",
+"category": "Adams Rite",
+"cost": 180.6,
+"price": 234.8,
+"id": "7a190cb4-9f62-438c-90b0-824fe987e7c3",
+"created_at": "2026-08-21T13:33:38.317706Z"
+},
+{
+"name": "Dowel pin",
+"part_number": "26-0435-MP",
+"category": "Adams Rite",
+"cost": 33.6,
+"price": 43.7,
+"id": "44007aa0-5a7b-499c-87c6-f96d9057317e",
+"created_at": "2026-08-21T13:33:38.318162Z"
+},
+{
+"name": "Hex nut with nylon insert",
+"part_number": "N315-07-603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "f62d07fd-937e-4204-9b75-eec67f80ccc9",
+"created_at": "2026-08-21T13:33:38.318608Z"
+},
+{
+"name": "Washer",
+"part_number": "W414B23-MP",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "b414914b-e906-4c41-a431-0df45de7ffb4",
+"created_at": "2026-08-21T13:33:38.319059Z"
+},
+{
+"name": "Handing screw",
+"part_number": "26-0249N-MP",
+"category": "Adams Rite",
+"cost": 103.6,
+"price": 134.7,
+"id": "9dc847a5-9f75-4956-8cb9-edca1f333ff4",
+"created_at": "2026-08-21T13:33:38.319516Z"
+},
+{
+"name": "Mounting screw kit for US3 (605), US4 (606), and US26 (625) finishes",
+"part_number": "91-0302-121-IP",
+"category": "Adams Rite",
+"cost": 75.6,
+"price": 98.3,
+"id": "4be6a7ec-ec71-4ca4-9729-a964fbc7a385",
+"created_at": "2026-08-21T13:33:38.319972Z"
+},
+{
+"name": "Mounting screw kit for US10B (613) and US26D (626) finishes",
+"part_number": "91-0302-603-IP",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "496cd3d3-57d5-4289-98d0-6438dd360b99",
+"created_at": "2026-08-21T13:33:38.320415Z"
+},
+{
+"name": "Retaining ring",
+"part_number": "23-0736",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "faa40cee-e669-4d73-a4db-860678d0865d",
+"created_at": "2026-08-21T13:33:38.320863Z"
+},
+{
+"name": "#4-40 × 1/4\" pan head self-tapping screw",
+"part_number": "S256-04R04-603-MP",
+"category": "Adams Rite",
+"cost": 19.6,
+"price": 25.5,
+"id": "c1a14318-6e2c-4dc3-ab5d-7dd074dcdb85",
+"created_at": "2026-08-21T13:33:38.321315Z"
+},
+{
+"name": "Trim cover",
+"part_number": "23-0202-01",
+"category": "Adams Rite",
+"cost": 29.4,
+"price": 38.2,
+"id": "48fc9d3f-e4f9-45cd-a470-84f252ff6688",
+"created_at": "2026-08-21T13:33:38.321765Z"
+},
+{
+"name": "#6-32 × 3/8\" flat head screw",
+"part_number": "S227-06R06N-119-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "37eed538-5282-444d-8437-90e4f9cc725e",
+"created_at": "2026-08-21T13:33:38.322206Z"
+},
+{
+"name": "Trim kit adapter for G86 exit device",
+"part_number": "91-0686",
+"category": "Adams Rite",
+"cost": 60.2,
+"price": 78.25,
+"id": "eee77d12-499f-4504-bfdb-8da88b041c8f",
+"created_at": "2026-08-21T13:33:38.322671Z"
+},
+{
+"name": "CVR tailpiece adapter kit",
+"part_number": "91-0160-P",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "64511ed7-4e6f-46a8-92ef-c2f26bc22486",
+"created_at": "2026-08-21T13:33:38.323136Z"
+},
+{
+"name": "CVR spindle kit for devices manufactured prior to 1997",
+"part_number": "91-0301-01-IP",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "3740c6ae-ccd7-464b-b5b8-61a371a8e131",
+"created_at": "2026-08-21T13:33:38.323599Z"
+},
+{
+"name": "Mortise spindle kit",
+"part_number": "91-0301-02-IP",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "4c1c863c-b260-421b-ae21-2e6d6dbccaba",
+"created_at": "2026-08-21T13:33:38.324056Z"
+},
+{
+"name": "SVR / rim / in",
+"part_number": "91-0301-03-IP",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "9c7d651e-d77e-4646-bdaa-cdbff89333e4",
+"created_at": "2026-08-21T13:33:38.324522Z"
+},
+{
+"name": "Solenoid assembly 24VDC fail-secure",
+"part_number": "31-0993-3-IP",
+"category": "Adams Rite",
+"cost": 953.4,
+"price": 1239.4,
+"id": "c723ccb3-ad90-4b5d-b866-43b93fdada38",
+"created_at": "2026-08-21T13:33:38.324998Z"
+},
+{
+"name": "Solenoid assembly 12VDC fail-secure",
+"part_number": "31-0993-4-IP",
+"category": "Adams Rite",
+"cost": 953.4,
+"price": 1239.4,
+"id": "2a6a9bfe-70c8-4110-8eb9-3e8f40cbce4f",
+"created_at": "2026-08-21T13:33:38.325465Z"
+},
+{
+"name": "Tactile strip kit for standard Series levers 01, 03",
+"part_number": "91-0118",
+"category": "Adams Rite",
+"cost": 74.2,
+"price": 96.45,
+"id": "6608c855-9dd5-4419-8f95-1711486e2f4a",
+"created_at": "2026-08-21T13:33:38.325930Z"
+},
+{
+"name": "Mounting kit",
+"part_number": "91-0079-IP",
+"category": "Adams Rite",
+"cost": 33.6,
+"price": 43.7,
+"id": "3f6272fa-c392-4426-808a-8c419e8a09ad",
+"created_at": "2026-08-21T13:33:38.326388Z"
+},
+{
+"name": "Mortise kit, deadlock",
+"part_number": "91-0459-01-IP",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "8ea7d488-8e4b-412b-8904-5c89c5857cdb",
+"created_at": "2026-08-21T13:33:38.326844Z"
+},
+{
+"name": "Mortise kit, deadlatch",
+"part_number": "91-0459-02-IP",
+"category": "Adams Rite",
+"cost": 51.8,
+"price": 67.35,
+"id": "240b00f9-dbe4-463c-af57-ffed81bacab2",
+"created_at": "2026-08-21T13:33:38.327300Z"
+},
+{
+"name": "Battery lid assembly, US26D (626) finish",
+"part_number": "31-0329-626-IP",
+"category": "Adams Rite",
+"cost": 5923.4,
+"price": 7700.4,
+"id": "ea3f88c5-bbda-4ee4-88bb-c8fa3dc91ca8",
+"created_at": "2026-08-21T13:33:38.327758Z"
+},
+{
+"name": "Battery pack assembly",
+"part_number": "31-0355-IP",
+"category": "Adams Rite",
+"cost": 46.2,
+"price": 60.05,
+"id": "fba04686-d697-4f23-8c1f-7371939acfca",
+"created_at": "2026-08-21T13:33:38.328206Z"
+},
+{
+"name": "Curved handle US26D (626) finish",
+"part_number": "23-0743-626",
+"category": "Adams Rite",
+"cost": 9132.2,
+"price": 11871.85,
+"id": "2fb081a6-3de7-4e88-bf66-2a07ac109b18",
+"created_at": "2026-08-21T13:33:38.328662Z"
+},
+{
+"name": "S315-14H4N1",
+"part_number": "S315-14H4N1",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "e0a54436-42f2-47aa-89a1-8155f8351e17",
+"created_at": "2026-08-21T13:33:38.329130Z"
+},
+{
+"name": "Return spring bushing",
+"part_number": "26-0157-MP",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "b866eee5-8170-483b-92a5-5952791493ab",
+"created_at": "2026-08-21T13:33:38.329600Z"
+},
+{
+"name": "#10-32 × 3/8\" flat head screw",
+"part_number": "S262C10R06N630-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "991dfc39-1658-4f55-b5d4-524dfbf91642",
+"created_at": "2026-08-21T13:33:38.330063Z"
+},
+{
+"name": "Handle return spring",
+"part_number": "28-0019-MP",
+"category": "Adams Rite",
+"cost": 75.6,
+"price": 98.3,
+"id": "509c8a2d-d8d9-4e58-be5b-d824d0681ff7",
+"created_at": "2026-08-21T13:33:38.330527Z"
+},
+{
+"name": "#6-32 × 5/16\" pan head screw",
+"part_number": "S222-06R05N603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "f1de961e-b13e-4cfc-959a-733e994a3760",
+"created_at": "2026-08-21T13:33:38.330992Z"
+},
+{
+"name": "Stop plate",
+"part_number": "22-0656",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "535a160b-4adf-4826-98ea-495a268dc305",
+"created_at": "2026-08-21T13:33:38.331451Z"
+},
+{
+"name": "Cam plug assembly kit, clutched MS lever",
+"part_number": "91-0752",
+"category": "Adams Rite",
+"cost": 165.2,
+"price": 214.75,
+"id": "e65a887c-9d6e-4342-84ed-a3e6c7848e13",
+"created_at": "2026-08-21T13:33:38.331921Z"
+},
+{
+"name": "#6-32 × 1/2\" socket head cap screw",
+"part_number": "S278B06H08",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "b4a2863a-3a9f-4ba6-bd3b-8e6c1017cbbd",
+"created_at": "2026-08-21T13:33:38.332398Z"
+},
+{
+"name": "#10-32 × 3/4\" pan head SEMS screw",
+"part_number": "S277-10R12-603-MP",
+"category": "Adams Rite",
+"cost": 18.2,
+"price": 23.65,
+"id": "45f3b070-e496-4574-9d42-663cd8dfa5aa",
+"created_at": "2026-08-21T13:33:38.332850Z"
+},
+{
+"name": "Exit indicator spring",
+"part_number": "28-0008-MP",
+"category": "Adams Rite",
+"cost": 33.6,
+"price": 43.7,
+"id": "ff667a70-2df3-43ce-aaff-341224fa63c5",
+"created_at": "2026-08-21T13:33:38.333316Z"
+},
+{
+"name": "Exit indicator spring for 2 or 3 point locks",
+"part_number": "28-0008-01-MP",
+"category": "Adams Rite",
+"cost": 33.6,
+"price": 43.7,
+"id": "e2c54cf9-87cf-40f4-80af-f5a63cb603ea",
+"created_at": "2026-08-21T13:33:38.333774Z"
+},
+{
+"name": "Exit indicator pin for 2 or 3 point locks",
+"part_number": "26-0455-MP",
+"category": "Adams Rite",
+"cost": 165.2,
+"price": 214.75,
+"id": "f02ffef4-6a88-4658-baff-ed5ecc213214",
+"created_at": "2026-08-21T13:33:38.334244Z"
+},
+{
+"name": "PULL indicator",
+"part_number": "20-0399-01",
+"category": "Adams Rite",
+"cost": 1568.0,
+"price": 2038.4,
+"id": "c3d65933-d13a-4474-a204-6dd3c6759a65",
+"created_at": "2026-08-21T13:33:38.334701Z"
+},
+{
+"name": "#8-32 × 1/2\" truss head screw with lockwasher",
+"part_number": "S236-08R14-603-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "33d5f2e1-35c0-43eb-bbd0-a3074d0f7098",
+"created_at": "2026-08-21T13:33:38.335208Z"
+},
+{
+"name": "1/4\"-28 Locknut",
+"part_number": "29-0546-MP",
+"category": "Adams Rite",
+"cost": 32.2,
+"price": 41.85,
+"id": "e223bbf5-f44b-4981-b432-fadc201aa26d",
+"created_at": "2026-08-21T13:33:38.335733Z"
+},
+{
+"name": "Binder post",
+"part_number": "26-0188-09-MP",
+"category": "Adams Rite",
+"cost": 40.6,
+"price": 52.8,
+"id": "c0cc1f3d-f0c0-4f75-af47-4aa4d6eaf811",
+"created_at": "2026-08-21T13:33:38.336227Z"
+},
+{
+"name": "Bushing",
+"part_number": "27-0065",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "3785c264-d799-47d9-8516-b8fd1e7917f8",
+"created_at": "2026-08-21T13:33:38.336685Z"
+},
+{
+"name": "Drive shaft for 1-3/4\" doors",
+"part_number": "26-0366-01",
+"category": "Adams Rite",
+"cost": 2976.4,
+"price": 3869.3,
+"id": "9f37d118-20f2-482e-80f3-68bbb17efb73",
+"created_at": "2026-08-21T13:33:38.337143Z"
+},
+{
+"name": "#10-24 × 1\" truss head screw with lockwasher",
+"part_number": "S277-10R16-603-MP",
+"category": "Adams Rite",
+"cost": 21.0,
+"price": 27.3,
+"id": "dd008cd8-476f-4370-85d7-f84c668aa727",
+"created_at": "2026-08-21T13:33:38.337602Z"
+},
+{
+"name": "Monitoring kit",
+"part_number": "91-0914",
+"category": "Adams Rite",
+"cost": 219.8,
+"price": 285.75,
+"id": "a3d6415c-4e74-4206-b50a-30b7e17724de",
+"created_at": "2026-08-21T13:33:38.338064Z"
+},
+{
+"name": "5/16-24 jam nut",
+"part_number": "N307-516-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "b863b6c0-1f1c-4ad8-a755-aa4b496d24cf",
+"created_at": "2026-08-21T13:33:38.338526Z"
+},
+{
+"name": "Binder post",
+"part_number": "26-0488-MP",
+"category": "Adams Rite",
+"cost": 58.8,
+"price": 76.45,
+"id": "33812dcd-494a-4cd1-b7df-94577b89833d",
+"created_at": "2026-08-21T13:33:38.338990Z"
+},
+{
+"name": "Lock cover plate, shim, US32D (630) finish",
+"part_number": "22-9153-01R",
+"category": "Adams Rite",
+"cost": 22.4,
+"price": 29.1,
+"id": "dbe734d9-3525-41dc-aed3-df6793e8dfc8",
+"created_at": "2026-08-21T13:33:38.339452Z"
+},
+{
+"name": "Lock cover plate, shim, 121 finish",
+"part_number": "22-9153-01-121",
+"category": "Adams Rite",
+"cost": 25.2,
+"price": 32.75,
+"id": "b6c7ab3f-9986-4f25-8aef-5215365d9127",
+"created_at": "2026-08-21T13:33:38.339911Z"
+},
+{
+"name": "Trim cover kit, US32D (630) finish",
+"part_number": "91-0481-US32D",
+"category": "Adams Rite",
+"cost": 126.0,
+"price": 163.8,
+"id": "50082e2d-db01-4bdf-a292-d9cd9f40f5c6",
+"created_at": "2026-08-21T13:33:38.340378Z"
+},
+{
+"name": "Mounting kit, 1-3/4\" door thickness",
+"part_number": "91-0482-11-IP",
+"category": "Adams Rite",
+"cost": 116.2,
+"price": 151.05,
+"id": "3aa9e2d3-c043-47ea-8c88-81bb8b14ffdf",
+"created_at": "2026-08-21T13:33:38.340838Z"
+},
+{
+"name": "Mounting kit, 2\" door thickness",
+"part_number": "91-0482-12-IP",
+"category": "Adams Rite",
+"cost": 114.8,
+"price": 149.25,
+"id": "3dd317aa-bd60-41ab-a95a-9ba56ceadf9a",
+"created_at": "2026-08-21T13:33:38.341299Z"
+},
+{
+"name": "Mounting kit, 2-1/4\" door thickness",
+"part_number": "91-0482-13-IP",
+"category": "Adams Rite",
+"cost": 116.2,
+"price": 151.05,
+"id": "6a053fae-2d6d-441d-b69f-6b01fcc5bdc5",
+"created_at": "2026-08-21T13:33:38.341767Z"
+},
+{
+"name": "Mounting kit, 2-1/2\" door thickness",
+"part_number": "91-0482-14-IP",
+"category": "Adams Rite",
+"cost": 114.8,
+"price": 149.25,
+"id": "7e6954b7-b41c-4f54-9631-fe9798eea4b6",
+"created_at": "2026-08-21T13:33:38.342252Z"
+},
+{
+"name": "Retainer clip",
+"part_number": "22-0062",
+"category": "Adams Rite",
+"cost": 15.4,
+"price": 20.0,
+"id": "0582378a-6619-41f0-8a17-c2b0510caa6e",
+"created_at": "2026-08-21T13:33:38.342753Z"
+},
+{
+"name": "Insert cylinder, keyed different",
+"part_number": "29-0400-00-01",
+"category": "Adams Rite",
+"cost": 67.2,
+"price": 87.35,
+"id": "51e8c943-08ef-49e2-bd71-2763999609c9",
+"created_at": "2026-08-21T13:33:38.343330Z"
+},
+{
+"name": "#10-32 × 1/2\" round head screw",
+"part_number": "S263-10R08-603-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "8aa3ea28-2723-4e1d-98a4-c48696e18271",
+"created_at": "2026-08-21T13:33:38.343847Z"
+},
+{
+"name": "#6-32 × 3/8\" flat head undercut screw (4024)",
+"part_number": "S235-06R06-603-MP",
+"category": "Adams Rite",
+"cost": 16.8,
+"price": 21.85,
+"id": "f7cddbe9-b6e6-4c5a-aeb6-241619654953",
+"created_at": "2026-08-21T13:33:38.344327Z"
+},
+{
+"name": "Cylinder escutcheon kit, US4 (606) finish",
+"part_number": "8650-US4",
+"category": "Adams Rite",
+"cost": 142.8,
+"price": 185.65,
+"id": "0f84259e-347a-4620-86be-05f8f8e565a2",
+"created_at": "2026-08-21T13:33:38.344808Z"
+},
+{
+"name": "Cylinder escutcheon kit, US32 (629) finish",
+"part_number": "8650-US32",
+"category": "Adams Rite",
+"cost": 165.2,
+"price": 214.75,
+"id": "366d3b41-5b35-4502-afed-e94da332c849",
+"created_at": "2026-08-21T13:33:38.345293Z"
+},
+{
+"name": "Cylinder escutcheon kit, US32D (630) finish",
+"part_number": "8650-US32D",
+"category": "Adams Rite",
+"cost": 142.8,
+"price": 185.65,
+"id": "679beb8b-3535-406f-9541-b46e022b605d",
+"created_at": "2026-08-21T13:33:38.345813Z"
+},
+{
+"name": "Deadlock with 31/32\" or 1-1/8\" cylinder height",
+"part_number": "1830",
+"category": "Adams Rite",
+"cost": 259.0,
+"price": 336.7,
+"id": "e45d635f-ca5c-4620-86c0-4cc0b70147bb",
+"created_at": "2026-08-21T17:28:18.003445Z"
+},
+{
+"name": "Deadlock includes 4001-011 strike, 36\" cylinder height",
+"part_number": "MS1837",
+"category": "Adams Rite",
+"cost": 611.8,
+"price": 795.35,
+"id": "c9e5265c-b70a-419d-8c64-f9efeb74cfe8",
+"created_at": "2026-08-21T17:28:18.011275Z"
+},
+{
+"name": "Deadlock/deadlatch, stainless steel",
+"part_number": "MS1847",
+"category": "Adams Rite",
+"cost": 120.4,
+"price": 156.5,
+"id": "9860d47f-f6f3-425c-ac2a-d012b5dfaa9d",
+"created_at": "2026-08-21T17:28:18.013001Z"
+},
+{
+"name": "Deadlock/deadlatch, steel",
+"part_number": "MS1848",
+"category": "Adams Rite",
+"cost": 72.8,
+"price": 94.65,
+"id": "bc5dab76-c8d4-4cad-be69-9ce3e19d7ae7",
+"created_at": "2026-08-21T17:28:18.014266Z"
+},
+{
+"name": "Flat faceplate, 313, 335, or 628 finish, without strike plate",
+"part_number": "MS1850S",
+"category": "Adams Rite",
+"cost": 128.8,
+"price": 167.45,
+"id": "4e804b7f-d63d-44cd-807b-7f48af618368",
+"created_at": "2026-08-21T17:28:18.015723Z"
+},
+{
+"name": "Radius faceplate, 313, 335, or 628 finish, without strike plate",
+"part_number": "MS1851S",
+"category": "Adams Rite",
+"cost": 128.8,
+"price": 167.45,
+"id": "c28d14c6-44d5-4912-a2c3-1ccc0b709edc",
+"created_at": "2026-08-21T17:28:18.016883Z"
+},
+{
+"name": "Radius faceplate with weatherstrip, 313, 335, or 628 finish, without strike plate",
+"part_number": "MS1851SW",
+"category": "Adams Rite",
+"cost": 135.8,
+"price": 176.55,
+"id": "becfa5d1-e3e1-4896-a1e1-889f8f75ec12",
+"created_at": "2026-08-21T17:28:18.018152Z"
+},
+{
+"name": "Bevel faceplate, 313, 335, or 628 finish, without strike plate",
+"part_number": "MS1852S",
+"category": "Adams Rite",
+"cost": 128.8,
+"price": 167.45,
+"id": "0f755639-7cf8-47cf-a2b1-d652bbab3480",
+"created_at": "2026-08-21T17:28:18.019462Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "MS1853S-XXX-IB",
+"category": "Adams Rite",
+"cost": 114.8,
+"price": 149.25,
+"id": "3491c0be-05dd-4a47-9e46-070fe28632b9",
+"created_at": "2026-08-21T17:28:18.020958Z"
+},
+{
+"name": "Flat faceplate, 31/32\", 1-1/8\", or 1-1/2\" backset, without strike plate",
+"part_number": "1850S",
+"category": "Adams Rite",
+"cost": 128.8,
+"price": 167.45,
+"id": "2fb974a3-5cee-4ae5-adac-56896bbc42ab",
+"created_at": "2026-08-21T17:28:18.022718Z"
+},
+{
+"name": "Radius faceplate, 313, 335, or 628 finish, without strike plate",
+"part_number": "1851S",
+"category": "Adams Rite",
+"cost": 128.8,
+"price": 167.45,
+"id": "63ba639a-985e-46ed-8549-7e56585af8a5",
+"created_at": "2026-08-21T17:28:18.024363Z"
+},
+{
+"name": "Bevel faceplate, any handing, 313, 335, or 628 finish, without strike plate",
+"part_number": "1852S",
+"category": "Adams Rite",
+"cost": 128.8,
+"price": 167.45,
+"id": "93e00bae-1c4a-43da-b099-ae3cc31c259a",
+"created_at": "2026-08-21T17:28:18.025855Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "1853S-X20-IB",
+"category": "Adams Rite",
+"cost": 114.8,
+"price": 149.25,
+"id": "5534fd6d-475d-437a-9dd1-68b54603cf06",
+"created_at": "2026-08-21T17:28:18.027370Z"
+},
+{
+"name": "Flat faceplate, 1-1/2\" backset, without strike plate",
+"part_number": "MS1850SN410",
+"category": "Adams Rite",
+"cost": 201.6,
+"price": 262.1,
+"id": "8dbd75e8-7b69-40ed-a49f-b821d7c2391c",
+"created_at": "2026-08-21T17:28:18.028541Z"
+},
+{
+"name": "Radius faceplate, 1-1/2\" backset, without strike plate",
+"part_number": "MS1850SN450",
+"category": "Adams Rite",
+"cost": 201.6,
+"price": 262.1,
+"id": "d19a5c3d-fc52-4876-b21b-90726fa7d1c9",
+"created_at": "2026-08-21T17:28:18.029578Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "MS1853SN410-IB",
+"category": "Adams Rite",
+"cost": 127.4,
+"price": 165.6,
+"id": "0acf276f-0ab9-4535-8e45-116d54ce425e",
+"created_at": "2026-08-21T17:28:18.030784Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "MS1853SN450-IB",
+"category": "Adams Rite",
+"cost": 127.4,
+"price": 165.6,
+"id": "6d7da9b9-c225-4a51-9384-d08104cb7d2e",
+"created_at": "2026-08-21T17:28:18.032360Z"
+},
+{
+"name": "One-point deadlock, vertical bolt operation only",
+"part_number": "MS1861-01",
+"category": "Adams Rite",
+"cost": 271.6,
+"price": 353.1,
+"id": "277b6782-91da-4cb0-8f96-0c774722ecc4",
+"created_at": "2026-08-21T17:28:18.033697Z"
+},
+{
+"name": "Two-point deadlock, horizontal and vertical operation",
+"part_number": "MS1861-02",
+"category": "Adams Rite",
+"cost": 338.8,
+"price": 440.45,
+"id": "da5a5e73-f92f-4c3f-97ef-0fc7f35af411",
+"created_at": "2026-08-21T17:28:18.035095Z"
+},
+{
+"name": "Two-point deadlock for roll-up doors",
+"part_number": "1875",
+"category": "Adams Rite",
+"cost": 345.8,
+"price": 449.55,
+"id": "0eea93fa-52b5-4255-8e11-284092f86177",
+"created_at": "2026-08-21T17:28:18.036730Z"
+},
+{
+"name": "Flat faceplate, 31/32\", 1-1/8\", or 1-1/2\" backset",
+"part_number": "MS+1890",
+"category": "Adams Rite",
+"cost": 464.8,
+"price": 604.25,
+"id": "553814c4-c3ef-4aa9-838d-6bfc9f11866e",
+"created_at": "2026-08-21T17:28:18.038196Z"
+},
+{
+"name": "Radius faceplate, 31/32\", 1-1/8\", or 1-1/2\" backset",
+"part_number": "MS+1891",
+"category": "Adams Rite",
+"cost": 464.8,
+"price": 604.25,
+"id": "7c71930c-65e3-40c7-8cd6-952877a59063",
+"created_at": "2026-08-21T17:28:18.039624Z"
+},
+{
+"name": "Radius faceplate with weatherstrip, 31/32\", 1-1/8\", or 1-1/2\" backset",
+"part_number": "MS+1891W",
+"category": "Adams Rite",
+"cost": 490.0,
+"price": 637.0,
+"id": "06dfe695-c7e6-4a29-9069-b91c0d55773b",
+"created_at": "2026-08-21T17:28:18.040658Z"
+},
+{
+"name": "Bevel faceplate, any handing, 31/32\", 1-1/8\", or 1-1/2\" backset",
+"part_number": "MS+1892",
+"category": "Adams Rite",
+"cost": 464.8,
+"price": 604.25,
+"id": "959d3fb5-1a35-493e-b09a-686b92a8ab78",
+"created_at": "2026-08-21T17:28:18.041575Z"
+},
+{
+"name": "Without strike plate",
+"part_number": "MS+1890-XX-XXX",
+"category": "Adams Rite",
+"cost": 338.8,
+"price": 440.45,
+"id": "185610f4-cfa8-48a0-a495-388da05181a8",
+"created_at": "2026-08-21T17:28:18.042499Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "MS+1893-XX-IB",
+"category": "Adams Rite",
+"cost": 373.8,
+"price": 485.95,
+"id": "123e7cdd-7cad-4932-b37c-f2745dc5484c",
+"created_at": "2026-08-21T17:28:18.043377Z"
+},
+{
+"name": "Flat faceplate, 31/32\", 1-1/8\", or 1-1/2\" backset, without strike plate",
+"part_number": "MS1950P",
+"category": "Adams Rite",
+"cost": 231.0,
+"price": 300.3,
+"id": "e1fba379-aec2-4396-bf2d-ad026be32c0e",
+"created_at": "2026-08-21T17:28:18.044292Z"
+},
+{
+"name": "Radius faceplate, 31/32\", 1-1/8\", or 1-1/2\" backset, without strike plate",
+"part_number": "MS1951P",
+"category": "Adams Rite",
+"cost": 231.0,
+"price": 300.3,
+"id": "a41a0236-5d14-4a83-bf0d-ec1e9d233f92",
+"created_at": "2026-08-21T17:28:18.045172Z"
+},
+{
+"name": "Radius faceplate with weatherstrip, 31/32\", 1-1/8\", or 1-1/2\" backset, without strike plate",
+"part_number": "MS1951WP",
+"category": "Adams Rite",
+"cost": 240.8,
+"price": 313.05,
+"id": "1d324a6f-6f7c-4785-aa55-d26d74688a57",
+"created_at": "2026-08-21T17:28:18.046543Z"
+},
+{
+"name": "Bevel faceplate, any handing, 31/32\", 1-1/8\", or 1-1/2\" backset, without strike plate",
+"part_number": "MS1952P",
+"category": "Adams Rite",
+"cost": 231.0,
+"price": 300.3,
+"id": "4941d14e-9448-4b7f-89b2-26ff84b1b531",
+"created_at": "2026-08-21T17:28:18.048128Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "MS1953P-XXX-IB",
+"category": "Adams Rite",
+"cost": 217.0,
+"price": 282.1,
+"id": "4b592556-e794-4f72-a20e-39e188c62b30",
+"created_at": "2026-08-21T17:28:18.049779Z"
+},
+{
+"name": "Less lever trim, with adjustable faceplates, less strike plate",
+"part_number": "2190-X0X-000",
+"category": "Adams Rite",
+"cost": 520.8,
+"price": 677.05,
+"id": "5d43172b-5264-46cd-9993-c64d6ddf1c3b",
+"created_at": "2026-08-21T17:28:18.051355Z"
+},
+{
+"name": "Deadbolt, 1-3/4\" backset, complete with strike",
+"part_number": "2331",
+"category": "Adams Rite",
+"cost": 637.0,
+"price": 828.1,
+"id": "553b303b-2cfb-4807-93eb-a6457d436f10",
+"created_at": "2026-08-21T17:28:18.052753Z"
+},
+{
+"name": "Flat faceplate, 7/8\", 31/32\", or 1-1/8\" backset, without strike plate",
+"part_number": "4070",
+"category": "Adams Rite",
+"cost": 319.2,
+"price": 414.95,
+"id": "4beefd75-f974-49a2-9bfd-abfd66bfdcdd",
+"created_at": "2026-08-21T17:28:18.054088Z"
+},
+{
+"name": "Radius faceplate, 7/8\", 31/32\", or 1-1/8\" backset, without strike plate",
+"part_number": "4071",
+"category": "Adams Rite",
+"cost": 319.2,
+"price": 414.95,
+"id": "a056df3d-8689-453e-b26d-63edde6dd048",
+"created_at": "2026-08-21T17:28:18.055518Z"
+},
+{
+"name": "Bevel faceplate, any handing, 7/8\", 31/32\", or 1-1/8\" backset, without strike plate",
+"part_number": "4072",
+"category": "Adams Rite",
+"cost": 319.2,
+"price": 414.95,
+"id": "40de2e39-8616-467f-b0ba-7c3a4cdf8488",
+"created_at": "2026-08-21T17:28:18.057050Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "4073-XX-IB",
+"category": "Adams Rite",
+"cost": 301.0,
+"price": 391.3,
+"id": "fe7b6203-2e61-43c3-a4ea-28e3447dc484",
+"created_at": "2026-08-21T17:28:18.058438Z"
+},
+{
+"name": "Standard stainless steel deadlock",
+"part_number": "5017-00",
+"category": "Adams Rite",
+"cost": 119.0,
+"price": 154.7,
+"id": "f58ed226-cade-479c-b31f-fa76807d765c",
+"created_at": "2026-08-21T17:28:18.059760Z"
+},
+{
+"name": "Self-latching deadlock/deadlatch",
+"part_number": "5017-02",
+"category": "Adams Rite",
+"cost": 119.0,
+"price": 154.7,
+"id": "6a063d83-5902-4f0a-bda7-7da78ea1a96c",
+"created_at": "2026-08-21T17:28:18.061164Z"
+},
+{
+"name": "Lockset, strike, and trim included for 1-1/4\", sliding wood doors",
+"part_number": "5500-20",
+"category": "Adams Rite",
+"cost": 257.6,
+"price": 334.9,
+"id": "d9a7fbf5-8499-4597-a478-df370ba70434",
+"created_at": "2026-08-21T17:28:18.062512Z"
+},
+{
+"name": "DL100 Pre-Paired Kit with AH20 Hub – IPS Credential Option Electrified deadlatch 31/32\", 1-1/8\", or 1-1/2\" backset",
+"part_number": "DL100",
+"category": "Adams Rite",
+"cost": 2667.0,
+"price": 3467.1,
+"id": "429fec9b-7ab8-4195-92dc-07a0401639a5",
+"created_at": "2026-08-21T17:28:18.063830Z"
+},
+{
+"name": "Electrified deadlatch 31/32\", 1-1/8\", or 1-1/2\" backset",
+"part_number": "4300",
+"category": "Adams Rite",
+"cost": 817.6,
+"price": 1062.9,
+"id": "5df900a1-b74b-4b3c-bac9-e74313db61db",
+"created_at": "2026-08-21T17:28:18.065397Z"
+},
+{
+"name": "Monitored option, 31/32\", 1-1/8\", or 1-1/2\" backset",
+"part_number": "4300M",
+"category": "Adams Rite",
+"cost": 929.6,
+"price": 1208.5,
+"id": "da75f114-572b-4afd-9423-d437e61ff2dd",
+"created_at": "2026-08-21T17:28:18.066751Z"
+},
+{
+"name": "31/32\" backset, flat and radius, 313 and 628 finish faceplates, surface mount or mortise strike",
+"part_number": "4300-20",
+"category": "Adams Rite",
+"cost": 834.4,
+"price": 1084.7,
+"id": "d7d30e74-7779-4d2d-8bc1-3b243068fa71",
+"created_at": "2026-08-21T17:28:18.067884Z"
+},
+{
+"name": "1-1/8\" backset, flat and radius, 313 and 628 finish faceplates, surface mount or mortise strike",
+"part_number": "4300-30",
+"category": "Adams Rite",
+"cost": 834.4,
+"price": 1084.7,
+"id": "a0975ff5-4e22-48dc-8a69-b6bdd369b911",
+"created_at": "2026-08-21T17:28:18.068962Z"
+},
+{
+"name": "Flat faceplate, 7/8\", 31/32\", 1-1/8\", or 1-1/2\" backset, complete with strike plate",
+"part_number": "4510",
+"category": "Adams Rite",
+"cost": 166.6,
+"price": 216.6,
+"id": "dce25551-515e-4b9a-8021-9bd229245afc",
+"created_at": "2026-08-21T17:28:18.069899Z"
+},
+{
+"name": "Radius faceplate, 7/8\", 31/32\", 1-1/8\", or 1-1/2\" backset, complete with strike plate",
+"part_number": "4511",
+"category": "Adams Rite",
+"cost": 166.6,
+"price": 216.6,
+"id": "63d95a39-54d8-4f82-90b0-b91e841b4116",
+"created_at": "2026-08-21T17:28:18.070834Z"
+},
+{
+"name": "Radius faceplate with weatherstrip, 7/8\", 31/32\", 1-1/8\", or 1-1/2\" backset, complete with strike plate",
+"part_number": "4511W",
+"category": "Adams Rite",
+"cost": 176.4,
+"price": 229.3,
+"id": "f40462f5-6632-49c3-ad72-b71e3e5190a4",
+"created_at": "2026-08-21T17:28:18.071735Z"
+},
+{
+"name": "Bevel faceplate, 7/8\", 31/32\", 1-1/8\", or 1-1/2\" backset, complete with strike plate",
+"part_number": "4512",
+"category": "Adams Rite",
+"cost": 166.6,
+"price": 216.6,
+"id": "7f7674fe-95e4-4c24-a874-9715e34b4bf7",
+"created_at": "2026-08-21T17:28:18.072691Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "4513-XX-IB",
+"category": "Adams Rite",
+"cost": 113.4,
+"price": 147.4,
+"id": "f5dc4aa9-adf3-4d56-9a07-72f45a81469f",
+"created_at": "2026-08-21T17:28:18.073680Z"
+},
+{
+"name": "Flat faceplate, 7/8\", 31/32\", or 1-1/8\" backset, complete with strike plate",
+"part_number": "4530",
+"category": "Adams Rite",
+"cost": 243.6,
+"price": 316.7,
+"id": "60330f53-550b-42e1-a955-2b5fdcf0fa95",
+"created_at": "2026-08-21T17:28:18.074873Z"
+},
+{
+"name": "Radius faceplate, 7/8\", 31/32\", or 1-1/8\" backset, complete with strike plate",
+"part_number": "4531",
+"category": "Adams Rite",
+"cost": 243.6,
+"price": 316.7,
+"id": "45f01c18-e942-418d-acb0-9fe67f689642",
+"created_at": "2026-08-21T17:28:18.075885Z"
+},
+{
+"name": "Bevel faceplate, 7/8\", 31/32\", or 1-1/8\" backset, complete with strike plate",
+"part_number": "4532",
+"category": "Adams Rite",
+"cost": 243.6,
+"price": 316.7,
+"id": "0fbcb678-0bb9-4cd1-9853-758748fe1578",
+"created_at": "2026-08-21T17:28:18.076877Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "4533-XX-IB",
+"category": "Adams Rite",
+"cost": 120.4,
+"price": 156.5,
+"id": "adc1ff26-219c-47e3-a740-d6189f681362",
+"created_at": "2026-08-21T17:28:18.077796Z"
+},
+{
+"name": "Paddle includes dogging feature",
+"part_number": "4781",
+"category": "Adams Rite",
+"cost": 823.2,
+"price": 1070.15,
+"id": "7848d1db-b3bb-493f-be3f-2665dd529b7c",
+"created_at": "2026-08-21T17:28:18.079442Z"
+},
+{
+"name": "Paddle with top rod only (less bottom rod)",
+"part_number": "4781T",
+"category": "Adams Rite",
+"cost": 767.2,
+"price": 997.35,
+"id": "5ef0d324-59cf-4130-accc-9e558402e254",
+"created_at": "2026-08-21T17:28:18.080671Z"
+},
+{
+"name": "Flat and radius faceplates, 31/32\", 1-1/8\", or 1-1/2\" backset, complete with strike plate",
+"part_number": "4900",
+"category": "Adams Rite",
+"cost": 225.4,
+"price": 293.0,
+"id": "60c0bb3f-2693-4821-9d9e-59e8f93845c9",
+"created_at": "2026-08-21T17:28:18.081694Z"
+},
+{
+"name": "Radius with weatherseal faceplate, 31/32\", 1-1/8\", or 1-1/2\" backset, complete with strike plate",
+"part_number": "4911W",
+"category": "Adams Rite",
+"cost": 240.8,
+"price": 313.05,
+"id": "c03ac0fb-3906-4fb3-be63-6b21efdbcc7e",
+"created_at": "2026-08-21T17:28:18.082632Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "4913-XX-IB",
+"category": "Adams Rite",
+"cost": 156.8,
+"price": 203.85,
+"id": "98531351-6beb-4847-aca6-c618049fbe6b",
+"created_at": "2026-08-21T17:28:18.083809Z"
+},
+{
+"name": "Flat faceplate, 1-1/2\" or 2-3/4\" backset, complete with 4506 strike plate",
+"part_number": "4920AN",
+"category": "Adams Rite",
+"cost": 282.8,
+"price": 367.65,
+"id": "79c48441-3608-464b-bba4-3a1fd2c5ac28",
+"created_at": "2026-08-21T17:28:18.084898Z"
+},
+{
+"name": "Without faceplate, without strike plate",
+"part_number": "4923AN-XX-IB",
+"category": "Adams Rite",
+"cost": 152.6,
+"price": 198.4,
+"id": "b5224c71-c8b1-4f7e-9618-acbf4bab9968",
+"created_at": "2026-08-21T17:28:18.085931Z"
+},
+{
+"name": "Flat faceplate, 313, 335, or 628 finish",
+"part_number": "1870",
+"category": "Adams Rite",
+"cost": 327.6,
+"price": 425.9,
+"id": "d484d4a5-1046-4db7-abe5-5ff7837a0227",
+"created_at": "2026-08-21T17:28:18.086893Z"
+},
+{
+"name": "Radius faceplate, 313, 335, or 628 finish",
+"part_number": "1871",
+"category": "Adams Rite",
+"cost": 327.6,
+"price": 425.9,
+"id": "8540ac3c-fd38-4c45-bb3d-7fe283f066c5",
+"created_at": "2026-08-21T17:28:18.087809Z"
+},
+{
+"name": "Radius faceplate with weatherstrip, 313, 335, or 628 finish",
+"part_number": "1871W",
+"category": "Adams Rite",
+"cost": 341.6,
+"price": 444.1,
+"id": "14c4ba12-2311-4d01-b9e0-ee23b772dd92",
+"created_at": "2026-08-21T17:28:18.088750Z"
+},
+{
+"name": "Bevel faceplate, 313, 335, or 628 finish",
+"part_number": "1872",
+"category": "Adams Rite",
+"cost": 327.6,
+"price": 425.9,
+"id": "7226e558-1fff-45bd-8388-a990e3e19d7d",
+"created_at": "2026-08-21T17:28:18.089867Z"
+},
+{
+"name": "For hollow metal, 313, 335, or 628 finish, 1-1/4\" backset",
+"part_number": "1870HM",
+"category": "Adams Rite",
+"cost": 408.8,
+"price": 531.45,
+"id": "e53407e3-6d3f-4229-b61e-8ec02d653d05",
+"created_at": "2026-08-21T17:28:18.091141Z"
+},
+{
+"name": "For wood, 313, 335 or 628 finish, 1-1/4\" backset",
+"part_number": "1877",
+"category": "Adams Rite",
+"cost": 477.4,
+"price": 620.6,
+"id": "ced32f11-ae3e-4cd1-84fc-f119a6e51269",
+"created_at": "2026-08-21T17:28:18.092467Z"
+},
+{
+"name": "Flushbolt with hourglass shaped turn",
+"part_number": "MS1880",
+"category": "Adams Rite",
+"cost": 299.6,
+"price": 389.5,
+"id": "79598ae3-abcf-493f-85c1-b4985e30e302",
+"created_at": "2026-08-21T17:28:18.093882Z"
+},
+{
+"name": "Flushbolt with teardrop shaped turn",
+"part_number": "MS1881",
+"category": "Adams Rite",
+"cost": 299.6,
+"price": 389.5,
+"id": "b600f60c-dd20-4628-849b-1e9ad7fcca74",
+"created_at": "2026-08-21T17:28:18.095162Z"
+},
+{
+"name": "Hourglass shaped turn, 7', 8', 9', 10' door height",
+"part_number": "MS2180",
+"category": "Adams Rite",
+"cost": 459.2,
+"price": 596.95,
+"id": "bc7a7743-5199-48ac-94ee-735362ad08fb",
+"created_at": "2026-08-21T17:28:18.096268Z"
+},
+{
+"name": "Teardrop shaped turn, 7', 8', 9', 10' door height",
+"part_number": "MS2181",
+"category": "Adams Rite",
+"cost": 459.2,
+"price": 596.95,
+"id": "b64bc629-9c11-4261-aea1-e8e25ad7e493",
+"created_at": "2026-08-21T17:28:18.097253Z"
+},
+{
+"name": "Flush operator, 7', 8', 9', 10' door height",
+"part_number": "MS2182",
+"category": "Adams Rite",
+"cost": 459.2,
+"price": 596.95,
+"id": "b4753bbf-9ab5-40a2-a95e-a74085489450",
+"created_at": "2026-08-21T17:28:18.098519Z"
+},
+{
+"name": "Flush lockset, 119, 121, or 130 finish, individually boxed",
+"part_number": "4189-IB",
+"category": "Adams Rite",
+"cost": 218.4,
+"price": 283.9,
+"id": "dff57f27-7b13-44fd-a435-5e428fb71ba9",
+"created_at": "2026-08-21T17:28:18.099597Z"
+},
+{
+"name": "Flush lockset, 119, 121, or 130 finish, individually boxed with cylinder",
+"part_number": "4190-IB",
+"category": "Adams Rite",
+"cost": 278.6,
+"price": 362.2,
+"id": "f4de1736-55e9-414a-9295-4254548f2c70",
+"created_at": "2026-08-21T17:28:18.101149Z"
+},
+{
+"name": "Dummy flushset, 119, 121, or 130 finish, individually boxed*",
+"part_number": "4195-IB",
+"category": "Adams Rite",
+"cost": 137.2,
+"price": 178.35,
+"id": "7ebf35ac-14d5-4d5c-b008-7e850f4a64ee",
+"created_at": "2026-08-21T17:28:18.102545Z"
+},
+{
+"name": "Flush operator without lock",
+"part_number": "4189-00",
+"category": "Adams Rite",
+"cost": 159.6,
+"price": 207.5,
+"id": "5af5d98d-e0c2-4a70-a9d4-2581d870284d",
+"created_at": "2026-08-21T17:28:18.103855Z"
+},
+{
+"name": "Flush operator without lock",
+"part_number": "4190-00",
+"category": "Adams Rite",
+"cost": 218.4,
+"price": 283.9,
+"id": "96e58484-70e6-4f4f-a57c-1a11219fea24",
+"created_at": "2026-08-21T17:28:18.105149Z"
+},
+{
+"name": "ABS flush lockset, individually boxed",
+"part_number": "4430-IB",
+"category": "Adams Rite",
+"cost": 159.6,
+"price": 207.5,
+"id": "a40509da-7e51-4c1c-a230-e622bda67c6f",
+"created_at": "2026-08-21T17:28:18.106668Z"
+},
+{
+"name": "ABS flush lockset with cylinder, individually boxed",
+"part_number": "4431-IB",
+"category": "Adams Rite",
+"cost": 229.6,
+"price": 298.5,
+"id": "ba3de448-f127-4e08-a153-6c0d967c46ca",
+"created_at": "2026-08-21T17:28:18.108096Z"
+},
+{
+"name": "ABS dummy flushset, individually boxed*",
+"part_number": "4432-IB",
+"category": "Adams Rite",
+"cost": 68.6,
+"price": 89.2,
+"id": "5aafd243-8d91-4519-aa53-adf58b022965",
+"created_at": "2026-08-21T17:28:18.109549Z"
+},
+{
+"name": "ABS operator without lock",
+"part_number": "4430-00",
+"category": "Adams Rite",
+"cost": 99.4,
+"price": 129.2,
+"id": "1deaa688-07b2-4ec9-9820-74524fd3011f",
+"created_at": "2026-08-21T17:28:18.110900Z"
+},
+{
+"name": "ABS operator without lock",
+"part_number": "4431-00",
+"category": "Adams Rite",
+"cost": 168.0,
+"price": 218.4,
+"id": "68a43209-f906-42e5-8b5f-f79b49bde96c",
+"created_at": "2026-08-21T17:28:18.112196Z"
+},
+{
+"name": "Grip pull for use with 4430, 4431",
+"part_number": "4453-02-335-IB",
+"category": "Adams Rite",
+"cost": 151.2,
+"price": 196.55,
+"id": "b10ff6cb-d27d-4413-b4af-89d5f45fccd7",
+"created_at": "2026-08-21T17:28:18.113500Z"
+},
+{
+"name": "Active dummy bar without latching mechanism, without monitoring switches",
+"part_number": "8099-M0",
+"category": "Adams Rite",
+"cost": 1358.0,
+"price": 1765.4,
+"id": "0313944e-4868-4185-a372-781b15db7f87",
+"created_at": "2026-08-21T17:28:18.114896Z"
+},
+{
+"name": "Surface vertical rod exit device for wood and hollow metal",
+"part_number": "8100",
+"category": "Adams Rite",
+"cost": 3080.0,
+"price": 4004.0,
+"id": "94137942-5b24-43a3-9ef8-71132be4848b",
+"created_at": "2026-08-21T17:28:18.116196Z"
+},
+{
+"name": "Top rod only (less bottom rod) SVR exit device",
+"part_number": "8100T",
+"category": "Adams Rite",
+"cost": 2923.2,
+"price": 3800.15,
+"id": "3a63a5c0-d635-40c8-9069-5a4259f3abb2",
+"created_at": "2026-08-21T17:28:18.117591Z"
+},
+{
+"name": "Fire-rated surface vertical rod exit device for wood and hollow metal",
+"part_number": "3100",
+"category": "Adams Rite",
+"cost": 3486.0,
+"price": 4531.8,
+"id": "168440cc-b693-4b4e-865c-a16506d9f798",
+"created_at": "2026-08-21T17:28:18.119028Z"
+},
+{
+"name": "Fire-rated top rod only (less bottom rod) SVR for metal doors",
+"part_number": "3100T",
+"category": "Adams Rite",
+"cost": 3329.2,
+"price": 4327.95,
+"id": "a56213ce-bac8-472c-b86e-7a4881ad83a6",
+"created_at": "2026-08-21T17:28:18.120392Z"
+},
+{
+"name": "Fire-rated top rod only (less bottom rod) SVR for wood doors",
+"part_number": "3100W",
+"category": "Adams Rite",
+"cost": 3329.2,
+"price": 4327.95,
+"id": "629a47b5-c5ec-450c-ba33-8fab277f27ab",
+"created_at": "2026-08-21T17:28:18.121695Z"
+},
+{
+"name": "Tall door kit for doors up to 10' tall, for use with 3100",
+"part_number": "3055",
+"category": "Adams Rite",
+"cost": 364.0,
+"price": 473.2,
+"id": "22a67582-73c4-48e8-b6fc-00d970542537",
+"created_at": "2026-08-21T17:28:18.123022Z"
+},
+{
+"name": "Tall door kit for doors up to 10' tall, for use with 8100, 8200",
+"part_number": "8055-01",
+"category": "Adams Rite",
+"cost": 352.8,
+"price": 458.65,
+"id": "4b6ad6b8-a35e-478e-a38c-e9f199e41579",
+"created_at": "2026-08-21T17:28:18.124215Z"
+},
+{
+"name": "Narrow stile surface vertical rod exit device",
+"part_number": "8200",
+"category": "Adams Rite",
+"cost": 2765.0,
+"price": 3594.5,
+"id": "ba4cbd07-fec0-4de6-95dd-3dbc9e6bbe22",
+"created_at": "2026-08-21T17:28:18.125374Z"
+},
+{
+"name": "Top rod only (less bottom rod) SVR exit device",
+"part_number": "8200T",
+"category": "Adams Rite",
+"cost": 2608.2,
+"price": 3390.65,
+"id": "3beb7b83-b0c0-4e22-bbba-1e922dbd8779",
+"created_at": "2026-08-21T17:28:18.126385Z"
+},
+{
+"name": "SVR exit device, less rods",
+"part_number": "8200-99",
+"category": "Adams Rite",
+"cost": 2451.4,
+"price": 3186.8,
+"id": "035f9ba1-7051-40c0-864b-a09d764bac80",
+"created_at": "2026-08-21T17:28:18.127312Z"
+},
+{
+"name": "Mortise exit device for wood and hollow metal",
+"part_number": "8300",
+"category": "Adams Rite",
+"cost": 2450.0,
+"price": 3185.0,
+"id": "7984f5a4-3e2f-4027-a4d7-3f7b238d1d98",
+"created_at": "2026-08-21T17:28:18.128276Z"
+},
+{
+"name": "Fire-rated mortise exit device for wood and hollow metal",
+"part_number": "3300",
+"category": "Adams Rite",
+"cost": 2898.0,
+"price": 3767.4,
+"id": "4997372a-f76c-4777-b2ae-0ca1cb70a2ae",
+"created_at": "2026-08-21T17:28:18.129191Z"
+},
+{
+"name": "Open back strike for 1-3/4\" thick doors 91-0995-04-IP 2-1/2\" thick door kit for use with 8300, 8400",
+"part_number": "4009-01",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "b7694bed-8613-4828-9c25-eb18d090897a",
+"created_at": "2026-08-21T17:28:18.130122Z"
+},
+{
+"name": "Narrow stile mortise exit device",
+"part_number": "8400",
+"category": "Adams Rite",
+"cost": 2198.0,
+"price": 2857.4,
+"id": "ed206a35-ce22-43fc-a5df-3cdbd98a8516",
+"created_at": "2026-08-21T17:28:18.131230Z"
+},
+{
+"name": "Long face strike for covering MS strike prep 91-0995-04-IP 2-1/2\" thick door kit for use with 8300, 8400",
+"part_number": "8455-01",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "b52ae3fd-23e0-48db-8119-901d4b92389c",
+"created_at": "2026-08-21T17:28:18.132690Z"
+},
+{
+"name": "Concealed vertical rod exit device for hollow metal",
+"part_number": "8500",
+"category": "Adams Rite",
+"cost": 2373.0,
+"price": 3084.9,
+"id": "a7fb16c6-b75c-4e48-92a3-28f0426d5280",
+"created_at": "2026-08-21T17:28:18.134075Z"
+},
+{
+"name": "Top rod only (less bottom rod) CVR exit device",
+"part_number": "8500T",
+"category": "Adams Rite",
+"cost": 2216.2,
+"price": 2881.05,
+"id": "882d4a1e-60cc-4c44-bece-64142678dded",
+"created_at": "2026-08-21T17:28:18.144868Z"
+},
+{
+"name": "Fire-rated concealed vertical rod exit device for hollow metal",
+"part_number": "3600",
+"category": "Adams Rite",
+"cost": 3171.0,
+"price": 4122.3,
+"id": "33411cfb-a0e1-4a1d-80bb-1476137266a0",
+"created_at": "2026-08-21T17:28:18.146270Z"
+},
+{
+"name": "Fire-rated top rod only (less bottom rod) CVR exit device",
+"part_number": "3600T",
+"category": "Adams Rite",
+"cost": 3014.2,
+"price": 3918.45,
+"id": "877613f8-e503-4575-9d74-cd5aca905ce8",
+"created_at": "2026-08-21T17:28:18.147703Z"
+},
+{
+"name": "Tall door kit for doors taller than 66\" above bar height, up to 10'",
+"part_number": "3655",
+"category": "Adams Rite",
+"cost": 119.0,
+"price": 154.7,
+"id": "41587cec-cdb7-4372-b1fb-f3b9243fdf08",
+"created_at": "2026-08-21T17:28:18.149098Z"
+},
+{
+"name": "Narrow stile concealed vertical rod exit device",
+"part_number": "8600",
+"category": "Adams Rite",
+"cost": 2156.0,
+"price": 2802.8,
+"id": "b1cae562-00be-4250-b6da-3c2dccb16a65",
+"created_at": "2026-08-21T17:28:18.150527Z"
+},
+{
+"name": "Top rod only (less bottom rod) CVR exit device",
+"part_number": "8600T",
+"category": "Adams Rite",
+"cost": 1999.2,
+"price": 2598.95,
+"id": "6947187f-fe42-441d-a136-e7fdce15e5e4",
+"created_at": "2026-08-21T17:28:18.151878Z"
+},
+{
+"name": "CVR exit device, less rods",
+"part_number": "8600-99",
+"category": "Adams Rite",
+"cost": 1842.4,
+"price": 2395.1,
+"id": "df97e322-155f-4fed-973c-65e5558b0997",
+"created_at": "2026-08-21T17:28:18.153452Z"
+},
+{
+"name": "Tall door kit for doors taller than 66\" above bar height, up to 10' for use with 8500, 8600",
+"part_number": "8655",
+"category": "Adams Rite",
+"cost": 112.0,
+"price": 145.6,
+"id": "fa991875-2daa-4882-be7b-25338ff57a39",
+"created_at": "2026-08-21T17:28:18.154823Z"
+},
+{
+"name": "Rim exit device for hollow metal and wood",
+"part_number": "8700",
+"category": "Adams Rite",
+"cost": 2058.0,
+"price": 2675.4,
+"id": "3fa8e657-99c6-4600-98ab-1a29f4bc7746",
+"created_at": "2026-08-21T17:28:18.156298Z"
+},
+{
+"name": "Fire-rated rim exit device for hollow metal and wood",
+"part_number": "3700",
+"category": "Adams Rite",
+"cost": 2373.0,
+"price": 3084.9,
+"id": "327961ec-7905-488a-a24a-494cbf6d58ba",
+"created_at": "2026-08-21T17:28:18.157758Z"
+},
+{
+"name": "Mullion for doors up to 8' for use with 8700, 3700",
+"part_number": "3889-08",
+"category": "Adams Rite",
+"cost": 1162.0,
+"price": 1510.6,
+"id": "fc06d042-88ab-46c4-81e9-d400d88d9b20",
+"created_at": "2026-08-21T17:28:18.159116Z"
+},
+{
+"name": "Mullion for doors up to 10' for use with 8700, 3700",
+"part_number": "3889-10",
+"category": "Adams Rite",
+"cost": 1218.0,
+"price": 1583.4,
+"id": "63c92e05-acdf-4417-a5d2-34b72eb63b31",
+"created_at": "2026-08-21T17:28:18.160448Z"
+},
+{
+"name": "Narrow stile rim exit device",
+"part_number": "8800",
+"category": "Adams Rite",
+"cost": 1519.0,
+"price": 1974.7,
+"id": "78e302e2-9ccf-4349-95ff-8090ea6fce7c",
+"created_at": "2026-08-21T17:28:18.162071Z"
+},
+{
+"name": "Aluminum mullion for doors up to 8' for use with 8800",
+"part_number": "3890-08",
+"category": "Adams Rite",
+"cost": 1162.0,
+"price": 1510.6,
+"id": "eb6d5d76-a430-468f-a107-42aa10b90f2a",
+"created_at": "2026-08-21T17:28:18.163459Z"
+},
+{
+"name": "Aluminum mullion for doors up to 10' for use with 8800",
+"part_number": "3890-10",
+"category": "Adams Rite",
+"cost": 1218.0,
+"price": 1583.4,
+"id": "d1e2bf79-228c-4d41-8b6a-aa138381f004",
+"created_at": "2026-08-21T17:28:18.164815Z"
+},
+{
+"name": "Narrow stile rim exit device",
+"part_number": "P8800",
+"category": "Adams Rite",
+"cost": 1680.0,
+"price": 2184.0,
+"id": "c071e0bc-cc59-45f8-b4c4-e8ec8b655761",
+"created_at": "2026-08-21T17:28:18.166197Z"
+},
+{
+"name": "Rim exit device for wood and hollow metal",
+"part_number": "P8700",
+"category": "Adams Rite",
+"cost": 1946.0,
+"price": 2529.8,
+"id": "545c8c51-63a7-4ad0-8c86-1f375bb49310",
+"created_at": "2026-08-21T17:28:18.167572Z"
+},
+{
+"name": "Surface concealed vertical rod exit device for wood",
+"part_number": "8900",
+"category": "Adams Rite",
+"cost": 2485.0,
+"price": 3230.5,
+"id": "b6e93013-2d76-494e-b27b-68f02dfc186d",
+"created_at": "2026-08-21T17:28:18.168929Z"
+},
+{
+"name": "Fire-rated surface concealed vertical rod for wood",
+"part_number": "3900",
+"category": "Adams Rite",
+"cost": 3269.0,
+"price": 4249.7,
+"id": "14711df2-4f61-4943-90c8-b14a5b1fb254",
+"created_at": "2026-08-21T17:28:18.170274Z"
+},
+{
+"name": "Tall door kit for doors up to 10’ for use with 8900",
+"part_number": "8955-01",
+"category": "Adams Rite",
+"cost": 116.2,
+"price": 151.05,
+"id": "31236f95-9bb3-49c7-8787-8f94065c00d7",
+"created_at": "2026-08-21T17:28:18.171703Z"
+},
+{
+"name": "Tall door kit for doors up to 10’ for use with 3900",
+"part_number": "3955-01",
+"category": "Adams Rite",
+"cost": 119.0,
+"price": 154.7,
+"id": "2ab92477-c69a-4088-a427-90a2335128a9",
+"created_at": "2026-08-21T17:28:18.173140Z"
+},
+{
+"name": "For aluminum jambs",
+"part_number": "7100",
+"category": "Adams Rite",
+"cost": 411.6,
+"price": 535.1,
+"id": "619be328-f823-4c48-b492-f6a2e6fa2142",
+"created_at": "2026-08-21T17:28:18.174632Z"
+},
+{
+"name": "For radius aluminum stiles",
+"part_number": "7101",
+"category": "Adams Rite",
+"cost": 361.2,
+"price": 469.55,
+"id": "665c4420-b384-4d2b-b246-db75d28af415",
+"created_at": "2026-08-21T17:28:18.175857Z"
+},
+{
+"name": "For wood jambs",
+"part_number": "7110",
+"category": "Adams Rite",
+"cost": 428.4,
+"price": 556.9,
+"id": "43e9629b-844a-4062-b205-a663433a7d4f",
+"created_at": "2026-08-21T17:28:18.176894Z"
+},
+{
+"name": "For wood jambs, long faceplate",
+"part_number": "7111",
+"category": "Adams Rite",
+"cost": 428.4,
+"price": 556.9,
+"id": "7cbb0637-e0e1-4881-9fbe-fedd41e22424",
+"created_at": "2026-08-21T17:28:18.177971Z"
+},
+{
+"name": "For aluminum jambs, pre-cut for MS lock strike plate",
+"part_number": "7130",
+"category": "Adams Rite",
+"cost": 361.2,
+"price": 469.55,
+"id": "dff0a3b4-fd3e-4c18-a4df-a410e8a16d27",
+"created_at": "2026-08-21T17:28:18.179388Z"
+},
+{
+"name": "For radius aluminum stiles, pre-cut for MS lock strike plate",
+"part_number": "7131",
+"category": "Adams Rite",
+"cost": 361.2,
+"price": 469.55,
+"id": "9361e301-800e-43d8-a818-a7841ec666a3",
+"created_at": "2026-08-21T17:28:18.180793Z"
+},
+{
+"name": "ANSI size for hollow metal and wood jambs",
+"part_number": "7140",
+"category": "Adams Rite",
+"cost": 411.6,
+"price": 535.1,
+"id": "7f6982b7-6705-4a03-bf8e-081756914b31",
+"created_at": "2026-08-21T17:28:18.182127Z"
+},
+{
+"name": "For aluminum jambs",
+"part_number": "7160",
+"category": "Adams Rite",
+"cost": 505.4,
+"price": 657.0,
+"id": "54ae1534-e0ab-4b0f-9d8a-5bbec0645672",
+"created_at": "2026-08-21T17:28:18.183235Z"
+},
+{
+"name": "For hollow metal and wood jambs",
+"part_number": "7170",
+"category": "Adams Rite",
+"cost": 505.4,
+"price": 657.0,
+"id": "ecd71ac4-6d4e-4427-9658-09fb946e6e16",
+"created_at": "2026-08-21T17:28:18.184229Z"
+},
+{
+"name": "For use with 7100/7101, 7110/7111, 7130/7131, 7140",
+"part_number": "7103A",
+"category": "Adams Rite",
+"cost": 299.6,
+"price": 389.5,
+"id": "268e8af8-fd35-414f-bd8e-e92ce62311d2",
+"created_at": "2026-08-21T17:28:18.185177Z"
+},
+{
+"name": "For use with 7160, 7170",
+"part_number": "7173A",
+"category": "Adams Rite",
+"cost": 386.4,
+"price": 502.3,
+"id": "1bbe6486-de15-45bb-ac99-791c2824a3ae",
+"created_at": "2026-08-21T17:28:18.186150Z"
+},
+{
+"name": "Fire-rated, for cylindrical latches",
+"part_number": "7240",
+"category": "Adams Rite",
+"cost": 736.4,
+"price": 957.3,
+"id": "68405a54-ac37-49f8-8ecf-b72681500237",
+"created_at": "2026-08-21T17:28:18.187411Z"
+},
+{
+"name": "Lip extension for interior frame systems",
+"part_number": "7240-50",
+"category": "Adams Rite",
+"cost": 803.6,
+"price": 1044.7,
+"id": "5548328f-1b9f-424e-9d23-0171002d4f94",
+"created_at": "2026-08-21T17:28:18.188768Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7240-XX9",
+"category": "Adams Rite",
+"cost": 932.4,
+"price": 1212.1,
+"id": "dc48a75a-3cbf-4a61-aabe-d2912ce7031a",
+"created_at": "2026-08-21T17:28:18.190128Z"
+},
+{
+"name": "Fire-rated, for mortise latches",
+"part_number": "7270",
+"category": "Adams Rite",
+"cost": 854.0,
+"price": 1110.2,
+"id": "fcf0d52e-db40-42e7-9395-7d36157bfbfb",
+"created_at": "2026-08-21T17:28:18.191443Z"
+},
+{
+"name": "Lip extension for interior frame systems",
+"part_number": "7270-50",
+"category": "Adams Rite",
+"cost": 921.2,
+"price": 1197.55,
+"id": "423236e4-2b76-4ee1-ae02-d657ee640bcf",
+"created_at": "2026-08-21T17:28:18.192897Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7270-XX9",
+"category": "Adams Rite",
+"cost": 1050.0,
+"price": 1365.0,
+"id": "6fc3eafe-019b-45c5-b825-1579299fd38a",
+"created_at": "2026-08-21T17:28:18.194512Z"
+},
+{
+"name": "For radius jambs",
+"part_number": "7400",
+"category": "Adams Rite",
+"cost": 576.8,
+"price": 749.85,
+"id": "1846f814-f0db-459b-affa-6b97165b3788",
+"created_at": "2026-08-21T17:28:18.196067Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7400M",
+"category": "Adams Rite",
+"cost": 772.8,
+"price": 1004.65,
+"id": "aa4731f6-7681-4bbe-a0b8-8a5216187922",
+"created_at": "2026-08-21T17:28:18.197494Z"
+},
+{
+"name": "For radius aluminum stiles",
+"part_number": "7401",
+"category": "Adams Rite",
+"cost": 490.0,
+"price": 637.0,
+"id": "db48398e-7b23-45fc-b8b0-80239110e689",
+"created_at": "2026-08-21T17:28:18.198866Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7401M",
+"category": "Adams Rite",
+"cost": 686.0,
+"price": 891.8,
+"id": "8cbdb637-aebc-4c4b-9309-89b75161808c",
+"created_at": "2026-08-21T17:28:18.200240Z"
+},
+{
+"name": "For wood jambs, 7-15/16\" faceplate",
+"part_number": "7410",
+"category": "Adams Rite",
+"cost": 602.0,
+"price": 782.6,
+"id": "5f9f4e8b-96c4-4849-aef6-990376c4f94c",
+"created_at": "2026-08-21T17:28:18.201788Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7410M",
+"category": "Adams Rite",
+"cost": 798.0,
+"price": 1037.4,
+"id": "120dac05-0d7f-41a9-816f-8cc0adee9310",
+"created_at": "2026-08-21T17:28:18.203160Z"
+},
+{
+"name": "For wood jambs, 10-1/4\" faceplate, not available in 335 Finish",
+"part_number": "7411",
+"category": "Adams Rite",
+"cost": 609.0,
+"price": 791.7,
+"id": "0e4dd6ae-1cfa-4b5f-8315-92b4538ff9fd",
+"created_at": "2026-08-21T17:28:18.204517Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7411M",
+"category": "Adams Rite",
+"cost": 805.0,
+"price": 1046.5,
+"id": "8b673102-ae94-410e-8696-da445f564386",
+"created_at": "2026-08-21T17:28:18.205857Z"
+},
+{
+"name": "For aluminum jambs, flat faceplate",
+"part_number": "7430",
+"category": "Adams Rite",
+"cost": 501.2,
+"price": 651.55,
+"id": "4f0c34d8-f6d3-4f17-b183-9f4c176eec9d",
+"created_at": "2026-08-21T17:28:18.207096Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7430M",
+"category": "Adams Rite",
+"cost": 697.2,
+"price": 906.35,
+"id": "e15d5ba4-6384-4e92-93e5-982d09e7e6c5",
+"created_at": "2026-08-21T17:28:18.208132Z"
+},
+{
+"name": "For aluminum stiles, radius faceplate",
+"part_number": "7431",
+"category": "Adams Rite",
+"cost": 501.2,
+"price": 651.55,
+"id": "e26ec0ad-c140-49ee-86b0-8f82c84e8869",
+"created_at": "2026-08-21T17:28:18.209154Z"
+},
+{
+"name": "Monitoring signal switches, not available in 119 finish",
+"part_number": "7431M",
+"category": "Adams Rite",
+"cost": 697.2,
+"price": 906.35,
+"id": "c2a29161-7a28-4d9c-951b-988a5995493a",
+"created_at": "2026-08-21T17:28:18.210509Z"
+},
+{
+"name": "For hollow metal and wood, jambs and doors",
+"part_number": "7440",
+"category": "Adams Rite",
+"cost": 576.8,
+"price": 749.85,
+"id": "6cf22f06-f388-4760-9518-eda5115f57f2",
+"created_at": "2026-08-21T17:28:18.211815Z"
+},
+{
+"name": "Monitoring signal switches",
+"part_number": "7440M",
+"category": "Adams Rite",
+"cost": 772.8,
+"price": 1004.65,
+"id": "cb1ba13d-b954-44ef-ad71-64ab2d157303",
+"created_at": "2026-08-21T17:28:18.213238Z"
+},
+{
+"name": "Standard body, for use in single door applications",
+"part_number": "7400A",
+"category": "Adams Rite",
+"cost": 452.2,
+"price": 587.85,
+"id": "d03ffa2b-5636-494b-8346-2c4561d5eaa8",
+"created_at": "2026-08-21T17:28:18.214765Z"
+},
+{
+"name": "For use with body kit: 7400A",
+"part_number": "FPK7400",
+"category": "Adams Rite",
+"cost": 120.4,
+"price": 156.5,
+"id": "de001485-b506-4728-9b24-cbf7f8920345",
+"created_at": "2026-08-21T17:28:18.216060Z"
+},
+{
+"name": "For use with body kit: 7401A",
+"part_number": "FPK7401",
+"category": "Adams Rite",
+"cost": 50.4,
+"price": 65.5,
+"id": "d0ee4f30-2568-4ad2-a1cc-d06d1b0d0e72",
+"created_at": "2026-08-21T17:28:18.217089Z"
+},
+{
+"name": "For use with body kit: 7400A",
+"part_number": "FPK7410",
+"category": "Adams Rite",
+"cost": 158.2,
+"price": 205.65,
+"id": "cc223bfe-afd4-4cb0-9d1a-d8c63f9176c0",
+"created_at": "2026-08-21T17:28:18.218063Z"
+},
+{
+"name": "For use with body kit: 7400A, not available in 335 finish",
+"part_number": "FPK7411",
+"category": "Adams Rite",
+"cost": 165.2,
+"price": 214.75,
+"id": "37ac6279-b1dd-43e4-bba7-705f2f5348a2",
+"created_at": "2026-08-21T17:28:18.219025Z"
+},
+{
+"name": "For use with body kit: 7400A",
+"part_number": "FPK7430",
+"category": "Adams Rite",
+"cost": 58.8,
+"price": 76.45,
+"id": "ace454fc-a7d0-4779-838f-c24a3ff310f5",
+"created_at": "2026-08-21T17:28:18.219972Z"
+},
+{
+"name": "For use with body kit: 7401A",
+"part_number": "FPK7431",
+"category": "Adams Rite",
+"cost": 58.8,
+"price": 76.45,
+"id": "c9f4ec1f-dbae-40ff-9780-4854e1dd2de8",
+"created_at": "2026-08-21T17:28:18.220932Z"
+},
+{
+"name": "For use with body kit: 7400A",
+"part_number": "FPK7440",
+"category": "Adams Rite",
+"cost": 120.4,
+"price": 156.5,
+"id": "301b0ce8-efe3-4381-806c-3e2d55f3cb0e",
+"created_at": "2026-08-21T17:28:18.222589Z"
+},
+{
+"name": "Lip extension kits for use with 7400 series electric strikes, for flat faceplates only",
+"part_number": "LEK7400",
+"category": "Adams Rite",
+"cost": 89.6,
+"price": 116.5,
+"id": "3bf41095-8207-46d9-9f8b-18308b9967c3",
+"created_at": "2026-08-21T17:28:18.224065Z"
+},
+{
+"name": "12 VDC adapter cable for 7400 electric strikes",
+"part_number": "VA7400-12",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "d632dcba-dbd5-4ffa-844c-d7d37f0423cf",
+"created_at": "2026-08-21T17:28:18.225595Z"
+},
+{
+"name": "16 VDC adapter kit for 7400 electric strikes",
+"part_number": "VA7400-16VDC",
+"category": "Adams Rite",
+"cost": 43.4,
+"price": 56.4,
+"id": "3da94f8d-cb68-4696-90e7-c842afdc6969",
+"created_at": "2026-08-21T17:28:18.227026Z"
+},
+{
+"name": "24 VDC adapter cable for 7400 electric strikes",
+"part_number": "VA7400-24",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "fc9d3476-f573-418f-85f6-ff2f0cc33e04",
+"created_at": "2026-08-21T17:28:18.228085Z"
+},
+{
+"name": "Wood door cover plate for use when mounting 7400 in the inactive leaf of a wood door pair (to simplify the mortising ope",
+"part_number": "WDC7400",
+"category": "Adams Rite",
+"cost": 28.0,
+"price": 36.4,
+"id": "a3ae6337-6f9a-4645-831d-ca0d3ef2246f",
+"created_at": "2026-08-21T17:29:40.443140Z"
+},
+{
+"name": "Turn for use with 5015, 5017 deadlock",
+"part_number": "1004",
+"category": "Adams Rite",
+"cost": 70.0,
+"price": 91.0,
+"id": "67975936-58b6-461c-9d86-c63a40f4126e",
+"created_at": "2026-08-21T17:29:40.444332Z"
+},
+{
+"name": "Turn for use with 5015, 5017 deadlock",
+"part_number": "1015",
+"category": "Adams Rite",
+"cost": 70.0,
+"price": 91.0,
+"id": "2657e5d7-3f11-4c4b-a9cf-7d2a9ff67da4",
+"created_at": "2026-08-21T17:29:40.445569Z"
+},
+{
+"name": "Outside escutcheon",
+"part_number": "1016",
+"category": "Adams Rite",
+"cost": 56.0,
+"price": 72.8,
+"id": "0765d626-8b9c-48e3-832d-797c407dea3b",
+"created_at": "2026-08-21T17:29:40.446622Z"
+},
+{
+"name": "Tubular fixed pull for hollow metal or wood doors",
+"part_number": "3001",
+"category": "Adams Rite",
+"cost": 389.2,
+"price": 505.95,
+"id": "4ce25124-d8db-4ead-a7d5-ae360b6677f3",
+"created_at": "2026-08-21T17:29:40.447618Z"
+},
+{
+"name": "Flat fixed pull for hollow metal or wood doors",
+"part_number": "3002",
+"category": "Adams Rite",
+"cost": 434.0,
+"price": 564.2,
+"id": "8091307a-6df5-4fe4-9995-0163e8f8959f",
+"created_at": "2026-08-21T17:29:40.449097Z"
+},
+{
+"name": "Entry trim with standard lever (01, 02, 03)",
+"part_number": "3080",
+"category": "Adams Rite",
+"cost": 1408.4,
+"price": 1830.9,
+"id": "59c680d7-14d5-48d8-99a9-22a007d7878d",
+"created_at": "2026-08-21T17:29:40.450714Z"
+},
+{
+"name": "Entry trim with designer lever series (MD through MW)",
+"part_number": "3080-MX",
+"category": "Adams Rite",
+"cost": 1498.0,
+"price": 1947.4,
+"id": "cbbf96de-6c35-4372-bd91-d148835c96e2",
+"created_at": "2026-08-21T17:29:40.452424Z"
+},
+{
+"name": "Turn for 1875 deadlock, 1-1/2\", 1-3/4\", or 2\" door thickness",
+"part_number": "4060",
+"category": "Adams Rite",
+"cost": 161.0,
+"price": 209.3,
+"id": "aa353989-d8e0-497b-ace0-d689fec71836",
+"created_at": "2026-08-21T17:29:40.453918Z"
+},
+{
+"name": "For door thickness (01) 1-3/4\" to 2\"",
+"part_number": "4560-X01",
+"category": "Adams Rite",
+"cost": 103.6,
+"price": 134.7,
+"id": "5136ac18-e9ae-40a6-9ea1-ee6a8c5f6f34",
+"created_at": "2026-08-21T17:29:40.455353Z"
+},
+{
+"name": "For door thickness (02) 2-1/4\" to 2-1/2\"",
+"part_number": "4560-X02",
+"category": "Adams Rite",
+"cost": 147.0,
+"price": 191.1,
+"id": "5b73ffda-79ed-4f5b-bcc9-57166a5854c8",
+"created_at": "2026-08-21T17:29:40.456841Z"
+},
+{
+"name": "For door thickness (03) 2-3/4\" to 3\"",
+"part_number": "4560-X03",
+"category": "Adams Rite",
+"cost": 147.0,
+"price": 191.1,
+"id": "15bceb7f-3b17-4a16-a7c7-04a7a2a84c1e",
+"created_at": "2026-08-21T17:29:40.458320Z"
+},
+{
+"name": "For door thickness (04) 3-1/4\"",
+"part_number": "4560-X04",
+"category": "Adams Rite",
+"cost": 147.0,
+"price": 191.1,
+"id": "57289a6a-5f64-4697-b52e-1c5d445a17c6",
+"created_at": "2026-08-21T17:29:40.459727Z"
+},
+{
+"name": "For door thickness (01) 1-3/4\" to 2\"",
+"part_number": "4565-X01",
+"category": "Adams Rite",
+"cost": 112.0,
+"price": 145.6,
+"id": "2ce4818b-c158-42b8-98f6-b0921c9463e0",
+"created_at": "2026-08-21T17:29:40.461128Z"
+},
+{
+"name": "For door thickness (02) 2-1/4\" to 2-1/2\"",
+"part_number": "4565-X02",
+"category": "Adams Rite",
+"cost": 154.0,
+"price": 200.2,
+"id": "861bab13-32d7-4813-b068-3d981e0a3faa",
+"created_at": "2026-08-21T17:29:40.462519Z"
+},
+{
+"name": "For door thickness (03) 2-3/4\" to 3\"",
+"part_number": "4565-X03",
+"category": "Adams Rite",
+"cost": 154.0,
+"price": 200.2,
+"id": "16f524c5-ec03-44fa-98b2-83cf7b3648fb",
+"created_at": "2026-08-21T17:29:40.463790Z"
+},
+{
+"name": "For door thickness (04) 3-1/4\"",
+"part_number": "4565-X04",
+"category": "Adams Rite",
+"cost": 154.0,
+"price": 200.2,
+"id": "194defc8-3e88-402f-a068-83847abb7ca9",
+"created_at": "2026-08-21T17:29:40.464830Z"
+},
+{
+"name": "For door thickness (11) 1-3/4\"",
+"part_number": "4560-011",
+"category": "Adams Rite",
+"cost": 75.6,
+"price": 98.3,
+"id": "5261b55e-aed8-4dd1-9f61-99085dd3065b",
+"created_at": "2026-08-21T17:29:40.465829Z"
+},
+{
+"name": "For door thickness (12) 1-3/4\" to 2-1/4\"",
+"part_number": "4560-012",
+"category": "Adams Rite",
+"cost": 95.2,
+"price": 123.75,
+"id": "063d5a0c-763c-469f-bbe9-1576f58c0c75",
+"created_at": "2026-08-21T17:29:40.467670Z"
+},
+{
+"name": "For door thickness (13) 2-15/16\" to 2-3/4\"",
+"part_number": "4560-013",
+"category": "Adams Rite",
+"cost": 95.2,
+"price": 123.75,
+"id": "d3dbff18-a919-469e-9a1a-47e9dcbe9df5",
+"created_at": "2026-08-21T17:29:40.469179Z"
+},
+{
+"name": "For door thickness (11) 1-3/4\"",
+"part_number": "4565-011",
+"category": "Adams Rite",
+"cost": 84.0,
+"price": 109.2,
+"id": "491d7585-0c94-4176-af0e-205da6aaff98",
+"created_at": "2026-08-21T17:29:40.470793Z"
+},
+{
+"name": "For door thickness (12) 1-3/4\" to 2-1/4\"",
+"part_number": "4565-012",
+"category": "Adams Rite",
+"cost": 102.2,
+"price": 132.85,
+"id": "8574b314-91ca-4e73-8a6a-2a9a4d47be84",
+"created_at": "2026-08-21T17:29:40.472241Z"
+},
+{
+"name": "For door thickness (01) 1-3/4\" to 2\"",
+"part_number": "4568-X01",
+"category": "Adams Rite",
+"cost": 124.6,
+"price": 162.0,
+"id": "5be04444-156e-4d2f-860a-1805cfaafc1a",
+"created_at": "2026-08-21T17:29:40.473721Z"
+},
+{
+"name": "For door thickness (02) 2-1/4\" to 2-1/2\"",
+"part_number": "4568-X02",
+"category": "Adams Rite",
+"cost": 155.4,
+"price": 202.0,
+"id": "516ded0a-9555-45d2-807e-23c638b97660",
+"created_at": "2026-08-21T17:29:40.475094Z"
+},
+{
+"name": "For door thickness (03) 2-3/4\" to 3\"",
+"part_number": "4568-X03",
+"category": "Adams Rite",
+"cost": 155.4,
+"price": 202.0,
+"id": "945fa279-6eeb-460e-838b-7ba6473fbf95",
+"created_at": "2026-08-21T17:29:40.476702Z"
+},
+{
+"name": "For door thickness (01) 1-3/4\" to 2\"",
+"part_number": "4569-X01",
+"category": "Adams Rite",
+"cost": 142.8,
+"price": 185.65,
+"id": "5501889e-5ca0-48af-b378-1070667d550c",
+"created_at": "2026-08-21T17:29:40.478516Z"
+},
+{
+"name": "For door thickness (02) 2-1/4\" to 2-1/2\"",
+"part_number": "4569-X02",
+"category": "Adams Rite",
+"cost": 175.0,
+"price": 227.5,
+"id": "4155e3b5-25c1-4980-be8a-9ffd16017ede",
+"created_at": "2026-08-21T17:29:40.480487Z"
+},
+{
+"name": "For door thickness (03) 2-3/4\" to 3\"",
+"part_number": "4569-X03",
+"category": "Adams Rite",
+"cost": 175.0,
+"price": 227.5,
+"id": "8c7ba678-0d9c-4481-8278-20989624eb8f",
+"created_at": "2026-08-21T17:29:40.482249Z"
+},
+{
+"name": "For door thickness (04) 3-1/4\"",
+"part_number": "4569-X04",
+"category": "Adams Rite",
+"cost": 175.0,
+"price": 227.5,
+"id": "75a5aed0-668a-4111-b14c-c55dae5bf970",
+"created_at": "2026-08-21T17:29:40.483854Z"
+},
+{
+"name": "For door thickness (11) 1-3/4\" to 1-15/16\"",
+"part_number": "4568-011",
+"category": "Adams Rite",
+"cost": 103.6,
+"price": 134.7,
+"id": "678b11af-6b78-4183-97a3-0c318c7de3c8",
+"created_at": "2026-08-21T17:29:40.485302Z"
+},
+{
+"name": "For door thickness (12) 2\" to 2-1/4\"",
+"part_number": "4568-012",
+"category": "Adams Rite",
+"cost": 121.8,
+"price": 158.35,
+"id": "b5677137-859a-4d11-b889-f5f062363cb7",
+"created_at": "2026-08-21T17:29:40.486898Z"
+},
+{
+"name": "For door thickness (13) 2-15/16\" to 2-3/4\"",
+"part_number": "4568-013",
+"category": "Adams Rite",
+"cost": 121.8,
+"price": 158.35,
+"id": "0653b65c-7baf-4eb2-892e-76d12a872353",
+"created_at": "2026-08-21T17:29:40.488160Z"
+},
+{
+"name": "For door thickness (14) 3\"",
+"part_number": "4568-014",
+"category": "Adams Rite",
+"cost": 121.8,
+"price": 158.35,
+"id": "9b5e2317-4c1f-44ef-b310-546e0191dd5f",
+"created_at": "2026-08-21T17:29:40.489285Z"
+},
+{
+"name": "For door thickness (11) 1-3/4\" to 1-15/16\"",
+"part_number": "4569-011",
+"category": "Adams Rite",
+"cost": 113.4,
+"price": 147.4,
+"id": "006eccf3-c237-4e44-b5d6-324381399587",
+"created_at": "2026-08-21T17:29:40.490320Z"
+},
+{
+"name": "For door thickness (12) 2\" to 2-1/4\"",
+"part_number": "4569-012",
+"category": "Adams Rite",
+"cost": 130.2,
+"price": 169.25,
+"id": "5af37970-633b-4c25-8caa-5934fa1c9160",
+"created_at": "2026-08-21T17:29:40.491329Z"
+},
+{
+"name": "For door thickness (13) 2-15/16\" to 2-3/4\"",
+"part_number": "4569-013",
+"category": "Adams Rite",
+"cost": 130.2,
+"price": 169.25,
+"id": "7791636e-0451-41f1-9998-8228c639fe19",
+"created_at": "2026-08-21T17:29:40.492340Z"
+},
+{
+"name": "For door thickness (14) 3\"",
+"part_number": "4569-014",
+"category": "Adams Rite",
+"cost": 130.2,
+"price": 169.25,
+"id": "d3a6204b-6661-43b5-b0c9-7d31fa32dd81",
+"created_at": "2026-08-21T17:29:40.493350Z"
+},
+{
+"name": "For door thickness 1-3/4\" to 2\"",
+"part_number": "4570-01",
+"category": "Adams Rite",
+"cost": 364.0,
+"price": 473.2,
+"id": "9fdf45b6-a3e7-42f2-bc94-b3c8e824d982",
+"created_at": "2026-08-21T17:29:40.494534Z"
+},
+{
+"name": "For door thickness 1-3/4\" to 2\"",
+"part_number": "4576-X01",
+"category": "Adams Rite",
+"cost": 308.0,
+"price": 400.4,
+"id": "ff56b5e0-5800-4e63-8088-6f580aad94e3",
+"created_at": "2026-08-21T17:29:40.495665Z"
+},
+{
+"name": "For door thickness (00) 1-3/4\"",
+"part_number": "4590-0X-00",
+"category": "Adams Rite",
+"cost": 203.0,
+"price": 263.9,
+"id": "41a837ad-7047-459f-8aa7-4c8419670adb",
+"created_at": "2026-08-21T17:29:40.496820Z"
+},
+{
+"name": "For door thickness (01) 1-13/16\" to 2\"",
+"part_number": "4590-0X-01",
+"category": "Adams Rite",
+"cost": 245.0,
+"price": 318.5,
+"id": "a519b264-3b27-4e24-8a42-9ce77c40bc83",
+"created_at": "2026-08-21T17:29:40.497855Z"
+},
+{
+"name": "For door thickness (02) 2-1/4\" to 2-1/2\"",
+"part_number": "4590-0X-02",
+"category": "Adams Rite",
+"cost": 245.0,
+"price": 318.5,
+"id": "61dcec39-982d-48f4-85d1-1a6921e778ea",
+"created_at": "2026-08-21T17:29:40.498872Z"
+},
+{
+"name": "For door thickness (03) 2-3/4\" to 3\"",
+"part_number": "4590-0X-03",
+"category": "Adams Rite",
+"cost": 245.0,
+"price": 318.5,
+"id": "174e7eb3-48af-41dd-97f6-a5d033c130d0",
+"created_at": "2026-08-21T17:29:40.499892Z"
+},
+{
+"name": "For door thickness (04) 3-1/4\"",
+"part_number": "4590-0X-04",
+"category": "Adams Rite",
+"cost": 245.0,
+"price": 318.5,
+"id": "c1926f2e-b415-4cc8-be1a-3e07bd39769a",
+"created_at": "2026-08-21T17:29:40.500991Z"
+},
+{
+"name": "For door thickness (00) 1-3/4\"",
+"part_number": "4590-1X-00",
+"category": "Adams Rite",
+"cost": 172.2,
+"price": 223.85,
+"id": "210a2d70-24a8-4ace-a528-d9ad5c1fa019",
+"created_at": "2026-08-21T17:29:40.502020Z"
+},
+{
+"name": "For door thickness (01) 1-3/4\" to 2-1/4\"",
+"part_number": "4590-1X-01",
+"category": "Adams Rite",
+"cost": 214.2,
+"price": 278.45,
+"id": "8f48c641-4944-41f3-a419-c0f92d03712d",
+"created_at": "2026-08-21T17:29:40.503016Z"
+},
+{
+"name": "For door thickness (02) 2-5/16\" to 2-1/2\"",
+"part_number": "4590-1X-02",
+"category": "Adams Rite",
+"cost": 214.2,
+"price": 278.45,
+"id": "ec523d6e-8a66-4445-9f32-220d287d8227",
+"created_at": "2026-08-21T17:29:40.504028Z"
+},
+{
+"name": "For door thickness (03) 2-9/16\" to 2-3/4\"",
+"part_number": "4590-1X-03",
+"category": "Adams Rite",
+"cost": 214.2,
+"price": 278.45,
+"id": "3f792a58-1e28-45f7-859b-29d77e059bf9",
+"created_at": "2026-08-21T17:29:40.505008Z"
+},
+{
+"name": "For door thickness (00) 1-3/4\"",
+"part_number": "4591-0X-00",
+"category": "Adams Rite",
+"cost": 459.2,
+"price": 596.95,
+"id": "1278253a-1f31-45cf-aa94-f0f76980ccf6",
+"created_at": "2026-08-21T17:29:40.505992Z"
+},
+{
+"name": "For door thickness (01) 1-13/16\" to 2\"",
+"part_number": "4591-0X-01",
+"category": "Adams Rite",
+"cost": 499.8,
+"price": 649.75,
+"id": "a79a9b75-fbb8-404a-8775-fa4f522faa08",
+"created_at": "2026-08-21T17:29:40.506973Z"
+},
+{
+"name": "For door thickness (02) 2-1/4\" to 2-1/2\"",
+"part_number": "4591-0X-02",
+"category": "Adams Rite",
+"cost": 499.8,
+"price": 649.75,
+"id": "d77227fa-be85-401a-a5cc-494083f276ec",
+"created_at": "2026-08-21T17:29:40.507972Z"
+},
+{
+"name": "For door thickness (03) 2-3/4\" to 3\"",
+"part_number": "4591-0X-03",
+"category": "Adams Rite",
+"cost": 499.8,
+"price": 649.75,
+"id": "cd11e09b-608e-43d2-abe0-41c0ac9b6fa5",
+"created_at": "2026-08-21T17:29:40.508975Z"
+},
+{
+"name": "For door thickness (04) 3-1/4\"",
+"part_number": "4591-0X-04",
+"category": "Adams Rite",
+"cost": 499.8,
+"price": 649.75,
+"id": "3d4b1fda-00f4-422e-b98d-8401f5022d93",
+"created_at": "2026-08-21T17:29:40.509953Z"
+},
+{
+"name": "For door thickness (00) 1-3/4\"",
+"part_number": "4591-1X-00",
+"category": "Adams Rite",
+"cost": 424.2,
+"price": 551.45,
+"id": "311b5f10-1366-4035-9309-0814e0b8dc4c",
+"created_at": "2026-08-21T17:29:40.510973Z"
+},
+{
+"name": "For door thickness (01) 1-3/4\" to 2-1/4\"",
+"part_number": "4591-1X-01",
+"category": "Adams Rite",
+"cost": 469.0,
+"price": 609.7,
+"id": "c1301601-7df0-4b22-bed2-1d7b22863043",
+"created_at": "2026-08-21T17:29:40.511994Z"
+},
+{
+"name": "For door thickness (02) 2-5/16\" to 2-1/2\"",
+"part_number": "4591-1X-02",
+"category": "Adams Rite",
+"cost": 469.0,
+"price": 609.7,
+"id": "c1b3e7aa-1751-4b46-af62-005b812c6bbf",
+"created_at": "2026-08-21T17:29:40.513010Z"
+},
+{
+"name": "For door thickness (03) 2-9/16\" to 2-3/4\"",
+"part_number": "4591-1X-03",
+"category": "Adams Rite",
+"cost": 469.0,
+"price": 609.7,
+"id": "049249c1-c07d-4ce3-a542-c4fc4950c1d2",
+"created_at": "2026-08-21T17:29:40.514352Z"
+},
+{
+"name": "Active paddle, latch activator with monitor switch Add",
+"part_number": "4591MA",
+"category": "Adams Rite",
+"cost": 211.4,
+"price": 274.8,
+"id": "2633685d-9404-46f7-b01a-61458aec8c1d",
+"created_at": "2026-08-21T17:29:40.515618Z"
+},
+{
+"name": "Paddle with switch, no latch activator Add",
+"part_number": "4591M",
+"category": "Adams Rite",
+"cost": 183.4,
+"price": 238.4,
+"id": "d60c5c1e-b680-4b49-87f9-16227f67b4df",
+"created_at": "2026-08-21T17:29:40.516730Z"
+},
+{
+"name": "Trim with standard lever (01, 02, 03)",
+"part_number": "4600",
+"category": "Adams Rite",
+"cost": 330.4,
+"price": 429.5,
+"id": "31ad9536-36a0-42a3-84bf-0d1bd1324d46",
+"created_at": "2026-08-21T17:29:40.517785Z"
+},
+{
+"name": "Trim with designer lever series (MD through MW)",
+"part_number": "4600-MX",
+"category": "Adams Rite",
+"cost": 420.0,
+"price": 546.0,
+"id": "fe3ccec4-20b7-4b35-a15e-283823ad2550",
+"created_at": "2026-08-21T17:29:40.518830Z"
+},
+{
+"name": "Cylinder guard, 1/8\" stile wall, 5 or 6 pin cylinder",
+"part_number": "MS4043-00",
+"category": "Adams Rite",
+"cost": 74.2,
+"price": 96.45,
+"id": "6d8dbcb2-e004-4e1e-8b65-dab4c6f54dfa",
+"created_at": "2026-08-21T17:29:40.519982Z"
+},
+{
+"name": "Cylinder guard, 1/4\" stile wall, 5 or 6 pin cylinder",
+"part_number": "MS4043-01",
+"category": "Adams Rite",
+"cost": 85.4,
+"price": 111.0,
+"id": "304444b7-4671-4554-beec-80448f88b830",
+"created_at": "2026-08-21T17:29:40.521363Z"
+},
+{
+"name": "Cylinder guard, 1/8\" stile wall, 1-5/16\" to 1-7/16\" long cylinder",
+"part_number": "MS4043-02",
+"category": "Adams Rite",
+"cost": 119.0,
+"price": 154.7,
+"id": "fcba2ba2-8ca1-4c40-8a8a-82362b0f1db0",
+"created_at": "2026-08-21T17:29:40.522822Z"
+},
+{
+"name": "Thumbturn cylinder with 1/4\" ring",
+"part_number": "4066",
+"category": "Adams Rite",
+"cost": 89.6,
+"price": 116.5,
+"id": "d188d3e1-266e-49b0-a40b-6e45657bd4ac",
+"created_at": "2026-08-21T17:29:40.524258Z"
+},
+{
+"name": "Universal cam plug, non-handed, for 2\" door thickness",
+"part_number": "4581-02",
+"category": "Adams Rite",
+"cost": 68.6,
+"price": 89.2,
+"id": "3d6838a5-47dc-4480-9021-3161369d364b",
+"created_at": "2026-08-21T17:29:40.527061Z"
+},
+{
+"name": "Universal cam plug, non-handed, for 2-1/4\" door thickness",
+"part_number": "4581-03",
+"category": "Adams Rite",
+"cost": 68.6,
+"price": 89.2,
+"id": "edd5e9d5-0417-4e8f-954b-23b1ba1a1ba2",
+"created_at": "2026-08-21T17:29:40.528517Z"
+},
+{
+"name": "Cylinder escutcheon kit for 3600, 8500, 8600 exit devices",
+"part_number": "8650",
+"category": "Adams Rite",
+"cost": 72.8,
+"price": 94.65,
+"id": "1725f371-482e-4dcd-a5f0-21710846b7dd",
+"created_at": "2026-08-21T17:29:40.529656Z"
+},
+{
+"name": "Five-pin Rim cylinder for use with 3100, 3700, 8100, 8200, 8700, 8800 exit devices",
+"part_number": "8736",
+"category": "Adams Rite",
+"cost": 93.8,
+"price": 121.95,
+"id": "fbe4e3bf-f234-4737-9ec6-475bae9e43f5",
+"created_at": "2026-08-21T17:29:40.530691Z"
+},
+{
+"name": "Two-point conversion kit for MS1861 Bottom Rail Deadlock",
+"part_number": "4014-01",
+"category": "Adams Rite",
+"cost": 75.6,
+"price": 98.3,
+"id": "e23ac41b-2322-4524-93a4-6a847756ed00",
+"created_at": "2026-08-21T17:29:40.531750Z"
+},
+{
+"name": "Two-point converter, threshold bolt, standard cylinder height",
+"part_number": "4015-18-IB",
+"category": "Adams Rite",
+"cost": 93.8,
+"price": 121.95,
+"id": "65f2d86a-1fe5-4c40-9dca-57aef1b16b73",
+"created_at": "2026-08-21T17:29:40.533260Z"
+},
+{
+"name": "Two-point converter, threshold bolt, specify cylinder height greater than 53\", 60\" maximum",
+"part_number": "4015-XX-IB",
+"category": "Adams Rite",
+"cost": 140.0,
+"price": 182.0,
+"id": "9a4c6743-0973-4757-8781-dcc3f57d2c96",
+"created_at": "2026-08-21T17:29:40.534786Z"
+},
+{
+"name": "Three-point converter, provides upper bolt for MS1850/1870 Deadlocks",
+"part_number": "4016",
+"category": "Adams Rite",
+"cost": 120.4,
+"price": 156.5,
+"id": "3ff02a6a-5da9-49d8-9ebc-78ee133ed87c",
+"created_at": "2026-08-21T17:29:40.544360Z"
+},
+{
+"name": "Positioner bolt and header strike, specifiy cylinder height for 7' door height",
+"part_number": "4085-01-IB",
+"category": "Adams Rite",
+"cost": 175.0,
+"price": 227.5,
+"id": "d0b3fd8a-8c09-4ad9-93cf-892e2e737408",
+"created_at": "2026-08-21T17:29:40.546001Z"
+},
+{
+"name": "Indicator for 2\" to 2-1/2\" door, includes both UBC and IBC signs",
+"part_number": "4089-20",
+"category": "Adams Rite",
+"cost": 189.0,
+"price": 245.7,
+"id": "696431c0-bc04-4997-b7d9-e579b6815f82",
+"created_at": "2026-08-21T17:29:40.547455Z"
+},
+{
+"name": "Radius mounting bridge",
+"part_number": "4104-01",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "94994afd-45a9-4e78-a1b3-b3366dbc5365",
+"created_at": "2026-08-21T17:29:40.548899Z"
+},
+{
+"name": "Flat mounting bridge",
+"part_number": "4104-02",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "870b7c6d-4252-4b23-97bc-30801b19fe87",
+"created_at": "2026-08-21T17:29:40.550629Z"
+},
+{
+"name": "Left hand bevel mounting bridge",
+"part_number": "4104-03",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "7adb95ba-2f3b-4a4c-96b5-e01973caf810",
+"created_at": "2026-08-21T17:29:40.552125Z"
+},
+{
+"name": "Right hand bevel mounting bridge",
+"part_number": "4104-04",
+"category": "Adams Rite",
+"cost": 23.8,
+"price": 30.95,
+"id": "5225dade-6961-43b9-badd-08406f09ccb9",
+"created_at": "2026-08-21T17:29:40.553695Z"
+},
+{
+"name": "1/2\" offset to match pivot point of 4\" wide butt hinge",
+"part_number": "B1921",
+"category": "Adams Rite",
+"cost": 177.8,
+"price": 231.15,
+"id": "e7a92dd0-cf03-4daa-ae31-f880a7ab0817",
+"created_at": "2026-08-21T17:29:40.555197Z"
+},
+{
+"name": "3/4\" offset to match pivot point of 4-1/2\" wide butt hinge",
+"part_number": "B1923",
+"category": "Adams Rite",
+"cost": 155.4,
+"price": 202.0,
+"id": "8a0808ef-7f50-4cbc-b437-2de4de3df212",
+"created_at": "2026-08-21T17:29:40.556911Z"
+},
+{
+"name": "Standard flat strike with dust box",
+"part_number": "2101-01",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "ac58ea39-8d66-4108-9e3f-f7c2b893a362",
+"created_at": "2026-08-21T17:29:40.558638Z"
+},
+{
+"name": "Standard radius strike with dust box",
+"part_number": "2101-02",
+"category": "Adams Rite",
+"cost": 71.4,
+"price": 92.8,
+"id": "f9e3bc84-2429-461d-8cae-cb5e7810396f",
+"created_at": "2026-08-21T17:29:40.560107Z"
+},
+{
+"name": "Retrofit strike extended height 7-5/8\" with dust box",
+"part_number": "2102-01",
+"category": "Adams Rite",
+"cost": 93.8,
+"price": 121.95,
+"id": "3ba97096-9ffa-4150-8e08-fdd0e70cb4ed",
+"created_at": "2026-08-21T17:29:40.561531Z"
+},
+{
+"name": "Standard flat strike with dust box",
+"part_number": "2206-01",
+"category": "Adams Rite",
+"cost": 68.6,
+"price": 89.2,
+"id": "25b2345b-4ad4-4c04-abfa-327ad49876f3",
+"created_at": "2026-08-21T17:29:40.562951Z"
+},
+{
+"name": "Trim Strike",
+"part_number": "4000",
+"category": "Adams Rite",
+"cost": 58.8,
+"price": 76.45,
+"id": "1f2b4da2-24cb-4f43-9222-2e02d2ed852b",
+"created_at": "2026-08-21T17:29:40.564375Z"
+},
+{
+"name": "Box Strike, includes dust box",
+"part_number": "4001",
+"category": "Adams Rite",
+"cost": 119.0,
+"price": 154.7,
+"id": "3ee04b4c-0e8d-4ab0-9bcc-c75300eecee2",
+"created_at": "2026-08-21T17:29:40.565504Z"
+},
+{
+"name": "Armored Strike",
+"part_number": "MS4002",
+"category": "Adams Rite",
+"cost": 156.8,
+"price": 203.85,
+"id": "37903c6c-b7a2-4c65-acc3-eda59513b120",
+"created_at": "2026-08-21T17:29:40.566655Z"
+},
+{
+"name": "ANSI strike, available in 121 or US26D only",
+"part_number": "4003",
+"category": "Adams Rite",
+"cost": 140.0,
+"price": 182.0,
+"id": "3896bec8-9586-4858-bfdf-3d686101037b",
+"created_at": "2026-08-21T17:29:40.567798Z"
+},
+{
+"name": "Strike for 4015 Threshold Bolt",
+"part_number": "4005",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "ebc3f3d3-7ec2-43ce-b660-fbc3556d8746",
+"created_at": "2026-08-21T17:29:40.568941Z"
+},
+{
+"name": "Strike for 1830 Bottom Rail Deadlock",
+"part_number": "4006",
+"category": "Adams Rite",
+"cost": 103.6,
+"price": 134.7,
+"id": "364eb232-60a5-436e-aa9b-9da1de89d47d",
+"created_at": "2026-08-21T17:29:40.570274Z"
+},
+{
+"name": "Trim strike for 4070 Short Throw Deadbolt, not available in 335 finish",
+"part_number": "4170",
+"category": "Adams Rite",
+"cost": 60.2,
+"price": 78.25,
+"id": "d9803e63-2b30-49ed-aaa0-8bffc6c79606",
+"created_at": "2026-08-21T17:29:40.571356Z"
+},
+{
+"name": "Flat armored box strike for MS+1890 Deadlock/Deadlatch",
+"part_number": "4505-01",
+"category": "Adams Rite",
+"cost": 113.4,
+"price": 147.4,
+"id": "5e5123d0-ef9a-4ea3-a784-686782f422bf",
+"created_at": "2026-08-21T17:29:40.572419Z"
+},
+{
+"name": "Radius armored box strike for MS+1890 Deadlock/Deadlatch",
+"part_number": "4505-02",
+"category": "Adams Rite",
+"cost": 113.4,
+"price": 147.4,
+"id": "71588113-af2e-44ca-94db-11203b3e993e",
+"created_at": "2026-08-21T17:29:40.573508Z"
+},
+{
+"name": "Reinforcing strike and screws, two-part with reinforcement for strengthening metal jamb",
+"part_number": "MS4804-10-630",
+"category": "Adams Rite",
+"cost": 44.8,
+"price": 58.25,
+"id": "fe03f23c-1083-4f28-9b5d-e4f776d90d2a",
+"created_at": "2026-08-21T17:29:40.574746Z"
+},
+{
+"name": "Metal strike, specify dash number indicating shim quantity",
+"part_number": "4801",
+"category": "Adams Rite",
+"cost": 49.0,
+"price": 63.7,
+"id": "5dcc731f-2612-4713-9929-789d9b4d6db4",
+"created_at": "2026-08-21T17:29:40.575864Z"
+},
+{
+"name": "Wood strike, specify dash number indicating shim quantity",
+"part_number": "4802",
+"category": "Adams Rite",
+"cost": 37.8,
+"price": 49.15,
+"id": "30167a82-3a9f-4d13-bb37-f7d86ca8c018",
+"created_at": "2026-08-21T17:29:40.577441Z"
+},
+{
+"name": "Flush mount flat strike, mortised with dust box",
+"part_number": "4901-01",
+"category": "Adams Rite",
+"cost": 49.0,
+"price": 63.7,
+"id": "01b8fcaa-49fa-40c7-b5b3-172bb4955cb8",
+"created_at": "2026-08-21T17:29:40.580554Z"
+},
+{
+"name": "Flush mount radius strike, mortised with dust box",
+"part_number": "4901-02",
+"category": "Adams Rite",
+"cost": 49.0,
+"price": 63.7,
+"id": "5db107eb-734a-4ce5-94de-5a3043d21397",
+"created_at": "2026-08-21T17:29:40.582566Z"
+},
+{
+"name": "Extended lip strike, specify lip dim 'A', 2.5\" maximum*",
+"part_number": "4901-XX",
+"category": "Adams Rite",
+"cost": 85.4,
+"price": 111.0,
+"id": "fa7df399-26d1-475d-a45a-defbeb619359",
+"created_at": "2026-08-21T17:29:40.584216Z"
+},
+{
+"name": "Short box strike, flat with dust box, mounting plate",
+"part_number": "4902-01",
+"category": "Adams Rite",
+"cost": 49.0,
+"price": 63.7,
+"id": "b44e6e1c-b751-47b5-a27e-395d080d8c38",
+"created_at": "2026-08-21T17:29:40.585783Z"
+},
+{
+"name": "Short type box strike, radius with dust box, mounting plate",
+"part_number": "4902-02",
+"category": "Adams Rite",
+"cost": 49.0,
+"price": 63.7,
+"id": "7c8a57f0-8022-4762-9884-e98a30b93ad6",
+"created_at": "2026-08-21T17:29:40.587743Z"
+},
+{
+"name": "Extended lip strike, specify lip dim 'A', 2.5\" maximum*",
+"part_number": "4902-XX",
+"category": "Adams Rite",
+"cost": 85.4,
+"price": 111.0,
+"id": "2fa7a965-27f6-41e6-a366-1bb6de7903dc",
+"created_at": "2026-08-21T17:29:40.589246Z"
+},
+{
+"name": "Strike for use with 4920AN, not available in 119 finish",
+"part_number": "4506-02",
+"category": "Adams Rite",
+"cost": 89.6,
+"price": 116.5,
+"id": "aa7fc5eb-c3e7-4eb1-8251-18c5231c0c39",
+"created_at": "2026-08-21T17:29:40.590476Z"
+},
+{
+"name": "Surface mount strike for 4300 Electrified Deadlatch",
+"part_number": "4304",
+"category": "Adams Rite",
+"cost": 57.4,
+"price": 74.6,
+"id": "f8cd979f-c650-4f49-949d-88ec37e59122",
+"created_at": "2026-08-21T17:29:40.591556Z"
+},
+{
+"name": "Thick door kit for 2190, 2290 standard exterior trim set. Specify door thickness.*",
+"part_number": "2190-TDK-XX",
+"category": "Adams Rite",
+"cost": 124.6,
+"price": 162.0,
+"id": "518d2546-3587-442e-9cff-c71ed326b5f7",
+"created_at": "2026-08-21T17:29:40.592623Z"
+},
+{
+"name": "Wire transfer, 105° swing",
+"part_number": "4612-1",
+"category": "Adams Rite",
+"cost": 305.2,
+"price": 396.75,
+"id": "a7962e46-ee27-4cf3-a765-6fad8e188e13",
+"created_at": "2026-08-21T17:29:40.594175Z"
+},
+{
+"name": "Wire transfer, 180° swing",
+"part_number": "4612-2",
+"category": "Adams Rite",
+"cost": 392.0,
+"price": 509.6,
+"id": "dd1dcb1d-1cf2-4a52-8db3-36f416b2db1e",
+"created_at": "2026-08-21T17:29:40.595839Z"
+},
+{
+"name": "Wire transfer, swing clear 90° swing",
+"part_number": "4612-1SC",
+"category": "Adams Rite",
+"cost": 525.0,
+"price": 682.5,
+"id": "b51cb1f3-7a15-4140-b0dc-15b3e6c07ef1",
+"created_at": "2026-08-21T17:29:40.597243Z"
+},
+{
+"name": "Wire transfer, 105° swing with ElectroLynx(TM) Adapter",
+"part_number": "4612EL-1",
+"category": "Adams Rite",
+"cost": 357.0,
+"price": 464.1,
+"id": "873bd58b-20d8-47d2-888d-043c6fb43c61",
+"created_at": "2026-08-21T17:29:40.598325Z"
+},
+{
+"name": "Wire transfer, 90° swing with ElectroLynx(TM) Adapter",
+"part_number": "4612EL-1SC",
+"category": "Adams Rite",
+"cost": 574.0,
+"price": 746.2,
+"id": "f84f54bb-d62e-4b3c-90f8-28000f73f02c",
+"created_at": "2026-08-21T17:29:40.599385Z"
+},
+{
+"name": "Rectifier",
+"part_number": "4603",
+"category": "Adams Rite",
+"cost": 36.4,
+"price": 47.3,
+"id": "8eb810f8-5e52-470f-ac5f-3d7004f613ac",
+"created_at": "2026-08-21T17:29:40.600855Z"
+},
+{
+"name": "Transformer, 115 VAC to 12/24 VAC",
+"part_number": "4605",
+"category": "Adams Rite",
+"cost": 112.0,
+"price": 145.6,
+"id": "de91be46-f78f-4fca-b214-096029c81676",
+"created_at": "2026-08-21T17:29:40.602008Z"
+},
+{
+"name": "Plug-in transformer, 115 VAC to 24 VAC only",
+"part_number": "4606",
+"category": "Adams Rite",
+"cost": 179.2,
+"price": 232.95,
+"id": "68835399-e301-40da-8fb0-67ff778e4539",
+"created_at": "2026-08-21T17:29:40.603199Z"
+},
+{
+"name": "Dual Force ® 2190 Interconnected Deadbolt/Deadlatch mounted complete with electrified trim set",
+"part_number": "2190-MOUNT",
+"category": "Adams Rite",
+"cost": 1960.0,
+"price": 2548.0,
+"id": "df7b6bfc-eb63-455a-ad64-1c542005fa0e",
+"created_at": "2026-08-21T17:29:40.604782Z"
+},
+{
+"name": "UltraLine® 7440 Electric Strike mounted complete with 4-7/8\" faceplate, 628 finish",
+"part_number": "7440-MOUNT",
+"category": "Adams Rite",
+"cost": 1512.0,
+"price": 1965.6,
+"id": "64a93272-e6c6-41d6-ac4b-ad104dc25202",
+"created_at": "2026-08-21T17:29:40.606042Z"
+},
+{
+"name": "eForce®3090-150 Keyless Entry Trim mounted complete with 4900 Heavy Duty Deadlatch",
+"part_number": "3090-MOUNT",
+"category": "Adams Rite",
+"cost": 2737.0,
+"price": 3558.1,
+"id": "cbe957f5-1b50-4a56-8184-68d04965bc7f",
+"created_at": "2026-08-21T17:29:40.607724Z"
+}
+]
