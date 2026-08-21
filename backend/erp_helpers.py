@@ -196,6 +196,31 @@ async def send_pdf_email(*, to_email: str, subject: str, html: str,
         raise HTTPException(502, f"Échec de l'envoi : {exc}")
 
 
+async def send_html_email(*, to_email: str, subject: str, html: str,
+                          branded: bool = True, footer_note: str = "") -> None:
+    """Send a plain transactional email (no attachment) via Resend.
+
+    Wrapped with the Portech branded header/footer when `branded=True`.
+    """
+    if not resend.api_key:
+        raise HTTPException(503, "Service courriel non configuré (RESEND_API_KEY manquante)")
+    html = normalize_message_to_html(html)
+    final_html = wrap_branded_email(html, footer_note=footer_note) if branded else html
+    params = {
+        "from": f"Portech <{SENDER_EMAIL}>",
+        "to": [to_email],
+        "reply_to": REPLY_TO_EMAIL,
+        "subject": subject,
+        "html": final_html,
+    }
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info("ERP html email sent id=%s to=%s", result.get("id"), to_email)
+    except Exception as exc:
+        logger.error("ERP html email failed: %s", exc)
+        raise HTTPException(502, f"Échec de l'envoi : {exc}")
+
+
 # ---------- Date parsing ----------
 def parse_date_safe(d) -> Optional[datetime]:
     """Parse an ISO date string (YYYY-MM-DD) into a tz-aware datetime, or None."""

@@ -23,6 +23,7 @@ from erp import build_erp_router
 from erp_reminders import start_scheduler
 from erp_monthly_recap import start_recap_scheduler
 from erp_expert_report_backup import start_backup_scheduler
+from erp_routes_jobs import start_jobs_briefing_scheduler
 
 # ==============================================================
 # Configuration
@@ -375,10 +376,12 @@ async def startup_event():
         app.state.scheduler = start_scheduler(db)
         app.state.recap_scheduler = start_recap_scheduler(db)
         app.state.backup_scheduler = start_backup_scheduler(db)
+        app.state.briefing_scheduler = start_jobs_briefing_scheduler(db)
     else:
         app.state.scheduler = None
         app.state.recap_scheduler = None
         app.state.backup_scheduler = None
+        app.state.briefing_scheduler = None
 
 
 @app.on_event("shutdown")
@@ -392,4 +395,7 @@ async def shutdown_db_client():
     backup_sched = getattr(app.state, "backup_scheduler", None)
     if backup_sched is not None:
         backup_sched.shutdown(wait=False)
+    briefing_sched = getattr(app.state, "briefing_scheduler", None)
+    if briefing_sched is not None:
+        briefing_sched.shutdown(wait=False)
     client.close()

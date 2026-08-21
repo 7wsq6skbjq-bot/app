@@ -19,10 +19,12 @@ import { InventoryPanel } from "./erp/panels/InventoryPanel";
 import { ATOrdersPanel } from "./erp/panels/ATOrdersPanel";
 import { PaymentNoticesPanel } from "./erp/panels/PaymentNoticesPanel";
 import { ComposeEmailPanel } from "./erp/panels/ComposeEmailPanel";
+import { JobsPanel } from "./erp/panels/JobsPanel";
 import { MobileTabBar } from "../components/mobile/MobileTabBar";
 
 const TABS = [
     { slug: "tableau-de-bord", label: "Tableau de bord", panel: "dashboard" },
+    { slug: "suivi-jobs",      label: "Suivi des jobs",  panel: "jobs" },
     { slug: "calendrier",      label: "Calendrier",      panel: "calendar" },
     { slug: "clients",         label: "Clients",         panel: "parties-customer" },
     { slug: "fournisseurs",    label: "Fournisseurs",    panel: "parties-supplier" },
@@ -97,6 +99,7 @@ const AdminErp = () => {
 
             <main className="container-portech py-4 md:py-8 px-3 md:px-6">
                 {activeTab.panel === "dashboard" && <DashboardPanel />}
+                {activeTab.panel === "jobs" && <JobsPanel />}
                 {activeTab.panel === "calendar" && <CalendarPanel />}
                 {activeTab.panel === "parties-customer" && <PartiesPanel kind="customer" />}
                 {activeTab.panel === "parties-supplier" && <PartiesPanel kind="supplier" />}

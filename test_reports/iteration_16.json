@@ -1,0 +1,40 @@
+{
+  "summary": "Full backend + frontend E2E testing of Brique 1 'Suivi des jobs'. Created /app/backend/tests/test_erp_jobs.py (16 pytest cases) — all passed, covering auth, stages meta, CRUD + persistence, 50% deposit auto-compute, stage transitions/history, validation (422/400/404), link add/idempotency/remove, from-quote creation + idempotency, briefing preview and real send (Resend, sent=true to portech.infos@gmail.com). Playwright E2E validated: admin login, board renders 7 stage columns, manual job creation appears in 'À approuver', next/prev arrow moves persist after Rafraîchir, prev disabled in first column, detail modal edit+save persists (deposit recalculated to 50%), linked doc add/remove with link counter on card, stage change to 'Annulé' removes card from board and lists it under 'Annulées (1)', quote picker creates JOB from SO-0001 and a second call is idempotent (same JOB number, no duplicate card), briefing preview modal shows counts/overdue/soon/awaiting/in-fab/ready sections and 'Envoyer maintenant' shows success notice. All test data cleaned up.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PUT /api/admin/jobs/{id}", "issue": "Nullable fields can never be cleared: update_job strips all None values, so sending target_date:null (what the UI sends when the date input is emptied) silently keeps the old date. Verified: target_date stayed 2026-09-01 after PUT {target_date:null}. Same applies to client_email/party_id."},
+      {"endpoint": "DELETE /api/admin/jobs/{id}/links/{doc_type}/{doc_id}", "issue": "doc_id is a plain path segment, so a manual reference containing '/' (e.g. 'ref:2026/12') yields 404 and the link cannot be removed. Consider a body/query param or ':path' converter."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "JobsPanel flash notice", "issue": "flash() calls setTimeout without clearing the previous timer, so two actions within 3.5s cause the second success notice to disappear almost immediately (reproduced with two consecutive 'Depuis une soumission' calls). Store the timeout id in a ref and clearTimeout before re-setting.", "selector": "[data-testid='jobs-notice']", "priority": "LOW"},
+      {"component": "JobDetail links list", "issue": "All remove buttons share the same static data-testid ('jobs-link-remove'), so with several linked documents a test/user automation cannot target a specific link. Suggest jobs-link-remove-{doc_type}-{doc_id}.", "selector": "[data-testid='jobs-link-remove']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Suivi des jobs (desktop 1920px)", "issues": ["Board is constrained to the ~1280px content container, so 'Livré / Facturé / Payé' columns are cut off and require horizontal scrolling even on a 1920px screen — consider a wider container or narrower/collapsible columns for the terminal stages.", "Date fields in the create and detail modals use the native browser date picker (input type=date) instead of the shadcn calendar used elsewhere in the design system.", "Create modal has no inline validation feedback on the title field; the 'Titre requis' message renders as a page-level error banner behind/above the modal."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_erp_jobs.py", "/app/test_reports/pytest/iteration_16_jobs.xml"],
+  "action_items": [
+    "PUT /jobs/{id}: allow explicit null to clear target_date / client_email (use exclude_unset instead of dropping None).",
+    "Clear the previous flash timeout in JobsPanel so back-to-back success notices stay visible 3.5s.",
+    "Make link remove data-testid unique per link.",
+    "Optional: widen the Kanban board container so all 7 columns fit on desktop."
+  ],
+  "critical_code_review_comments": [
+    "erp_routes_jobs.py update_job(): `{k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}` makes nullable fields unclearable — filter only unset keys, not None values.",
+    "Link doc_id is interpolated into the DELETE path; encode it or accept it in the request body to survive '/' and other reserved characters.",
+    "JobsPanel.moveStage() falls back to STAGES[0] semantics when job.stage is 'annule' (findIndex = -1 → STAGES[0] for dir=1); unreachable from the UI today but worth guarding."
+  ],
+  "updated_files": ["/app/backend/tests/test_erp_jobs.py"],
+  "success_rate": {"backend": "100% (16/16 pytest)", "frontend": "100% of the 7 requested flows passed"},
+  "seed_data_creation": "Created and deleted temporary jobs (TEST_*, QA_UI Job Test, JOB from SO-0001). Board is back to its pre-test state (only JOB-0001 'Test Poké Monster' remains, pre-existing).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md) — works; note Playwright must type credentials with press_sequentially and wait ~1.5s after mount, otherwise the form submits with empty state.",
+  "context_for_next_testing_agent": "Reusable suite: /app/backend/tests/test_erp_jobs.py (auth via POST /api/auth/login -> access_token Bearer). The briefing send test sends a REAL email to portech.infos@gmail.com; deselect TestBriefing::test_send if repeated runs are undesirable. UI login pattern that works: fill via press_sequentially then click admin-login-submit, wait 4s, then goto /admin/gestion/suivi-jobs and wait for [data-testid='jobs-col-a_approuver'] (jobs-panel exists during the loading state, so waiting on it gives false positives).",
+  "rca_of_the_issue": "No blocking defect found. The two minor backend findings stem from (1) None-filtering in update_job which conflates 'absent' with 'explicit null', and (2) passing an arbitrary user reference as a URL path segment for link deletion."
+}

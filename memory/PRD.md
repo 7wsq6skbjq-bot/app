@@ -344,3 +344,12 @@ User language: **French**.
   * Vérif : imports OK, quote PDF rendu OK, footer courriel contient le nouveau texte, images revues visuellement. EN PREVIEW — redéployer pour portech.info (les courriels prod pointent vers https://portech.info/email/*.png).
 
 - MAJ 2026-06 (Conditions de vente — dépôt 30% → 50%) : erp_pdf.py SALES_CONDITIONS clause 12 « CONDITIONS DE PAIEMENT » → dépôt de 50% à l acceptation. Seule occurrence dans les conditions de vente. PDF soumission rendu OK. EN PREVIEW — redéployer.
+
+- MAJ 2026-08 (ADJOINTE VIRTUELLE — Brique 1 : Suivi des jobs) : FAIT + TESTÉ (agent 100% : 16/16 backend pytest + 7/7 flux frontend E2E, iteration_16.json).
+  * Nouveau module : erp_routes_jobs.py (collection erp_jobs). Pipeline : a_approuver → depot_recu (50%) → en_fabrication → pret → livre → facture → paye (+ annule). Endpoints /api/admin : GET/POST /jobs, GET /jobs/stages, POST /jobs/from-quote/{quote_id} (idempotent), GET/PUT/DELETE /jobs/{id}, PATCH /jobs/{id}/stage {stage,note} (+historique), POST /jobs/{id}/links, POST /jobs/{id}/unlink (body — supporte doc_id avec '/'), GET /jobs-briefing/preview, POST /jobs-briefing/send.
+  * Dépôt attendu auto-calculé = 50% du total. Champs nullables (target_date, client_email, party_id, notes) effaçables via PUT null.
+  * Briefing quotidien : scheduler AsyncIOScheduler 7h30 America/Montreal (start_jobs_briefing_scheduler dans server.py) → courriel HTML brandé (helper send_html_email dans erp_helpers.py) à BRIEFING_EMAIL (fallback LEADS_RECIPIENT_EMAIL = portech.infos@gmail.com). Résume : compte par étape, en retard, à livrer d'ici 7j, en attente d'approbation/dépôt, en fabrication, prêtes.
+  * Frontend : onglet "Suivi des jobs" (slug suivi-jobs) = JobsPanel.jsx, tableau Kanban (colonnes par étape, cartes déplaçables ◀▶), modale création, "Depuis une soumission" (picker), modale détail (édition, changement d'étape, documents liés add/remove, historique), modale briefing (aperçu + envoi manuel).
+  * Choix client : commencer par la Brique 1 (fait) ; création job auto (depuis soumission) + manuelle ; briefing courriel matinal. EN PREVIEW — redéployer pour portech.info.
+
+- BACKLOG : Brique 2 — Assistante IA (chat) : chat LLM lisant les données ERP (jobs, factures, soumissions) pour répondre en langage naturel + rédiger courriels/relances + briefing conversationnel. Modèle "choisis pour moi" → proposer Claude Sonnet 4.6 (rédaction FR) via Emergent LLM key. NON commencé.
