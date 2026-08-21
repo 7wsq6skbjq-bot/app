@@ -353,3 +353,15 @@ User language: **French**.
   * Choix client : commencer par la Brique 1 (fait) ; création job auto (depuis soumission) + manuelle ; briefing courriel matinal. EN PREVIEW — redéployer pour portech.info.
 
 - BACKLOG : Brique 2 — Assistante IA (chat) : chat LLM lisant les données ERP (jobs, factures, soumissions) pour répondre en langage naturel + rédiger courriels/relances + briefing conversationnel. Modèle "choisis pour moi" → proposer Claude Sonnet 4.6 (rédaction FR) via Emergent LLM key. NON commencé.
+
+- MAJ 2026-08 (Catalogue quincaillerie — import prix USD→CAD + taux configurable) : FAIT + backend vérifié (curl).
+  * Backend (erp_routes_production_plans.py) : GET/PUT /api/admin/settings/exchange-rate (collection erp_settings, clé usd_cad_rate, défaut 1.38) ; POST /api/admin/production-hardware/import {rows:[{part_number,description,list_price_usd}], dry_run, markup_pct=30, vendor}. Logique : cost_cad = round(usd × taux, 2) ; price = arrondi 0,05$ (cost × 1.30). Upsert par part_number (existe → MàJ cost+price ; sinon création). dry_run=true → aperçu sans écriture. Vérifié : 100 USD×1.4=140 → vendant 182.00 ; 250.33→350.46→455.60 ; re-import même part# = update.
+  * Frontend : nouvel onglet « Catalogue quincaillerie » (slug catalogue-quincaillerie) = CatalogPanel.jsx : éditeur de taux de change, import par collage (Nº pièce / description / prix USD, aperçu puis commit), table des articles (recherche, édition inline coût/vendant, suppression). Compile OK. UI pas encore testée E2E par l'agent.
+  * DÉCISIONS client : taux fixe configurable ; vendant = coûtant CAD × 1.30 arrondi 0,05$ ; dedup par part# = MàJ coût + recalcul vendant.
+  * BLOQUÉ : le fichier de prix envoyé (Adams_Rite_..._partial.pdf) ne contient QUE la page couverture (aucune donnée). Besoin du fichier de prix COMPLET pour extraire/importer. Fichiers dans /app/backend/vendor_catalogs/.
+
+- MAJ 2026-08 (Suivi jobs — vue mobile + documents liés cliquables) : FAIT (frontend, compile OK, pas testé E2E ce tour).
+  * JobsPanel.jsx : sur mobile (<sm) liste compacte par étape avec ◀▶ ; kanban sur sm+. Documents liés : sélecteur de vrais documents (soumission/facture/BC/connaissement/plan) + ouverture (« ouvrir ↗ ») via routes d'impression (facture/BC/connaissement) ou PDF blob (soumission/plan). Références manuelles restent en texte. Backend : POST /jobs/{id}/unlink (robuste aux '/').
+
+- BACKLOG P1 : Dessins Adams Rite dans PDF soumission/fabrication. Parts Manual (adams_rite_parts_manual.pdf, 79 pages, 100% texte, index p.2) → construire un index série/part# → page, permettre de cocher quelles pages inclure selon la quincaillerie choisie, et annexer ces pages au PDF. Auto-détection confirmée faisable.
+- BACKLOG P1 : Import réel du catalogue de prix Adams Rite dès réception du PDF complet.

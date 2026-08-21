@@ -198,7 +198,8 @@ export const JobsPanel = () => {
             {loading ? (
                 <div className="py-20 text-center text-[#4b5d7a]"><Loader2 className="w-6 h-6 animate-spin inline" /> Chargement…</div>
             ) : (
-                <div className="overflow-x-auto pb-3">
+              <>
+                <div className="hidden sm:block overflow-x-auto pb-3">
                     <div className="flex gap-3 min-w-max">
                         {STAGES.map((s) => (
                             <div key={s.key} data-testid={`jobs-col-${s.key}`} className="w-64 flex-shrink-0 bg-[#eef2f8] border border-[#dde5f0] rounded">
@@ -241,6 +242,52 @@ export const JobsPanel = () => {
                         ))}
                     </div>
                 </div>
+
+                {/* Mobile — liste compacte par étape */}
+                <div className="sm:hidden space-y-4">
+                    {STAGES.map((s) => (
+                        grouped[s.key].length === 0 ? null : (
+                            <div key={s.key} data-testid={`jobs-mcol-${s.key}`}>
+                                <div className="flex items-center gap-2 mb-1.5" style={{ color: s.color }}>
+                                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+                                    <span className="tech-stamp font-bold text-[#0c182b]">{s.label}</span>
+                                    <span className="text-xs font-bold text-[#4b5d7a]">({grouped[s.key].length})</span>
+                                </div>
+                                <div className="space-y-2">
+                                    {grouped[s.key].map((j) => {
+                                        const d = daysUntil(j.target_date);
+                                        const overdue = d !== null && d < 0;
+                                        return (
+                                            <div key={j.id} data-testid={`job-mrow-${j.id}`} onClick={() => setDetail(j)}
+                                                className="bg-white border border-[#dde5f0] rounded p-3 flex items-center gap-3 active:bg-[#f3f6fb]">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="tech-stamp text-[#2f4f7f] font-bold">{j.job_number}</span>
+                                                        {j.priority === "urgent" && <span className="w-2 h-2 rounded-full bg-red-500" />}
+                                                    </div>
+                                                    <div className="text-sm font-semibold text-[#0c182b] truncate">{j.title}</div>
+                                                    <div className="text-xs text-[#4b5d7a] truncate">
+                                                        {j.client_name || "—"}
+                                                        {j.total > 0 ? ` · ${money(j.total)}` : ""}
+                                                        {j.target_date ? <span className={overdue ? "text-red-600 font-bold" : ""}> · {formatDate(j.target_date)}{overdue ? " (retard)" : ""}</span> : null}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <button data-testid={`job-mnext-${j.id}`} onClick={(e) => { e.stopPropagation(); moveStage(j, 1); }} disabled={s.key === STAGES[STAGES.length - 1].key} className="p-1.5 border border-[#dde5f0] rounded text-[#4b5d7a] disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
+                                                    <button data-testid={`job-mprev-${j.id}`} onClick={(e) => { e.stopPropagation(); moveStage(j, -1); }} disabled={s.key === STAGES[0].key} className="p-1.5 border border-[#dde5f0] rounded text-[#4b5d7a] disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )
+                    ))}
+                    {jobs.filter((j) => j.stage !== "annule").length === 0 && (
+                        <div className="text-center text-[#9aa8bd] py-10 text-sm">Aucune job active. Touchez « Nouvelle job » pour commencer.</div>
+                    )}
+                </div>
+              </>
             )}
 
             {cancelled.length > 0 && (
@@ -295,14 +342,55 @@ export const JobsPanel = () => {
 };
 
 // ── Detail panel ────────────────────────────────────────────
+const PICKABLE = {
+    quote: "/admin/quotes",
+    invoice: "/admin/invoices",
+    purchase_order: "/admin/purchase-orders",
+    bol: "/admin/bills-of-lading",
+    production_plan: "/admin/production-plans",
+};
+const OPENABLE = new Set(["quote", "invoice", "purchase_order", "bol", "production_plan"]);
+const docNum = (d) =>
+    d.plan_number || (d.number != null ? String(d.number).padStart(4, "0") : String(d.id || "").slice(0, 6));
+const docName = (d) =>
+    d.customer_snapshot?.name || d.supplier_snapshot?.name || d.project_name || d.client_name || "";
+
 const JobDetail = ({ http, job, onClose, onChange, onDeleted, setStageDirect }) => {
     const [f, setF] = useState(job);
     const [saving, setSaving] = useState(false);
     const [linkType, setLinkType] = useState("invoice");
     const [linkRef, setLinkRef] = useState("");
+    const [pickList, setPickList] = useState(null); // real docs for pickable types
+    const [pickId, setPickId] = useState("");
     useEffect(() => { setF(job); }, [job]);
 
+    // Fetch real documents when a pickable type is selected.
+    useEffect(() => {
+        let alive = true;
+        setPickList(null); setPickId("");
+        if (PICKABLE[linkType]) {
+            http.get(PICKABLE[linkType]).then(({ data }) => { if (alive) setPickList(data); }).catch(() => {});
+        }
+        return () => { alive = false; };
+    }, [linkType, http]);
+
     const money2 = (v) => (Number(v) || 0).toLocaleString("fr-CA", { style: "currency", currency: "CAD" });
+
+    const openDoc = async (l) => {
+        const id = l.doc_id;
+        if (!OPENABLE.has(l.doc_type) || String(id).startsWith("ref:")) return;
+        if (l.doc_type === "invoice") window.open(`/admin/imprimer/facture/${id}`, "_blank");
+        else if (l.doc_type === "purchase_order") window.open(`/admin/imprimer/bon-commande/${id}`, "_blank");
+        else if (l.doc_type === "bol") window.open(`/admin/imprimer/connaissement/${id}`, "_blank");
+        else {
+            const url = l.doc_type === "quote" ? `/admin/quotes/${id}/pdf` : `/admin/production-plans/${id}/pdf`;
+            try {
+                const res = await http.get(url, { responseType: "blob" });
+                window.open(URL.createObjectURL(res.data), "_blank");
+            } catch { /* ignore */ }
+        }
+    };
+    const isOpenable = (l) => OPENABLE.has(l.doc_type) && !String(l.doc_id).startsWith("ref:");
 
     const save = async () => {
         setSaving(true);
@@ -321,12 +409,20 @@ const JobDetail = ({ http, job, onClose, onChange, onDeleted, setStageDirect }) 
         onDeleted(job.id);
     };
     const addLink = async () => {
-        if (!linkRef.trim()) return;
-        const { data } = await http.post(`/admin/jobs/${job.id}/links`, {
-            doc_type: linkType, doc_id: `ref:${linkRef.trim()}`, number: linkRef.trim(),
-            label: `${DOC_LABEL[linkType]} ${linkRef.trim()}`,
-        });
-        onChange(data); setLinkRef("");
+        let payload;
+        if (PICKABLE[linkType]) {
+            if (!pickId) return;
+            const d = (pickList || []).find((x) => x.id === pickId);
+            const num = d ? docNum(d) : pickId;
+            payload = { doc_type: linkType, doc_id: pickId, number: num,
+                        label: `${DOC_LABEL[linkType]} ${num}` };
+        } else {
+            if (!linkRef.trim()) return;
+            payload = { doc_type: linkType, doc_id: `ref:${linkRef.trim()}`, number: linkRef.trim(),
+                        label: `${DOC_LABEL[linkType]} ${linkRef.trim()}` };
+        }
+        const { data } = await http.post(`/admin/jobs/${job.id}/links`, payload);
+        onChange(data); setLinkRef(""); setPickId("");
     };
     const removeLink = async (l) => {
         const { data } = await http.post(`/admin/jobs/${job.id}/unlink`, {
@@ -364,17 +460,32 @@ const JobDetail = ({ http, job, onClose, onChange, onDeleted, setStageDirect }) 
                             {(f.links || []).length === 0 && <div className="text-sm text-[#9aa8bd]">Aucun document lié.</div>}
                             {(f.links || []).map((l) => (
                                 <div key={l.doc_type + l.doc_id} className="flex items-center justify-between px-2 py-1.5 border border-[#dde5f0] bg-white text-sm">
-                                    <span><span className="tech-stamp text-[#2f4f7f]">{DOC_LABEL[l.doc_type] || l.doc_type}</span> · {l.number || l.label || l.doc_id}</span>
+                                    {isOpenable(l) ? (
+                                        <button data-testid={`jobs-link-open-${l.doc_type}`} onClick={() => openDoc(l)} className="text-left hover:underline text-[#0c182b] flex-1 mr-2">
+                                            <span className="tech-stamp text-[#2f4f7f]">{DOC_LABEL[l.doc_type] || l.doc_type}</span> · {l.number || l.label} <span className="text-[#2f4f7f] text-xs">(ouvrir ↗)</span>
+                                        </button>
+                                    ) : (
+                                        <span className="flex-1 mr-2"><span className="tech-stamp text-[#2f4f7f]">{DOC_LABEL[l.doc_type] || l.doc_type}</span> · {l.number || l.label || l.doc_id}</span>
+                                    )}
                                     <button data-testid={`jobs-link-remove-${l.doc_type}-${l.doc_id}`} onClick={() => removeLink(l)} className="text-[#4b5d7a] hover:text-red-600"><X className="w-4 h-4" /></button>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex gap-2 mt-2">
-                            <select className={`${inputClass} !w-40`} value={linkType} onChange={(e) => setLinkType(e.target.value)} data-testid="jobs-link-type">
+                        <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                            <select className={`${inputClass} sm:!w-44`} value={linkType} onChange={(e) => setLinkType(e.target.value)} data-testid="jobs-link-type">
                                 {DOC_TYPES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
                             </select>
-                            <input className={inputClass} placeholder="Nº / référence" value={linkRef} onChange={(e) => setLinkRef(e.target.value)} data-testid="jobs-link-ref" />
-                            <button data-testid="jobs-link-add" onClick={addLink} className="tech-stamp px-3 py-2 border border-[#dde5f0] hover:bg-[#f3f6fb]">Lier</button>
+                            {PICKABLE[linkType] ? (
+                                <select className={inputClass} value={pickId} onChange={(e) => setPickId(e.target.value)} data-testid="jobs-link-pick">
+                                    <option value="">{pickList === null ? "Chargement…" : "— Choisir un document —"}</option>
+                                    {(pickList || []).map((d) => (
+                                        <option key={d.id} value={d.id}>{docNum(d)}{docName(d) ? ` · ${docName(d)}` : ""}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input className={inputClass} placeholder="Nº / référence" value={linkRef} onChange={(e) => setLinkRef(e.target.value)} data-testid="jobs-link-ref" />
+                            )}
+                            <button data-testid="jobs-link-add" onClick={addLink} className="tech-stamp px-3 py-2 border border-[#dde5f0] hover:bg-[#f3f6fb] whitespace-nowrap">Lier</button>
                         </div>
                     </div>
 

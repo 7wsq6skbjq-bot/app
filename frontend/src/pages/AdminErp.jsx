@@ -20,6 +20,7 @@ import { ATOrdersPanel } from "./erp/panels/ATOrdersPanel";
 import { PaymentNoticesPanel } from "./erp/panels/PaymentNoticesPanel";
 import { ComposeEmailPanel } from "./erp/panels/ComposeEmailPanel";
 import { JobsPanel } from "./erp/panels/JobsPanel";
+import { CatalogPanel } from "./erp/panels/CatalogPanel";
 import { MobileTabBar } from "../components/mobile/MobileTabBar";
 
 const TABS = [
@@ -29,6 +30,7 @@ const TABS = [
     { slug: "clients",         label: "Clients",         panel: "parties-customer" },
     { slug: "fournisseurs",    label: "Fournisseurs",    panel: "parties-supplier" },
     { slug: "produits",        label: "Produits",        panel: "products" },
+    { slug: "catalogue-quincaillerie", label: "Catalogue quincaillerie", panel: "catalog" },
     { slug: "soumissions",     label: "Soumissions",     panel: "quotes" },
     { slug: "factures",        label: "Factures",        panel: "invoices" },
     { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
@@ -104,6 +106,7 @@ const AdminErp = () => {
                 {activeTab.panel === "parties-customer" && <PartiesPanel kind="customer" />}
                 {activeTab.panel === "parties-supplier" && <PartiesPanel kind="supplier" />}
                 {activeTab.panel === "products" && <ProductsPanel />}
+                {activeTab.panel === "catalog" && <CatalogPanel />}
                 {activeTab.panel === "invoices" && <InvoicesPanel />}
                 {activeTab.panel === "quotes" && <QuotesPanel />}
                 {activeTab.panel === "purchase-orders" && <PurchaseOrdersPanel />}

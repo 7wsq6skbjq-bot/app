@@ -138,6 +138,31 @@ class ProductionHardware(ProductionHardwareIn):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class ExchangeRateIn(BaseModel):
+    usd_cad: float = Field(gt=0, le=100)
+
+
+class PriceRow(BaseModel):
+    part_number: str = ""
+    description: str = ""
+    list_price_usd: float = 0
+
+
+class PriceImportIn(BaseModel):
+    rows: List[PriceRow]
+    dry_run: bool = True
+    markup_pct: float = 30.0     # majoration sur le coûtant (%)
+    vendor: str = "Adams Rite"
+
+
+DEFAULT_USD_CAD = 1.38
+
+
+def _round_005(v: float) -> float:
+    """Arrondi au 0,05 $ le plus proche."""
+    return round(round((v or 0) / 0.05) * 0.05, 2)
+
+
 def _format_number(year: int, seq: int) -> str:
     return f"PLAN-{year}-{seq:03d}"
 
@@ -214,6 +239,75 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if not res.deleted_count:
             raise HTTPException(404, "Quincaillerie introuvable.")
         return Response(status_code=204)
+
+    # ── Taux de change USD→CAD (configurable) ──────────────────────
+    async def _get_rate() -> float:
+        doc = await db.erp_settings.find_one({"key": "usd_cad_rate"})
+        try:
+            return float(doc["value"]) if doc and doc.get("value") else DEFAULT_USD_CAD
+        except (TypeError, ValueError):
+            return DEFAULT_USD_CAD
+
+    @router.get("/settings/exchange-rate")
+    async def get_exchange_rate(_: dict = Depends(auth_dep)):
+        doc = await db.erp_settings.find_one({"key": "usd_cad_rate"}, {"_id": 0})
+        return {
+            "usd_cad": (float(doc["value"]) if doc and doc.get("value") else DEFAULT_USD_CAD),
+            "updated_at": (doc.get("updated_at") if doc else None),
+        }
+
+    @router.put("/settings/exchange-rate")
+    async def set_exchange_rate(data: ExchangeRateIn, _: dict = Depends(auth_dep)):
+        now = datetime.now(timezone.utc).isoformat()
+        await db.erp_settings.update_one(
+            {"key": "usd_cad_rate"},
+            {"$set": {"value": data.usd_cad, "updated_at": now}},
+            upsert=True,
+        )
+        return {"usd_cad": data.usd_cad, "updated_at": now}
+
+    # ── Import d'une liste de prix (USD → CAD + majoration) ─────────
+    @router.post("/production-hardware/import")
+    async def import_prices(data: PriceImportIn, _: dict = Depends(auth_dep)):
+        """Convertit USD→CAD (taux configuré), applique la majoration (30% par
+        défaut) arrondie au 0,05 $, puis crée/maj chaque item par numéro de
+        pièce. dry_run=True → aperçu sans écriture."""
+        rate = await _get_rate()
+        markup = 1 + (data.markup_pct if data.markup_pct is not None else 30.0) / 100.0
+        created = updated = skipped = 0
+        items = []
+        for r in data.rows:
+            pn = (r.part_number or "").strip()
+            desc = (r.description or "").strip()
+            cost = round((r.list_price_usd or 0) * rate, 2)
+            price = _round_005(cost * markup)
+            existing = await db.erp_production_hardware.find_one({"part_number": pn}) if pn else None
+            if not pn and not desc:
+                action = "skipped"
+                skipped += 1
+            elif data.dry_run:
+                action = "update" if existing else "create"
+            elif existing:
+                patch = {"cost": cost, "price": price}
+                if not (existing.get("name") or "").strip() and desc:
+                    patch["name"] = desc
+                await db.erp_production_hardware.update_one({"id": existing["id"]}, {"$set": patch})
+                action = "updated"; updated += 1
+            else:
+                item = ProductionHardware(name=desc or pn, part_number=pn,
+                                          category=data.vendor, cost=cost, price=price)
+                await db.erp_production_hardware.insert_one(item.model_dump(mode="json"))
+                action = "created"; created += 1
+            items.append({
+                "part_number": pn, "description": desc,
+                "list_price_usd": round(r.list_price_usd or 0, 2),
+                "cost_cad": cost, "price_cad": price, "action": action,
+            })
+        return {
+            "rate": rate, "markup_pct": data.markup_pct, "dry_run": data.dry_run,
+            "count": len(data.rows), "created": created, "updated": updated,
+            "skipped": skipped, "items": items,
+        }
 
     @router.get("/production-plans/profile-catalog")
     async def profile_catalog(_: dict = Depends(auth_dep)):
