@@ -8,11 +8,13 @@ answers stay coherent across requests. A compact live snapshot of the ERP
 import json
 import os
 import re
+import tempfile
 import uuid
 from datetime import datetime, timezone
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
-from fastapi import APIRouter, Depends, HTTPException
+from emergentintegrations.llm.openai import OpenAISpeechToText
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
@@ -164,6 +166,37 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         msgs = await db.erp_assistant_messages.find(
             {"session_id": session_id}, {"_id": 0}).sort("created_at", 1).to_list(200)
         return {"session_id": session_id, "messages": msgs}
+
+    ALLOWED_AUDIO = {".webm", ".mp3", ".mp4", ".m4a", ".wav", ".mpeg", ".mpga", ".ogg"}
+
+    @router.post("/assistant/transcribe")
+    async def transcribe(file: UploadFile = File(...), _: dict = Depends(auth_dep)):
+        """Dictée vocale → texte (Whisper). Returns {text}."""
+        if not EMERGENT_LLM_KEY:
+            raise HTTPException(503, "EMERGENT_LLM_KEY non configurée.")
+        ext = os.path.splitext(file.filename or "")[1].lower() or ".webm"
+        if ext not in ALLOWED_AUDIO:
+            ext = ".webm"
+        raw = await file.read(25 * 1024 * 1024 + 1)
+        if len(raw) > 25 * 1024 * 1024:
+            raise HTTPException(413, "Audio trop volumineux (max 25 MB).")
+        stt = OpenAISpeechToText(api_key=EMERGENT_LLM_KEY)
+        tf = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+        try:
+            tf.write(raw)
+            tf.close()
+            with open(tf.name, "rb") as audio_file:
+                resp = await stt.transcribe(file=audio_file, model="whisper-1",
+                                            language="fr", response_format="json")
+            text = resp.text if hasattr(resp, "text") else str(resp)
+            return {"text": (text or "").strip()}
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(502, f"Échec de la transcription : {exc}")
+        finally:
+            try:
+                os.unlink(tf.name)
+            except OSError:
+                pass
 
     @router.delete("/assistant/history")
     async def clear_history(session_id: str, _: dict = Depends(auth_dep)):

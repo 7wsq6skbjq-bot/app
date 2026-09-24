@@ -33,7 +33,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ["DB_NAME"]]
 
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_TTL_MIN = 60 * 8  # 8 hours
+ACCESS_TOKEN_TTL_MIN = 60 * 24 * 30  # 30 days — keeps the phone app logged in
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")

@@ -1,25 +1,28 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { LogIn, ArrowLeft, ShieldCheck, MapPin, Mail } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const AdminLogin = () => {
     const { login, user, error } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const rawNext = searchParams.get("next");
+    const nextUrl = rawNext && rawNext.startsWith("/") ? rawNext : "/admin";
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        if (user && user !== false) navigate("/admin", { replace: true });
-    }, [user, navigate]);
+        if (user && user !== false) navigate(nextUrl, { replace: true });
+    }, [user, navigate, nextUrl]);
 
     const onSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
         const ok = await login(username, password);
         setSubmitting(false);
-        if (ok) navigate("/admin", { replace: true });
+        if (ok) navigate(nextUrl, { replace: true });
     };
 
     return (

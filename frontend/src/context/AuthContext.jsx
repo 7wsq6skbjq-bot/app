@@ -14,25 +14,25 @@ const API = `${BACKEND_URL}/api`;
 const TOKEN_KEY = "portech_access_token";
 
 /**
- * Read/write of the access token. We use `sessionStorage` so the token dies
- * when the tab is closed — more secure than localStorage and good enough for
- * an admin console. The token is ALSO set as an httpOnly cookie by the
- * backend; the Authorization header is our reliable fallback when a browser
- * rejects/strips the cookie (Safari ITP, strict privacy settings, etc.).
+ * Token storage. We use `localStorage` so the session PERSISTS across app
+ * restarts — important for the installable "Adjointe Portech" home-screen app
+ * on mobile (the owner logs in once and stays logged in). The token is ALSO
+ * set as an httpOnly cookie by the backend; the Authorization header is our
+ * reliable fallback when a browser rejects/strips the cookie.
  */
 const getStoredToken = () => {
     try {
-        return window.sessionStorage.getItem(TOKEN_KEY) || "";
+        return window.localStorage.getItem(TOKEN_KEY) || "";
     } catch {
         return "";
     }
 };
 const setStoredToken = (t) => {
     try {
-        if (t) window.sessionStorage.setItem(TOKEN_KEY, t);
-        else window.sessionStorage.removeItem(TOKEN_KEY);
+        if (t) window.localStorage.setItem(TOKEN_KEY, t);
+        else window.localStorage.removeItem(TOKEN_KEY);
     } catch {
-        // sessionStorage unavailable (SSR, strict modes) — just fall back to cookie
+        // localStorage unavailable (SSR, strict modes) — just fall back to cookie
     }
 };
 

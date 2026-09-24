@@ -1,8 +1,8 @@
 {
-  "name": "Portech — Quincaillerie et portes commerciales en aluminium",
-  "short_name": "Portech",
-  "description": "Installation, entretien, réparation et remplacement de quincaillerie et portes commerciales en aluminium dans le Grand Montréal.",
-  "start_url": "/admin",
+  "name": "Adjointe Portech",
+  "short_name": "Adjointe",
+  "description": "Votre adjointe administrative virtuelle Portech : posez vos questions sur vos jobs, soumissions et factures, par écrit ou à la voix.",
+  "start_url": "/adjointe",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0c182b",
@@ -47,24 +47,17 @@
   ],
   "shortcuts": [
     {
-      "name": "Tableau de bord",
-      "short_name": "Dashboard",
-      "description": "Voir les leads et factures",
+      "name": "Assistante IA",
+      "short_name": "Chat",
+      "description": "Parler avec l'adjointe",
+      "url": "/adjointe",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tableau de bord ERP",
+      "short_name": "ERP",
+      "description": "Gestion complète",
       "url": "/admin",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Calendrier",
-      "short_name": "Calendrier",
-      "description": "Voir les rendez-vous",
-      "url": "/admin/gestion/calendrier",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Factures",
-      "short_name": "Factures",
-      "description": "Gérer les factures",
-      "url": "/admin/gestion/factures",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]

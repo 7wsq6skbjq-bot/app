@@ -414,3 +414,12 @@ User language: **French**.
   * Vérifié : tour 1 → résumé + demande de confirmation (action_result None) ; tour 2 « oui » → « ✅ État de compte envoyé à Validation E2E Inc (info@portech.info) ». Entrées invalides → avertissements sûrs sans envoi.
   * Suggestions du panneau (AssistantPanel.jsx) mises à jour avec 2 exemples d'action.
 
+
+- MAJ 2026-09 (App dédiée « Adjointe Portech » — chat vocal installable) : FAIT + VÉRIFIÉ.
+  * Route dédiée /adjointe (App.js) → pages/AdjointeApp.jsx : interface plein écran responsive (mobile + ordinateur), thème sombre, en-tête « Adjointe Portech », suggestions, bulles de chat, bouton micro, champ texte, toggle voix, réinitialiser, déconnexion. Réutilise les endpoints /admin/assistant/chat + /history (mêmes actions confirmées : états de compte, relances).
+  * PWA installable : public/manifest.json renommé « Adjointe Portech » (short_name « Adjointe »), start_url /adjointe ; index.html apple-mobile-web-app-title = « Adjointe Portech ». Installable sur l'écran d'accueil ; ouvre directement le chat. L'ERP reste accessible au navigateur via /admin.
+  * DICTÉE VOCALE (Whisper) : POST /api/admin/assistant/transcribe (erp_routes_assistant.py) — emergentintegrations OpenAISpeechToText, model whisper-1, language fr, via EMERGENT_LLM_KEY. Front : MediaRecorder (webm) → upload → texte → envoi auto. Vérifié HTTP 200.
+  * LECTURE À VOIX HAUTE : synthèse vocale intégrée du navigateur (window.speechSynthesis, voix fr-CA) — gratuite, hors coût API. Toggle global + bouton haut-parleur par message.
+  * SESSION PERSISTANTE (auth) : token JWT déplacé de sessionStorage → localStorage (context/AuthContext.jsx) ET ACCESS_TOKEN_TTL_MIN passé de 8 h à 30 jours (server.py). Le propriétaire se connecte une fois sur le téléphone et reste connecté ~30 jours. Compromis sécurité assumé (outil mono-utilisateur sur appareil personnel). AdminLogin.jsx : support du paramètre ?next= (useSearchParams) → après connexion depuis /adjointe, retour à /adjointe.
+  * Vérifié à l'écran : /adjointe rend l'app, connexion→next→/adjointe OK, message « Combien de jobs actifs ? » → réponse correcte « aucun job actif », bouton lecture vocale présent. NB : le micro exige HTTPS (preview/prod OK) + autorisation micro du navigateur.
+

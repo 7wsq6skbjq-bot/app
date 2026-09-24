@@ -12,6 +12,7 @@ import Legal from "@/pages/Legal";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminErp from "@/pages/AdminErp";
+import AdjointeApp from "@/pages/AdjointeApp";
 import AdminPrintInvoice from "@/pages/erp/AdminPrintInvoice";
 import AdminPrintPurchaseOrder from "@/pages/erp/AdminPrintPurchaseOrder";
 import AdminPrintBol from "@/pages/erp/AdminPrintBol";
@@ -58,6 +59,8 @@ function App() {
 
                         {/* Admin (no public layout) */}
                         <Route path="/admin/login" element={<AdminLogin />} />
+                        {/* Dedicated installable assistant app */}
+                        <Route path="/adjointe" element={<AdjointeApp />} />
                         <Route
                             path="/admin"
                             element={
