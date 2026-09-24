@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut } from "lucide-react";
+import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut, Smartphone, X, Share, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const SUGGESTIONS = [
@@ -40,9 +40,34 @@ export default function AdjointeApp() {
     const [recording, setRecording] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
     const [speakOn, setSpeakOn] = useState(() => localStorage.getItem("portech_adjointe_speak") === "1");
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [showInstall, setShowInstall] = useState(false);
+    const isStandalone = typeof window !== "undefined" && (
+        window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
     const endRef = useRef(null);
     const mediaRef = useRef(null);
     const chunksRef = useRef([]);
+
+    useEffect(() => {
+        const onBIP = (e) => { e.preventDefault(); setDeferredPrompt(e); };
+        const onInstalled = () => { setDeferredPrompt(null); setShowInstall(false); };
+        window.addEventListener("beforeinstallprompt", onBIP);
+        window.addEventListener("appinstalled", onInstalled);
+        return () => {
+            window.removeEventListener("beforeinstallprompt", onBIP);
+            window.removeEventListener("appinstalled", onInstalled);
+        };
+    }, []);
+
+    const handleInstall = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            try { await deferredPrompt.userChoice; } catch { /* ignore */ }
+            setDeferredPrompt(null);
+        } else {
+            setShowInstall(true); // iOS / unsupported → show manual instructions
+        }
+    };
 
     const loadHistory = useCallback(async () => {
         try {
@@ -140,6 +165,12 @@ export default function AdjointeApp() {
                     <div className="text-[11px] text-[#7f92b3]">Assistante virtuelle {user?.username ? `· ${user.username}` : ""}</div>
                 </div>
                 <div className="ml-auto flex items-center gap-1">
+                    {!isStandalone && (
+                        <button onClick={handleInstall} data-testid="adjointe-install-btn" title="Installer sur mon téléphone"
+                            className="p-2 rounded-full text-[#4fd1c5] hover:bg-[#12233d]">
+                            <Smartphone className="w-5 h-5" />
+                        </button>
+                    )}
                     <button onClick={toggleSpeak} data-testid="adjointe-speak-toggle" title={speakOn ? "Voix activée" : "Voix désactivée"}
                         className={`p-2 rounded-full ${speakOn ? "text-[#4fd1c5] bg-[#12233d]" : "text-[#7f92b3]"}`}>
                         {speakOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
@@ -167,6 +198,12 @@ export default function AdjointeApp() {
                                 </button>
                             ))}
                         </div>
+                        {!isStandalone && (
+                            <button onClick={handleInstall} data-testid="adjointe-install-cta"
+                                className="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#4fd1c5] text-[#07131f] font-semibold text-sm hover:brightness-110">
+                                <Smartphone className="w-4 h-4" /> Installer sur mon téléphone
+                            </button>
+                        )}
                     </div>
                 )}
                 {messages.map((m, i) => (
@@ -214,6 +251,40 @@ export default function AdjointeApp() {
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                 </button>
             </form>
+
+            {showInstall && (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4" data-testid="adjointe-install-modal" onClick={() => setShowInstall(false)}>
+                    <div className="w-full sm:max-w-md bg-white text-[#0c182b] rounded-t-3xl sm:rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="font-display font-bold uppercase text-xl tracking-tight flex items-center gap-2">
+                                <Smartphone className="w-5 h-5 text-[#2f6df0]" /> Installer l&apos;app
+                            </div>
+                            <button onClick={() => setShowInstall(false)} data-testid="adjointe-install-close" className="p-1.5 text-[#5a76a8] hover:text-[#0c182b]">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="space-y-4 text-sm leading-relaxed">
+                            <div className="rounded-xl border border-[#dde5f0] p-3">
+                                <div className="font-bold mb-1 flex items-center gap-1.5">🍎 iPhone / iPad (Safari)</div>
+                                <ol className="list-decimal ml-5 space-y-1 text-[#33455f]">
+                                    <li>Touchez l&apos;icône <b>Partager</b> <Share className="w-3.5 h-3.5 inline align-text-bottom" /> en bas de Safari.</li>
+                                    <li>Choisissez <b>« Sur l&apos;écran d&apos;accueil »</b> <Plus className="w-3.5 h-3.5 inline align-text-bottom" />.</li>
+                                    <li>Touchez <b>Ajouter</b> — l&apos;icône « Adjointe Portech » apparaît sur votre écran.</li>
+                                </ol>
+                            </div>
+                            <div className="rounded-xl border border-[#dde5f0] p-3">
+                                <div className="font-bold mb-1 flex items-center gap-1.5">🤖 Android (Chrome)</div>
+                                <ol className="list-decimal ml-5 space-y-1 text-[#33455f]">
+                                    <li>Touchez le menu <b>⋮</b> en haut à droite de Chrome.</li>
+                                    <li>Choisissez <b>« Installer l&apos;application »</b> (ou « Ajouter à l&apos;écran d&apos;accueil »).</li>
+                                    <li>Confirmez — l&apos;app s&apos;installe sur votre écran d&apos;accueil.</li>
+                                </ol>
+                            </div>
+                            <p className="text-[#5a76a8] text-xs">Une fois installée, ouvrez « Adjointe Portech » comme n&apos;importe quelle app — vous resterez connecté.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -26,6 +26,33 @@ ASSISTANT_MODEL = ("anthropic", "claude-sonnet-4-6")
 
 ACTION_RE = re.compile(r"\[\[ACTION\]\]\s*(\{.*?\})", re.DOTALL)
 
+JOB_STAGE_LABELS = {
+    "a_approuver": "À approuver", "depot_recu": "Dépôt reçu (50%)",
+    "en_fabrication": "En fabrication", "pret": "Prêt", "livre": "Livré",
+    "facture": "Facturé", "paye": "Payé", "annule": "Annulé",
+}
+# Keyword → stage key, to tolerate free-form phrasing from the LLM/user.
+JOB_STAGE_KEYWORDS = [
+    ("fabric", "en_fabrication"), ("installation", "en_fabrication"),
+    ("approuv", "a_approuver"), ("depot", "depot_recu"), ("dépôt", "depot_recu"),
+    ("acompte", "depot_recu"), ("pret", "pret"), ("prêt", "pret"),
+    ("livr", "livre"), ("factur", "facture"), ("pay", "paye"),
+    ("annul", "annule"),
+]
+
+
+def _resolve_stage(raw: str):
+    s = (raw or "").strip().lower()
+    if s in JOB_STAGE_LABELS:
+        return s
+    for key, label in JOB_STAGE_LABELS.items():
+        if s == label.lower():
+            return key
+    for kw, key in JOB_STAGE_KEYWORDS:
+        if kw in s:
+            return key
+    return None
+
 SYSTEM_BASE = (
     "Tu es l'assistante administrative virtuelle de Portech, une entreprise de "
     "quincaillerie et portes commerciales en aluminium au Québec. Tu réponds "
@@ -36,21 +63,28 @@ SYSTEM_BASE = (
     "n'est pas dans les données, dis-le clairement au lieu d'inventer. "
     "Réponds en TEXTE SIMPLE, sans Markdown : n'utilise ni #, ni **, ni tableaux ; "
     "pour une liste, utilise des tirets simples (- ) en début de ligne.\n\n"
-    "=== ENVOI D'ACTIONS (états de compte et relances) ===\n"
-    "Tu peux DÉCLENCHER de vrais envois de courriels. Actions possibles :\n"
+    "=== ENVOI D'ACTIONS (états de compte, relances) et GESTION DES JOBS ===\n"
+    "Tu peux DÉCLENCHER de vraies actions. Actions possibles :\n"
     "  • send_statement — envoyer l'état de compte à UN client. Paramètre: client (nom exact du client).\n"
     "  • send_statement_all — envoyer l'état de compte à TOUS les clients ayant un solde dû.\n"
     "  • send_quote_followup — envoyer une relance pour UNE soumission. Paramètre: quote (numéro, ex. SO-0007).\n"
+    "  • update_job_stage — changer l'étape d'un job. Paramètres: job (numéro du job) et stage.\n"
+    "    Étapes VALIDES (utilise EXACTEMENT une de ces valeurs pour stage) : "
+    "a_approuver (À approuver), depot_recu (Dépôt reçu 50%), en_fabrication (En fabrication), "
+    "pret (Prêt), livre (Livré), facture (Facturé), paye (Payé), annule (Annulé).\n"
     "RÈGLES STRICTES (sécurité) :\n"
-    "  1. Quand Cédrick demande un envoi, tu résumes D'ABORD précisément ce qui sera envoyé et à qui, "
-    "puis tu demandes une confirmation explicite (« Confirmes-tu l'envoi ? Réponds oui »). "
-    "N'émets JAMAIS de directive à cette étape.\n"
-    "  2. SEULEMENT après que Cédrick a confirmé (oui / confirme / envoie), tu termines ton message par UNE "
-    "ligne de directive, seule sur sa ligne, au format EXACT :\n"
+    "  1. Pour les ENVOIS DE COURRIEL (send_statement, send_statement_all, send_quote_followup) : tu résumes "
+    "D'ABORD ce qui sera envoyé et à qui, puis tu demandes une confirmation explicite « Confirmes-tu ? Réponds oui ». "
+    "N'émets JAMAIS la directive à cette étape ; SEULEMENT après un « oui ».\n"
+    "  2. Pour update_job_stage (réversible, sans courriel) : tu peux émettre la directive DIRECTEMENT dans le même "
+    "message, après avoir reformulé clairement le changement (ex. « Je passe le job 12 à En fabrication »).\n"
+    "  3. Format EXACT de la directive, seule sur sa ligne à la fin du message :\n"
     "     [[ACTION]] {\"type\":\"send_statement\",\"client\":\"Nom du client\"}\n"
-    "     (ou {\"type\":\"send_statement_all\"} ou {\"type\":\"send_quote_followup\",\"quote\":\"SO-0007\"})\n"
-    "  3. Utilise EXACTEMENT les noms de clients et numéros présents dans les DONNÉES ERP. "
-    "Le système exécute l'envoi et te confirme le résultat — n'invente jamais de confirmation d'envoi toi-même."
+    "     [[ACTION]] {\"type\":\"send_statement_all\"}\n"
+    "     [[ACTION]] {\"type\":\"send_quote_followup\",\"quote\":\"SO-0007\"}\n"
+    "     [[ACTION]] {\"type\":\"update_job_stage\",\"job\":\"12\",\"stage\":\"en_fabrication\"}\n"
+    "  4. Utilise EXACTEMENT les noms de clients et numéros présents dans les DONNÉES ERP. "
+    "Le système exécute l'action et te confirme le résultat — n'invente jamais de confirmation toi-même."
 )
 
 
@@ -116,6 +150,25 @@ async def _execute_action(db, action: dict) -> str:
         await db.erp_quotes.update_one({"id": q["id"]},
                                        {"$set": {"followup_sent_at": datetime.now(timezone.utc).isoformat()}})
         return f"✅ Relance envoyée à {snap.get('name','')} ({email}) pour SO-{n:04d}."
+    if t == "update_job_stage":
+        raw = str(action.get("job", "")).upper().replace("JOB", "").replace("#", "").strip()
+        try:
+            n = int(raw.lstrip("0") or "0")
+        except ValueError:
+            return "⚠️ Numéro de job invalide."
+        job = await db.erp_jobs.find_one({"number": n}, {"_id": 0})
+        if not job:
+            return f"⚠️ Job #{n} introuvable."
+        stage = _resolve_stage(action.get("stage", ""))
+        if not stage:
+            return (f"⚠️ Étape « {action.get('stage','')} » non reconnue. "
+                    f"Étapes possibles : {', '.join(JOB_STAGE_LABELS.values())}.")
+        old = JOB_STAGE_LABELS.get(job.get("stage"), job.get("stage") or "—")
+        await db.erp_jobs.update_one(
+            {"id": job["id"]},
+            {"$set": {"stage": stage, "updated_at": datetime.now(timezone.utc).isoformat()}})
+        return (f"✅ Job #{n} « {job.get('title','')} » : étape changée de "
+                f"{old} → {JOB_STAGE_LABELS[stage]}.")
     return "⚠️ Action inconnue."
 
 
