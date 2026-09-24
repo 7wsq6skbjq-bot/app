@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut, Smartphone, X, Share, Plus } from "lucide-react";
+import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut, Smartphone, X, Share, Plus, Sunrise } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const SUGGESTIONS = [
@@ -47,6 +47,7 @@ export default function AdjointeApp() {
     const endRef = useRef(null);
     const mediaRef = useRef(null);
     const chunksRef = useRef([]);
+    const briefedRef = useRef(false);
 
     useEffect(() => {
         const onBIP = (e) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -72,7 +73,7 @@ export default function AdjointeApp() {
     const loadHistory = useCallback(async () => {
         try {
             const { data } = await http.get(`/admin/assistant/history?session_id=${sessionId}`);
-            setMessages(data.messages || []);
+            if (data.messages && data.messages.length) setMessages(data.messages);
         } catch { /* silent */ }
     }, [http, sessionId]);
     useEffect(() => { loadHistory(); }, [loadHistory]);
@@ -136,6 +137,26 @@ export default function AdjointeApp() {
         setSpeakOn((v) => { const nv = !v; localStorage.setItem("portech_adjointe_speak", nv ? "1" : "0"); if (!nv) window.speechSynthesis?.cancel(); return nv; });
     };
 
+    const fetchBriefing = useCallback(async (auto = false) => {
+        const todayKey = new Date().toISOString().slice(0, 10);
+        if (auto && localStorage.getItem("portech_adjointe_briefing_date") === todayKey) return;
+        try {
+            const { data } = await http.get("/admin/assistant/briefing");
+            localStorage.setItem("portech_adjointe_briefing_date", todayKey);
+            setMessages((m) => [...m, { role: "assistant", content: data.text }]);
+            speak(data.text);
+        } catch { /* silent */ }
+    }, [http]);
+
+    // Auto morning briefing once per calendar day when the app opens.
+    useEffect(() => {
+        if (user && user !== false && !briefedRef.current) {
+            briefedRef.current = true;
+            const t = setTimeout(() => fetchBriefing(true), 900);
+            return () => clearTimeout(t);
+        }
+    }, [user, fetchBriefing]);
+
     const reset = async () => {
         if (!window.confirm("Effacer cette conversation ?")) return;
         try { await http.delete(`/admin/assistant/history?session_id=${sessionId}`); } catch { /* ignore */ }
@@ -165,6 +186,10 @@ export default function AdjointeApp() {
                     <div className="text-[11px] text-[#7f92b3]">Assistante virtuelle {user?.username ? `· ${user.username}` : ""}</div>
                 </div>
                 <div className="ml-auto flex items-center gap-1">
+                    <button onClick={() => fetchBriefing(false)} data-testid="adjointe-briefing-btn" title="Résumé du matin"
+                        className="p-2 rounded-full text-[#ffd27f] hover:bg-[#12233d]">
+                        <Sunrise className="w-5 h-5" />
+                    </button>
                     {!isStandalone && (
                         <button onClick={handleInstall} data-testid="adjointe-install-btn" title="Installer sur mon téléphone"
                             className="p-2 rounded-full text-[#4fd1c5] hover:bg-[#12233d]">
@@ -190,6 +215,10 @@ export default function AdjointeApp() {
                     <div className="text-center py-8 max-w-md mx-auto">
                         <Bot className="w-12 h-12 mx-auto mb-3 text-[#4fd1c5]" />
                         <p className="text-[#c7d3e8] mb-5">Bonjour Cédrick ! Écris ou appuie sur le micro pour me parler.</p>
+                        <button onClick={() => fetchBriefing(false)} data-testid="adjointe-briefing-cta"
+                            className="mb-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#12233d] hover:bg-[#1a2f4f] text-[#ffd27f] text-sm border border-[#2a3d5c]">
+                            <Sunrise className="w-4 h-4" /> Mon résumé du matin
+                        </button>
                         <div className="grid gap-2">
                             {SUGGESTIONS.map((s, i) => (
                                 <button key={i} onClick={() => send(s)} data-testid={`adjointe-suggestion-${i}`}

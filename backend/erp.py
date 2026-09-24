@@ -57,7 +57,7 @@ def build_erp_router(db: AsyncIOMotorDatabase, auth_dep) -> APIRouter:
     register_mosquito_screens(router, db, auth_dep)
     register_production_plans(router, db, auth_dep)
     register_statements(router, db, auth_dep)
-    register_assistant(router, db, auth_dep)
+    register_assistant(router, db, auth_dep, next_number)
     register_jobs(router, db, auth_dep, next_number)
     register_pricing(router, db, auth_dep)
     register_at_order_form(router, db, auth_dep)

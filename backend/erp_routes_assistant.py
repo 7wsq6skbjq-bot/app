@@ -41,6 +41,10 @@ JOB_STAGE_KEYWORDS = [
 ]
 
 
+# Set in register() (needs the job number generator). Called by _execute_action.
+_create_job_fn = None
+
+
 def _resolve_stage(raw: str):
     s = (raw or "").strip().lower()
     if s in JOB_STAGE_LABELS:
@@ -69,6 +73,9 @@ SYSTEM_BASE = (
     "  • send_statement_all — envoyer l'état de compte à TOUS les clients ayant un solde dû.\n"
     "  • send_quote_followup — envoyer une relance pour UNE soumission. Paramètre: quote (numéro, ex. SO-0007).\n"
     "  • update_job_stage — changer l'étape d'un job. Paramètres: job (numéro du job) et stage.\n"
+    "  • create_job — créer un NOUVEAU job. Paramètres: title (titre/description du travail, obligatoire) "
+    "et client (nom du client, optionnel). Ex. « nouveau job porte arrière chez Clinique Laval » → "
+    "title=\"Porte arrière\", client=\"Clinique Laval\".\n"
     "    Étapes VALIDES (utilise EXACTEMENT une de ces valeurs pour stage) : "
     "a_approuver (À approuver), depot_recu (Dépôt reçu 50%), en_fabrication (En fabrication), "
     "pret (Prêt), livre (Livré), facture (Facturé), paye (Payé), annule (Annulé).\n"
@@ -76,13 +83,15 @@ SYSTEM_BASE = (
     "  1. Pour les ENVOIS DE COURRIEL (send_statement, send_statement_all, send_quote_followup) : tu résumes "
     "D'ABORD ce qui sera envoyé et à qui, puis tu demandes une confirmation explicite « Confirmes-tu ? Réponds oui ». "
     "N'émets JAMAIS la directive à cette étape ; SEULEMENT après un « oui ».\n"
-    "  2. Pour update_job_stage (réversible, sans courriel) : tu peux émettre la directive DIRECTEMENT dans le même "
-    "message, après avoir reformulé clairement le changement (ex. « Je passe le job 12 à En fabrication »).\n"
+    "  2. Pour update_job_stage et create_job (réversibles, sans courriel) : tu peux émettre la directive "
+    "DIRECTEMENT dans le même message, après avoir reformulé clairement l'action "
+    "(ex. « Je passe le job 12 à En fabrication » / « Je crée le job “Porte arrière” pour Clinique Laval »).\n"
     "  3. Format EXACT de la directive, seule sur sa ligne à la fin du message :\n"
     "     [[ACTION]] {\"type\":\"send_statement\",\"client\":\"Nom du client\"}\n"
     "     [[ACTION]] {\"type\":\"send_statement_all\"}\n"
     "     [[ACTION]] {\"type\":\"send_quote_followup\",\"quote\":\"SO-0007\"}\n"
     "     [[ACTION]] {\"type\":\"update_job_stage\",\"job\":\"12\",\"stage\":\"en_fabrication\"}\n"
+    "     [[ACTION]] {\"type\":\"create_job\",\"title\":\"Porte arrière\",\"client\":\"Clinique Laval\"}\n"
     "  4. Utilise EXACTEMENT les noms de clients et numéros présents dans les DONNÉES ERP. "
     "Le système exécute l'action et te confirme le résultat — n'invente jamais de confirmation toi-même."
 )
@@ -156,9 +165,11 @@ async def _execute_action(db, action: dict) -> str:
             n = int(raw.lstrip("0") or "0")
         except ValueError:
             return "⚠️ Numéro de job invalide."
-        job = await db.erp_jobs.find_one({"number": n}, {"_id": 0})
+        job_number = f"JOB-{n:04d}"
+        job = await db.erp_jobs.find_one(
+            {"$or": [{"job_number": job_number}, {"number": n}]}, {"_id": 0})
         if not job:
-            return f"⚠️ Job #{n} introuvable."
+            return f"⚠️ Job {job_number} introuvable."
         stage = _resolve_stage(action.get("stage", ""))
         if not stage:
             return (f"⚠️ Étape « {action.get('stage','')} » non reconnue. "
@@ -167,8 +178,18 @@ async def _execute_action(db, action: dict) -> str:
         await db.erp_jobs.update_one(
             {"id": job["id"]},
             {"$set": {"stage": stage, "updated_at": datetime.now(timezone.utc).isoformat()}})
-        return (f"✅ Job #{n} « {job.get('title','')} » : étape changée de "
+        return (f"✅ {job.get('job_number', job_number)} « {job.get('title','')} » : étape changée de "
                 f"{old} → {JOB_STAGE_LABELS[stage]}.")
+    if t == "create_job":
+        title = (action.get("title") or "").strip()
+        if not title:
+            return "⚠️ Il me faut un titre pour créer le job."
+        if _create_job_fn is None:
+            return "⚠️ Création de job indisponible."
+        job = await _create_job_fn(db, title=title, client_name=(action.get("client") or "").strip())
+        return (f"✅ Nouveau job créé : {job['job_number']} « {job['title']} »"
+                + (f" pour {job['client_name']}" if job.get("client_name") else "")
+                + f" (étape : {JOB_STAGE_LABELS.get(job['stage'], job['stage'])}).")
     return "⚠️ Action inconnue."
 
 
@@ -187,8 +208,9 @@ async def _erp_snapshot(db) -> str:
     lines.append(f"JOBS actifs: {len(active)} — par étape: "
                  + ", ".join(f"{k}={v}" for k, v in by_stage.items()))
     for j in active[:20]:
-        lines.append(f"  • Job {j.get('number','')} « {j.get('title','')} » "
-                     f"[{j.get('stage','')}] client={j.get('client_name') or '—'} "
+        lines.append(f"  • {j.get('job_number','JOB-?')} « {j.get('title','')} » "
+                     f"[{JOB_STAGE_LABELS.get(j.get('stage'), j.get('stage',''))}] "
+                     f"client={j.get('client_name') or '—'} "
                      f"échéance={j.get('target_date') or '—'}")
     # Unpaid invoices
     inv = await db.erp_invoices.find({"status": "envoyée"}, {"_id": 0}).sort("number", 1).to_list(200)
@@ -208,11 +230,60 @@ async def _erp_snapshot(db) -> str:
     return "\n".join(lines) if lines else "Aucune donnée ERP."
 
 
-def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
+def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number) -> None:
+
+    async def _make_job(_db, *, title: str, client_name: str = "") -> dict:
+        n = await next_number("job")
+        now = datetime.now(timezone.utc).isoformat()
+        job = {
+            "id": uuid.uuid4().hex,
+            "job_number": f"JOB-{n:04d}",
+            "title": title,
+            "client_name": client_name or "",
+            "client_email": None, "party_id": None,
+            "stage": "a_approuver", "total": 0.0, "deposit_expected": 0.0,
+            "priority": "normal", "target_date": None, "notes": "",
+            "links": [], "history": [{"stage": "a_approuver", "at": now, "note": "Job créée par l'assistante"}],
+            "created_at": now, "updated_at": now,
+        }
+        await _db.erp_jobs.insert_one(dict(job))
+        return job
+
+    global _create_job_fn
+    _create_job_fn = _make_job
 
     class ChatIn(BaseModel):
         message: str
         session_id: str | None = None
+
+    @router.get("/assistant/briefing")
+    async def briefing(_: dict = Depends(auth_dep)):
+        """Résumé du matin (texte simple, pour lecture à voix haute) : factures dues + jobs du jour."""
+        today = datetime.now(timezone.utc).date().isoformat()
+        parts = [f"Bonjour Cédrick, voici ton résumé du {datetime.now(timezone.utc).strftime('%d/%m/%Y')}."]
+        # Unpaid invoices
+        inv = await db.erp_invoices.find({"status": "envoyée"}, {"_id": 0}).sort("number", 1).to_list(200)
+        bal = sum(float(i.get("total") or 0) for i in inv)
+        if inv:
+            parts.append(f"Tu as {len(inv)} facture(s) impayée(s) pour un solde total de {bal:.2f} $.")
+            for i in inv[:6]:
+                cs = i.get("customer_snapshot") or {}
+                over = " (en retard)" if (i.get("due_date") and i["due_date"] < today) else ""
+                parts.append(f"- FAC-{int(i.get('number',0)):04d}, {cs.get('name','')}, {float(i.get('total') or 0):.2f} ${over}.")
+        else:
+            parts.append("Aucune facture impayée. Bravo !")
+        # Jobs: active + due today/overdue
+        jobs = await db.erp_jobs.find({}, {"_id": 0}).to_list(500)
+        active = [j for j in jobs if j.get("stage") not in ("annule", "paye", "livre", "facture")]
+        due = [j for j in active if j.get("target_date") and j["target_date"] <= today]
+        parts.append(f"Côté jobs : {len(active)} job(s) actif(s).")
+        if due:
+            parts.append(f"{len(due)} job(s) à livrer aujourd'hui ou en retard :")
+            for j in due[:6]:
+                parts.append(f"- {j.get('job_number','')}, {j.get('title','')}, {j.get('client_name') or 'client ?'}.")
+        else:
+            parts.append("Aucun job à livrer aujourd'hui.")
+        return {"text": "\n".join(parts), "date": today}
 
     @router.get("/assistant/history")
     async def history(session_id: str, _: dict = Depends(auth_dep)):
