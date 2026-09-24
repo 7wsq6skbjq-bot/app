@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut, Smartphone, X, Share, Plus, Sunrise, Calendar, CalendarCheck } from "lucide-react";
+import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut, Smartphone, X, Share, Plus, Sunrise, Calendar, CalendarCheck, Bell, BellRing } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const SUGGESTIONS = [
@@ -10,6 +10,15 @@ const SUGGESTIONS = [
     "Envoie une relance pour ma plus vieille soumission",
 ];
 const sessionKey = "portech_adjointe_session";
+
+/** Decode a URL-safe base64 VAPID key into the Uint8Array the browser needs. */
+const urlB64ToUint8Array = (base64) => {
+    const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+    const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+};
+const pushSupported = typeof window !== "undefined"
+    && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 
 /** Read a reply aloud using the browser's built-in French voice. */
 const speak = (text) => {
@@ -43,6 +52,8 @@ export default function AdjointeApp() {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [showInstall, setShowInstall] = useState(false);
     const [calConnected, setCalConnected] = useState(null);
+    const [pushOn, setPushOn] = useState(false);
+    const [pushBusy, setPushBusy] = useState(false);
     const isStandalone = typeof window !== "undefined" && (
         window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
     const endRef = useRef(null);
@@ -176,6 +187,65 @@ export default function AdjointeApp() {
         }
     };
 
+    // Detect existing push subscription state on load.
+    useEffect(() => {
+        if (!(user && user !== false) || !pushSupported) return;
+        (async () => {
+            try {
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription();
+                setPushOn(!!sub && Notification.permission === "granted");
+            } catch { /* ignore */ }
+        })();
+    }, [user]);
+
+    const enablePush = async () => {
+        setError("");
+        if (!pushSupported) {
+            setError("Ton appareil ne supporte pas les notifications. Sur iPhone : installe d'abord l'app sur l'écran d'accueil.");
+            return;
+        }
+        setPushBusy(true);
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission !== "granted") {
+                setError("Notifications refusées. Autorise-les dans les réglages du téléphone.");
+                return;
+            }
+            const reg = await navigator.serviceWorker.register("/service-worker.js");
+            await navigator.serviceWorker.ready;
+            let sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+                const { data } = await http.get("/admin/push/vapid-public-key");
+                sub = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlB64ToUint8Array(data.publicKey),
+                });
+            }
+            await http.post("/admin/push/subscribe", sub.toJSON());
+            setPushOn(true);
+            // Immediate confirmation push so Cédrick sees it works.
+            try { await http.post("/admin/push/test", { title: "Notifications activées ✅", body: "Tu recevras les leads, RDV, factures en retard et le résumé du matin." }); } catch { /* ignore */ }
+        } catch (e) {
+            setError(e?.response?.data?.detail || "Impossible d'activer les notifications. Assure-toi que l'app est installée sur l'écran d'accueil (iPhone).");
+        } finally {
+            setPushBusy(false);
+        }
+    };
+
+    const disablePush = async () => {
+        setPushBusy(true);
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                try { await http.post("/admin/push/unsubscribe", sub.toJSON()); } catch { /* ignore */ }
+                await sub.unsubscribe();
+            }
+            setPushOn(false);
+        } catch { /* ignore */ } finally { setPushBusy(false); }
+    };
+
     const reset = async () => {
         if (!window.confirm("Effacer cette conversation ?")) return;
         try { await http.delete(`/admin/assistant/history?session_id=${sessionId}`); } catch { /* ignore */ }
@@ -209,6 +279,13 @@ export default function AdjointeApp() {
                         className="p-2 rounded-full text-[#ffd27f] hover:bg-[#12233d]">
                         <Sunrise className="w-5 h-5" />
                     </button>
+                    {pushSupported && (
+                        <button onClick={pushOn ? disablePush : enablePush} disabled={pushBusy}
+                            data-testid="adjointe-push-toggle" title={pushOn ? "Notifications activées" : "Activer les notifications"}
+                            className={`p-2 rounded-full ${pushOn ? "text-[#4fd1c5] bg-[#12233d]" : "text-[#7f92b3] hover:bg-[#12233d]"} disabled:opacity-40`}>
+                            {pushBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : (pushOn ? <BellRing className="w-5 h-5" /> : <Bell className="w-5 h-5" />)}
+                        </button>
+                    )}
                     {!isStandalone && (
                         <button onClick={handleInstall} data-testid="adjointe-install-btn" title="Installer sur mon téléphone"
                             className="p-2 rounded-full text-[#4fd1c5] hover:bg-[#12233d]">
@@ -265,6 +342,17 @@ export default function AdjointeApp() {
                                 </span>
                             )}
                         </div>
+                        {pushSupported && !pushOn && (
+                            <button onClick={enablePush} disabled={pushBusy} data-testid="adjointe-push-cta"
+                                className="mt-4 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#12233d] hover:bg-[#1a2f4f] text-[#4fd1c5] font-semibold text-sm border border-[#2a3d5c] disabled:opacity-40">
+                                {pushBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />} Activer les notifications
+                            </button>
+                        )}
+                        {pushSupported && pushOn && (
+                            <div className="mt-4 inline-flex items-center gap-2 text-[#4fd1c5] text-xs" data-testid="adjointe-push-on">
+                                <BellRing className="w-4 h-4" /> Notifications activées (leads, RDV, factures, résumé du matin)
+                            </div>
+                        )}
                     </div>
                 )}
                 {messages.map((m, i) => (

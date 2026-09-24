@@ -6,7 +6,7 @@
 // any HTML/CSS pinned by the install step — forces all installed PWAs to
 // purge their old cache and reload the current shell on next launch.
 
-const CACHE = "portech-shell-v4";
+const CACHE = "portech-shell-v5";
 
 const PRECACHE = [
     "/",
@@ -68,4 +68,38 @@ self.addEventListener("fetch", (event) => {
             })
             .catch(() => caches.match(req).then((cached) => cached || caches.match("/"))),
     );
+});
+
+// ── Web Push notifications ────────────────────────────────────────────────
+self.addEventListener("push", (event) => {
+    let data = {};
+    try { data = event.data ? event.data.json() : {}; } catch (_e) { /* ignore */ }
+    const title = data.title || "Portech";
+    const options = {
+        body: data.body || "",
+        icon: "/icon-192.png",
+        badge: "/icon-96.png",
+        tag: data.tag || "portech",
+        renotify: true,
+        data: { url: data.url || "/adjointe" },
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+    const target = new URL(event.notification.data?.url || "/adjointe", self.location.origin).href;
+    event.waitUntil((async () => {
+        const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        for (const client of wins) {
+            if ("focus" in client) {
+                await client.focus();
+                if ("navigate" in client && client.url !== target) {
+                    try { await client.navigate(target); } catch (_e) { /* ignore */ }
+                }
+                return;
+            }
+        }
+        await self.clients.openWindow(target);
+    })());
 });

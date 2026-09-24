@@ -328,6 +328,18 @@ async def create_contact_submission(payload: ContactSubmissionCreate):
     doc["created_at"] = doc["created_at"].isoformat()
     await db.contact_submissions.insert_one(doc)
     logger.info("New contact submission from %s (email_sent=%s)", submission.email, email_ok)
+    # Push notification to installed devices (fire-and-forget).
+    try:
+        import push_notifications as push
+        await push.send_push(
+            db,
+            title="Nouveau lead 🔔",
+            body=f"{submission.name} — {submission.email}",
+            url="/adjointe",
+            tag="lead",
+        )
+    except Exception as exc:  # never fail the request on a push error
+        logger.error("Lead push failed: %s", exc)
     return submission
 
 
@@ -461,6 +473,13 @@ async def startup_event():
         await seed_adams_rite_catalog(db)
     except Exception as exc:  # never block startup on a seed failure
         print(f"[seed] Adams Rite seed skipped: {exc}")
+    # Ensure a stable VAPID key pair exists for Web Push notifications.
+    try:
+        import push_notifications as push
+        await push.ensure_vapid_keys(db)
+        await db.push_subscriptions.create_index("endpoint", unique=True)
+    except Exception as exc:  # never block startup on push setup
+        print(f"[push] VAPID setup skipped: {exc}")
     # Start the daily reminder scheduler unless explicitly disabled
     # (e.g. inside pytest runs where scheduler side-effects are unwanted).
     if os.environ.get("DISABLE_SCHEDULER", "").lower() not in ("1", "true", "yes"):
@@ -472,11 +491,14 @@ async def startup_event():
         from erp_routes_quotes import start_quote_followup_scheduler
         app.state.statements_scheduler = start_statements_scheduler(db)
         app.state.quote_followup_scheduler = start_quote_followup_scheduler(db)
+        from push_notifications import start_push_scheduler
+        app.state.push_scheduler = start_push_scheduler(db)
     else:
         app.state.scheduler = None
         app.state.recap_scheduler = None
         app.state.backup_scheduler = None
         app.state.briefing_scheduler = None
+        app.state.push_scheduler = None
 
 
 @app.on_event("shutdown")
@@ -493,4 +515,7 @@ async def shutdown_db_client():
     briefing_sched = getattr(app.state, "briefing_scheduler", None)
     if briefing_sched is not None:
         briefing_sched.shutdown(wait=False)
+    push_sched = getattr(app.state, "push_scheduler", None)
+    if push_sched is not None:
+        push_sched.shutdown(wait=False)
     client.close()

@@ -344,6 +344,12 @@ async def _execute_action(db, action: dict) -> str:
                 location=(action.get("location") or None), notes=(action.get("notes") or None))
         except Exception as exc:  # noqa: BLE001
             return f"⚠️ Échec de la création du rendez-vous : {exc}"
+        try:
+            import push_notifications as push
+            await push.send_push(db, title="Nouveau rendez-vous 📅",
+                                  body=f"{title} · {start}", url="/adjointe", tag="rdv")
+        except Exception:  # noqa: BLE001
+            pass
         return f"✅ Rendez-vous ajouté à Google Calendar : « {title} » le {start}."
     return "⚠️ Action inconnue."
 
