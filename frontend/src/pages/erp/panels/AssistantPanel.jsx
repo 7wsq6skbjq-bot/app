@@ -5,8 +5,8 @@ import { useAuth } from "@/context/AuthContext";
 const SUGGESTIONS = [
     "Quelles factures sont impayées et quel est le solde total ?",
     "Quels jobs sont en fabrication en ce moment ?",
-    "Quelles soumissions attendent une réponse ?",
-    "Rédige un courriel de relance pour ma plus vieille facture impayée",
+    "Envoie l'état de compte au client qui a le plus gros solde",
+    "Envoie une relance pour ma plus vieille soumission sans réponse",
 ];
 
 const sessionKey = "portech_assistant_session";

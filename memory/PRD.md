@@ -406,3 +406,11 @@ User language: **French**.
   * AUTOMATISATIONS : (a) relances factures impayées — planificateur existant confirmé actif (08:00) ; (b) suivi soumissions envoyées sans réponse — start_quote_followup_scheduler (quotidien 08:30, courriel client 1×, idempotent via followup_sent_at, >7 jours) ; (c) états de compte mensuels auto (voir plus haut).
   * ASSISTANTE IA (Brique 2) : erp_routes_assistant.py — POST /admin/assistant/chat (+ GET/DELETE /assistant/history). Claude Sonnet 4.6 (anthropic/claude-sonnet-4-6) via EMERGENT_LLM_KEY (emergentintegrations LlmChat, non-streaming). Multi-tours via Mongo erp_assistant_messages (rejoué dans le system prompt) + snapshot ERP live (jobs par étape, factures impayées, soumissions en cours) injecté en contexte. Onglet « Assistante IA » (slug assistante-ia, AssistantPanel.jsx) : chat FR, suggestions, réinitialisation. Vérifié : répond correctement (4 factures impayées, solde 5 367,04 $).
   * RESTE / cosmétique : remplacer les <input type=date> natifs (mm/dd/yyyy US) par un sélecteur locale fr-CA (signalé iter17, non bloquant).
+
+- MAJ 2026-09 (Assistante IA — ACTIONS : envoi d'états de compte et de relances depuis le chat) : FAIT + VÉRIFIÉ bout en bout.
+  * erp_routes_assistant.py : couche d'actions ajoutée. Le system prompt décrit 3 actions déclenchables : send_statement (un client), send_statement_all (tous), send_quote_followup (une soumission SO-XXXX).
+  * SÉCURITÉ : confirmation OBLIGATOIRE en 2 temps. Tour 1 = l'assistante résume précisément ce qui sera envoyé + demande « Confirmes-tu ? Réponds oui » (AUCUN envoi). Tour 2 (après « oui ») = elle termine par une ligne directive [[ACTION]] {json} que le backend parse (ACTION_RE), exécute (_execute_action réutilise erp_routes_statements.send_statement_email/unpaid_groups et send_html_email pour les relances), retire la directive du texte affiché et ajoute une confirmation ✅/⚠️. Réponse API expose aussi action_result.
+  * Réponses en TEXTE SIMPLE (pas de Markdown) pour un rendu propre dans le chat.
+  * Vérifié : tour 1 → résumé + demande de confirmation (action_result None) ; tour 2 « oui » → « ✅ État de compte envoyé à Validation E2E Inc (info@portech.info) ». Entrées invalides → avertissements sûrs sans envoi.
+  * Suggestions du panneau (AssistantPanel.jsx) mises à jour avec 2 exemples d'action.
+

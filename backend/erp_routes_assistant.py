@@ -5,7 +5,9 @@ Non-streaming, multi-turn. Conversation history is stored in Mongo
 answers stay coherent across requests. A compact live snapshot of the ERP
 (jobs, unpaid invoices, pending quotes) is injected as context.
 """
+import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -14,8 +16,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
+from erp_helpers import send_html_email
+from erp_routes_statements import send_statement_email, unpaid_groups
+
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 ASSISTANT_MODEL = ("anthropic", "claude-sonnet-4-6")
+
+ACTION_RE = re.compile(r"\[\[ACTION\]\]\s*(\{.*?\})", re.DOTALL)
 
 SYSTEM_BASE = (
     "Tu es l'assistante administrative virtuelle de Portech, une entreprise de "
@@ -24,8 +31,90 @@ SYSTEM_BASE = (
     "Tu aides Cédrick à suivre ses jobs, soumissions et factures, et tu peux "
     "rédiger des courriels ou des relances en français quand on te le demande. "
     "Base tes réponses sur les DONNÉES ERP fournies ci-dessous. Si l'information "
-    "n'est pas dans les données, dis-le clairement au lieu d'inventer."
+    "n'est pas dans les données, dis-le clairement au lieu d'inventer. "
+    "Réponds en TEXTE SIMPLE, sans Markdown : n'utilise ni #, ni **, ni tableaux ; "
+    "pour une liste, utilise des tirets simples (- ) en début de ligne.\n\n"
+    "=== ENVOI D'ACTIONS (états de compte et relances) ===\n"
+    "Tu peux DÉCLENCHER de vrais envois de courriels. Actions possibles :\n"
+    "  • send_statement — envoyer l'état de compte à UN client. Paramètre: client (nom exact du client).\n"
+    "  • send_statement_all — envoyer l'état de compte à TOUS les clients ayant un solde dû.\n"
+    "  • send_quote_followup — envoyer une relance pour UNE soumission. Paramètre: quote (numéro, ex. SO-0007).\n"
+    "RÈGLES STRICTES (sécurité) :\n"
+    "  1. Quand Cédrick demande un envoi, tu résumes D'ABORD précisément ce qui sera envoyé et à qui, "
+    "puis tu demandes une confirmation explicite (« Confirmes-tu l'envoi ? Réponds oui »). "
+    "N'émets JAMAIS de directive à cette étape.\n"
+    "  2. SEULEMENT après que Cédrick a confirmé (oui / confirme / envoie), tu termines ton message par UNE "
+    "ligne de directive, seule sur sa ligne, au format EXACT :\n"
+    "     [[ACTION]] {\"type\":\"send_statement\",\"client\":\"Nom du client\"}\n"
+    "     (ou {\"type\":\"send_statement_all\"} ou {\"type\":\"send_quote_followup\",\"quote\":\"SO-0007\"})\n"
+    "  3. Utilise EXACTEMENT les noms de clients et numéros présents dans les DONNÉES ERP. "
+    "Le système exécute l'envoi et te confirme le résultat — n'invente jamais de confirmation d'envoi toi-même."
 )
+
+
+async def _find_statement_group(db, client: str):
+    groups = await unpaid_groups(db)
+    c = (client or "").strip().lower()
+    if not c:
+        return None
+    for g in groups.values():
+        name = (g.get("name") or "").lower()
+        email = (g.get("email") or "").lower()
+        if c == email or c in name or name in c:
+            return g
+    return None
+
+
+async def _execute_action(db, action: dict) -> str:
+    t = action.get("type")
+    if t == "send_statement":
+        g = await _find_statement_group(db, action.get("client", ""))
+        if not g:
+            return f"⚠️ Aucun client « {action.get('client','')} » avec un solde dû n'a été trouvé."
+        if not g.get("email"):
+            return f"⚠️ {g['name']} n'a pas de courriel enregistré — envoi impossible."
+        await send_statement_email(g, g["email"])
+        return f"✅ État de compte envoyé à {g['name']} ({g['email']}) — solde dû {g['balance']:.2f} $ CAD."
+    if t == "send_statement_all":
+        groups = await unpaid_groups(db)
+        sent, skipped = 0, 0
+        for g in groups.values():
+            if g.get("email"):
+                try:
+                    await send_statement_email(g, g["email"])
+                    sent += 1
+                except Exception:  # noqa: BLE001
+                    skipped += 1
+            else:
+                skipped += 1
+        return f"✅ {sent} état(s) de compte envoyé(s)." + (f" {skipped} ignoré(s) (sans courriel)." if skipped else "")
+    if t == "send_quote_followup":
+        raw = str(action.get("quote", "")).upper().replace("SO-", "").strip()
+        try:
+            n = int(raw.lstrip("0") or "0")
+        except ValueError:
+            return "⚠️ Numéro de soumission invalide."
+        q = await db.erp_quotes.find_one({"number": n}, {"_id": 0})
+        if not q:
+            return f"⚠️ Soumission SO-{n:04d} introuvable."
+        snap = q.get("customer_snapshot") or {}
+        email = (snap.get("email") or "").strip()
+        if not email:
+            return f"⚠️ La soumission SO-{n:04d} n'a pas de courriel client."
+        html = (
+            f"<p>Bonjour {snap.get('name') or ''},</p>"
+            f"<p>Nous faisons un suivi concernant notre soumission <b>SO-{n:04d}</b> "
+            f"(total estimé {float(q.get('total') or 0):.2f} $ CAD). "
+            "Avez-vous des questions ou souhaitez-vous aller de l'avant ?</p>"
+            "<p>Il suffit de répondre à ce courriel — nous restons disponibles.</p>"
+            "<p>Cordialement,<br/>L'équipe Portech</p>"
+        )
+        await send_html_email(to_email=email, subject=f"Portech — Suivi de votre soumission SO-{n:04d}",
+                              html=html, footer_note=f"Relance soumission SO-{n:04d}")
+        await db.erp_quotes.update_one({"id": q["id"]},
+                                       {"$set": {"followup_sent_at": datetime.now(timezone.utc).isoformat()}})
+        return f"✅ Relance envoyée à {snap.get('name','')} ({email}) pour SO-{n:04d}."
+    return "⚠️ Action inconnue."
 
 
 def _money(v) -> str:
@@ -115,9 +204,24 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             raise HTTPException(502, f"Échec de l'assistant : {exc}")
         reply = reply if isinstance(reply, str) else str(reply)
 
+        # Detect + execute an action directive, strip it from the visible reply.
+        action_result = None
+        m = ACTION_RE.search(reply)
+        if m:
+            reply = ACTION_RE.sub("", reply).strip()
+            try:
+                action = json.loads(m.group(1))
+                action_result = await _execute_action(db, action)
+            except json.JSONDecodeError:
+                action_result = "⚠️ Directive d'action illisible — aucun envoi effectué."
+            except Exception as exc:  # noqa: BLE001
+                action_result = f"⚠️ Échec de l'envoi : {exc}"
+        if action_result:
+            reply = (reply + "\n\n" + action_result).strip() if reply else action_result
+
         now = datetime.now(timezone.utc).isoformat()
         await db.erp_assistant_messages.insert_many([
             {"session_id": session_id, "role": "user", "content": text, "created_at": now},
             {"session_id": session_id, "role": "assistant", "content": reply, "created_at": now},
         ])
-        return {"session_id": session_id, "reply": reply}
+        return {"session_id": session_id, "reply": reply, "action_result": action_result}
