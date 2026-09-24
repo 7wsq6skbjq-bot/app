@@ -15,6 +15,7 @@ import bcrypt
 import jwt
 import resend
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -389,6 +390,36 @@ async def delete_submission(submission_id: str, _: AdminUser = Depends(get_curre
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Soumission introuvable")
     return {"deleted": submission_id}
+
+
+# ==============================================================
+# Google Calendar OAuth
+# ==============================================================
+@api_router.get("/oauth/calendar/login")
+async def calendar_login(_: AdminUser = Depends(get_current_admin)):
+    import google_calendar as gcal
+    if not gcal.is_configured():
+        raise HTTPException(503, "Google Calendar non configuré (clés manquantes).")
+    return {"authorization_url": gcal.authorization_url()}
+
+
+@api_router.get("/oauth/calendar/callback")
+async def calendar_callback(code: str = "", error: str = ""):
+    import google_calendar as gcal
+    if error:
+        return RedirectResponse(f"/adjointe?calendar=error&reason={error}")
+    try:
+        await gcal.exchange_code(db, code)
+        return RedirectResponse("/adjointe?calendar=connected")
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Calendar OAuth failed: %s", exc)
+        return RedirectResponse("/adjointe?calendar=error")
+
+
+@api_router.get("/admin/calendar/status")
+async def calendar_status(_: AdminUser = Depends(get_current_admin)):
+    import google_calendar as gcal
+    return {"configured": gcal.is_configured(), "connected": await gcal.is_connected(db)}
 
 
 # ==============================================================

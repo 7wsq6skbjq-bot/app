@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut, Smartphone, X, Share, Plus, Sunrise } from "lucide-react";
+import { Send, Loader2, Bot, User, Trash2, Mic, Square, Volume2, VolumeX, LogOut, Smartphone, X, Share, Plus, Sunrise, Calendar, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const SUGGESTIONS = [
@@ -42,6 +42,7 @@ export default function AdjointeApp() {
     const [speakOn, setSpeakOn] = useState(() => localStorage.getItem("portech_adjointe_speak") === "1");
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [showInstall, setShowInstall] = useState(false);
+    const [calConnected, setCalConnected] = useState(null);
     const isStandalone = typeof window !== "undefined" && (
         window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
     const endRef = useRef(null);
@@ -157,6 +158,24 @@ export default function AdjointeApp() {
         }
     }, [user, fetchBriefing]);
 
+    // Google Calendar status + connect-return handling
+    useEffect(() => {
+        if (!(user && user !== false)) return;
+        http.get("/admin/calendar/status").then(({ data }) => setCalConnected(!!data.connected)).catch(() => {});
+        const p = new URLSearchParams(window.location.search).get("calendar");
+        if (p === "connected") { setCalConnected(true); setError(""); window.history.replaceState({}, "", "/adjointe"); }
+        else if (p === "error") { setError("La connexion à Google Calendar a échoué. Réessaie."); window.history.replaceState({}, "", "/adjointe"); }
+    }, [user, http]);
+
+    const connectCalendar = async () => {
+        try {
+            const { data } = await http.get("/oauth/calendar/login");
+            if (data?.authorization_url) window.location.href = data.authorization_url;
+        } catch (e) {
+            setError(e?.response?.data?.detail || "Google Calendar non configuré.");
+        }
+    };
+
     const reset = async () => {
         if (!window.confirm("Effacer cette conversation ?")) return;
         try { await http.delete(`/admin/assistant/history?session_id=${sessionId}`); } catch { /* ignore */ }
@@ -233,6 +252,19 @@ export default function AdjointeApp() {
                                 <Smartphone className="w-4 h-4" /> Installer sur mon téléphone
                             </button>
                         )}
+                        <div className="mt-3">
+                            {calConnected === false && (
+                                <button onClick={connectCalendar} data-testid="adjointe-connect-calendar"
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#12233d] hover:bg-[#1a2f4f] text-[#8fb4ff] text-sm border border-[#2a3d5c]">
+                                    <Calendar className="w-4 h-4" /> Connecter Google Calendar
+                                </button>
+                            )}
+                            {calConnected === true && (
+                                <span className="inline-flex items-center gap-2 text-[#4fd1c5] text-xs" data-testid="adjointe-calendar-connected">
+                                    <CalendarCheck className="w-4 h-4" /> Google Calendar connecté
+                                </span>
+                            )}
+                        </div>
                     </div>
                 )}
                 {messages.map((m, i) => (

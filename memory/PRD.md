@@ -445,3 +445,8 @@ User language: **French**.
   * LIMITE connue : une seule directive [[ACTION]] par message (ACTION_RE prend la première). La création de soumissions/factures avec lignes détaillées reste dans l'UI ERP (trop complexe pour une commande vocale unique).
   * Récap complet des capacités de l'assistante : états de compte (1 client / tous, avec confirmation), relance soumission (avec confirmation), changer étape de job, créer job, modifier job (date livraison/titre/client/notes/total/dépôt), marquer facture payée, changer statut soumission, créer client, résumé matinal parlé.
 
+
+- MAJ 2026-09 (Accès leads + Google Calendar) : leads FAIT+TESTÉ; Google Calendar IMPLÉMENTÉ (connexion à activer en prod).
+  * LEADS : _erp_snapshot inclut les demandes du site (contact_submissions, non traités). Actions assistant reply_lead (courriel, confirmation) + mark_lead_done (assistant_status=traité). Testé.
+  * GOOGLE CALENDAR : google_calendar.py (OAuth flow, refresh, create_event, list_upcoming). Routes /api/oauth/calendar/login|callback + /api/admin/calendar/status. GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI dans .env (redirect = https://portech.info/api/oauth/calendar/callback → connexion possible SEULEMENT en prod). Action assistant create_appointment (crée evenement Google, convertit demain 14h en ISO) + prochains RDV injectés dans le snapshot. Bouton Connecter Google Calendar dans AdjointeApp. Backend testé (status configured=true/connected=false, URL auth valide, message not-connected gracieux). Connexion réelle à faire après redeploy sur portech.info/adjointe.
+  * PUSH NOTIFICATIONS : PAS ENCORE construit (VAPID + service worker + abonnement) — prochaine étape. Rappel: courriel nouveau lead + resume matinal existent deja.

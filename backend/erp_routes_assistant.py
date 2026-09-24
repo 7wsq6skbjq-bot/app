@@ -93,6 +93,10 @@ SYSTEM_BASE = (
     "  • update_quote_status — changer le statut d'une soumission. Paramètres: quote (SO-XXXX) et status "
     "(brouillon, envoyée, acceptée, refusée, expirée, annulée).\n"
     "  • create_client — créer un client. Paramètres: name (obligatoire), email, phone, city, address (optionnels).\n"
+    "  • reply_lead — répondre par courriel à un lead du site. Paramètres: lead (courriel ou nom) et message (texte de la réponse). ENVOI DE COURRIEL → demande confirmation d'abord.\n"
+    "  • mark_lead_done — marquer un lead « traité ». Paramètre: lead (courriel ou nom).\n"
+    "  • create_appointment — ajouter un rendez-vous au Google Calendar. Paramètres: title, start "
+    "(date-heure ISO, ex. 2026-06-19T14:00:00), end (optionnel), location, notes. Convertis « demain 14h » en ISO.\n"
     "IMPORTANT dates : convertis TOUJOURS les dates parlées (« vendredi », « demain », « le 15 ») en "
     "format ISO AAAA-MM-JJ en te basant sur la date d'aujourd'hui donnée dans les DONNÉES ERP.\n"
     "    Étapes VALIDES (utilise EXACTEMENT une de ces valeurs pour stage) : "
@@ -102,9 +106,10 @@ SYSTEM_BASE = (
     "  1. Pour les ENVOIS DE COURRIEL (send_statement, send_statement_all, send_quote_followup) : tu résumes "
     "D'ABORD ce qui sera envoyé et à qui, puis tu demandes une confirmation explicite « Confirmes-tu ? Réponds oui ». "
     "N'émets JAMAIS la directive à cette étape ; SEULEMENT après un « oui ».\n"
-    "  2. Pour update_job_stage, create_job, update_job, mark_invoice_paid, update_quote_status et create_client "
-    "(réversibles, sans courriel) : tu peux émettre la directive DIRECTEMENT dans le même message, "
-    "après avoir reformulé clairement l'action.\n"
+    "  2. Pour update_job_stage, create_job, update_job, mark_invoice_paid, update_quote_status, create_client "
+    "et mark_lead_done (réversibles, sans courriel) : tu peux émettre la directive DIRECTEMENT dans le même message, "
+    "après avoir reformulé clairement l'action. Pour reply_lead (envoi de courriel), demande confirmation D'ABORD. "
+    "create_appointment peut être émis directement.\n"
     "  3. Format EXACT de la directive, seule sur sa ligne à la fin du message :\n"
     "     [[ACTION]] {\"type\":\"send_statement\",\"client\":\"Nom du client\"}\n"
     "     [[ACTION]] {\"type\":\"send_statement_all\"}\n"
@@ -296,6 +301,50 @@ async def _execute_action(db, action: dict) -> str:
         await db.erp_parties.insert_one(party.model_dump())
         extra = ", ".join(x for x in [party.email, party.phone, party.city] if x)
         return f"✅ Client créé : {name}" + (f" ({extra})" if extra else "") + "."
+    if t in ("reply_lead", "mark_lead_done"):
+        who = (action.get("lead") or "").strip().lower()
+        if not who:
+            return "⚠️ Précise le lead (courriel ou nom)."
+        leads = await db.contact_submissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(50)
+        lead = next((l for l in leads if who == (l.get("email") or "").lower()
+                     or who in (l.get("name") or "").lower()), None)
+        if not lead:
+            return f"⚠️ Aucun lead « {action.get('lead')} » trouvé."
+        if t == "mark_lead_done":
+            await db.contact_submissions.update_one(
+                {"id": lead["id"]},
+                {"$set": {"assistant_status": "traité", "handled_at": datetime.now(timezone.utc).isoformat()}})
+            return f"✅ Lead de {lead.get('name','')} marqué « traité »."
+        # reply_lead — send an email to the lead
+        to_email = (lead.get("email") or "").strip()
+        if not to_email:
+            return f"⚠️ Le lead {lead.get('name','')} n'a pas de courriel."
+        body = (action.get("message") or "").strip()
+        if not body:
+            return "⚠️ Il me faut le texte de la réponse à envoyer."
+        html = "".join(f"<p>{p}</p>" for p in body.split("\n") if p.strip()) + \
+               "<p>Cordialement,<br/>L'équipe Portech</p>"
+        await send_html_email(to_email=to_email, subject="Portech — Réponse à votre demande",
+                              html=html, footer_note="Réponse à un lead")
+        await db.contact_submissions.update_one(
+            {"id": lead["id"]},
+            {"$set": {"assistant_status": "traité", "handled_at": datetime.now(timezone.utc).isoformat()}})
+        return f"✅ Réponse envoyée à {lead.get('name','')} ({to_email}) et lead marqué « traité »."
+    if t == "create_appointment":
+        import google_calendar as gcal
+        if not await gcal.is_connected(db):
+            return "⚠️ Google Calendar n'est pas encore connecté. Touche « Connecter Google Calendar » dans l'app."
+        title = (action.get("title") or "").strip()
+        start = (action.get("start") or "").strip()
+        if not title or not start:
+            return "⚠️ Il me faut un titre et une date/heure de début (ISO)."
+        try:
+            ev = await gcal.create_event(
+                db, title=title, start=start, end=(action.get("end") or None),
+                location=(action.get("location") or None), notes=(action.get("notes") or None))
+        except Exception as exc:  # noqa: BLE001
+            return f"⚠️ Échec de la création du rendez-vous : {exc}"
+        return f"✅ Rendez-vous ajouté à Google Calendar : « {title} » le {start}."
     return "⚠️ Action inconnue."
 
 
@@ -335,6 +384,28 @@ async def _erp_snapshot(db) -> str:
         cs = x.get("customer_snapshot") or {}
         lines.append(f"  • SO-{int(x.get('number',0)):04d} {cs.get('name','')} "
                      f"{_money(x.get('total'))} [{x.get('status','')}]")
+    # Recent website leads (contact submissions)
+    leads = await db.contact_submissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(15)
+    new_leads = [l for l in leads if l.get("assistant_status") != "traité"]
+    lines.append(f"LEADS du site (demandes de soumission) : {len(new_leads)} non traité(s) sur {len(leads)} récents")
+    for l in new_leads[:10]:
+        msg = (l.get("message") or "").replace("\n", " ")[:80]
+        lines.append(f"  • {l.get('name','?')} <{l.get('email','')}> "
+                     f"{('· ' + l.get('phone')) if l.get('phone') else ''} — « {msg} »")
+    # Upcoming Google Calendar events
+    try:
+        import google_calendar as gcal
+        if await gcal.is_connected(db):
+            evs = await gcal.list_upcoming(db, 8)
+            lines.append(f"CALENDRIER (prochains rendez-vous Google) : {len(evs)}")
+            for e in evs:
+                st = (e.get("start") or {}).get("dateTime") or (e.get("start") or {}).get("date") or "?"
+                lines.append(f"  • {st} — {e.get('summary','(sans titre)')}"
+                             + (f" @ {e.get('location')}" if e.get("location") else ""))
+        else:
+            lines.append("CALENDRIER : Google Calendar non connecté.")
+    except Exception:
+        pass
     return "\n".join(lines) if lines else "Aucune donnée ERP."
 
 
