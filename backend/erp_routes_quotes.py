@@ -8,17 +8,104 @@ Mirrors the invoice pipeline (same shape, same helpers) but:
     an invoice via `POST /admin/quotes/{id}/convert-to-invoice`.
 """
 import asyncio
+import logging
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
-from erp_helpers import compute_totals, csv_response, send_pdf_email
+from erp_helpers import compute_totals, csv_response, send_html_email, send_pdf_email
 from erp_models import EmailSendRequest, Invoice, Party, Quote, QuoteIn
 from erp_pdf import render_invoice_pdf, render_quote_pdf
 from adams_rite_drawings import load_index, merge_drawing_pages
+from quote_attachments import (
+    append_files_to_pdf, delete_attachment, fetch_attachment, store_attachment,
+)
+
+logger = logging.getLogger("portech.erp.quotes")
+QUOTE_FOLLOWUP_DAYS = 7
+
+ALLOWED_ATTACH_EXTS = {".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
+MAX_ATTACH_BYTES = 15 * 1024 * 1024
+ATTACH_MIME = {
+    ".pdf": "application/pdf", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".png": "image/png", ".webp": "image/webp", ".heic": "image/heic",
+    ".heif": "image/heif",
+}
+
+
+async def _quote_pdf_with_annexes(db, doc: dict) -> bytes:
+    """Render the quote PDF then append Adams Rite pages + client attachments."""
+    pdf_bytes = await asyncio.to_thread(render_quote_pdf, doc)
+    if doc.get("drawing_pages"):
+        pdf_bytes = await asyncio.to_thread(
+            merge_drawing_pages, pdf_bytes, doc["drawing_pages"])
+    atts = doc.get("attachments") or []
+    if atts:
+        files = []
+        for a in atts:
+            raw, ct = await fetch_attachment(db, a.get("id"))
+            if raw is not None:
+                files.append((raw, ct or a.get("content_type"), a.get("filename")))
+        if files:
+            pdf_bytes = await asyncio.to_thread(append_files_to_pdf, pdf_bytes, files)
+    return pdf_bytes
+
+
+async def run_quote_followups(db, days: int = QUOTE_FOLLOWUP_DAYS) -> dict:
+    """Send a polite one-time follow-up to clients for quotes still 'envoyée'
+    after `days` days without a response. Idempotent via `followup_sent_at`."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    cur = db.erp_quotes.find(
+        {"status": "envoyée", "followup_sent_at": {"$in": [None, ""]},
+         "created_at": {"$lte": cutoff}}, {"_id": 0})
+    sent = 0
+    async for q in cur:
+        snap = q.get("customer_snapshot") or {}
+        to_email = (snap.get("email") or "").strip()
+        number = f"SO-{int(q.get('number', 0)):04d}"
+        if not to_email:
+            await db.erp_quotes.update_one(
+                {"id": q["id"]},
+                {"$set": {"followup_sent_at": datetime.now(timezone.utc).isoformat()}})
+            continue
+        html = (
+            f"<p>Bonjour {snap.get('name') or ''},</p>"
+            f"<p>Nous faisons un suivi concernant notre soumission <b>{number}</b> "
+            f"(total estimé {float(q.get('total') or 0):.2f} $ CAD) que nous vous avons "
+            "fait parvenir récemment. Avez-vous des questions ou souhaitez-vous aller "
+            "de l'avant ?</p>"
+            "<p>Nous restons disponibles pour ajuster la soumission au besoin. "
+            "Il suffit de répondre à ce courriel.</p>"
+            "<p>Cordialement,<br/>L'équipe Portech</p>"
+        )
+        try:
+            await send_html_email(to_email=to_email,
+                                  subject=f"Portech — Suivi de votre soumission {number}",
+                                  html=html, footer_note=f"Suivi soumission {number}")
+            await db.erp_quotes.update_one(
+                {"id": q["id"]},
+                {"$set": {"followup_sent_at": datetime.now(timezone.utc).isoformat()}})
+            sent += 1
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Quote follow-up %s failed: %s", number, exc)
+    logger.info("Quote follow-up run: sent=%d", sent)
+    return {"sent": sent}
+
+
+def start_quote_followup_scheduler(db: AsyncIOMotorDatabase) -> AsyncIOScheduler:
+    """Daily @ 08:30 America/Montreal — follow up on unanswered sent quotes."""
+    sched = AsyncIOScheduler(timezone="America/Montreal")
+    sched.add_job(run_quote_followups, "cron", args=[db],
+                  hour=8, minute=30, id="erp_quote_followups", replace_existing=True)
+    sched.start()
+    logger.info("Quote follow-up scheduler started (daily 08:30 America/Montreal)")
+    return sched
 
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number) -> None:
@@ -41,6 +128,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             subtotal=subtotal, tps=tps, tvq=tvq, total=total,
             taxable=data.taxable, notes=data.notes, status=data.status,
             drawing_pages=data.drawing_pages,
+            include_sales_conditions=data.include_sales_conditions,
         )
         await db.erp_quotes.insert_one(q.model_dump())
         return q
@@ -67,6 +155,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             "subtotal": subtotal, "tps": tps, "tvq": tvq, "total": total,
             "taxable": data.taxable, "notes": data.notes, "status": data.status,
             "drawing_pages": data.drawing_pages,
+            "include_sales_conditions": data.include_sales_conditions,
         }
         await db.erp_quotes.update_one({"id": quote_id}, {"$set": update_fields})
         doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
@@ -126,10 +215,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
         if not doc:
             raise HTTPException(404, "Soumission introuvable")
-        pdf_bytes = await asyncio.to_thread(render_quote_pdf, doc)
-        if doc.get("drawing_pages"):
-            pdf_bytes = await asyncio.to_thread(
-                merge_drawing_pages, pdf_bytes, doc["drawing_pages"])
+        pdf_bytes = await _quote_pdf_with_annexes(db, doc)
         filename = f"SO-{int(doc['number']):04d}.pdf"
         return Response(
             content=pdf_bytes,
@@ -137,16 +223,52 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             headers={"Content-Disposition": f'inline; filename="{filename}"'},
         )
 
+    # ── Attachments (client-chosen annex files) ──────────────────
+    @router.post("/quotes/{quote_id}/attachments", response_model=Quote)
+    async def add_quote_attachment(quote_id: str,
+                                   file: UploadFile = File(...),
+                                   _: dict = Depends(auth_dep)):
+        from pathlib import Path as _P
+        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Soumission introuvable")
+        ext = _P(file.filename or "").suffix.lower()
+        if ext not in ALLOWED_ATTACH_EXTS:
+            raise HTTPException(400, f"Format non supporté. Acceptés : {', '.join(sorted(ALLOWED_ATTACH_EXTS))}")
+        raw = await file.read(MAX_ATTACH_BYTES + 1)
+        if len(raw) > MAX_ATTACH_BYTES:
+            raise HTTPException(413, f"Fichier trop volumineux (max {MAX_ATTACH_BYTES // 1024 // 1024} MB)")
+        att_id = uuid.uuid4().hex
+        content_type = file.content_type or ATTACH_MIME.get(ext, "application/octet-stream")
+        await store_attachment(db, att_id=att_id, quote_id=quote_id,
+                               filename=file.filename or f"annexe{ext}",
+                               content_type=content_type, raw=raw)
+        meta = {"id": att_id, "filename": file.filename or f"annexe{ext}",
+                "content_type": content_type, "size": len(raw)}
+        atts = (doc.get("attachments") or []) + [meta]
+        await db.erp_quotes.update_one({"id": quote_id}, {"$set": {"attachments": atts}})
+        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
+        return Quote(**doc)
+
+    @router.delete("/quotes/{quote_id}/attachments/{att_id}", response_model=Quote)
+    async def remove_quote_attachment(quote_id: str, att_id: str,
+                                      _: dict = Depends(auth_dep)):
+        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Soumission introuvable")
+        await delete_attachment(db, att_id)
+        atts = [a for a in (doc.get("attachments") or []) if a.get("id") != att_id]
+        await db.erp_quotes.update_one({"id": quote_id}, {"$set": {"attachments": atts or None}})
+        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
+        return Quote(**doc)
+
     @router.post("/quotes/{quote_id}/send-email")
     async def send_quote_email(quote_id: str, payload: EmailSendRequest,
                                 _: dict = Depends(auth_dep)):
         doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
         if not doc:
             raise HTTPException(404, "Soumission introuvable")
-        pdf_bytes = await asyncio.to_thread(render_quote_pdf, doc)
-        if doc.get("drawing_pages"):
-            pdf_bytes = await asyncio.to_thread(
-                merge_drawing_pages, pdf_bytes, doc["drawing_pages"])
+        pdf_bytes = await _quote_pdf_with_annexes(db, doc)
         number = f"SO-{int(doc['number']):04d}"
         cust = (doc.get("customer_snapshot") or {}).get("name") or ""
         subject = payload.subject or f"Portech — Soumission {number}"

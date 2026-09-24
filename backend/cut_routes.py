@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,8 +53,6 @@ logger = logging.getLogger("portech.cuts")
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 OCR_MODEL = os.environ.get("EXPENSE_OCR_MODEL", "gemini-3-flash-preview")
-UPLOADS_DIR = Path(os.environ.get("CUT_UPLOADS_DIR", "/app/backend/cut_uploads"))
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_PLAN_EXTS = {".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 ALLOWED_DXF_EXTS = {".dxf"}
@@ -549,8 +548,10 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if len(contents) > MAX_UPLOAD_BYTES:
             raise HTTPException(413, f"Fichier trop volumineux (max {MAX_UPLOAD_BYTES // 1024 // 1024} MB)")
         fname = f"plan_{uuid.uuid4().hex}{ext}"
-        out_path = UPLOADS_DIR / fname
-        out_path.write_bytes(contents)
+        tf = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+        tf.write(contents)
+        tf.close()
+        out_path = Path(tf.name)
         mime = MIME_BY_EXT.get(ext, "application/octet-stream")
         try:
             result = await _ocr_plan(out_path, mime)
@@ -560,7 +561,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             logger.warning("OCR plan failed: %s", exc)
             raise HTTPException(502, f"Échec de l'extraction OCR : {exc}")
         finally:
-            # Remove uploaded file after parsing — we keep only the structured items
+            # Remove the transient temp file after parsing — we keep only the structured items
             try:
                 out_path.unlink(missing_ok=True)
             except Exception:
@@ -668,8 +669,10 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if len(contents) > MAX_UPLOAD_BYTES:
             raise HTTPException(413, f"Fichier trop volumineux (max {MAX_UPLOAD_BYTES // 1024 // 1024} MB)")
         fname = f"plan_{uuid.uuid4().hex}{ext}"
-        out_path = UPLOADS_DIR / fname
-        out_path.write_bytes(contents)
+        tf = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+        tf.write(contents)
+        tf.close()
+        out_path = Path(tf.name)
         try:
             result = parse_dxf(str(out_path))
         finally:

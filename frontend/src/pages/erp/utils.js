@@ -113,6 +113,7 @@ export const emptyQuote = () => ({
     taxable: true,
     notes: "",
     status: "brouillon",
+    include_sales_conditions: false,
 });
 
 export const emptyPO = () => ({
@@ -341,7 +342,7 @@ export const emptyProductionPlan = () => ({
     include_section_details: true,
     include_anchors: true,
     show_costs: false,
-    include_hardware_drawings: true,
+    include_hardware_drawings: false,
     status: "brouillon",
     doors: [emptyProductionDoor()],
     notes: "",

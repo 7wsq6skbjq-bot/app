@@ -237,6 +237,57 @@ async def send_lead_notification(sub: ContactSubmission) -> bool:
         return False
 
 
+async def send_lead_autoreply(sub: ContactSubmission) -> bool:
+    """Send an automatic branded acknowledgment to the person who submitted
+    the website quote request (French first, English smaller below)."""
+    if not resend.api_key:
+        return False
+    try:
+        html = f"""
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-family: Arial, sans-serif; background:#f4f4f5; padding:24px;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border:1px solid #e4e4e7;">
+              <tr><td style="background:#0c182b; padding:24px;">
+                <h1 style="color:#ffffff; font-size:20px; margin:0; letter-spacing:1px; text-transform:uppercase;">PORTECH</h1>
+                <p style="color:#93a5c9; margin:6px 0 0 0; font-size:12px;">Quincaillerie et portes commerciales en aluminium</p>
+              </td></tr>
+              <tr><td style="padding:26px 26px 8px 26px; color:#27272a; font-size:14px; line-height:1.6;">
+                <p style="margin:0 0 12px 0;">Bonjour {sub.name},</p>
+                <p style="margin:0 0 12px 0;">Nous vous confirmons la bonne réception de votre demande de soumission.
+                Merci de votre intérêt envers Portech. Un membre de notre équipe communiquera avec vous
+                <b>dans les plus brefs délais</b> afin de bien comprendre votre projet et vous fournir une soumission adaptée.</p>
+                <p style="margin:0 0 4px 0;">Cordialement,</p>
+                <p style="margin:0; font-weight:bold;">L'équipe Portech</p>
+              </td></tr>
+              <tr><td style="padding:6px 26px 22px 26px; color:#71717a; font-size:12px; line-height:1.6; border-top:1px solid #eef2f8;">
+                <p style="margin:12px 0 8px 0;">Hello {sub.name},</p>
+                <p style="margin:0 0 8px 0;">We confirm we have received your quote request.
+                Thank you for your interest in Portech. A member of our team will get back to you
+                <b>as soon as possible</b> to better understand your project and provide a tailored quote.</p>
+                <p style="margin:0;">Best regards,<br/>The Portech Team</p>
+              </td></tr>
+              <tr><td style="padding:14px 26px; background:#f4f4f5; color:#52525b; font-size:11px;">
+                Portech · {SENDER_EMAIL} · portech.info
+              </td></tr>
+            </table>
+          </td></tr>
+        </table>
+        """
+        params = {
+            "from": f"Portech <{SENDER_EMAIL}>",
+            "to": [str(sub.email)],
+            "reply_to": LEADS_RECIPIENT_EMAIL,
+            "subject": "Portech — Demande reçue / Request received",
+            "html": html,
+        }
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info("Lead auto-reply sent (id=%s) to %s", result.get("id"), sub.email)
+        return True
+    except Exception as exc:
+        logger.error("Failed to send lead auto-reply: %s", exc)
+        return False
+
+
 # ==============================================================
 # Public routes
 # ==============================================================
@@ -268,6 +319,8 @@ async def create_contact_submission(payload: ContactSubmissionCreate):
     submission = ContactSubmission(**payload.model_dump())
     email_ok = await send_lead_notification(submission)
     submission.email_sent = email_ok
+    # Fire-and-forget style auto-reply to the requester (bilingual FR/EN)
+    await send_lead_autoreply(submission)
 
     doc = submission.model_dump()
     doc["email"] = str(doc["email"])
@@ -384,6 +437,10 @@ async def startup_event():
         app.state.recap_scheduler = start_recap_scheduler(db)
         app.state.backup_scheduler = start_backup_scheduler(db)
         app.state.briefing_scheduler = start_jobs_briefing_scheduler(db)
+        from erp_routes_statements import start_statements_scheduler
+        from erp_routes_quotes import start_quote_followup_scheduler
+        app.state.statements_scheduler = start_statements_scheduler(db)
+        app.state.quote_followup_scheduler = start_quote_followup_scheduler(db)
     else:
         app.state.scheduler = None
         app.state.recap_scheduler = None

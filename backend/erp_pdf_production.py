@@ -21,7 +21,6 @@ from fractions import Fraction
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import LETTER, landscape
-from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas as canvas_mod
 
 from at_profile_library import PROFILES as AL_PROFILES
@@ -374,13 +373,13 @@ def _dual(inches: float) -> str:
     return f'{inches * 25.4:.1f} [{_inch_fmt(inches)}]'
 
 
-def _dual_mm(mm) -> str:
+def _dual_mm(mm_val) -> str:
     """Return 'mm [inch]' from a millimetre value."""
     try:
-        mm = float(mm)
+        mm_val = float(mm_val)
     except (TypeError, ValueError):
         return "—"
-    return f'{mm:.1f} [{_inch_fmt(mm / 25.4)}]'
+    return f'{mm_val:.1f} [{_inch_fmt(mm_val / 25.4)}]'
 
 
 _FR_MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",

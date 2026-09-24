@@ -360,6 +360,87 @@ def render_invoice_pdf(inv: dict) -> bytes:
     return buf.read()
 
 
+def render_statement_pdf(customer: dict, invoices: list, *,
+                          as_of: str | None = None, only_unpaid: bool = True) -> bytes:
+    """État de compte — statement of account for one customer.
+
+    Lists the customer's invoices (unpaid by default) with the balance due,
+    then a grand total. `invoices` are raw invoice dicts already filtered to
+    this customer.
+    """
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    story.append(_header(s, "ÉTAT DE COMPTE", _date_fr(as_of) if as_of else _date_fr(None), None))
+    story.append(Spacer(1, 8 * mm))
+
+    party = _party_block(s, "Client", customer or {})
+    meta = _meta_grid(s, [
+        ("Date", _date_fr(as_of)),
+        ("Type", "Soldes dus" if only_unpaid else "Historique complet"),
+    ])
+    side = Table([[party, meta]], colWidths=[95 * mm, 75 * mm])
+    side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(side)
+    story.append(Spacer(1, 6 * mm))
+
+    header = ["No facture", "Date", "Échéance", "Statut", "Solde dû"]
+    data = [header]
+    balance = 0.0
+    for inv in invoices:
+        num = f"FAC-{int(inv.get('number', 0)):04d}"
+        total = float(inv.get("total") or 0)
+        balance += total
+        data.append([
+            num, _date_fr(inv.get("date")), _date_fr(inv.get("due_date")),
+            (inv.get("status") or "—").upper(), _money(total),
+        ])
+    if len(data) == 1:
+        data.append(["—", "—", "—", "—", _money(0)])
+    t = Table(data, colWidths=[30 * mm, 30 * mm, 30 * mm, 30 * mm, 30 * mm], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (4, 0), (4, -1), "RIGHT"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.4, NAVY_BORDER),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 4 * mm))
+
+    tot = Table([["SOLDE TOTAL DÛ", _money(balance)]], colWidths=[60 * mm, 40 * mm], hAlign="RIGHT")
+    tot.setStyle(TableStyle([
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LINEABOVE", (0, 0), (-1, 0), 1.5, NAVY),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 12),
+        ("TEXTCOLOR", (0, 0), (-1, 0), NAVY),
+        ("TOPPADDING", (0, 0), (-1, 0), 8),
+    ]))
+    story.append(tot)
+
+    story.append(Spacer(1, 10 * mm))
+    story.append(Paragraph(
+        "Ce document est un état de compte à titre informatif. Pour toute "
+        "question ou pour régler un solde, communiquez avec nous à "
+        f"<b>{COMPANY['email']}</b>. Merci de votre confiance.",
+        s["footer"],
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
+
 SALES_CONDITIONS = [
     ("1. ACCEPTATION DE LA SOUMISSION",
      "L'acceptation de la soumission par le client constitue une autorisation ferme de procéder à la commande des matériaux, à la fabrication et/ou à l'exécution des travaux décrits à la soumission. Toute acceptation écrite, électronique ou toute autorisation permettant à Portech de débuter les travaux ou de commander les matériaux sera considérée comme une acceptation des présentes conditions. La soumission est valide pour une période de 30 jours, sauf indication contraire."),
@@ -500,8 +581,9 @@ def render_quote_pdf(q: dict) -> bytes:
         s["footer"],
     ))
 
-    # Annexe — conditions de vente (contrat) sur chaque soumission
-    story += _sales_conditions_story(s, q)
+    # Annexe — conditions de vente (contrat), seulement si demandé
+    if q.get("include_sales_conditions"):
+        story += _sales_conditions_story(s, q)
 
     doc.build(story)
     buf.seek(0)

@@ -156,6 +156,8 @@ class Quote(BaseModel):
     status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
     converted_invoice_id: Optional[str] = None       # set when converted → facture
     drawing_pages: Optional[List[int]] = None         # Adams Rite Parts Manual pages
+    include_sales_conditions: bool = False            # joindre l'annexe conditions de vente
+    attachments: Optional[List[dict]] = None          # fichiers annexés (GridFS): [{id,filename,content_type}]
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -170,6 +172,7 @@ class QuoteIn(BaseModel):
     notes: Optional[str] = None
     status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
     drawing_pages: Optional[List[int]] = None         # Adams Rite Parts Manual pages
+    include_sales_conditions: bool = False
 
 
 

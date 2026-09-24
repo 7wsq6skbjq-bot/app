@@ -21,11 +21,14 @@ import { PaymentNoticesPanel } from "./erp/panels/PaymentNoticesPanel";
 import { ComposeEmailPanel } from "./erp/panels/ComposeEmailPanel";
 import { JobsPanel } from "./erp/panels/JobsPanel";
 import { CatalogPanel } from "./erp/panels/CatalogPanel";
+import { StatementsPanel } from "./erp/panels/StatementsPanel";
+import { AssistantPanel } from "./erp/panels/AssistantPanel";
 import { MobileTabBar } from "../components/mobile/MobileTabBar";
 
 const TABS = [
     { slug: "tableau-de-bord", label: "Tableau de bord", panel: "dashboard" },
     { slug: "suivi-jobs",      label: "Suivi des jobs",  panel: "jobs" },
+    { slug: "assistante-ia",   label: "Assistante IA",   panel: "assistant" },
     { slug: "calendrier",      label: "Calendrier",      panel: "calendar" },
     { slug: "clients",         label: "Clients",         panel: "parties-customer" },
     { slug: "fournisseurs",    label: "Fournisseurs",    panel: "parties-supplier" },
@@ -33,6 +36,7 @@ const TABS = [
     { slug: "catalogue-quincaillerie", label: "Catalogue quincaillerie", panel: "catalog" },
     { slug: "soumissions",     label: "Soumissions",     panel: "quotes" },
     { slug: "factures",        label: "Factures",        panel: "invoices" },
+    { slug: "etats-de-compte", label: "États de compte", panel: "statements" },
     { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
     { slug: "connaissements",  label: "Connaissements",  panel: "bills-of-lading" },
     { slug: "depenses",        label: "Dépenses",        panel: "expenses" },
@@ -102,12 +106,14 @@ const AdminErp = () => {
             <main className="container-portech py-4 md:py-8 px-3 md:px-6">
                 {activeTab.panel === "dashboard" && <DashboardPanel />}
                 {activeTab.panel === "jobs" && <JobsPanel />}
+                {activeTab.panel === "assistant" && <AssistantPanel />}
                 {activeTab.panel === "calendar" && <CalendarPanel />}
                 {activeTab.panel === "parties-customer" && <PartiesPanel kind="customer" />}
                 {activeTab.panel === "parties-supplier" && <PartiesPanel kind="supplier" />}
                 {activeTab.panel === "products" && <ProductsPanel />}
                 {activeTab.panel === "catalog" && <CatalogPanel />}
                 {activeTab.panel === "invoices" && <InvoicesPanel />}
+                {activeTab.panel === "statements" && <StatementsPanel />}
                 {activeTab.panel === "quotes" && <QuotesPanel />}
                 {activeTab.panel === "purchase-orders" && <PurchaseOrdersPanel />}
                 {activeTab.panel === "bills-of-lading" && <BolPanel />}

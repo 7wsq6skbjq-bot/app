@@ -15,6 +15,73 @@ const SIM_PCTS = [5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100];
 const TARGETS = [30, 35, 40, 45, 50, 55, 60];
 
 /**
+ * QuoteAttachments — upload/list/delete client-chosen annex files (PDF/images)
+ * that get appended to the quote PDF. Persisted server-side in GridFS.
+ */
+const QuoteAttachments = ({ http, quoteId, attachments, onChange }) => {
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState("");
+
+    const upload = async (file) => {
+        if (!file) return;
+        setBusy(true); setErr("");
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const { data } = await http.post(`/admin/quotes/${quoteId}/attachments`, fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            onChange(data.attachments || []);
+        } catch (e) {
+            setErr(e?.response?.data?.detail || "Échec du téléversement");
+        } finally { setBusy(false); }
+    };
+
+    const remove = async (attId) => {
+        setBusy(true); setErr("");
+        try {
+            const { data } = await http.delete(`/admin/quotes/${quoteId}/attachments/${attId}`);
+            onChange(data.attachments || []);
+        } catch (e) {
+            setErr(e?.response?.data?.detail || "Échec de la suppression");
+        } finally { setBusy(false); }
+    };
+
+    return (
+        <div className="mt-4 border border-[#dde5f0] bg-white p-4" data-testid="quote-attachments">
+            <div className="tech-stamp text-[#0c182b] font-bold mb-1">Fichiers en annexe (PDF / images)</div>
+            <p className="text-xs text-[#4b5d7a] mb-3">
+                Ajoutez vos propres fichiers (fiche technique, photo, plan) — ils seront
+                joints à la fin du PDF de la soumission. Vous contrôlez exactement ce qui est envoyé.
+            </p>
+            {err && <div className="mb-2 text-xs text-red-600">{err}</div>}
+            <ul className="space-y-1 mb-3">
+                {(attachments || []).map((a) => (
+                    <li key={a.id} data-testid={`quote-attachment-${a.id}`}
+                        className="flex items-center justify-between gap-3 text-sm border border-[#eef2f8] px-3 py-2">
+                        <span className="truncate">{a.filename}</span>
+                        <button type="button" onClick={() => remove(a.id)} disabled={busy}
+                            data-testid={`quote-attachment-del-${a.id}`}
+                            className="p-1.5 border border-[#dde5f0] hover:bg-red-50 text-red-600 disabled:opacity-40">
+                            <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                    </li>
+                ))}
+                {(!attachments || attachments.length === 0) && (
+                    <li className="text-xs text-[#9aa8bd] italic">Aucun fichier joint.</li>
+                )}
+            </ul>
+            <label className="btn-secondary !py-1.5 !px-3 !text-xs inline-flex items-center gap-1 cursor-pointer">
+                <Plus className="w-3 h-3" /> {busy ? "Téléversement…" : "Ajouter un fichier"}
+                <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
+                    data-testid="quote-attachment-input"
+                    onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
+            </label>
+        </div>
+    );
+};
+
+/**
  * DocumentForm — shared UI for Invoice and Purchase Order (same shape).
  * Props:
  * - kind: "invoice" | "purchase-order"
@@ -32,6 +99,7 @@ export const DocumentForm = ({
     onChange,
     statuses,
 }) => {
+    const { http } = useAuth();
     const isInvoice = kind === "invoice";
     const isQuote = kind === "quote";
     const usesCustomer = isInvoice || isQuote;
@@ -238,6 +306,17 @@ export const DocumentForm = ({
                         />
                         Appliquer TPS (5 %) + TVQ (9,975 %)
                     </label>
+                    {isQuote && (
+                        <label className="flex items-center gap-2 text-sm mt-3">
+                            <input
+                                type="checkbox"
+                                checked={!!value.include_sales_conditions}
+                                onChange={(e) => set("include_sales_conditions", e.target.checked)}
+                                data-testid="doc-quote-sales-conditions"
+                            />
+                            Joindre les conditions de vente (annexe contrat)
+                        </label>
+                    )}
                     <Field label="Notes" className="mt-4">
                         <textarea rows={3} value={value.notes || ""} onChange={(e) => set("notes", e.target.value)} className={inputClass} />
                     </Field>
@@ -251,8 +330,18 @@ export const DocumentForm = ({
                 </div>
             </div>
 
+            {/* === Client-chosen annex attachments (quotes only, after save) === */}
+            {isQuote && value.id && (
+                <QuoteAttachments
+                    http={http}
+                    quoteId={value.id}
+                    attachments={value.attachments || []}
+                    onChange={(atts) => onChange({ ...value, attachments: atts })}
+                />
+            )}
+
             {/* === CONFIDENTIAL profit-margin panel (never shown to client) === */}
-            {kind === "quote" && (
+            {(kind === "quote" || kind === "invoice") && (
                 <ProfitMarginPanel
                     items={value.items}
                     products={products}

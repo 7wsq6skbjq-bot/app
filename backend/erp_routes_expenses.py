@@ -5,7 +5,9 @@ import json
 import logging
 import os
 import re
+import tempfile
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -16,8 +18,9 @@ from emergentintegrations.llm.chat import (
     UserMessage,
 )
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from fastapi.responses import StreamingResponse
+from gridfs.errors import NoFile
+from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
 
 from erp_models_expense import (
     EXPENSE_CATEGORIES,
@@ -29,8 +32,62 @@ from erp_models_expense import (
 
 logger = logging.getLogger("portech.expenses")
 
-RECEIPTS_DIR = Path(os.environ.get("EXPENSE_RECEIPTS_DIR", "/app/backend/receipts"))
-RECEIPTS_DIR.mkdir(parents=True, exist_ok=True)
+RECEIPTS_BUCKET = "expense_receipts"
+
+
+def _receipts_bucket(db: AsyncIOMotorDatabase) -> AsyncIOMotorGridFSBucket:
+    return AsyncIOMotorGridFSBucket(db, bucket_name=RECEIPTS_BUCKET)
+
+
+async def _store_receipt(db, key: str, content_type: str, raw: bytes) -> None:
+    """Persist receipt bytes in GridFS (survives container redeploys)."""
+    await _delete_receipt(db, key)  # replace any existing with the same key
+    await _receipts_bucket(db).upload_from_stream(
+        key, raw, metadata={"receipt_key": key, "content_type": content_type},
+    )
+
+
+async def _fetch_receipt(db, key: str):
+    """Return (bytes, content_type) for a stored receipt, or (None, None)."""
+    bucket = _receipts_bucket(db)
+    docs = await bucket.find({"metadata.receipt_key": key}).to_list(1)
+    if not docs:
+        return None, None
+    stream = await bucket.open_download_stream(docs[0]._id)
+    data = await stream.read()
+    return data, (docs[0].metadata or {}).get("content_type")
+
+
+async def _delete_receipt(db, key: str) -> None:
+    bucket = _receipts_bucket(db)
+    async for gf in bucket.find({"metadata.receipt_key": key}):
+        try:
+            await bucket.delete(gf._id)
+        except NoFile:
+            pass
+
+
+@contextmanager
+def _temp_file(raw: bytes, ext: str):
+    """Write bytes to an OS temp file for transient processing (OCR); auto-clean."""
+    tf = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+    try:
+        tf.write(raw)
+        tf.flush()
+        tf.close()
+        yield Path(tf.name)
+    finally:
+        try:
+            os.unlink(tf.name)
+        except OSError:
+            pass
+
+
+MIME_BY_RECEIPT_EXT = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+    ".webp": "image/webp", ".heic": "image/heic", ".heif": "image/heif",
+    ".pdf": "application/pdf",
+}
 
 ALLOWED_RECEIPT_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".pdf"}
 ALLOWED_RECEIPT_MIME = {
@@ -185,15 +242,10 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
     @router.delete("/expenses/{expense_id}")
     async def delete_expense(expense_id: str, _: dict = Depends(auth_dep)):
-        # Delete receipt file too
+        # Delete receipt from GridFS too
         exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
         if exp and exp.get("receipt_filename"):
-            fp = RECEIPTS_DIR / exp["receipt_filename"]
-            if fp.exists():
-                try:
-                    fp.unlink()
-                except Exception:
-                    pass
+            await _delete_receipt(db, exp["receipt_filename"])
         res = await db.erp_expenses.delete_one({"id": expense_id})
         if res.deleted_count == 0:
             raise HTTPException(404, "Dépense introuvable")
@@ -263,19 +315,14 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if len(contents) > MAX_RECEIPT_BYTES:
             raise HTTPException(413, f"Fichier trop volumineux (max {MAX_RECEIPT_BYTES // 1024 // 1024} MB)")
 
-        # Remove previous file if any
+        # Remove previous receipt (in GridFS) if any
         if exp.get("receipt_filename"):
-            old = RECEIPTS_DIR / exp["receipt_filename"]
-            if old.exists():
-                try:
-                    old.unlink()
-                except Exception:
-                    pass
+            await _delete_receipt(db, exp["receipt_filename"])
 
-        # Save with a fresh UUID name to avoid collisions
+        # Store with a fresh UUID key in GridFS (persistent across redeploys)
         fname = f"{expense_id}_{uuid.uuid4().hex[:8]}{ext}"
-        out_path = RECEIPTS_DIR / fname
-        out_path.write_bytes(contents)
+        content_type = MIME_BY_RECEIPT_EXT.get(ext, "application/octet-stream")
+        await _store_receipt(db, fname, content_type, contents)
 
         await db.erp_expenses.update_one(
             {"id": expense_id},
@@ -285,21 +332,20 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
     @router.get("/expenses/{expense_id}/receipt")
     async def download_receipt(expense_id: str, _: dict = Depends(auth_dep)):
-        """Stream the receipt file. Authenticated only."""
+        """Stream the receipt file from GridFS. Authenticated only."""
         exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
         if not exp or not exp.get("receipt_filename"):
             raise HTTPException(404, "Aucun reçu pour cette dépense")
-        fp = RECEIPTS_DIR / exp["receipt_filename"]
-        if not fp.exists():
+        fname = exp["receipt_filename"]
+        data, content_type = await _fetch_receipt(db, fname)
+        if data is None:
             raise HTTPException(404, "Fichier introuvable")
-        # Pick mime by extension
-        mime_by_ext = {
-            ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
-            ".webp": "image/webp", ".heic": "image/heic", ".heif": "image/heif",
-            ".pdf": "application/pdf",
-        }
-        mime = mime_by_ext.get(fp.suffix.lower(), "application/octet-stream")
-        return FileResponse(fp, media_type=mime, filename=fp.name)
+        mime = content_type or MIME_BY_RECEIPT_EXT.get(
+            Path(fname).suffix.lower(), "application/octet-stream")
+        return StreamingResponse(
+            iter([data]), media_type=mime,
+            headers={"Content-Disposition": f'inline; filename="{fname}"'},
+        )
 
     @router.delete("/expenses/{expense_id}/receipt")
     async def delete_receipt(expense_id: str, _: dict = Depends(auth_dep)):
@@ -308,12 +354,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             raise HTTPException(404, "Dépense introuvable")
         fname = exp.get("receipt_filename")
         if fname:
-            fp = RECEIPTS_DIR / fname
-            if fp.exists():
-                try:
-                    fp.unlink()
-                except Exception:
-                    pass
+            await _delete_receipt(db, fname)
         await db.erp_expenses.update_one(
             {"id": expense_id},
             {"$set": {"receipt_filename": None, "updated_at": datetime.now(timezone.utc).isoformat()}},
@@ -326,19 +367,22 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
         if not exp or not exp.get("receipt_filename"):
             raise HTTPException(404, "Aucun reçu pour cette dépense")
-        fp = RECEIPTS_DIR / exp["receipt_filename"]
-        if not fp.exists():
+        fname = exp["receipt_filename"]
+        data, _ct = await _fetch_receipt(db, fname)
+        if data is None:
             raise HTTPException(404, "Fichier introuvable")
-        mime = GEMINI_MIME_BY_EXT.get(fp.suffix.lower(), "image/jpeg")
-        return await _ocr_receipt(fp, mime)
+        ext = Path(fname).suffix.lower()
+        mime = GEMINI_MIME_BY_EXT.get(ext, "image/jpeg")
+        with _temp_file(data, ext) as fp:
+            return await _ocr_receipt(fp, mime)
 
     @router.post("/expenses/ocr-scan")
     async def ocr_scan(file: UploadFile = File(...), _: dict = Depends(auth_dep)):
         """Scan a raw image upload (snap-first workflow).
 
-        Saves the file to a temp slot, runs OCR, returns the extracted fields
-        plus a `temp_filename` the frontend can pass to /expenses + then call
-        /expenses/{id}/receipt/attach-temp to move it permanently.
+        Stores the file in a GridFS temp slot, runs OCR, returns the extracted
+        fields plus a `temp_filename` the frontend can pass to /expenses + then
+        call /expenses/{id}/receipt/attach-temp to move it permanently.
         """
         ext = Path(file.filename or "").suffix.lower()
         if ext not in ALLOWED_RECEIPT_EXTS:
@@ -346,15 +390,16 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         contents = await file.read(MAX_RECEIPT_BYTES + 1)
         if len(contents) > MAX_RECEIPT_BYTES:
             raise HTTPException(413, f"Fichier trop volumineux (max {MAX_RECEIPT_BYTES // 1024 // 1024} MB)")
-        # Save to temp slot (will be moved to permanent when attach-temp is called)
+        # Store in a GridFS temp slot (moved to permanent when attach-temp is called)
         temp_fname = f"_tmp_{uuid.uuid4().hex}{ext}"
-        out_path = RECEIPTS_DIR / temp_fname
-        out_path.write_bytes(contents)
+        content_type = MIME_BY_RECEIPT_EXT.get(ext, "application/octet-stream")
+        await _store_receipt(db, temp_fname, content_type, contents)
         mime = GEMINI_MIME_BY_EXT.get(ext, "image/jpeg")
         try:
-            extracted = await _ocr_receipt(out_path, mime)
+            with _temp_file(contents, ext) as fp:
+                extracted = await _ocr_receipt(fp, mime)
         except Exception as exc:
-            # Don't delete the temp file — user might still want to keep it without OCR
+            # Keep the temp GridFS entry — user might still want to keep it without OCR
             logger.warning("OCR failed: %s", exc)
             extracted = {"confidence": 0, "error": str(exc)}
         return {"temp_filename": temp_fname, **extracted}
@@ -366,29 +411,24 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         _: dict = Depends(auth_dep),
     ):
         """Move a temp receipt (from /ocr-scan) onto an existing expense."""
-        # Strict format: _tmp_<32 hex>.<ext>  — prevents ../ traversal
+        # Strict format: _tmp_<32 hex>.<ext>
         if not re.fullmatch(r"_tmp_[a-f0-9]{32}\.[a-z0-9]+", temp_filename):
             raise HTTPException(400, "Nom de fichier temporaire invalide")
-        temp_path = (RECEIPTS_DIR / temp_filename).resolve()
-        # Defense in depth: ensure the resolved path is inside RECEIPTS_DIR
-        if RECEIPTS_DIR.resolve() not in temp_path.parents:
-            raise HTTPException(400, "Chemin invalide")
-        if not temp_path.exists():
+        data, content_type = await _fetch_receipt(db, temp_filename)
+        if data is None:
             raise HTTPException(404, "Fichier temporaire introuvable")
         exp = await db.erp_expenses.find_one({"id": expense_id}, {"_id": 0})
         if not exp:
             raise HTTPException(404, "Dépense introuvable")
         # Remove previous receipt if any
         if exp.get("receipt_filename"):
-            old = RECEIPTS_DIR / exp["receipt_filename"]
-            if old.exists():
-                try:
-                    old.unlink()
-                except Exception:
-                    pass
-        ext = temp_path.suffix
+            await _delete_receipt(db, exp["receipt_filename"])
+        ext = Path(temp_filename).suffix
         new_name = f"{expense_id}_{uuid.uuid4().hex[:8]}{ext}"
-        temp_path.rename(RECEIPTS_DIR / new_name)
+        await _store_receipt(db, new_name,
+                             content_type or MIME_BY_RECEIPT_EXT.get(ext.lower(), "application/octet-stream"),
+                             data)
+        await _delete_receipt(db, temp_filename)  # clean up temp slot
         await db.erp_expenses.update_one(
             {"id": expense_id},
             {"$set": {"receipt_filename": new_name, "updated_at": datetime.now(timezone.utc).isoformat()}},

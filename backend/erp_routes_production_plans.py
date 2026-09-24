@@ -27,7 +27,7 @@ from adams_rite_drawings import detect_from_hardware, load_index, merge_drawing_
 def _plan_drawing_pages(doc: dict) -> list:
     """Union of manually-selected pages + auto-detected pages from hardware."""
     pages = set(int(p) for p in (doc.get("drawing_pages") or []))
-    if doc.get("include_hardware_drawings", True):
+    if doc.get("include_hardware_drawings", False):
         texts = []
         for d in doc.get("doors", []):
             for hw in (d.get("hardware") or []):
@@ -128,7 +128,7 @@ class ProductionPlanIn(BaseModel):
     include_section_details: bool = True
     include_anchors: bool = True
     show_costs: bool = False
-    include_hardware_drawings: bool = True   # annexer auto les dessins Adams Rite
+    include_hardware_drawings: bool = False   # annexer auto les dessins Adams Rite (manuel par défaut)
     drawing_pages: Optional[List[int]] = None  # pages manuelles supplémentaires
     status: PlanStatus = "brouillon"
     doors: List[DoorPlan] = Field(default_factory=list)
@@ -428,7 +428,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
                 texts.append(f"{hw.get('description', '')} {hw.get('part_number', '')}")
         return {"detected": detect_from_hardware(texts),
                 "manual_pages": doc.get("drawing_pages") or [],
-                "auto": doc.get("include_hardware_drawings", True),
+                "auto": doc.get("include_hardware_drawings", False),
                 "all_drawings": list(load_index())}
 
     @router.get("/production-plans/{plan_id}/pdf")
