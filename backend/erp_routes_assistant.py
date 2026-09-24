@@ -19,12 +19,22 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
 from erp_helpers import send_html_email
+from erp_models import Party
 from erp_routes_statements import send_statement_email, unpaid_groups
 
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 ASSISTANT_MODEL = ("anthropic", "claude-sonnet-4-6")
 
 ACTION_RE = re.compile(r"\[\[ACTION\]\]\s*(\{.*?\})", re.DOTALL)
+ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _num_from(raw, prefix=""):
+    s = str(raw or "").upper().replace(prefix, "").replace("#", "").strip()
+    try:
+        return int(s.lstrip("0") or "0")
+    except ValueError:
+        return None
 
 JOB_STAGE_LABELS = {
     "a_approuver": "À approuver", "depot_recu": "Dépôt reçu (50%)",
@@ -76,6 +86,15 @@ SYSTEM_BASE = (
     "  • create_job — créer un NOUVEAU job. Paramètres: title (titre/description du travail, obligatoire) "
     "et client (nom du client, optionnel). Ex. « nouveau job porte arrière chez Clinique Laval » → "
     "title=\"Porte arrière\", client=\"Clinique Laval\".\n"
+    "  • update_job — modifier un job existant. Paramètres: job (numéro) + un ou plusieurs de : "
+    "target_date (date de livraison AU FORMAT ISO AAAA-MM-JJ), title, client, notes, total, deposit. "
+    "Ex. « livraison vendredi pour le job 12 » → {job:\"12\", target_date:\"<date ISO du prochain vendredi>\"}.\n"
+    "  • mark_invoice_paid — marquer une facture PAYÉE. Paramètre: invoice (numéro, ex. FAC-0007).\n"
+    "  • update_quote_status — changer le statut d'une soumission. Paramètres: quote (SO-XXXX) et status "
+    "(brouillon, envoyée, acceptée, refusée, expirée, annulée).\n"
+    "  • create_client — créer un client. Paramètres: name (obligatoire), email, phone, city, address (optionnels).\n"
+    "IMPORTANT dates : convertis TOUJOURS les dates parlées (« vendredi », « demain », « le 15 ») en "
+    "format ISO AAAA-MM-JJ en te basant sur la date d'aujourd'hui donnée dans les DONNÉES ERP.\n"
     "    Étapes VALIDES (utilise EXACTEMENT une de ces valeurs pour stage) : "
     "a_approuver (À approuver), depot_recu (Dépôt reçu 50%), en_fabrication (En fabrication), "
     "pret (Prêt), livre (Livré), facture (Facturé), paye (Payé), annule (Annulé).\n"
@@ -83,15 +102,19 @@ SYSTEM_BASE = (
     "  1. Pour les ENVOIS DE COURRIEL (send_statement, send_statement_all, send_quote_followup) : tu résumes "
     "D'ABORD ce qui sera envoyé et à qui, puis tu demandes une confirmation explicite « Confirmes-tu ? Réponds oui ». "
     "N'émets JAMAIS la directive à cette étape ; SEULEMENT après un « oui ».\n"
-    "  2. Pour update_job_stage et create_job (réversibles, sans courriel) : tu peux émettre la directive "
-    "DIRECTEMENT dans le même message, après avoir reformulé clairement l'action "
-    "(ex. « Je passe le job 12 à En fabrication » / « Je crée le job “Porte arrière” pour Clinique Laval »).\n"
+    "  2. Pour update_job_stage, create_job, update_job, mark_invoice_paid, update_quote_status et create_client "
+    "(réversibles, sans courriel) : tu peux émettre la directive DIRECTEMENT dans le même message, "
+    "après avoir reformulé clairement l'action.\n"
     "  3. Format EXACT de la directive, seule sur sa ligne à la fin du message :\n"
     "     [[ACTION]] {\"type\":\"send_statement\",\"client\":\"Nom du client\"}\n"
     "     [[ACTION]] {\"type\":\"send_statement_all\"}\n"
     "     [[ACTION]] {\"type\":\"send_quote_followup\",\"quote\":\"SO-0007\"}\n"
     "     [[ACTION]] {\"type\":\"update_job_stage\",\"job\":\"12\",\"stage\":\"en_fabrication\"}\n"
     "     [[ACTION]] {\"type\":\"create_job\",\"title\":\"Porte arrière\",\"client\":\"Clinique Laval\"}\n"
+    "     [[ACTION]] {\"type\":\"update_job\",\"job\":\"12\",\"target_date\":\"2026-06-19\"}\n"
+    "     [[ACTION]] {\"type\":\"mark_invoice_paid\",\"invoice\":\"FAC-0007\"}\n"
+    "     [[ACTION]] {\"type\":\"update_quote_status\",\"quote\":\"SO-0007\",\"status\":\"acceptée\"}\n"
+    "     [[ACTION]] {\"type\":\"create_client\",\"name\":\"Clinique Laval\",\"email\":\"info@x.ca\"}\n"
     "  4. Utilise EXACTEMENT les noms de clients et numéros présents dans les DONNÉES ERP. "
     "Le système exécute l'action et te confirme le résultat — n'invente jamais de confirmation toi-même."
 )
@@ -190,6 +213,89 @@ async def _execute_action(db, action: dict) -> str:
         return (f"✅ Nouveau job créé : {job['job_number']} « {job['title']} »"
                 + (f" pour {job['client_name']}" if job.get("client_name") else "")
                 + f" (étape : {JOB_STAGE_LABELS.get(job['stage'], job['stage'])}).")
+    if t == "update_job":
+        n = _num_from(action.get("job"), "JOB-")
+        if n is None:
+            return "⚠️ Numéro de job invalide."
+        job = await db.erp_jobs.find_one(
+            {"$or": [{"job_number": f"JOB-{n:04d}"}, {"number": n}]}, {"_id": 0})
+        if not job:
+            return f"⚠️ Job JOB-{n:04d} introuvable."
+        upd, changes = {}, []
+        if action.get("target_date"):
+            d = str(action["target_date"]).strip()
+            if not ISO_DATE_RE.match(d):
+                return "⚠️ Date invalide (format attendu AAAA-MM-JJ)."
+            upd["target_date"] = d
+            changes.append(f"livraison au {d}")
+        if action.get("title"):
+            upd["title"] = str(action["title"]).strip()
+            changes.append("titre")
+        if action.get("client") is not None:
+            upd["client_name"] = str(action["client"]).strip()
+            changes.append(f"client {upd['client_name']}")
+        if action.get("notes") is not None:
+            upd["notes"] = str(action["notes"])
+            changes.append("notes")
+        for k in ("total", "deposit"):
+            if action.get(k) is not None:
+                try:
+                    val = float(str(action[k]).replace("$", "").replace(",", ".").strip())
+                except ValueError:
+                    return f"⚠️ Montant « {action[k]} » invalide."
+                upd["deposit_expected" if k == "deposit" else "total"] = val
+                changes.append(f"{k} {val:.2f} $")
+        if not upd:
+            return "⚠️ Rien à modifier — précise la date, le titre, le client, etc."
+        upd["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.erp_jobs.update_one({"id": job["id"]}, {"$set": upd})
+        return f"✅ {job.get('job_number', f'JOB-{n:04d}')} mis à jour : {', '.join(changes)}."
+    if t == "mark_invoice_paid":
+        n = _num_from(action.get("invoice"), "FAC-")
+        if n is None:
+            return "⚠️ Numéro de facture invalide."
+        inv = await db.erp_invoices.find_one({"number": n}, {"_id": 0})
+        if not inv:
+            return f"⚠️ Facture FAC-{n:04d} introuvable."
+        await db.erp_invoices.update_one(
+            {"id": inv["id"]},
+            {"$set": {"status": "payée", "updated_at": datetime.now(timezone.utc).isoformat()}})
+        cs = inv.get("customer_snapshot") or {}
+        return f"✅ Facture FAC-{n:04d} ({cs.get('name','')}, {float(inv.get('total') or 0):.2f} $) marquée PAYÉE."
+    if t == "update_quote_status":
+        n = _num_from(action.get("quote"), "SO-")
+        if n is None:
+            return "⚠️ Numéro de soumission invalide."
+        q = await db.erp_quotes.find_one({"number": n}, {"_id": 0})
+        if not q:
+            return f"⚠️ Soumission SO-{n:04d} introuvable."
+        raw = str(action.get("status", "")).strip().lower()
+        smap = {"accepté": "acceptée", "acceptee": "acceptée", "acceptée": "acceptée",
+                "refusé": "refusée", "refusee": "refusée", "refusée": "refusée",
+                "envoyé": "envoyée", "envoye": "envoyée", "envoyée": "envoyée",
+                "brouillon": "brouillon", "expiré": "expirée", "expiree": "expirée",
+                "expirée": "expirée", "annulé": "annulée", "annulee": "annulée", "annulée": "annulée"}
+        status = smap.get(raw)
+        if not status:
+            return "⚠️ Statut inconnu (brouillon, envoyée, acceptée, refusée, expirée, annulée)."
+        await db.erp_quotes.update_one(
+            {"id": q["id"]},
+            {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}})
+        return f"✅ Soumission SO-{n:04d} : statut → {status}."
+    if t == "create_client":
+        name = (action.get("name") or "").strip()
+        if not name:
+            return "⚠️ Il me faut au moins le nom du client."
+        party = Party(
+            kind="customer", name=name,
+            email=(action.get("email") or None),
+            phone=(action.get("phone") or None),
+            address_line1=(action.get("address") or None),
+            city=(action.get("city") or None),
+        )
+        await db.erp_parties.insert_one(party.model_dump())
+        extra = ", ".join(x for x in [party.email, party.phone, party.city] if x)
+        return f"✅ Client créé : {name}" + (f" ({extra})" if extra else "") + "."
     return "⚠️ Action inconnue."
 
 
@@ -198,7 +304,9 @@ def _money(v) -> str:
 
 
 async def _erp_snapshot(db) -> str:
-    lines = []
+    _JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+    _now = datetime.now(timezone.utc)
+    lines = [f"Date d'aujourd'hui : {_now.date().isoformat()} ({_JOURS[_now.weekday()]})."]
     # Jobs by stage
     jobs = await db.erp_jobs.find({}, {"_id": 0}).to_list(500)
     active = [j for j in jobs if j.get("stage") != "annule"]

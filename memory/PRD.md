@@ -434,3 +434,14 @@ User language: **French**.
   * ACTION create_job (erp_routes_assistant.py) : « nouveau job porte arrière chez Clinique Laval » → crée un job (title obligatoire, client optionnel), numéro via next_number('job') → JOB-XXXX, étape a_approuver, history initial. register_assistant reçoit désormais next_number (erp.py) et assigne le module-level _create_job_fn. Exécuté DIRECTEMENT (réversible). Vérifié e2e : « JOB-0011 « Porte arrière » pour Clinique Laval ».
   * RÉSUMÉ MATINAL PARLÉ : GET /api/admin/assistant/briefing → texte simple (factures impayées + solde + jobs actifs + jobs à livrer aujourd'hui/en retard). Front AdjointeApp.jsx : bouton Sunrise (en-tête) + CTA « Mon résumé du matin » (écran d'accueil) + AUTO 1×/jour à l'ouverture (localStorage portech_adjointe_briefing_date) → affiché comme message + LU À VOIX HAUTE (speechSynthesis). loadHistory ne remplace plus par un historique vide (évite d'effacer le briefing). Vérifié : briefing auto affiché + parlé, bouton présent.
 
+
+- MAJ 2026-09 (Assistante « fait tout » : date de livraison + suite d'actions ERP) : FAIT + VÉRIFIÉ.
+  * Nouvelles actions (erp_routes_assistant.py, exécutées directement car réversibles/sans courriel) :
+    - update_job {job, target_date (ISO), title, client, notes, total, deposit} — dont la DATE DE LIVRAISON. L'IA convertit le langage parlé (« vendredi », « demain », « le 15 ») en ISO AAAA-MM-JJ ; la date du jour + le jour de semaine sont injectés dans _erp_snapshot. Le backend valide ISO_DATE_RE (sinon avertissement). Vérifié e2e : « livraison du job 88 vendredi prochain » (jeu. 2026-09-24) → 2026-09-25 en base.
+    - mark_invoice_paid {invoice: FAC-XXXX} → statut payée.
+    - update_quote_status {quote: SO-XXXX, status} → brouillon/envoyée/acceptée/refusée/expirée/annulée (mappe accepté→acceptée, etc.).
+    - create_client {name, email, phone, city, address} → insert erp_parties (Party model).
+  * Helper _num_from (parse FAC-/SO-/JOB- → int). Prompt système mis à jour avec toutes les actions + exemples de directives + règle ISO pour les dates.
+  * LIMITE connue : une seule directive [[ACTION]] par message (ACTION_RE prend la première). La création de soumissions/factures avec lignes détaillées reste dans l'UI ERP (trop complexe pour une commande vocale unique).
+  * Récap complet des capacités de l'assistante : états de compte (1 client / tous, avec confirmation), relance soumission (avec confirmation), changer étape de job, créer job, modifier job (date livraison/titre/client/notes/total/dépôt), marquer facture payée, changer statut soumission, créer client, résumé matinal parlé.
+
