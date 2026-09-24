@@ -53,16 +53,20 @@ async def _fetch_receipt(db, key: str):
     docs = await bucket.find({"metadata.receipt_key": key}).to_list(1)
     if not docs:
         return None, None
-    stream = await bucket.open_download_stream(docs[0]._id)
+    d0 = docs[0]
+    _id = d0["_id"] if isinstance(d0, dict) else d0._id
+    meta = (d0.get("metadata") if isinstance(d0, dict) else d0.metadata) or {}
+    stream = await bucket.open_download_stream(_id)
     data = await stream.read()
-    return data, (docs[0].metadata or {}).get("content_type")
+    return data, meta.get("content_type")
 
 
 async def _delete_receipt(db, key: str) -> None:
     bucket = _receipts_bucket(db)
     async for gf in bucket.find({"metadata.receipt_key": key}):
         try:
-            await bucket.delete(gf._id)
+            gid = gf["_id"] if isinstance(gf, dict) else gf._id
+            await bucket.delete(gid)
         except NoFile:
             pass
 

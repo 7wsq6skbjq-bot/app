@@ -1,0 +1,38 @@
+{
+  "summary": "Iter18: validated the 8 new features. Backend pytest (7/7 pass) + frontend e2e via Playwright. Statements panel shows total 5 367,04 $ with 2 client rows + PDF/send buttons + 'Envoyer à tous'. Assistant IA answers in French with grounded data (lists the 4 unpaid invoices with correct total), multi-turn keeps context, reset works. Soumissions modal shows the merged quote-profit-panel (per-line margin, project totals, Profit par catégorie, quote-pricing-simulator, quote-pricing-target); the standalone PricingCalculator has been fully removed from the Soumissions list (0 'Calculateur' text on list view). Sales-conditions checkbox is UNCHECKED by default and PUT toggle changes the PDF size (annex appended when ON). Fichiers en annexe block uploads + deletes attachments (backend endpoints POST/DELETE returned 200). Invoice editor also shows quote-profit-panel (as required) and correctly does NOT show the sales-conditions checkbox. Expense receipt GridFS roundtrip fixed (see backend bug below). Production plan model default include_hardware_drawings=False confirmed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Quote/Invoice modal 'Date du document' & 'Valide jusqu'au'", "issues": ["Uses native browser date input rendering mm/dd/yyyy (US) inside a French/CAD app — replace with shadcn calendar or fr-CA format (already reported iter17, still present)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_features_iter18.py",
+    "/app/test_reports/pytest/iter18.xml"
+  ],
+  "action_items": [
+    "None blocking — features work. Optional cosmetic: replace native <input type=date> with a French-locale/shadcn date picker in DocumentForm."
+  ],
+  "critical_code_review_comments": [
+    "BUG FIXED (during testing) — /app/backend/erp_routes_expenses.py :: _fetch_receipt / _delete_receipt and /app/backend/quote_attachments.py :: fetch_attachment / delete_attachment were dereferencing `.\_id` / `.metadata` on the objects returned by AsyncIOMotorGridFSBucket.find() which are plain dicts in the current Motor version → GET /api/admin/expenses/{id}/receipt returned HTTP 500 ('dict' object has no attribute '_id'). Same latent bug in quote_attachments would break the annex merge when generating the quote PDF with attachments. Both fixed to support dict-or-object.",
+    "Login form is flaky in automation (previously noted iter17): occasionally the first submit click doesn't emit /api/auth/login. Using page.type(delay=25) + expect_response with retry is a workaround, but the LoginPage submit handler is worth reviewing for a race with an unsettled auth-hydration state.",
+    "assistant-reset button — the 'Nouvelle conversation' button starts a fresh session_id and clears server-side, but the in-panel messages list is NOT visually cleared on the client after the reset click (len before/after reset was identical in DOM). Minor UX issue; not blocking."
+  ],
+  "updated_files": [
+    "/app/backend/erp_routes_expenses.py",
+    "/app/backend/quote_attachments.py",
+    "/app/backend/tests/test_new_features_iter18.py"
+  ],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100% (all 8 features validated)"},
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md) — works.",
+  "seed_data_creation": "Temporary attachments (TEST_att.png, TEST_attach.png) were uploaded to the first quote during testing and cleaned up afterwards; TEST_ expenses created and deleted; PDF include_sales_conditions restored to False. No residual test data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login flakiness: use page.type() + expect_response('/api/auth/login') + retry up to 4x. Admin ERP routes are /admin/gestion/{slug} (NOT /admin/erp/{slug}). Confirmed working slugs: etats-de-compte, assistante-ia, soumissions, factures. To edit a document, click the row's title=\"Modifier\" pencil button (no dedicated testid). The merged quote-profit-panel is defined in DocumentForm.jsx and appears for BOTH quote and invoice kinds; sales-conditions checkbox is quote-only. Assistant reset only resets session on backend — front DOM keeps old messages visible.",
+  "rca_of_the_issue": "Motor's newer AsyncIOMotorGridFSBucket.find() returns cursor-of-dicts (bson-style) instead of GridOut objects, so `.[_]id` / `.metadata` attribute access raised AttributeError. Fixed by using isinstance(d, dict) fallback for both keys."
+}
