@@ -34,6 +34,8 @@ COMPANY = {
     "tagline": "Quincaillerie et portes commerciales en aluminium — Grand Montréal",
     "email": "info@portech.info",
     "site": "portech.info",
+    "tps": "792834644",
+    "tvq": "4032540070",
 }
 
 
@@ -341,6 +343,13 @@ def render_invoice_pdf(inv: dict) -> bytes:
         inv.get("subtotal", 0), inv.get("tps", 0),
         inv.get("tvq", 0), inv.get("total", 0),
         inv.get("taxable", True), "Total à payer",
+    ))
+
+    story.append(Spacer(1, 3 * mm))
+    story.append(Paragraph(
+        f"<b>Nº TPS :</b> {COMPANY['tps']} &nbsp;&nbsp;·&nbsp;&nbsp; "
+        f"<b>Nº TVQ :</b> {COMPANY['tvq']}",
+        s["footer"],
     ))
 
     if inv.get("notes"):
