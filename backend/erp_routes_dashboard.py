@@ -107,6 +107,16 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         kpi["tvq_recoverable_month"] = round(expenses_tvq_recoverable, 2)
         kpi["expenses_count_month"] = len(expenses_month)
 
+        # Mileage (kilométrage) for current month
+        mileage_cur = db.erp_mileage.find(
+            {"date": {"$gte": f"{month_key}-01", "$lt": f"{month_key}-32"}},
+            {"_id": 0},
+        )
+        mileage_month = [m async for m in mileage_cur]
+        kpi["mileage_km_month"] = round(sum(float(m.get("distance_km", 0)) for m in mileage_month), 1)
+        kpi["mileage_amount_month"] = round(sum(float(m.get("amount", 0)) for m in mileage_month), 2)
+        kpi["mileage_count_month"] = len(mileage_month)
+
         return {
             "kpi": kpi,
             "monthly_revenue": _monthly_revenue(invoices, first_day_month=first_day_month),

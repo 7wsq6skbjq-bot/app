@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     Banknote, FileText, Hourglass, Calendar, Users,
-    Truck, ShoppingCart, Inbox, AlertCircle, TrendingUp, TrendingDown, Wallet,
+    Truck, ShoppingCart, Inbox, AlertCircle, TrendingUp, TrendingDown, Wallet, Route,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatCurrency, formatDate, STATUS_BADGE } from "../utils";
@@ -84,6 +84,7 @@ export const DashboardPanel = () => {
                 <KpiTile icon={Calendar}  label="Payées"             value={`${kpi.invoices_count}`} sub={formatCurrency(kpi.paid_total)} testid="kpi-paid" />
                 <KpiTile icon={Wallet}    label="TPS récupérable"    value={formatCurrency(kpi.tps_recoverable_month || 0)} sub="ce mois" accent="text-[#0b6b2f]" testid="kpi-tps" />
                 <KpiTile icon={Wallet}    label="TVQ récupérable"    value={formatCurrency(kpi.tvq_recoverable_month || 0)} sub="ce mois" accent="text-[#0b6b2f]" testid="kpi-tvq" />
+                <KpiTile icon={Route}     label="Kilométrage du mois" value={formatCurrency(kpi.mileage_amount_month || 0)} sub={`${(kpi.mileage_km_month || 0).toLocaleString("fr-CA", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km · ${kpi.mileage_count_month || 0} trajet(s)`} accent="text-[#2f4f7f]" testid="kpi-mileage" />
             </div>
 
             {/* Sub-counts */}

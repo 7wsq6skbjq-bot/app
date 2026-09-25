@@ -108,6 +108,11 @@ SYSTEM_BASE = (
     "  • mark_lead_done — marquer un lead « traité ». Paramètre: lead (courriel ou nom).\n"
     "  • create_appointment — ajouter un rendez-vous au Google Calendar. Paramètres: title, start "
     "(date-heure ISO, ex. 2026-06-19T14:00:00), end (optionnel), location, notes. Convertis « demain 14h » en ISO.\n"
+    "  • create_mileage — enregistrer un TRAJET kilométrique (livraison/déplacement). Paramètres: "
+    "distance_km (nombre de km, OBLIGATOIRE), client (nom du client, optionnel), origin (départ), "
+    "destination, purpose (motif), rate (taux $/km, défaut 0,73), date (ISO, défaut aujourd'hui). "
+    "Ex. « ajoute 42 km, livraison chez ABC » → {distance_km:42, purpose:\"Livraison\", client:\"ABC\"}. "
+    "Réversible, sans courriel → émets directement.\n"
     "IMPORTANT dates : convertis TOUJOURS les dates parlées (« vendredi », « demain », « le 15 ») en "
     "format ISO AAAA-MM-JJ en te basant sur la date d'aujourd'hui donnée dans les DONNÉES ERP.\n"
     "    Étapes VALIDES (utilise EXACTEMENT une de ces valeurs pour stage) : "
@@ -120,8 +125,8 @@ SYSTEM_BASE = (
     "  1. Pour les ENVOIS DE COURRIEL (send_statement, send_statement_all, send_quote_followup) : tu résumes "
     "D'ABORD ce qui sera envoyé et à qui, puis tu demandes une confirmation explicite « Confirmes-tu ? Réponds oui ». "
     "N'émets JAMAIS la directive à cette étape ; SEULEMENT après un « oui ».\n"
-    "  2. Pour update_job_stage, create_job, update_job, mark_invoice_paid, update_quote_status, create_client "
-    "et mark_lead_done (réversibles, sans courriel) : tu peux émettre la directive DIRECTEMENT dans le même message, "
+    "  2. Pour update_job_stage, create_job, update_job, mark_invoice_paid, update_quote_status, create_client, "
+    "create_mileage et mark_lead_done (réversibles, sans courriel) : tu peux émettre la directive DIRECTEMENT dans le même message, "
     "après avoir reformulé clairement l'action. Pour reply_lead (envoi de courriel), demande confirmation D'ABORD. "
     "create_appointment peut être émis directement.\n"
     "  3. Format EXACT de la directive, seule sur sa ligne à la fin du message :\n"
@@ -134,6 +139,7 @@ SYSTEM_BASE = (
     "     [[ACTION]] {\"type\":\"mark_invoice_paid\",\"invoice\":\"FAC-0007\"}\n"
     "     [[ACTION]] {\"type\":\"update_quote_status\",\"quote\":\"SO-0007\",\"status\":\"acceptée\"}\n"
     "     [[ACTION]] {\"type\":\"create_client\",\"name\":\"Clinique Laval\",\"email\":\"info@x.ca\"}\n"
+    "     [[ACTION]] {\"type\":\"create_mileage\",\"distance_km\":42,\"client\":\"Construction ABC\",\"purpose\":\"Livraison\"}\n"
     "  4. Utilise EXACTEMENT les noms de clients et numéros présents dans les DONNÉES ERP. "
     "Le système exécute l'action et te confirme le résultat — n'invente jamais de confirmation toi-même."
 )
@@ -365,6 +371,45 @@ async def _execute_action(db, action: dict) -> str:
         except Exception:  # noqa: BLE001
             pass
         return f"✅ Rendez-vous ajouté à Google Calendar : « {title} » le {start}."
+    if t == "create_mileage":
+        from erp_helpers import make_next_number_fn
+        try:
+            km = round(float(action.get("distance_km") or 0), 1)
+        except (TypeError, ValueError):
+            km = 0.0
+        if km <= 0:
+            return "⚠️ Il me faut la distance en kilomètres (ex. « ajoute 42 km »)."
+        try:
+            rate = float(action.get("rate") or 0.73)
+        except (TypeError, ValueError):
+            rate = 0.73
+        n = await make_next_number_fn(db)("mileage")
+        now = datetime.now(timezone.utc).isoformat()
+        client_name = (action.get("client") or "").strip() or None
+        client_id = None
+        if client_name:
+            p = await db.erp_parties.find_one(
+                {"kind": "customer", "name": {"$regex": f"^{re.escape(client_name)}", "$options": "i"}},
+                {"_id": 0, "id": 1, "name": 1})
+            if p:
+                client_id, client_name = p["id"], p["name"]
+        entry = {
+            "id": uuid.uuid4().hex, "ref": f"KM-{n:04d}",
+            "date": (action.get("date") or now[:10]),
+            "client_id": client_id, "client_name": client_name,
+            "origin": (action.get("origin") or None),
+            "destination": (action.get("destination") or None),
+            "purpose": (action.get("purpose") or None),
+            "odometer_start": None, "odometer_end": None,
+            "distance_km": km, "rate": rate, "amount": round(km * rate, 2),
+            "vehicle": (action.get("vehicle") or None),
+            "job_id": None, "job_number": None, "notes": None,
+            "invoiced_id": None, "invoiced_number": None,
+            "created_at": now, "updated_at": now,
+        }
+        await db.erp_mileage.insert_one(dict(entry))
+        who = f" pour {client_name}" if client_name else ""
+        return f"✅ Trajet {entry['ref']} enregistré : {km:.0f} km{who} — {entry['amount']:.2f} $ (taux {rate:.2f} $/km)."
     return "⚠️ Action inconnue."
 
 

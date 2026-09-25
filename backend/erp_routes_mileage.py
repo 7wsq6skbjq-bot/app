@@ -12,7 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, ConfigDict, Field
 
-from erp_helpers import make_next_number_fn
+from erp_helpers import make_next_number_fn, compute_totals
+from erp_models import Invoice, LineItem
 from erp_pdf import render_mileage_statement_pdf, render_mileage_trip_pdf
 
 DEFAULT_RATE = 0.73  # ARC / Revenu Québec 2026 — 5 000 premiers km
@@ -51,6 +52,8 @@ class Mileage(MileageIn):
     id: str
     ref: str
     amount: float = 0.0
+    invoiced_id: Optional[str] = None
+    invoiced_number: Optional[int] = None
     created_at: str = Field(default_factory=_now)
     updated_at: str = Field(default_factory=_now)
 
@@ -181,3 +184,54 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             content=pdf, media_type="application/pdf",
             headers={"Content-Disposition": f'inline; filename="releve-km-{month}.pdf"'},
         )
+
+    @router.post("/mileage/invoice", status_code=201)
+    async def mileage_to_invoice(
+        month: Optional[str] = Query(default=None),
+        client_id: str = Query(...),
+        _: dict = Depends(auth_dep),
+    ):
+        """Transforme les trajets NON facturés d'un client (pour le mois) en
+        une facture brouillon (1 ligne résumée, avec TPS/TVQ). Marque les
+        trajets comme facturés."""
+        if not month:
+            month = datetime.now(timezone.utc).strftime("%Y-%m")
+        party = await db.erp_parties.find_one({"id": client_id}, {"_id": 0})
+        if not party:
+            raise HTTPException(404, "Client introuvable")
+        query = {
+            "client_id": client_id,
+            "date": {"$gte": f"{month}-01", "$lt": f"{month}-32"},
+            "invoiced_id": {"$in": [None]},
+        }
+        cur = db.erp_mileage.find(query, {"_id": 0}).sort("date", 1)
+        trips = [d async for d in cur]
+        if not trips:
+            raise HTTPException(400, "Aucun trajet non facturé pour ce client ce mois-ci.")
+        total_km = round(sum(float(t.get("distance_km") or 0) for t in trips), 1)
+        total_amount = round(sum(float(t.get("amount") or 0) for t in trips), 2)
+        km_str = f"{total_km:.1f}".replace(".", ",")
+        desc = f"Frais de déplacement — {km_str} km ({month}, {len(trips)} trajet(s))"
+        items = [LineItem(description=desc, quantity=1, unit_price=total_amount, total=total_amount)]
+        subtotal, tps, tvq, total = compute_totals(items, True)
+        number = await _next("invoice")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        inv = Invoice(
+            number=number,
+            customer_id=client_id,
+            customer_snapshot=party,
+            date=today,
+            items=items,
+            subtotal=subtotal, tps=tps, tvq=tvq, total=total,
+            taxable=True,
+            status="brouillon",
+            notes=f"Facture générée automatiquement à partir du relevé kilométrique de {month}.",
+        )
+        await db.erp_invoices.insert_one(inv.model_dump())
+        await db.erp_mileage.update_many(
+            {"id": {"$in": [t["id"] for t in trips]}},
+            {"$set": {"invoiced_id": inv.id, "invoiced_number": number,
+                      "updated_at": _now()}},
+        )
+        return {"invoice_id": inv.id, "number": number, "trips": len(trips),
+                "subtotal": subtotal, "total": total}

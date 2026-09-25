@@ -39,6 +39,7 @@ export const MileagePanel = () => {
     const [editing, setEditing] = useState(null);
     const [mode, setMode] = useState("direct"); // "direct" | "odometer"
     const [notice, setNotice] = useState("");
+    const [billing, setBilling] = useState(false);
 
     const flash = (m) => { setNotice(m); setTimeout(() => setNotice(""), 5000); };
 
@@ -138,6 +139,20 @@ export const MileagePanel = () => {
         openPdf(`/mileage/report.pdf?${q}`);
     };
 
+    const billTrips = async () => {
+        const clientName = customers.find((c) => c.id === filterClient)?.name || "ce client";
+        if (!window.confirm(`Créer une facture brouillon (avec TPS/TVQ) pour ${clientName} avec les trajets non facturés de ${month} ?`)) return;
+        setBilling(true);
+        try {
+            const { data } = await http.post(`/admin/mileage/invoice?month=${month}&client_id=${encodeURIComponent(filterClient)}`);
+            flash(`✅ Facture brouillon FAC-${String(data.number).padStart(4, "0")} créée (${data.trips} trajet(s), total ${formatCurrency(data.total)}). Vois-la dans l'onglet Factures.`);
+            await load();
+        } catch (e) {
+            const d = e?.response?.data?.detail;
+            alert(Array.isArray(d) ? d.map((x) => x.msg).join(" · ") : (d || "Facturation impossible"));
+        } finally { setBilling(false); }
+    };
+
     const monthOptions = useMemo(() => {
         const out = [];
         const now = new Date();
@@ -179,6 +194,11 @@ export const MileagePanel = () => {
                 <button onClick={openStatementPdf} data-testid="km-statement-pdf" className="btn-secondary !py-2 !px-3 !text-xs" title="Relevé PDF du mois (regroupé)">
                     <FileText className="w-3.5 h-3.5" /> Relevé PDF
                 </button>
+                {filterClient && (
+                    <button onClick={billTrips} data-testid="km-bill" disabled={billing} className="btn-secondary !py-2 !px-3 !text-xs !border-[#0b6b2f] !text-[#0b6b2f]" title="Créer une facture brouillon avec les trajets non facturés de ce client">
+                        <DollarSign className="w-3.5 h-3.5" /> {billing ? "..." : "Facturer ce client"}
+                    </button>
+                )}
                 <button onClick={load} className="btn-secondary !py-2 !px-3 !text-xs">
                     <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
                 </button>
@@ -232,7 +252,10 @@ export const MileagePanel = () => {
                     {rows.map((t) => (
                         <li key={t.id} className="border-b border-[#dde5f0] last:border-b-0 hover:bg-[#f3f6fb]">
                             <div className="grid grid-cols-12 gap-4 px-6 py-3 items-center text-sm">
-                                <div className="col-span-1 font-mono text-xs text-[#2f4f7f]">{t.ref}</div>
+                                <div className="col-span-1 font-mono text-xs text-[#2f4f7f]">
+                                    {t.ref}
+                                    {t.invoiced_number != null && <span className="block mt-0.5 text-[9px] text-[#0b6b2f] font-sans" data-testid={`km-billed-${t.id}`}>Facturé</span>}
+                                </div>
                                 <div className="col-span-1 text-xs text-[#4b5d7a]">{formatDate(t.date)}</div>
                                 <div className="col-span-3">
                                     <button onClick={() => openEdit(t)} className="hover:underline text-left font-medium text-[#0c182b] flex items-center gap-1">
