@@ -2138,3 +2138,93 @@ def render_mileage_statement_pdf(entries: list, *, period_label: str,
     doc.build(story)
     buf.seek(0)
     return buf.read()
+
+
+
+_MONTHS_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+              "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+
+
+def render_mileage_annual_pdf(year: int, by_month: list, by_client: list, totals: dict) -> bytes:
+    """Rapport kilométrique ANNUEL (pour les impôts)."""
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    story.append(_header(s, "RAPPORT KILOMÉTRIQUE ANNUEL", str(year), None))
+    story.append(Spacer(1, 8 * mm))
+
+    meta = _meta_grid(s, [
+        ("Année", str(year)),
+        ("Nombre de trajets", str(totals.get("count", 0))),
+        ("Distance totale", _km(totals.get("total_km", 0))),
+        ("Montant total", _money(totals.get("total_amount", 0))),
+    ])
+    story.append(meta)
+    story.append(Spacer(1, 6 * mm))
+
+    story.append(Paragraph("Détail par mois", s["party_name"]))
+    story.append(Spacer(1, 2 * mm))
+    header = ["Mois", "Trajets", "Distance", "Montant"]
+    data = [header]
+    for m in by_month:
+        data.append([
+            m["label"], str(m["count"]), _km(m["km"]), _money(m["amount"]),
+        ])
+    data.append(["TOTAL", str(totals.get("count", 0)),
+                 _km(totals.get("total_km", 0)), _money(totals.get("total_amount", 0))])
+    t = Table(data, colWidths=[55 * mm, 30 * mm, 45 * mm, 40 * mm], repeatRows=1)
+    last = len(data) - 1
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("FONTNAME", (0, 1), (-1, -2), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("LINEBELOW", (0, 1), (-1, -2), 0.4, NAVY_BORDER),
+        ("LINEABOVE", (0, last), (-1, last), 1.5, NAVY),
+        ("FONTNAME", (0, last), (-1, last), "Helvetica-Bold"),
+        ("FONTSIZE", (0, last), (-1, last), 10),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.append(t)
+
+    if by_client:
+        story.append(Spacer(1, 8 * mm))
+        story.append(Paragraph("Détail par client", s["party_name"]))
+        story.append(Spacer(1, 2 * mm))
+        cdata = [["Client", "Distance", "Montant"]]
+        for c in by_client:
+            cdata.append([Paragraph(c["client"], s["body"]), _km(c["km"]), _money(c["amount"])])
+        ct = Table(cdata, colWidths=[90 * mm, 40 * mm, 40 * mm], repeatRows=1)
+        ct.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 8),
+            ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 1), (-1, -1), 9),
+            ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+            ("LINEBELOW", (0, 1), (-1, -1), 0.4, NAVY_BORDER),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        story.append(ct)
+
+    story.append(Spacer(1, 6 * mm))
+    story.append(_mileage_note(s))
+    story.append(Spacer(1, 8 * mm))
+    story.append(_mileage_tax_footer(s))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()

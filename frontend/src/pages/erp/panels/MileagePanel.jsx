@@ -40,6 +40,8 @@ export const MileagePanel = () => {
     const [mode, setMode] = useState("direct"); // "direct" | "odometer"
     const [notice, setNotice] = useState("");
     const [billing, setBilling] = useState(false);
+    const [statusFilter, setStatusFilter] = useState("all"); // all | unbilled | billed
+    const [year, setYear] = useState(new Date().getFullYear());
 
     const flash = (m) => { setNotice(m); setTimeout(() => setNotice(""), 5000); };
 
@@ -138,6 +140,19 @@ export const MileagePanel = () => {
         if (filterClient) q.set("client_id", filterClient);
         openPdf(`/mileage/report.pdf?${q}`);
     };
+    const openAnnualPdf = () => openPdf(`/mileage/annual.pdf?year=${year}`);
+
+    // Filtre facturable (client-side, sur le mois déjà chargé).
+    const displayedRows = useMemo(() => {
+        if (statusFilter === "unbilled") return rows.filter((t) => t.invoiced_id == null);
+        if (statusFilter === "billed") return rows.filter((t) => t.invoiced_id != null);
+        return rows;
+    }, [rows, statusFilter]);
+
+    const unbilled = useMemo(() => {
+        const u = rows.filter((t) => t.invoiced_id == null);
+        return { count: u.length, amount: u.reduce((s, t) => s + (Number(t.amount) || 0), 0) };
+    }, [rows]);
 
     const billTrips = async () => {
         const clientName = customers.find((c) => c.id === filterClient)?.name || "ce client";
@@ -194,6 +209,14 @@ export const MileagePanel = () => {
                 <button onClick={openStatementPdf} data-testid="km-statement-pdf" className="btn-secondary !py-2 !px-3 !text-xs" title="Relevé PDF du mois (regroupé)">
                     <FileText className="w-3.5 h-3.5" /> Relevé PDF
                 </button>
+                <div className="flex items-center gap-1">
+                    <select data-testid="km-year" value={year} onChange={(e) => setYear(Number(e.target.value))} className={inputClass.replace("w-full", "w-auto")} title="Année du rapport">
+                        {Array.from({ length: 5 }).map((_, i) => { const y = new Date().getFullYear() - i; return <option key={y} value={y}>{y}</option>; })}
+                    </select>
+                    <button onClick={openAnnualPdf} data-testid="km-annual-pdf" className="btn-secondary !py-2 !px-3 !text-xs" title="Rapport annuel (pour les impôts)">
+                        <FileText className="w-3.5 h-3.5" /> Rapport annuel
+                    </button>
+                </div>
                 {filterClient && (
                     <button onClick={billTrips} data-testid="km-bill" disabled={billing} className="btn-secondary !py-2 !px-3 !text-xs !border-[#0b6b2f] !text-[#0b6b2f]" title="Créer une facture brouillon avec les trajets non facturés de ce client">
                         <DollarSign className="w-3.5 h-3.5" /> {billing ? "..." : "Facturer ce client"}
@@ -211,12 +234,31 @@ export const MileagePanel = () => {
                 <div data-testid="km-notice" className="p-3 border border-[#8ec79d] bg-[#e6f4ea] text-[#0b6b2f] text-sm">{notice}</div>
             )}
 
+            {/* Filtre facturable */}
+            <div className="flex flex-wrap items-center gap-2" data-testid="km-status-filter">
+                {[
+                    { key: "all", label: "Tous" },
+                    { key: "unbilled", label: "À facturer" },
+                    { key: "billed", label: "Facturés" },
+                ].map((f) => (
+                    <button key={f.key} data-testid={`km-status-${f.key}`} onClick={() => setStatusFilter(f.key)}
+                        className={`tech-stamp px-3 py-1.5 border text-xs ${statusFilter === f.key ? "bg-[#0c182b] text-white border-[#0c182b]" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-white"}`}>
+                        {f.label}
+                    </button>
+                ))}
+                {unbilled.count > 0 && (
+                    <span className="ml-auto text-xs text-[#925800]" data-testid="km-unbilled-total">
+                        À facturer : <b>{unbilled.count}</b> trajet(s) · <b>{formatCurrency(unbilled.amount)}</b>
+                    </span>
+                )}
+            </div>
+
             {/* MOBILE */}
             <div className="md:hidden space-y-3">
-                {!loading && rows.length === 0 && (
-                    <div className="p-8 text-center text-[#4b5d7a] text-sm border border-[#dde5f0] bg-white">Aucun trajet ce mois-ci. Appuyez sur + pour ajouter.</div>
+                {!loading && displayedRows.length === 0 && (
+                    <div className="p-8 text-center text-[#4b5d7a] text-sm border border-[#dde5f0] bg-white">Aucun trajet à afficher. Appuyez sur + pour ajouter.</div>
                 )}
-                {rows.map((t) => (
+                {displayedRows.map((t) => (
                     <DataCard
                         key={t.id}
                         testid={`km-card-${t.id}`}
@@ -245,11 +287,11 @@ export const MileagePanel = () => {
                     <div className="col-span-1 text-right">Montant</div>
                     <div className="col-span-2 text-right">Actions</div>
                 </div>
-                {!loading && rows.length === 0 && (
-                    <div className="p-12 text-center text-[#4b5d7a] text-sm">Aucun trajet ce mois-ci.</div>
+                {!loading && displayedRows.length === 0 && (
+                    <div className="p-12 text-center text-[#4b5d7a] text-sm">Aucun trajet à afficher.</div>
                 )}
                 <ul>
-                    {rows.map((t) => (
+                    {displayedRows.map((t) => (
                         <li key={t.id} className="border-b border-[#dde5f0] last:border-b-0 hover:bg-[#f3f6fb]">
                             <div className="grid grid-cols-12 gap-4 px-6 py-3 items-center text-sm">
                                 <div className="col-span-1 font-mono text-xs text-[#2f4f7f]">

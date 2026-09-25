@@ -14,7 +14,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from erp_helpers import make_next_number_fn, compute_totals
 from erp_models import Invoice, LineItem
-from erp_pdf import render_mileage_statement_pdf, render_mileage_trip_pdf
+from erp_pdf import (render_mileage_annual_pdf, render_mileage_statement_pdf,
+                     render_mileage_trip_pdf)
 
 DEFAULT_RATE = 0.73  # ARC / Revenu Québec 2026 — 5 000 premiers km
 
@@ -149,6 +150,55 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if res.deleted_count == 0:
             raise HTTPException(404, "Trajet introuvable")
         return {"deleted": mileage_id}
+
+    async def _annual_data(year: int) -> dict:
+        cur = db.erp_mileage.find(
+            {"date": {"$gte": f"{year}-01-01", "$lt": f"{year + 1}-01-01"}}, {"_id": 0})
+        rows = [d async for d in cur]
+        months = []
+        from erp_pdf import _MONTHS_FR
+        for i in range(12):
+            mk = f"{year}-{i + 1:02d}"
+            mrows = [r for r in rows if str(r.get("date", "")).startswith(mk)]
+            months.append({
+                "month": mk, "label": _MONTHS_FR[i],
+                "count": len(mrows),
+                "km": round(sum(float(r.get("distance_km", 0)) for r in mrows), 1),
+                "amount": round(sum(float(r.get("amount", 0)) for r in mrows), 2),
+            })
+        by = {}
+        for r in rows:
+            name = r.get("client_name") or "—"
+            b = by.setdefault(name, {"client": name, "km": 0.0, "amount": 0.0})
+            b["km"] += float(r.get("distance_km", 0))
+            b["amount"] += float(r.get("amount", 0))
+        by_client = sorted(
+            [{"client": v["client"], "km": round(v["km"], 1), "amount": round(v["amount"], 2)}
+             for v in by.values()], key=lambda x: -x["amount"])
+        totals = {
+            "count": len(rows),
+            "total_km": round(sum(float(r.get("distance_km", 0)) for r in rows), 1),
+            "total_amount": round(sum(float(r.get("amount", 0)) for r in rows), 2),
+        }
+        return {"year": year, "by_month": months, "by_client": by_client, "totals": totals}
+
+    @router.get("/mileage/annual")
+    async def mileage_annual(year: Optional[int] = None, _: dict = Depends(auth_dep)):
+        if not year:
+            year = datetime.now(timezone.utc).year
+        return await _annual_data(year)
+
+    @router.get("/mileage/annual.pdf")
+    async def mileage_annual_pdf(year: Optional[int] = None, _: dict = Depends(auth_dep)):
+        if not year:
+            year = datetime.now(timezone.utc).year
+        data = await _annual_data(year)
+        pdf = await asyncio.to_thread(
+            render_mileage_annual_pdf, year, data["by_month"], data["by_client"], data["totals"])
+        return Response(
+            content=pdf, media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="rapport-km-annuel-{year}.pdf"'},
+        )
 
     @router.get("/mileage/{mileage_id}/report.pdf")
     async def mileage_trip_pdf(mileage_id: str, _: dict = Depends(auth_dep)):

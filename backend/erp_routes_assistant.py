@@ -110,8 +110,10 @@ SYSTEM_BASE = (
     "(date-heure ISO, ex. 2026-06-19T14:00:00), end (optionnel), location, notes. Convertis « demain 14h » en ISO.\n"
     "  • create_mileage — enregistrer un TRAJET kilométrique (livraison/déplacement). Paramètres: "
     "distance_km (nombre de km, OBLIGATOIRE), client (nom du client, optionnel), origin (départ), "
-    "destination, purpose (motif), rate (taux $/km, défaut 0,73), date (ISO, défaut aujourd'hui). "
+    "destination, purpose (motif), rate (taux $/km, défaut 0,73), date (ISO, défaut aujourd'hui), "
+    "round_trip (true si ALLER-RETOUR : crée aussi le trajet de retour automatiquement). "
     "Ex. « ajoute 42 km, livraison chez ABC » → {distance_km:42, purpose:\"Livraison\", client:\"ABC\"}. "
+    "Ex. « aller-retour de 30 km chez XYZ » → {distance_km:30, client:\"XYZ\", round_trip:true}. "
     "Réversible, sans courriel → émets directement.\n"
     "IMPORTANT dates : convertis TOUJOURS les dates parlées (« vendredi », « demain », « le 15 ») en "
     "format ISO AAAA-MM-JJ en te basant sur la date d'aujourd'hui donnée dans les DONNÉES ERP.\n"
@@ -383,8 +385,12 @@ async def _execute_action(db, action: dict) -> str:
             rate = float(action.get("rate") or 0.73)
         except (TypeError, ValueError):
             rate = 0.73
-        n = await make_next_number_fn(db)("mileage")
         now = datetime.now(timezone.utc).isoformat()
+        date = action.get("date") or now[:10]
+        origin = (action.get("origin") or None)
+        destination = (action.get("destination") or None)
+        purpose = (action.get("purpose") or None)
+        vehicle = (action.get("vehicle") or None)
         client_name = (action.get("client") or "").strip() or None
         client_id = None
         if client_name:
@@ -393,23 +399,35 @@ async def _execute_action(db, action: dict) -> str:
                 {"_id": 0, "id": 1, "name": 1})
             if p:
                 client_id, client_name = p["id"], p["name"]
-        entry = {
-            "id": uuid.uuid4().hex, "ref": f"KM-{n:04d}",
-            "date": (action.get("date") or now[:10]),
-            "client_id": client_id, "client_name": client_name,
-            "origin": (action.get("origin") or None),
-            "destination": (action.get("destination") or None),
-            "purpose": (action.get("purpose") or None),
-            "odometer_start": None, "odometer_end": None,
-            "distance_km": km, "rate": rate, "amount": round(km * rate, 2),
-            "vehicle": (action.get("vehicle") or None),
-            "job_id": None, "job_number": None, "notes": None,
-            "invoiced_id": None, "invoiced_number": None,
-            "created_at": now, "updated_at": now,
-        }
-        await db.erp_mileage.insert_one(dict(entry))
+        nn = make_next_number_fn(db)
+
+        async def _mk(o, d, pp):
+            n = await nn("mileage")
+            e = {
+                "id": uuid.uuid4().hex, "ref": f"KM-{n:04d}", "date": date,
+                "client_id": client_id, "client_name": client_name,
+                "origin": o, "destination": d, "purpose": pp,
+                "odometer_start": None, "odometer_end": None,
+                "distance_km": km, "rate": rate, "amount": round(km * rate, 2),
+                "vehicle": vehicle, "job_id": None, "job_number": None, "notes": None,
+                "invoiced_id": None, "invoiced_number": None,
+                "created_at": now, "updated_at": now,
+            }
+            await db.erp_mileage.insert_one(dict(e))
+            return e
+
+        entries = [await _mk(origin, destination, purpose)]
+        if action.get("round_trip"):
+            ret_purpose = f"Retour — {purpose}" if purpose else "Retour"
+            entries.append(await _mk(destination, origin, ret_purpose))
+
         who = f" pour {client_name}" if client_name else ""
-        return f"✅ Trajet {entry['ref']} enregistré : {km:.0f} km{who} — {entry['amount']:.2f} $ (taux {rate:.2f} $/km)."
+        if len(entries) == 2:
+            total = sum(e["amount"] for e in entries)
+            return (f"✅ Aller-retour enregistré{who} : {entries[0]['ref']} + {entries[1]['ref']}, "
+                    f"2 × {km:.0f} km — total {total:.2f} $ (taux {rate:.2f} $/km).")
+        e = entries[0]
+        return f"✅ Trajet {e['ref']} enregistré : {km:.0f} km{who} — {e['amount']:.2f} $ (taux {rate:.2f} $/km)."
     return "⚠️ Action inconnue."
 
 
