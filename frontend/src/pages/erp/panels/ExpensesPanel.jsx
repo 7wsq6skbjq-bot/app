@@ -52,6 +52,7 @@ export const ExpensesPanel = () => {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [month, setMonth] = useState(monthKey());
+    const [notice, setNotice] = useState("");
     const [filterCat, setFilterCat] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
     const [editOpen, setEditOpen] = useState(false);
@@ -281,11 +282,21 @@ export const ExpensesPanel = () => {
             ["supplier_id", "supplier_name", "invoice_ref", "notes"].forEach((k) => {
                 if (payload[k] === "") payload[k] = null;
             });
+            // Guard: description is required by the backend — never let a scan
+            // save with an empty description (silent 422 = "confirmé mais absente").
+            if (!payload.description || !String(payload.description).trim()) {
+                payload.description = payload.supplier_name
+                    ? `Achat ${payload.supplier_name}`
+                    : "Dépense";
+            }
             let expId = editing.id;
+            let saved;
             if (expId) {
-                await http.put(`/admin/expenses/${expId}`, payload);
+                const { data } = await http.put(`/admin/expenses/${expId}`, payload);
+                saved = data;
             } else {
                 const { data: created } = await http.post("/admin/expenses", payload);
+                saved = created;
                 expId = created.id;
             }
             // If we have a temp receipt from OCR scan, attach it now
@@ -299,9 +310,24 @@ export const ExpensesPanel = () => {
                 }
             }
             closeEdit();
-            await load();
+            // The list is filtered by month. If the (OCR-extracted) date lands in
+            // a different month, switch the filter so the expense stays visible
+            // instead of silently "disappearing".
+            const savedMonth = String(saved?.date || payload.date || "").slice(0, 7);
+            if (savedMonth && savedMonth !== month) {
+                setNotice(`✅ Dépense enregistrée au ${savedMonth}. Affichage de ce mois.`);
+                setMonth(savedMonth); // triggers reload via effect
+            } else {
+                setNotice("✅ Dépense enregistrée.");
+                await load();
+            }
+            setTimeout(() => setNotice(""), 5000);
         } catch (e) {
-            alert(e?.response?.data?.detail || "Erreur");
+            const detail = e?.response?.data?.detail;
+            const msg = Array.isArray(detail)
+                ? detail.map((d) => d.msg || JSON.stringify(d)).join(" · ")
+                : (detail || "Erreur lors de l'enregistrement");
+            alert(msg);
         }
     };
 
@@ -355,8 +381,16 @@ export const ExpensesPanel = () => {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             out.push({ value: monthKey(d), label: d.toLocaleDateString("fr-CA", { month: "long", year: "numeric" }) });
         }
+        // Ensure the currently-selected month is always selectable (e.g. after
+        // switching to an older month where an OCR-dated expense landed).
+        if (month && !out.some((o) => o.value === month)) {
+            const [y, m] = month.split("-").map(Number);
+            const d = new Date(y, (m || 1) - 1, 1);
+            out.push({ value: month, label: d.toLocaleDateString("fr-CA", { month: "long", year: "numeric" }) });
+            out.sort((a, b) => (a.value < b.value ? 1 : -1));
+        }
         return out;
-    }, []);
+    }, [month]);
 
     return (
         <div data-testid="expenses-panel" className="space-y-6">
@@ -416,6 +450,14 @@ export const ExpensesPanel = () => {
                     <Plus className="w-3.5 h-3.5" /> Nouvelle dépense
                 </button>
             </div>
+
+            {/* Success / info notice */}
+            {notice && (
+                <div data-testid="exp-notice" className="p-3 border border-[#8ec79d] bg-[#e6f4ea] text-[#0b6b2f] text-sm flex items-center justify-between">
+                    <span>{notice}</span>
+                    <button onClick={() => setNotice("")} aria-label="Fermer"><XIcon className="w-4 h-4" /></button>
+                </div>
+            )}
 
             {/* MOBILE cards */}
             <div className="md:hidden space-y-3">
