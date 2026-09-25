@@ -37,17 +37,28 @@ def _num_from(raw, prefix=""):
         return None
 
 JOB_STAGE_LABELS = {
-    "a_approuver": "À approuver", "depot_recu": "Dépôt reçu (50%)",
+    "lead": "Lead", "soumission_a_produire": "Soumission à produire",
+    "soumission_envoyee": "Soumission envoyée (relance)",
+    "dessin_a_produire": "Dessin à produire", "attente_depot": "En attente de dépôt",
+    "depot_recu": "Dépôt reçu (50%)",
     "en_fabrication": "En fabrication", "pret": "Prêt", "livre": "Livré",
-    "facture": "Facturé", "paye": "Payé", "annule": "Annulé",
+    "facture": "Facturé", "paye": "Payé", "annule": "Annulé / Perdu",
 }
 # Keyword → stage key, to tolerate free-form phrasing from the LLM/user.
 JOB_STAGE_KEYWORDS = [
     ("fabric", "en_fabrication"), ("installation", "en_fabrication"),
-    ("approuv", "a_approuver"), ("depot", "depot_recu"), ("dépôt", "depot_recu"),
-    ("acompte", "depot_recu"), ("pret", "pret"), ("prêt", "pret"),
+    ("lead", "lead"),
+    ("soumission à prod", "soumission_a_produire"), ("soumission a prod", "soumission_a_produire"),
+    ("à produire", "soumission_a_produire"), ("a produire", "soumission_a_produire"),
+    ("dessin", "dessin_a_produire"), ("plan", "dessin_a_produire"),
+    ("relance", "soumission_envoyee"), ("réponse", "soumission_envoyee"),
+    ("reponse", "soumission_envoyee"), ("envoyé", "soumission_envoyee"),
+    ("envoye", "soumission_envoyee"), ("approuv", "soumission_envoyee"),
+    ("attente", "attente_depot"),
+    ("depot", "depot_recu"), ("dépôt", "depot_recu"), ("acompte", "depot_recu"),
+    ("pret", "pret"), ("prêt", "pret"),
     ("livr", "livre"), ("factur", "facture"), ("pay", "paye"),
-    ("annul", "annule"),
+    ("annul", "annule"), ("perdu", "annule"),
 ]
 
 
@@ -100,8 +111,11 @@ SYSTEM_BASE = (
     "IMPORTANT dates : convertis TOUJOURS les dates parlées (« vendredi », « demain », « le 15 ») en "
     "format ISO AAAA-MM-JJ en te basant sur la date d'aujourd'hui donnée dans les DONNÉES ERP.\n"
     "    Étapes VALIDES (utilise EXACTEMENT une de ces valeurs pour stage) : "
-    "a_approuver (À approuver), depot_recu (Dépôt reçu 50%), en_fabrication (En fabrication), "
-    "pret (Prêt), livre (Livré), facture (Facturé), paye (Payé), annule (Annulé).\n"
+    "lead (Lead), soumission_a_produire (Soumission à produire), soumission_envoyee "
+    "(Soumission envoyée / relance), dessin_a_produire (Dessin à produire), "
+    "attente_depot (En attente de dépôt), depot_recu (Dépôt reçu 50%), "
+    "en_fabrication (En fabrication), pret (Prêt), livre (Livré), facture (Facturé), "
+    "paye (Payé), annule (Annulé / Perdu).\n"
     "RÈGLES STRICTES (sécurité) :\n"
     "  1. Pour les ENVOIS DE COURRIEL (send_statement, send_statement_all, send_quote_followup) : tu résumes "
     "D'ABORD ce qui sera envoyé et à qui, puis tu demandes une confirmation explicite « Confirmes-tu ? Réponds oui ». "
@@ -426,12 +440,19 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             "title": title,
             "client_name": client_name or "",
             "client_email": None, "party_id": None,
-            "stage": "a_approuver", "total": 0.0, "deposit_expected": 0.0,
+            "stage": "soumission_a_produire", "source": "assistant",
+            "lead_id": None, "total": 0.0, "deposit_expected": 0.0,
             "priority": "normal", "target_date": None, "notes": "",
-            "links": [], "history": [{"stage": "a_approuver", "at": now, "note": "Job créée par l'assistante"}],
+            "links": [], "history": [{"stage": "soumission_a_produire", "at": now, "note": "Job créée par l'assistante"}],
             "created_at": now, "updated_at": now,
         }
         await _db.erp_jobs.insert_one(dict(job))
+        try:
+            import push_notifications as push
+            await push.send_push(_db, title="Nouveau job à traiter 🗂️",
+                                 body=f"{job['job_number']} · {title}", url="/adjointe", tag="job")
+        except Exception:  # noqa: BLE001
+            pass
         return job
 
     global _create_job_fn

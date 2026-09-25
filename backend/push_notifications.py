@@ -110,20 +110,35 @@ async def send_push(db, *, title: str, body: str, url: str = "/adjointe", tag: s
 
 
 # ── Morning summary push (jobs du jour + factures en retard) ──────────────
+def _stale_days(ts: str) -> int:
+    try:
+        d = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).date()
+    except Exception:
+        return 0
+    return (datetime.now(timezone.utc).date() - d).days
+
+
 async def run_morning_push(db) -> dict:
     today = datetime.now(timezone.utc).date().isoformat()
     jobs = await db.erp_jobs.find({}, {"_id": 0}).to_list(500)
     active = [j for j in jobs if j.get("stage") not in ("annule", "paye", "livre", "facture")]
     due = [j for j in active if j.get("target_date") and j["target_date"] <= today]
+    leads = [j for j in active if j.get("stage") == "lead"]
+    relance = [j for j in active if j.get("stage") == "soumission_envoyee"
+               and _stale_days(j.get("updated_at") or j.get("created_at")) >= 3]
     inv = await db.erp_invoices.find({"status": "envoyée"}, {"_id": 0}).to_list(300)
     overdue_inv = [i for i in inv if i.get("due_date") and i["due_date"] < today]
 
     parts = [f"{len(active)} job(s) actif(s)"]
+    if leads:
+        parts.append(f"{len(leads)} lead(s)")
+    if relance:
+        parts.append(f"{len(relance)} à relancer")
     if due:
         parts.append(f"{len(due)} à livrer/en retard")
     if overdue_inv:
         parts.append(f"{len(overdue_inv)} facture(s) en retard")
-    body = " · ".join(parts) if (due or overdue_inv) else (
+    body = " · ".join(parts) if (leads or relance or due or overdue_inv) else (
         f"{len(active)} job(s) actif(s). Aucune urgence aujourd'hui — bonne journée !"
     )
     return await send_push(db, title=f"Résumé du matin — {today}", body=body, tag="briefing")

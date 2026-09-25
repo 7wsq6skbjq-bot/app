@@ -8,16 +8,28 @@ import { Modal, Field, inputClass } from "../components/Modal";
 import { formatDate } from "../utils";
 
 const STAGES = [
-    { key: "a_approuver", label: "À approuver", color: "#64748b" },
-    { key: "depot_recu", label: "Dépôt reçu (50%)", color: "#0ea5e9" },
+    { key: "lead", label: "Lead", color: "#64748b" },
+    { key: "soumission_a_produire", label: "Soumission à produire", color: "#0891b2" },
+    { key: "soumission_envoyee", label: "Soumission envoyée (relance)", color: "#eab308" },
+    { key: "dessin_a_produire", label: "Dessin à produire", color: "#d946ef" },
+    { key: "attente_depot", label: "En attente de dépôt", color: "#0ea5e9" },
+    { key: "depot_recu", label: "Dépôt reçu (50%)", color: "#3b82f6" },
     { key: "en_fabrication", label: "En fabrication", color: "#f59e0b" },
     { key: "pret", label: "Prêt", color: "#8b5cf6" },
     { key: "livre", label: "Livré", color: "#14b8a6" },
     { key: "facture", label: "Facturé", color: "#6366f1" },
     { key: "paye", label: "Payé", color: "#22c55e" },
 ];
-const ALL_STAGES = [...STAGES, { key: "annule", label: "Annulé", color: "#ef4444" }];
+const ALL_STAGES = [...STAGES, { key: "annule", label: "Annulé / Perdu", color: "#ef4444" }];
 const STAGE_LABEL = Object.fromEntries(ALL_STAGES.map((s) => [s.key, s.label]));
+// Vues rapides (filtres au-dessus du même tableau Kanban).
+const VIEWS = [
+    { key: "all", label: "Tous" },
+    { key: "lead", label: "Leads" },
+    { key: "soumission_a_produire", label: "Soumissions à produire" },
+    { key: "soumission_envoyee", label: "En attente de réponse" },
+    { key: "dessin_a_produire", label: "Dessins à produire" },
+];
 const DOC_TYPES = [
     { key: "quote", label: "Soumission" },
     { key: "production_plan", label: "Plan de production" },
@@ -39,6 +51,11 @@ const daysUntil = (d) => {
     const t = new Date(d + "T00:00:00");
     return Math.round((t - new Date(todayISO() + "T00:00:00")) / 86400000);
 };
+const daysSince = (iso) => {
+    if (!iso) return null;
+    const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+    return Math.round((new Date(todayISO() + "T00:00:00") - d) / 86400000);
+};
 
 export const JobsPanel = () => {
     const { http } = useAuth();
@@ -55,6 +72,7 @@ export const JobsPanel = () => {
     const [detail, setDetail] = useState(null); // job object
     const [briefing, setBriefing] = useState(null); // preview data
     const [briefBusy, setBriefBusy] = useState(false);
+    const [view, setView] = useState("all"); // vue rapide (filtre de colonnes)
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -86,9 +104,25 @@ export const JobsPanel = () => {
 
     const cancelled = useMemo(() => jobs.filter((j) => j.stage === "annule"), [jobs]);
 
+    // Colonnes visibles selon la vue rapide sélectionnée.
+    const visibleStages = useMemo(
+        () => (view === "all" ? STAGES : STAGES.filter((s) => s.key === view)),
+        [view],
+    );
+    // Compteurs pour les pastilles des vues rapides.
+    const viewCounts = useMemo(() => {
+        const c = {};
+        VIEWS.forEach((v) => {
+            c[v.key] = v.key === "all"
+                ? jobs.filter((j) => j.stage !== "annule").length
+                : (grouped[v.key]?.length || 0);
+        });
+        return c;
+    }, [jobs, grouped]);
+
     // ── Create ──────────────────────────────
     const openCreate = () => {
-        setForm({ title: "", client_name: "", client_email: "", total: "", target_date: "", priority: "normal", notes: "" });
+        setForm({ title: "", client_name: "", client_email: "", stage: "soumission_a_produire", total: "", target_date: "", priority: "normal", notes: "" });
         setCreateOpen(true);
     };
     const submitCreate = async () => {
@@ -99,6 +133,7 @@ export const JobsPanel = () => {
                 title: form.title.trim(),
                 client_name: form.client_name || "",
                 client_email: form.client_email || null,
+                stage: form.stage || "soumission_a_produire",
                 total: Number(form.total) || 0,
                 target_date: form.target_date || null,
                 priority: form.priority || "normal",
@@ -195,13 +230,24 @@ export const JobsPanel = () => {
             {notice && <div data-testid="jobs-notice" className="p-3 border border-green-300 bg-green-50 text-green-800 text-sm">{notice}</div>}
             {error && <div data-testid="jobs-error" className="p-3 border border-red-300 bg-red-50 text-red-800 text-sm flex justify-between"><span>{error}</span><button onClick={() => setError("")}><X className="w-4 h-4" /></button></div>}
 
+            {/* Vues rapides — filtres au-dessus du tableau */}
+            <div className="flex flex-wrap gap-2" data-testid="jobs-views">
+                {VIEWS.map((v) => (
+                    <button key={v.key} data-testid={`jobs-view-${v.key}`} onClick={() => setView(v.key)}
+                        className={`tech-stamp px-3 py-1.5 border text-sm flex items-center gap-1.5 ${view === v.key ? "bg-[#0c182b] text-white border-[#0c182b]" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-white"}`}>
+                        {v.label}
+                        <span className={`text-xs font-bold px-1.5 rounded-full ${view === v.key ? "bg-white/20 text-white" : "bg-[#e2e8f2] text-[#4b5d7a]"}`}>{viewCounts[v.key] || 0}</span>
+                    </button>
+                ))}
+            </div>
+
             {loading ? (
                 <div className="py-20 text-center text-[#4b5d7a]"><Loader2 className="w-6 h-6 animate-spin inline" /> Chargement…</div>
             ) : (
               <>
                 <div className="hidden sm:block overflow-x-auto pb-3">
                     <div className="flex gap-3 min-w-max">
-                        {STAGES.map((s) => (
+                        {visibleStages.map((s) => (
                             <div key={s.key} data-testid={`jobs-col-${s.key}`} className="w-64 flex-shrink-0 bg-[#eef2f8] border border-[#dde5f0] rounded">
                                 <div className="px-3 py-2 border-b border-[#dde5f0] flex items-center justify-between" style={{ borderTop: `3px solid ${s.color}` }}>
                                     <span className="tech-stamp font-bold text-[#0c182b]">{s.label}</span>
@@ -228,6 +274,14 @@ export const JobsPanel = () => {
                                                         {formatDate(j.target_date)}{overdue ? " (retard)" : soon ? ` (${d}j)` : ""}
                                                     </div>
                                                 )}
+                                                {s.key === "soumission_envoyee" && (() => {
+                                                    const w = daysSince(j.updated_at);
+                                                    return w !== null ? (
+                                                        <div data-testid={`job-relance-${j.id}`} className={`text-xs mt-1 flex items-center gap-1 ${w >= 3 ? "text-amber-700 font-bold" : "text-[#4b5d7a]"}`}>
+                                                            <Clock className="w-3 h-3" /> En attente depuis {w} j{w >= 3 ? " · à relancer" : ""}
+                                                        </div>
+                                                    ) : null;
+                                                })()}
                                                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#eef2f8]">
                                                     <button data-testid={`job-prev-${j.id}`} onClick={(e) => { e.stopPropagation(); moveStage(j, -1); }} disabled={s.key === STAGES[0].key} className="p-1 text-[#4b5d7a] hover:text-[#0c182b] disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
                                                     {j.links?.length > 0 && <span className="text-[10px] text-[#4b5d7a] flex items-center gap-0.5"><Link2 className="w-3 h-3" />{j.links.length}</span>}
@@ -245,7 +299,7 @@ export const JobsPanel = () => {
 
                 {/* Mobile — liste compacte par étape */}
                 <div className="sm:hidden space-y-4">
-                    {STAGES.map((s) => (
+                    {visibleStages.map((s) => (
                         grouped[s.key].length === 0 ? null : (
                             <div key={s.key} data-testid={`jobs-mcol-${s.key}`}>
                                 <div className="flex items-center gap-2 mb-1.5" style={{ color: s.color }}>
@@ -308,6 +362,7 @@ export const JobsPanel = () => {
                     <Field label="Titre *"><input data-testid="jobs-create-title" className={inputClass} value={form.title || ""} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Ex. Portes d'entrée — Pharmacie X" /></Field>
                     <Field label="Client"><input className={inputClass} value={form.client_name || ""} onChange={(e) => setForm({ ...form, client_name: e.target.value })} /></Field>
                     <Field label="Courriel client"><input className={inputClass} value={form.client_email || ""} onChange={(e) => setForm({ ...form, client_email: e.target.value })} /></Field>
+                    <Field label="Étape de départ"><select data-testid="jobs-create-stage" className={inputClass} value={form.stage || "soumission_a_produire"} onChange={(e) => setForm({ ...form, stage: e.target.value })}>{STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}</select></Field>
                     <Field label="Valeur ($)"><input type="number" className={inputClass} value={form.total || ""} onChange={(e) => setForm({ ...form, total: e.target.value })} /></Field>
                     <Field label="Échéance visée"><input type="date" className={inputClass} value={form.target_date || ""} onChange={(e) => setForm({ ...form, target_date: e.target.value })} /></Field>
                     <Field label="Priorité"><select className={inputClass} value={form.priority || "normal"} onChange={(e) => setForm({ ...form, priority: e.target.value })}><option value="normal">Normale</option><option value="urgent">Urgente</option></select></Field>

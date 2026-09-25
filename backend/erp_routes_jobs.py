@@ -19,24 +19,36 @@ from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, ConfigDict, Field
 
-from erp_helpers import send_html_email
+from erp_helpers import send_html_email, make_next_number_fn
 
 # ── Pipeline ──────────────────────────────────────────────
 JOB_STAGES = [
-    "a_approuver", "depot_recu", "en_fabrication", "pret",
+    "lead", "soumission_a_produire", "soumission_envoyee", "dessin_a_produire",
+    "attente_depot", "depot_recu", "en_fabrication", "pret",
     "livre", "facture", "paye", "annule",
 ]
 STAGE_LABELS = {
-    "a_approuver": "À approuver",
+    "lead": "Lead",
+    "soumission_a_produire": "Soumission à produire",
+    "soumission_envoyee": "Soumission envoyée (relance)",
+    "dessin_a_produire": "Dessin à produire",
+    "attente_depot": "En attente de dépôt",
     "depot_recu": "Dépôt reçu (50%)",
     "en_fabrication": "En fabrication",
     "pret": "Prêt",
     "livre": "Livré",
     "facture": "Facturé",
     "paye": "Payé",
-    "annule": "Annulé",
+    "annule": "Annulé / Perdu",
 }
-STAGE_PATTERN = "^(" + "|".join(JOB_STAGES) + ")$"
+# Anciens stages → nouveaux (migration douce).
+LEGACY_STAGE_MAP = {"a_approuver": "attente_depot"}
+_ALL_STAGE_KEYS = JOB_STAGES + list(LEGACY_STAGE_MAP.keys())
+STAGE_PATTERN = "^(" + "|".join(_ALL_STAGE_KEYS) + ")$"
+# Étapes administratives (avant fabrication) — servent aux vues rapides.
+ADMIN_STAGES = ["lead", "soumission_a_produire", "soumission_envoyee",
+                "dessin_a_produire", "attente_depot"]
+RELANCE_DAYS = 3  # une soumission envoyée sans réponse depuis N jours = à relancer
 DOC_TYPES = [
     "quote", "production_plan", "purchase_order", "mosquito_order",
     "bol", "invoice", "payment_notice", "expert_report",
@@ -51,6 +63,59 @@ BRIEFING_EMAIL = (
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+async def _notify_new_job(db, job: dict, *, kind: str = "à traiter") -> None:
+    """Push non bloquant sur création de job (lead / soumission / assistant)."""
+    try:
+        import push_notifications as push
+        await push.send_push(
+            db, title=f"Nouveau job {kind} 🗂️",
+            body=f"{job.get('job_number', '')} · {job.get('title', '')}",
+            url="/adjointe", tag="job",
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+
+async def create_lead_job(db, sub: dict) -> Optional[dict]:
+    """Crée (idempotent) un job en étape « lead » depuis une demande du site.
+    Renvoie None si un job existe déjà pour ce lead."""
+    lead_id = sub.get("id")
+    if not lead_id or await db.erp_jobs.find_one({"lead_id": lead_id}):
+        return None
+    n = await make_next_number_fn(db)("job")
+    now = _now()
+    name = sub.get("name") or "Lead"
+    msg = (sub.get("message") or "").strip().replace("\n", " ")
+    job = Job(
+        job_number=f"JOB-{n:04d}",
+        title=f"Lead — {name}",
+        client_name=name,
+        client_email=sub.get("email"),
+        stage="lead",
+        source="lead",
+        lead_id=lead_id,
+        notes=(f"Demande du site : {msg}" if msg else ""),
+        history=[{"stage": "lead", "at": now, "note": "Lead reçu du site web"}],
+    ).model_dump()
+    await db.erp_jobs.insert_one(job)
+    return job
+
+
+async def migrate_and_backfill_jobs(db) -> None:
+    """Au démarrage : migre les anciens stages + crée les jobs des leads
+    non traités qui n'en ont pas encore."""
+    for old, new in LEGACY_STAGE_MAP.items():
+        await db.erp_jobs.update_many({"stage": old}, {"$set": {"stage": new}})
+    leads = await db.contact_submissions.find(
+        {"assistant_status": {"$ne": "traité"}}, {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    for sub in leads:
+        try:
+            await create_lead_job(db, sub)
+        except Exception:  # noqa: BLE001
+            pass
 
 
 # ── Models ────────────────────────────────────────────────
@@ -71,7 +136,9 @@ class Job(BaseModel):
     client_name: Optional[str] = ""
     client_email: Optional[str] = None
     party_id: Optional[str] = None
-    stage: str = Field(default="a_approuver", pattern=STAGE_PATTERN)
+    stage: str = Field(default="lead", pattern=STAGE_PATTERN)
+    source: Optional[str] = None            # "lead" | "quote" | "manuel" | "assistant"
+    lead_id: Optional[str] = None           # id du contact_submissions si issu d'un lead
     total: float = 0.0
     deposit_expected: float = 0.0
     priority: str = Field(default="normal", pattern="^(normal|urgent)$")
@@ -89,6 +156,7 @@ class JobIn(BaseModel):
     client_name: Optional[str] = ""
     client_email: Optional[str] = None
     party_id: Optional[str] = None
+    stage: str = Field(default="soumission_a_produire", pattern=STAGE_PATTERN)
     total: float = 0.0
     priority: str = Field(default="normal", pattern="^(normal|urgent)$")
     target_date: Optional[str] = None
@@ -138,14 +206,25 @@ def _fmt_money(v) -> str:
     return f"{s} $"
 
 
+def _is_stale(j: dict, days: int = RELANCE_DAYS) -> bool:
+    """True si le job n'a pas bougé depuis `days` jours (pour la relance)."""
+    ts = j.get("updated_at") or j.get("created_at")
+    d = _parse_date(ts)
+    if not d:
+        return False
+    return (datetime.now(timezone.utc).date() - d).days >= days
+
+
 def build_briefing(jobs: List[dict]) -> dict:
     today = datetime.now(timezone.utc).date()
     active = [j for j in jobs if j.get("stage") != "annule"]
     counts = {s: 0 for s in JOB_STAGES}
     for j in jobs:
-        counts[j.get("stage", "a_approuver")] = counts.get(j.get("stage", "a_approuver"), 0) + 1
+        st = LEGACY_STAGE_MAP.get(j.get("stage", "lead"), j.get("stage", "lead"))
+        counts[st] = counts.get(st, 0) + 1
 
-    awaiting = [j for j in active if j.get("stage") == "a_approuver"]
+    awaiting = [j for j in active if j.get("stage") in ADMIN_STAGES]
+    relance = [j for j in active if j.get("stage") == "soumission_envoyee" and _is_stale(j)]
     in_fab = [j for j in active if j.get("stage") in ("depot_recu", "en_fabrication")]
     ready = [j for j in active if j.get("stage") == "pret"]
 
@@ -166,6 +245,7 @@ def build_briefing(jobs: List[dict]) -> dict:
         "total_active": len(active),
         "counts": counts,
         "awaiting": awaiting,
+        "relance": relance,
         "in_fab": in_fab,
         "ready": ready,
         "soon": soon,
@@ -205,7 +285,8 @@ def render_briefing_html(b: dict) -> str:
         f"<p style='margin:0 0 4px 0;color:#4b5d7a;font-size:13px;'>{chips}</p>"
         + _section("🔴 En retard (échéance dépassée)", b["overdue"], "Aucune job en retard 🎉")
         + _section("⏳ À livrer d'ici 7 jours", b["soon"])
-        + _section("🖊️ En attente d'approbation / dépôt", b["awaiting"])
+        + _section("📨 À relancer (soumission envoyée sans réponse)", b.get("relance", []), "Aucune relance à faire.")
+        + _section("🖊️ Administration (leads, soumissions, dessins, dépôt)", b["awaiting"])
         + _section("🏭 En fabrication", b["in_fab"])
         + _section("📦 Prêtes (à livrer)", b["ready"])
     )
@@ -260,14 +341,18 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             client_name=data.client_name or "",
             client_email=data.client_email,
             party_id=data.party_id,
+            stage=data.stage,
+            source="manuel",
             total=data.total or 0.0,
             deposit_expected=round((data.total or 0.0) * 0.5, 2),
             priority=data.priority,
             target_date=data.target_date,
             notes=data.notes or "",
-            history=[{"stage": "a_approuver", "at": _now(), "note": "Job créée"}],
+            history=[{"stage": data.stage, "at": _now(), "note": "Job créée"}],
         )
         await db.erp_jobs.insert_one(job.model_dump())
+        if data.stage in ADMIN_STAGES:
+            await _notify_new_job(db, job.model_dump())
         return job
 
     @router.post("/jobs/from-quote/{quote_id}", response_model=Job)
@@ -283,7 +368,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         cust = q.get("customer_snapshot") or {}
         num = f"SO-{int(q.get('number', 0)):04d}"
         total = float(q.get("total") or 0)
-        stage = "depot_recu" if q.get("status") == "acceptée" else "a_approuver"
+        stage = "depot_recu" if q.get("status") == "acceptée" else "soumission_envoyee"
         job = Job(
             job_number=await _job_number(),
             title=f"Soumission {num}" + (f" — {cust.get('name')}" if cust.get("name") else ""),
@@ -291,6 +376,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             client_email=cust.get("email"),
             party_id=q.get("customer_id"),
             stage=stage,
+            source="quote",
             total=total,
             deposit_expected=round(total * 0.5, 2),
             links=[JobLink(doc_type="quote", doc_id=quote_id, number=num,

@@ -328,7 +328,12 @@ async def create_contact_submission(payload: ContactSubmissionCreate):
     doc["created_at"] = doc["created_at"].isoformat()
     await db.contact_submissions.insert_one(doc)
     logger.info("New contact submission from %s (email_sent=%s)", submission.email, email_ok)
-    # Push notification to installed devices (fire-and-forget).
+    # Auto-create a "lead" job in the tracking board + push notification.
+    try:
+        from erp_routes_jobs import create_lead_job
+        await create_lead_job(db, doc)
+    except Exception as exc:  # never fail the request on a board error
+        logger.error("Lead job creation failed: %s", exc)
     try:
         import push_notifications as push
         await push.send_push(
@@ -480,6 +485,12 @@ async def startup_event():
         await db.push_subscriptions.create_index("endpoint", unique=True)
     except Exception as exc:  # never block startup on push setup
         print(f"[push] VAPID setup skipped: {exc}")
+    # Migrate legacy job stages + backfill lead jobs from untreated website leads.
+    try:
+        from erp_routes_jobs import migrate_and_backfill_jobs
+        await migrate_and_backfill_jobs(db)
+    except Exception as exc:  # never block startup on migration
+        print(f"[jobs] migration/backfill skipped: {exc}")
     # Start the daily reminder scheduler unless explicitly disabled
     # (e.g. inside pytest runs where scheduler side-effects are unwanted).
     if os.environ.get("DISABLE_SCHEDULER", "").lower() not in ("1", "true", "yes"):
