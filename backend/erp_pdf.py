@@ -1942,3 +1942,199 @@ def render_client_at_order_form_pdf() -> bytes:
     buf.seek(0)
     return buf.read()
 
+
+# ============================================================
+# Mileage reports (rapport / relevé kilométrique)
+# ============================================================
+def _km(v) -> str:
+    try:
+        v = float(v or 0)
+    except (TypeError, ValueError):
+        v = 0.0
+    s = f"{v:,.1f}".replace(",", " ").replace(".", ",")
+    return f"{s} km"
+
+
+def _rate(v) -> str:
+    try:
+        v = float(v or 0)
+    except (TypeError, ValueError):
+        v = 0.0
+    return f"{v:.4f}".replace(".", ",") + " $/km"
+
+
+def _mileage_note(styles) -> Paragraph:
+    return Paragraph(
+        "Taux basé sur l'allocation automobile Revenu Québec / ARC 2026. "
+        "Montant tout inclus — aucune taxe applicable sur l'indemnité kilométrique.",
+        styles["footer"],
+    )
+
+
+def _mileage_tax_footer(styles) -> Paragraph:
+    return Paragraph(
+        f"<b>Nº TPS :</b> {COMPANY['tps']} &nbsp;&nbsp;·&nbsp;&nbsp; "
+        f"<b>Nº TVQ :</b> {COMPANY['tvq']}",
+        styles["footer"],
+    )
+
+
+def render_mileage_trip_pdf(entry: dict, client: dict | None = None) -> bytes:
+    """Single-trip mileage report — professional document to hand to a client
+    on delivery."""
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    ref = entry.get("ref") or "KM"
+    story.append(_header(s, "RAPPORT KILOMÉTRIQUE", ref, None))
+    story.append(Spacer(1, 8 * mm))
+
+    party = _party_block(s, "Client", client or {"name": entry.get("client_name")})
+    meta = _meta_grid(s, [
+        ("Référence", ref),
+        ("Date", _date_fr(entry.get("date"))),
+        ("Véhicule", entry.get("vehicle") or "—"),
+        ("Nº de job", entry.get("job_number") or "—"),
+    ])
+    side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
+    side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(side)
+    story.append(Spacer(1, 6 * mm))
+
+    header = ["Départ", "Destination", "Motif", "Distance", "Taux", "Montant"]
+    row = [
+        Paragraph(entry.get("origin") or "—", s["body"]),
+        Paragraph(entry.get("destination") or "—", s["body"]),
+        Paragraph(entry.get("purpose") or "—", s["body"]),
+        _km(entry.get("distance_km")),
+        _rate(entry.get("rate")),
+        _money(entry.get("amount")),
+    ]
+    t = Table([header, row], colWidths=[33 * mm, 33 * mm, 40 * mm, 24 * mm, 24 * mm, 24 * mm], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (3, 0), (-1, -1), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.4, NAVY_BORDER),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 4 * mm))
+
+    total_box = Table([["TOTAL", _money(entry.get("amount"))]],
+                      colWidths=[50 * mm, 35 * mm], hAlign="RIGHT")
+    total_box.setStyle(TableStyle([
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LINEABOVE", (0, 0), (-1, 0), 1.5, NAVY),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 12),
+        ("TEXTCOLOR", (0, 0), (-1, 0), NAVY),
+        ("TOPPADDING", (0, 0), (-1, 0), 8),
+    ]))
+    story.append(total_box)
+
+    story.append(Spacer(1, 3 * mm))
+    story.append(_mileage_note(s))
+
+    if entry.get("notes"):
+        story.append(Spacer(1, 5 * mm))
+        story.append(Paragraph(f"<b>Notes :</b><br/>{entry['notes']}", s["body"]))
+
+    story.append(Spacer(1, 12 * mm))
+    sig = Table(
+        [[Paragraph("Reçu par (nom et signature)", s["footer"]),
+          Paragraph("Date", s["footer"])]],
+        colWidths=[110 * mm, 55 * mm],
+    )
+    sig.setStyle(TableStyle([
+        ("LINEABOVE", (0, 0), (-1, 0), 0.6, NAVY_BORDER),
+        ("TOPPADDING", (0, 0), (-1, 0), 4),
+    ]))
+    story.append(sig)
+
+    story.append(Spacer(1, 6 * mm))
+    story.append(_mileage_tax_footer(s))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
+
+def render_mileage_statement_pdf(entries: list, *, period_label: str,
+                                 client: dict | None = None) -> bytes:
+    """Period statement grouping several trips (optionally for one client)."""
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    story.append(_header(s, "RELEVÉ KILOMÉTRIQUE", period_label, None))
+    story.append(Spacer(1, 8 * mm))
+
+    party = _party_block(s, "Client", client or {"name": "Tous les clients"})
+    total_km = sum(float(e.get("distance_km") or 0) for e in entries)
+    total_amt = sum(float(e.get("amount") or 0) for e in entries)
+    meta = _meta_grid(s, [
+        ("Période", period_label),
+        ("Nombre de trajets", str(len(entries))),
+        ("Distance totale", _km(total_km)),
+        ("Montant total", _money(total_amt)),
+    ])
+    side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
+    side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(side)
+    story.append(Spacer(1, 6 * mm))
+
+    header = ["Date", "Trajet", "Motif", "Distance", "Taux", "Montant"]
+    data = [header]
+    for e in entries:
+        trajet = f"{e.get('origin') or '—'} → {e.get('destination') or '—'}"
+        data.append([
+            _date_fr(e.get("date")),
+            Paragraph(trajet, s["body"]),
+            Paragraph(e.get("purpose") or "—", s["body"]),
+            _km(e.get("distance_km")),
+            _rate(e.get("rate")),
+            _money(e.get("amount")),
+        ])
+    data.append(["", "", Paragraph("<b>TOTAL</b>", s["body"]), _km(total_km), "", _money(total_amt)])
+    t = Table(data, colWidths=[22 * mm, 48 * mm, 36 * mm, 24 * mm, 22 * mm, 26 * mm], repeatRows=1)
+    last = len(data) - 1
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (3, 0), (-1, -1), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("LINEBELOW", (0, 1), (-1, -2), 0.4, NAVY_BORDER),
+        ("LINEABOVE", (0, last), (-1, last), 1.5, NAVY),
+        ("FONTNAME", (0, last), (-1, last), "Helvetica-Bold"),
+        ("FONTSIZE", (0, last), (-1, last), 10),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    story.append(t)
+
+    story.append(Spacer(1, 4 * mm))
+    story.append(_mileage_note(s))
+    story.append(Spacer(1, 8 * mm))
+    story.append(_mileage_tax_footer(s))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
