@@ -1,11 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Pencil, Trash2, Search, RefreshCw, Package, DoorClosed, Sliders, Layers, Save } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, RefreshCw, Package, DoorClosed, Sliders, Layers, Save, Calculator, X } from "lucide-react";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { formatCurrency } from "../utils";
 
 const SECTIONS = [
+    { key: "calc", label: "Calculateur de prix", icon: Calculator },
     { key: "hardware", label: "Quincaillerie", icon: Package },
     { key: "doors", label: "Portes standards", icon: DoorClosed },
     { key: "params", label: "Paramètres", icon: Sliders },
@@ -31,6 +32,7 @@ export const MasterCostsPanel = () => {
                     </button>
                 ))}
             </div>
+            {section === "calc" && <CalculatorSection http={http} />}
             {section === "hardware" && <HardwareSection http={http} />}
             {section === "doors" && <DoorsSection http={http} />}
             {section === "params" && <ParamsSection http={http} />}
@@ -250,6 +252,151 @@ const ExtrusionSection = ({ http }) => {
         </div>
     );
 };
+
+/* ── CALCULATEUR DE PRIX DE PORTE (moteur LDP) ────────────────── */
+const CalculatorSection = ({ http }) => {
+    const [models, setModels] = useState([]);
+    const [rate, setRate] = useState(50);
+    const [hwMarkup, setHwMarkup] = useState(0.35);
+    const [modelKey, setModelKey] = useState("");
+    const [hw, setHw] = useState([]);
+    const [profitPct, setProfitPct] = useState(0.6);
+    const [laborHours, setLaborHours] = useState(3);
+    const [materialCost, setMaterialCost] = useState(0);
+    const [addQ, setAddQ] = useState("");
+    const [addResults, setAddResults] = useState([]);
+
+    useEffect(() => {
+        (async () => {
+            const [{ data: m }, { data: params }] = await Promise.all([
+                http.get("/admin/master/door-models"),
+                http.get("/admin/master/params"),
+            ]);
+            setModels(m);
+            const r = params.find((p) => /TAUX HORAIRE/i.test(p.label));
+            const q = params.find((p) => /QUINCAILLERIE/i.test(p.label));
+            if (r) setRate(r.value);
+            if (q) setHwMarkup(q.value);
+        })();
+    }, []);
+
+    const selectModel = (key) => {
+        setModelKey(key);
+        const m = models.find((x) => x.model_key === key);
+        if (!m) return;
+        setHw(m.hardware.map((h) => ({ ...h })));
+        setProfitPct(m.profit_pct);
+        setLaborHours(m.labor_hours || 3);
+        setMaterialCost(m.material_cost || 0);
+    };
+
+    useEffect(() => {
+        if (!addQ) { setAddResults([]); return; }
+        const t = setTimeout(async () => {
+            const { data } = await http.get(`/admin/master/hardware?q=${encodeURIComponent(addQ)}`);
+            setAddResults(data.slice(0, 8));
+        }, 250);
+        return () => clearTimeout(t);
+    }, [addQ]);
+
+    const laborCost = Math.round(laborHours * rate * 100) / 100;
+    const mlCost = Math.round((materialCost + laborCost) * 100) / 100;
+    const hwCost = Math.round(hw.reduce((s, h) => s + (Number(h.cost) || 0), 0) * 100) / 100;
+    const mlProfit = Math.round(mlCost * profitPct * 100) / 100;
+    const hwProfit = Math.round(hwCost * hwMarkup * 100) / 100;
+    const costTotal = Math.round((mlCost + hwCost) * 100) / 100;
+    const sellTotal = Math.round((mlCost + mlProfit + hwCost + hwProfit) * 100) / 100;
+    const margin = Math.round((sellTotal - costTotal) * 100) / 100;
+    const marginPct = costTotal ? Math.round((margin / costTotal) * 1000) / 10 : 0;
+
+    return (
+        <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+                <div className="border border-[#dde5f0] bg-white p-4 space-y-3">
+                    <Field label="Modèle de porte (base LDP)">
+                        <select data-testid="calc-model" value={modelKey} onChange={(e) => selectModel(e.target.value)} className={inputClass}>
+                            <option value="">— Choisir un modèle —</option>
+                            {models.map((m) => <option key={m.model_key} value={m.model_key}>{m.label}</option>)}
+                        </select>
+                    </Field>
+                    {modelKey && (
+                        <div className="grid grid-cols-3 gap-3">
+                            <Field label="Matériel ($)"><input type="number" step="0.01" data-testid="calc-material" className={inputClass} value={materialCost} onChange={(e) => setMaterialCost(Number(e.target.value))} /></Field>
+                            <Field label="Heures M.O."><input type="number" step="0.5" data-testid="calc-hours" className={inputClass} value={laborHours} onChange={(e) => setLaborHours(Number(e.target.value))} /></Field>
+                            <Field label="Profit matériel (×)"><input type="number" step="0.05" data-testid="calc-profit" className={inputClass} value={profitPct} onChange={(e) => setProfitPct(Number(e.target.value))} /></Field>
+                        </div>
+                    )}
+                </div>
+
+                {modelKey && (
+                    <div className="border border-[#dde5f0] bg-white p-4 space-y-2">
+                        <div className="tech-stamp text-[#4b5d7a] flex items-center justify-between">
+                            <span>Quincaillerie ({hw.length})</span>
+                            <span>{formatCurrency(hwCost)}</span>
+                        </div>
+                        {hw.map((h, i) => (
+                            <div key={i} data-testid={`calc-hw-${i}`} className="flex items-center gap-2 text-sm border-b border-[#f0f3f8] pb-1.5">
+                                <span className="flex-1">{h.description}<span className="text-[#93a3bd] text-xs ml-1">{h.code}</span></span>
+                                <span className="text-[#4b5d7a]">{formatCurrency(h.cost)}</span>
+                                <button onClick={() => setHw(hw.filter((_, j) => j !== i))} className="text-red-500 hover:text-red-700"><X className="w-3.5 h-3.5" /></button>
+                            </div>
+                        ))}
+                        <div className="relative pt-2">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 text-[#93a3bd]" />
+                            <input data-testid="calc-add-hw" value={addQ} onChange={(e) => setAddQ(e.target.value)} placeholder="Ajouter une quincaillerie (code ou nom)…" className={`${inputClass} !pl-9`} />
+                            {addResults.length > 0 && (
+                                <div className="absolute z-10 left-0 right-0 bg-white border border-[#dde5f0] shadow-lg max-h-56 overflow-auto">
+                                    {addResults.map((r) => (
+                                        <button key={r.id} onClick={() => { setHw([...hw, { code: r.product_code, description: r.description, cost: r.unit_cost }]); setAddQ(""); setAddResults([]); }}
+                                            className="block w-full text-left px-3 py-2 text-sm hover:bg-[#eaf1fb] border-b border-[#f0f3f8]">
+                                            {r.description} <span className="text-[#2f4f7f] font-mono text-xs">{r.product_code}</span> — {formatCurrency(r.unit_cost)} <span className="text-[#93a3bd]">({r.supplier})</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Résultat */}
+            <div className="border-2 border-[#0c182b] bg-[#0c182b] text-white p-6 h-fit sticky top-4">
+                <div className="tech-stamp text-[#8fb4ff] mb-4">Calcul du prix (comme LDP)</div>
+                {!modelKey ? (
+                    <p className="text-[#8fb4ff] text-sm">Choisis un modèle pour calculer le prix, le coûtant et la marge.</p>
+                ) : (
+                    <div className="space-y-2 text-sm">
+                        <Row l="Matériel + M.O." v={formatCurrency(mlCost)} sub={`(${formatCurrency(materialCost)} + ${laborHours}h × ${formatCurrency(rate)})`} />
+                        <Row l={`Profit matériel (×${profitPct})`} v={formatCurrency(mlProfit)} />
+                        <Row l="Quincaillerie (coût)" v={formatCurrency(hwCost)} />
+                        <Row l={`Profit quincaillerie (×${hwMarkup})`} v={formatCurrency(hwProfit)} />
+                        <div className="border-t border-[#2a3d5c] my-2" />
+                        <div className="flex justify-between items-center">
+                            <span className="text-[#8fb4ff]">COÛTANT</span>
+                            <span data-testid="calc-cost" className="font-display font-bold text-lg">{formatCurrency(costTotal)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[#4fd1c5]">
+                            <span>MARGE</span>
+                            <span data-testid="calc-margin">{formatCurrency(margin)} · {marginPct}%</span>
+                        </div>
+                        <div className="border-t border-[#2a3d5c] my-2" />
+                        <div className="flex justify-between items-center">
+                            <span className="text-[#ffd27f] font-semibold">PRIX VENDANT</span>
+                            <span data-testid="calc-sell" className="font-display font-bold text-3xl text-[#ffd27f]">{formatCurrency(sellTotal)}</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const Row = ({ l, v, sub }) => (
+    <div className="flex justify-between items-baseline">
+        <span className="text-[#c3d2ea]">{l}{sub && <span className="text-[#6b7f9e] text-xs ml-1">{sub}</span>}</span>
+        <span>{v}</span>
+    </div>
+);
 
 const Tile = ({ label, value }) => (
     <div className="bg-white p-4">

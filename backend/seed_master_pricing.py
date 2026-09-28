@@ -151,6 +151,72 @@ def _parse_extrusion(wb) -> list:
     return list(ext.values())
 
 
+def _parse_door_models(wb) -> list:
+    import re as _re
+    out = []
+    for name in wb.sheetnames:
+        if not name.startswith("LDP-"):
+            continue
+        key = name.strip()
+        body = key[4:]
+        if body.endswith("DSP") or "DSP" in body.split("-")[-1]:
+            continue  # gabarit de design, pas un modèle vendable
+        toks = body.split("-")
+        if len(toks) < 3:
+            continue
+        series = toks[0]
+        finish = "noir" if toks[1] == "70" else "clair"
+        rest = toks[2]
+        is_pair = "72X84" in rest
+        size = "72X84" if is_pair else "36X84"
+        hand = "MDR" if rest.endswith("MDR") else ("MGR" if rest.endswith("MGR") else "")
+        isolated = series.startswith("ATI")
+
+        ws = wb[name]
+        rows = list(ws.iter_rows(min_row=1, max_row=ws.max_row, values_only=True))
+        ml_cost = labor_cost = labor_h = profit = None
+        hw = []
+        hw_done = False
+        for r in rows:
+            a = str(r[0] or "")
+            x = str(r[23]) if len(r) > 23 and r[23] is not None else ""
+            if a.startswith("TOTAUX MATÉRIEL + MAIN"):
+                ml_cost = _num(r[21])
+            if a.startswith("TOTAUX MAIN"):
+                labor_cost = _num(r[21])
+                m = _re.search(r"\((\d+(?:[.,]\d+)?)\s*H", a)
+                labor_h = float(m.group(1).replace(",", ".")) if m else None
+            if a.startswith("POURCENTAGE DE PROFIT BRUTE") and profit is None:
+                for v in r:
+                    if isinstance(v, (int, float)) and 0 < v <= 3:
+                        profit = float(v)
+                        break
+            if x.startswith("TOTAL QUINCAILLERIE"):
+                hw_done = True
+            if (not hw_done and len(r) > 45 and r[44] and r[45] and x
+                    and str(r[44]) != "VENDANT" and isinstance(r[45], (int, float))
+                    and not x.startswith(("TOTAL", "POURCENTAGE", "VENDANT"))):
+                hw.append({"code": str(r[44]).strip(), "description": str(r[23]).strip(),
+                           "cost": round(float(r[45]), 2)})
+        if ml_cost is None:
+            continue
+        label = (f"{series} {'isolée' if isolated else 'non-isolée'} · {finish} · "
+                 f"{'72×84 paire' if is_pair else '36×84 simple'}"
+                 + (f" · {hand}" if hand else ""))
+        out.append({
+            "id": uuid.uuid4().hex, "model_key": key, "label": label,
+            "series": series, "finish": finish, "size": size, "hand": hand,
+            "isolated": isolated, "is_pair": is_pair,
+            "material_labor_cost": ml_cost,
+            "labor_cost": labor_cost or 0, "labor_hours": labor_h or 0,
+            "material_cost": round((ml_cost or 0) - (labor_cost or 0), 2),
+            "profit_pct": profit if profit is not None else 0.6,
+            "hardware": hw, "hardware_cost": round(sum(h["cost"] for h in hw), 2),
+            "source": "master", "updated_at": datetime.now(timezone.utc).isoformat(),
+        })
+    return out
+
+
 async def seed_master_pricing(db, force: bool = False) -> dict:
     if not os.path.isfile(REF_FILE):
         return {"skipped": "ref file not found"}
@@ -161,6 +227,7 @@ async def seed_master_pricing(db, force: bool = False) -> dict:
         ("erp_door_prices", _parse_door_prices(wb)),
         ("erp_pricing_params", _parse_params(wb)),
         ("erp_extrusion_costs", _parse_extrusion(wb)),
+        ("erp_door_models", _parse_door_models(wb)),
     ]
     for coll_name, docs in jobs:
         coll = db[coll_name]

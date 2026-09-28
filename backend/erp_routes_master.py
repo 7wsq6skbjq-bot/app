@@ -60,6 +60,64 @@ class ExtrusionIn(BaseModel):
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
+    # ── Moteur de prix de porte (basé sur les 26 LDP standards) ──────
+    async def _hw_markup() -> float:
+        p = await db.erp_pricing_params.find_one(
+            {"label": {"$regex": "QUINCAILLERIE", "$options": "i"}}, {"_id": 0, "value": 1})
+        return float(p["value"]) if p else 0.35
+
+    def _compute(ml_cost: float, hw_cost: float, profit_pct: float, hw_markup: float) -> dict:
+        ml_profit = round(ml_cost * profit_pct, 2)
+        hw_profit = round(hw_cost * hw_markup, 2)
+        sell = round(ml_cost + ml_profit + hw_cost + hw_profit, 2)
+        cost = round(ml_cost + hw_cost, 2)
+        margin = round(sell - cost, 2)
+        return {
+            "material_labor_cost": round(ml_cost, 2),
+            "material_labor_profit": ml_profit,
+            "hardware_cost": round(hw_cost, 2),
+            "hardware_profit": hw_profit,
+            "hardware_markup": hw_markup,
+            "cost_total": cost, "sell_total": sell,
+            "margin_amount": margin,
+            "margin_pct": round(margin / cost * 100, 1) if cost else 0,
+        }
+
+    @router.get("/master/door-models")
+    async def list_door_models(_: dict = Depends(auth_dep)):
+        return await db.erp_door_models.find({}, {"_id": 0}).sort("label", 1).to_list(100)
+
+    class PriceDoorIn(BaseModel):
+        model_config = ConfigDict(extra="ignore")
+        model_key: str
+        hardware: list = []            # [{code, description, cost}]
+        profit_pct: Optional[float] = None
+        labor_hours: Optional[float] = None
+
+    @router.post("/master/price-door")
+    async def price_door(data: PriceDoorIn, _: dict = Depends(auth_dep)):
+        model = await db.erp_door_models.find_one({"model_key": data.model_key}, {"_id": 0})
+        if not model:
+            raise HTTPException(404, "Modèle introuvable")
+        rate_param = await db.erp_pricing_params.find_one(
+            {"label": {"$regex": "TAUX HORAIRE", "$options": "i"}}, {"_id": 0, "value": 1})
+        rate = float(rate_param["value"]) if rate_param else 50.0
+        material_cost = float(model.get("material_cost", 0))
+        # Recalcule la M.O. si l'utilisateur change les heures, sinon garde le LDP.
+        if data.labor_hours is not None:
+            labor_cost = round(float(data.labor_hours) * rate, 2)
+        else:
+            labor_cost = float(model.get("labor_cost", 0))
+        ml_cost = round(material_cost + labor_cost, 2)
+        hw = data.hardware if data.hardware else model.get("hardware", [])
+        hw_cost = round(sum(float(h.get("cost", 0)) for h in hw), 2)
+        profit_pct = data.profit_pct if data.profit_pct is not None else float(model.get("profit_pct", 0.6))
+        result = _compute(ml_cost, hw_cost, profit_pct, await _hw_markup())
+        result.update({"model_key": data.model_key, "label": model.get("label"),
+                       "labor_cost": labor_cost, "profit_pct": profit_pct,
+                       "hardware": hw})
+        return result
+
     # ── Quincaillerie master (CRUD complet + recherche) ──────────────
     @router.get("/master/hardware")
     async def list_hardware(q: Optional[str] = None, supplier: Optional[str] = None,
