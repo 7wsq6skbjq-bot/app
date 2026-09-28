@@ -491,6 +491,14 @@ async def startup_event():
         await migrate_and_backfill_jobs(db)
     except Exception as exc:  # never block startup on migration
         print(f"[jobs] migration/backfill skipped: {exc}")
+    # Import the AT Fabrication master price list (idempotent) + sync hardware costs.
+    try:
+        from seed_master_pricing import seed_master_pricing, sync_hardware_to_production
+        res = await seed_master_pricing(db)
+        await sync_hardware_to_production(db)
+        print(f"[master] pricing import: {res}")
+    except Exception as exc:
+        print(f"[master] pricing import skipped: {exc}")
     # Start the daily reminder scheduler unless explicitly disabled
     # (e.g. inside pytest runs where scheduler side-effects are unwanted).
     if os.environ.get("DISABLE_SCHEDULER", "").lower() not in ("1", "true", "yes"):

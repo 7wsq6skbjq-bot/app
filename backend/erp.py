@@ -28,6 +28,7 @@ from erp_routes_statements import register as register_statements
 from erp_routes_assistant import register as register_assistant
 from erp_routes_jobs import register as register_jobs
 from erp_routes_mileage import register as register_mileage
+from erp_routes_master import register as register_master
 from erp_routes_push import register as register_push
 from erp_pricing import register as register_pricing
 from erp_routes_at_order_form import register as register_at_order_form
@@ -63,6 +64,7 @@ def build_erp_router(db: AsyncIOMotorDatabase, auth_dep) -> APIRouter:
     register_jobs(router, db, auth_dep, next_number)
     register_push(router, db, auth_dep)
     register_mileage(router, db, auth_dep)
+    register_master(router, db, auth_dep)
     register_pricing(router, db, auth_dep)
     register_at_order_form(router, db, auth_dep)
     register_compose(router, db, auth_dep)
