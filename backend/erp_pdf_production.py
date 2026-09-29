@@ -990,16 +990,16 @@ def _elevation_page(c, plan, door, page_no):
                 lc = (ox + pair_lwL / 2) if hcyl < pair_meet else (ox + pair_lwL + gap + pair_lwR / 2)
             else:
                 lc = ox + dw / 2
-            off = 4 if lc >= hcyl else -4              # grip curves toward the glass
+            off = 8 if lc >= hcyl else -8              # grip curves toward the glass
             c.setStrokeColor(NAVY)
             c.setFillColor(NAVY)
-            c.setLineWidth(2)
+            c.setLineWidth(4)
             c.line(hcyl + off, hy0, hcyl + off, hy1)          # grip
-            c.setLineWidth(1.2)
+            c.setLineWidth(2.4)
             c.line(hcyl, hy0, hcyl + off, hy0)                # stand-offs
             c.line(hcyl, hy1, hcyl + off, hy1)
-            c.circle(hcyl, hy0, 1.6, fill=1, stroke=0)
-            c.circle(hcyl, hy1, 1.6, fill=1, stroke=0)
+            c.circle(hcyl, hy0, 2.6, fill=1, stroke=0)
+            c.circle(hcyl, hy1, 2.6, fill=1, stroke=0)
             if first:
                 hdcol1, _ = _dim_cols(hx0, hx1, hcyl)
                 _dim_v(c, oy, hy0, hdcol1, f"{_dual(handle_h)}")
@@ -1034,18 +1034,8 @@ def _elevation_page(c, plan, door, page_no):
                 _dim_v(c, oy, lvy, vdcol1, f"{_dual(lv_h)}")
                 first = False
 
-    # KROME protection plate — cylinder over its leaf, body rides onto the other
-    if (not no_hw) and door.get("protection_plate"):
-        pl_h = _num("plate_height_in", 40.0)
-        ply = oy + pl_h * scale
-        first = True
-        for role in _roles(door.get("plate_leaf") or "active"):
-            px0, px1, pmeet, pcyl, ptoward = _leaf_geom(role)
-            _draw_protection_plate(c, pcyl, pmeet, ply, max(dh * 0.14, 46), ptoward)
-            if first:
-                _, pdcol2 = _dim_cols(px0, px1, pcyl)
-                _dim_v(c, oy, ply, pdcol2, f"{_dual(pl_h)}")
-                first = False
+    # KROME protection plate (protège-pêne) — DRAWN LATER so it sits on top of
+    # the astragal. See the deferred block after the astragal below.
 
     # push paddle (palette de relâche) — chosen leaf; hidden line for reverse hands
     if (not no_hw) and door.get("push_paddle"):
@@ -1063,9 +1053,9 @@ def _elevation_page(c, plan, door, page_no):
                     _dim_v(c, oy, pdy, qdcol1, f"{_dual(pd_h)}")
                     first = False
 
-    # flush bolts (verrou affleuré) — meeting stile (top & bottom) on chosen leaf(s)
+    # flush bolts (verrou affleuré) — TOUJOURS sur le vantail INACTIF (jamais actif)
     if (not no_hw) and door.get("flush_bolt") and is_pair:
-        for role in _roles(door.get("flush_leaf") or "inactive"):
+        for role in ["inactive"]:
             _, _, fmeet, _, ftoward = _leaf_geom(role)
             fb_x = fmeet + ftoward * (lock_inactive_pt * 0.5)
             _draw_flush_bolt(c, fb_x, oy + dh - 14)
@@ -1095,6 +1085,20 @@ def _elevation_page(c, plan, door, page_no):
         c.rotate(90)
         c.drawString(0, 0, "Astragale")
         c.restoreState()
+
+    # KROME protection plate (protège-pêne) — drawn AFTER the astragal so it sits
+    # ON TOP, and scaled to 75 % (was too bulky).
+    if (not no_hw) and door.get("protection_plate"):
+        pl_h = _num("plate_height_in", 40.0)
+        ply = oy + pl_h * scale
+        first = True
+        for role in _roles(door.get("plate_leaf") or "active"):
+            px0, px1, pmeet, pcyl, ptoward = _leaf_geom(role)
+            _draw_protection_plate(c, pcyl, pmeet, ply, max(dh * 0.14, 46) * 0.75, ptoward)
+            if first:
+                _, pdcol2 = _dim_cols(px0, px1, pcyl)
+                _dim_v(c, oy, ply, pdcol2, f"{_dual(pl_h)}")
+                first = False
 
     # panic bar (barre anti-panique) — chosen leaf(s), edge to edge (touches both
     # sides of the leaf); hidden line for reverse hands (MGR/MDR)

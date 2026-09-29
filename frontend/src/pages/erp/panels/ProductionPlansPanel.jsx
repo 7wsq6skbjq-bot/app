@@ -76,20 +76,27 @@ export const ProductionPlansPanel = () => {
     const doorCost = useCallback((d) => {
         const laborCost = (Number(d.labor_hours) || 0) * masterRate;
         const mlCost = (Number(d.material_cost) || 0) + laborCost;
-        const hwCost = (d.hardware || []).reduce((s, h) => {
-            if (h.included === false) return s;
+        const frameCost = Number(d.frame_cost) || 0;
+        const frameLabor = (Number(d.frame_hours) || 0) * masterRate;
+        const frameTot = frameCost + frameLabor;
+        let hwCost = 0, hwSell = 0;
+        for (const h of d.hardware || []) {
+            if (h.included === false) continue;
             const q = parseFloat(String(h.qty || "1").replace(",", ".")) || 1;
-            return s + q * (Number(h.cost) || 0);
-        }, 0);
-        const profit = Number(d.profit_pct) || 0;
-        const mlProfit = mlCost * profit;
-        const hwProfit = hwCost * masterHwMarkup;
-        const cost = Math.round((mlCost + hwCost) * 100) / 100;
-        const sell = Math.round((mlCost + mlProfit + hwCost + hwProfit) * 100) / 100;
+            const c = Number(h.cost) || 0;
+            const mp = h.margin_pct != null ? Number(h.margin_pct) : 35;
+            hwCost += q * c;
+            hwSell += q * c * (1 + mp / 100);
+        }
+        const profit = Number(d.profit_pct) || 0;   // fraction (0.6 = +60 %)
+        const mlSell = mlCost * (1 + profit);
+        const frameSell = frameTot * (1 + profit);
+        const cost = Math.round((mlCost + frameTot + hwCost) * 100) / 100;
+        const sell = Math.round((mlSell + frameSell + hwSell) * 100) / 100;
         const margin = Math.round((sell - cost) * 100) / 100;
         const marginPct = cost ? Math.round((margin / cost) * 1000) / 10 : 0;
-        return { cost, sell, margin, marginPct, hwCost, mlCost };
-    }, [masterRate, masterHwMarkup]);
+        return { cost, sell, margin, marginPct, hwCost, mlCost, frameTot };
+    }, [masterRate]);
 
     const projectTotals = useMemo(() => {
         let cost = 0, sell = 0;
@@ -114,13 +121,15 @@ export const ProductionPlansPanel = () => {
         const series = seriesMap[seriesTok] || "AT1000";
         const config = /paire/i.test(label) ? "pair" : "simple";
         const finish = /noir/i.test(label) ? "Anodisé noir" : "Anodisé clair";
+        const isIso = series.startsWith("ATi") || (/isol/i.test(label) && !/non[-\s]?isol/i.test(label));
         const hw = (m.hardware || []).map((h) => ({
             ...emptyHardwareLine(),
             qty: "1",
             description: h.description || "",
             part_number: h.code || "",
             cost: Number(h.cost) || 0,
-            unit_price: Math.round((Number(h.cost) || 0) * (1 + masterHwMarkup) * 100) / 100,
+            margin_pct: 35,
+            unit_price: Math.round((Number(h.cost) || 0) * 1.35 * 100) / 100,
             included: true, from_master: true, on_active: true,
         }));
         setForm((f) => ({
@@ -130,6 +139,8 @@ export const ProductionPlansPanel = () => {
                 master_model_key: modelKey,
                 series, config,
                 finish_ext: finish, finish_int: finish,
+                thickness: isIso ? "2-1/4\"" : "1-3/4\"",
+                cladding: isIso,
                 material_cost: Number(m.material_cost) || 0,
                 labor_hours: Number(m.labor_hours) || 3,
                 profit_pct: m.profit_pct ?? 0.6,
@@ -158,7 +169,8 @@ export const ProductionPlansPanel = () => {
                     description: item.description || "",
                     part_number: item.product_code || "",
                     cost: Number(item.unit_cost) || 0,
-                    unit_price: Math.round((Number(item.unit_cost) || 0) * (1 + masterHwMarkup) * 100) / 100,
+                    margin_pct: 35,
+                    unit_price: Math.round((Number(item.unit_cost) || 0) * 1.35 * 100) / 100,
                     included: true, from_master: true, on_active: true,
                 }],
             } : d)),
@@ -171,11 +183,22 @@ export const ProductionPlansPanel = () => {
         if (!form.doors?.length) { setErrorMsg("Ajoutez au moins une porte."); return; }
         setPushing(true); setErrorMsg("");
         try {
-            const items = (form.doors || []).map((d) => {
+            const FRAME_LABELS = { flush_iso: "Cadre Flush glazed isolé", flush_non_iso: "Cadre Flush glazed non isolé", tube_fin: "Cadre Tube à fin", adapteur: "Cadre Adapteur" };
+            const items = [];
+            (form.doors || []).forEach((d) => {
                 const c = doorCost(d);
                 const qty = parseInt(d.qty, 10) || 1;
                 const label = `Porte ${d.tag || d.series} — ${d.series} ${d.config === "pair" ? "paire" : "simple"} ${d.opening_width_in}×${d.opening_height_in} (quincaillerie incluse)`;
-                return { description: label, quantity: qty, unit_price: c.sell, cost_price: c.cost, cost_category: "Portes", product_id: null };
+                // Frame as a SEPARATE line (turnkey entrance = frame + door + threshold)
+                const frameTot = c.frameTot || 0;
+                const doorCostNoFrame = Math.round((c.cost - frameTot) * 100) / 100;
+                const profit = Number(d.profit_pct) || 0;
+                const frameSell = Math.round(frameTot * (1 + profit) * 100) / 100;
+                const doorSellNoFrame = Math.round((c.sell - frameSell) * 100) / 100;
+                items.push({ description: label, quantity: qty, unit_price: doorSellNoFrame, cost_price: doorCostNoFrame, cost_category: "Portes", product_id: null });
+                if (d.frame_type && frameTot > 0) {
+                    items.push({ description: `${FRAME_LABELS[d.frame_type] || "Cadre"} — pour porte ${d.tag || d.series}`, quantity: qty, unit_price: frameSell, cost_price: frameTot, cost_category: "Cadres", product_id: null });
+                }
             });
             const { data } = await http.post("/admin/quotes", {
                 customer_snapshot: {
@@ -264,17 +287,6 @@ export const ProductionPlansPanel = () => {
         } catch (_) { /* silent */ }
     };
 
-    // when a description matches a catalog entry, auto-fill part number + price
-    const onHwDescription = (dk, hk, value) => {
-        updateHw(dk, hk, "description", value);
-        const match = hwCatalog.find(
-            (it) => (it.name || "").toLowerCase() === (value || "").trim().toLowerCase());
-        if (match) {
-            if (match.part_number) updateHw(dk, hk, "part_number", match.part_number);
-            if (match.price) updateHw(dk, hk, "unit_price", match.price);
-        }
-    };
-
     const effProfile = (d, field, key) =>
         d[field] || catalog?.defaults?.[d.series]?.[key] || "";
     const optLabel = (o) => `${o.code} · ${o.face_mm} mm`;
@@ -331,10 +343,45 @@ export const ProductionPlansPanel = () => {
         doors: f.doors.map((d) => (d._key === dk
             ? {
                 ...d,
-                hardware: (d.hardware || []).map((h) =>
-                    (h._key === hk ? { ...h, [key]: value } : h)),
+                hardware: (d.hardware || []).map((h) => {
+                    if (h._key !== hk) return h;
+                    const next = { ...h, [key]: value };
+                    // Auto-recompute selling price when cost or margin % changes
+                    if (key === "cost" || key === "margin_pct") {
+                        const c = Number(next.cost) || 0;
+                        const mp = next.margin_pct != null ? Number(next.margin_pct) : 35;
+                        next.unit_price = Math.round(c * (1 + mp / 100) * 100) / 100;
+                    }
+                    return next;
+                }),
             } : d)),
     }));
+
+    // Auto-fill part number + cost + price when a description matches the catalog
+    const onHwDescription = (dk, hk, value) => {
+        setForm((f) => ({
+            ...f,
+            doors: f.doors.map((d) => (d._key === dk ? {
+                ...d,
+                hardware: (d.hardware || []).map((h) => {
+                    if (h._key !== hk) return h;
+                    const next = { ...h, description: value };
+                    const match = hwCatalog.find(
+                        (it) => (it.name || "").toLowerCase() === (value || "").trim().toLowerCase());
+                    if (match) {
+                        if (match.part_number) next.part_number = match.part_number;
+                        const cost = Number(match.cost) || 0;
+                        if (cost) next.cost = cost;
+                        const mp = next.margin_pct != null ? Number(next.margin_pct) : 35;
+                        next.unit_price = Number(match.price) > 0
+                            ? Number(match.price)
+                            : Math.round(cost * (1 + mp / 100) * 100) / 100;
+                    }
+                    return next;
+                }),
+            } : d)),
+        }));
+    };
 
     // ─── new / edit ──────────────────────────────────────
     const resetForm = () => {
@@ -391,6 +438,12 @@ export const ProductionPlansPanel = () => {
             material_cost: Number(d.material_cost || 0) || 0,
             labor_hours: Number(d.labor_hours || 0) || 0,
             profit_pct: Number(d.profit_pct ?? 0.6),
+            thickness: d.thickness || "1-3/4\"",
+            cladding: !!d.cladding,
+            moulure: d.moulure || "AT1045",
+            frame_type: d.frame_type || "",
+            frame_cost: Number(d.frame_cost || 0) || 0,
+            frame_hours: Number(d.frame_hours || 0) || 0,
             series: d.series || "AT1000",
             config: d.config || "simple",
             opening_width_in: Number(d.opening_width_in || 0) || 1,
@@ -449,6 +502,7 @@ export const ProductionPlansPanel = () => {
                 note: h.note || "",
                 unit_price: Number(h.unit_price || 0) || 0,
                 cost: Number(h.cost || 0) || 0,
+                margin_pct: Number(h.margin_pct ?? 35),
                 included: true,
                 from_master: !!h.from_master,
                 on_active: !!h.on_active,
@@ -824,13 +878,69 @@ export const ProductionPlansPanel = () => {
                                                             className={`${inputCls} text-right`} />
                                                     </div>
                                                     <div>
-                                                        <label className={labelCls}>Profit matériel (×)</label>
-                                                        <input type="number" step="0.05" value={d.profit_pct ?? 0.6}
+                                                        <label className={labelCls}>Marge matériel (%)</label>
+                                                        <input type="number" step="1" value={Math.round((d.profit_pct ?? 0.6) * 100)}
                                                             data-testid={`pp-door-profit-${idx}`}
-                                                            onChange={(e) => updateDoor(d._key, "profit_pct", Number(e.target.value))}
+                                                            onChange={(e) => updateDoor(d._key, "profit_pct", (Number(e.target.value) || 0) / 100)}
                                                             className={`${inputCls} text-right`} />
                                                     </div>
                                                 </div>
+                                            </div>
+                                            {/* Épaisseur · cladding · moulure · cadre */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#f6efdc] border border-[#e6d9b3] p-3">
+                                                <div>
+                                                    <label className={labelCls}>Épaisseur</label>
+                                                    <input type="text" value={d.thickness || ""} data-testid={`pp-door-thickness-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "thickness", e.target.value)}
+                                                        className={inputCls} />
+                                                </div>
+                                                <div className="flex items-end pb-2">
+                                                    <label className="flex items-center gap-2 text-xs text-[#4b5d7a]">
+                                                        <input type="checkbox" checked={!!d.cladding}
+                                                            data-testid={`pp-door-cladding-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "cladding", e.target.checked)} />
+                                                        Cladding alu intérieur (ATi)
+                                                    </label>
+                                                </div>
+                                                <div>
+                                                    <label className={labelCls}>Moulure (suit le vitrage)</label>
+                                                    <select value={d.moulure || "AT1045"} data-testid={`pp-door-moulure-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "moulure", e.target.value)}
+                                                        className={inputCls}>
+                                                        <option value="AT1045">AT1045 (simple)</option>
+                                                        <option value="AT1050">AT1050 (isolé / thermos)</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className={labelCls}>Cadre (entrée complète)</label>
+                                                    <select value={d.frame_type || ""} data-testid={`pp-door-frame-${idx}`}
+                                                        onChange={(e) => updateDoor(d._key, "frame_type", e.target.value)}
+                                                        className={inputCls}>
+                                                        <option value="">— Aucun cadre —</option>
+                                                        <option value="flush_iso">Flush glazed isolé</option>
+                                                        <option value="flush_non_iso">Flush glazed non isolé</option>
+                                                        <option value="tube_fin">Tube à fin</option>
+                                                        <option value="adapteur">Adapteur</option>
+                                                    </select>
+                                                </div>
+                                                {d.frame_type && (
+                                                    <>
+                                                        <div>
+                                                            <label className={labelCls}>Coût cadre ($)</label>
+                                                            <input type="number" step="0.01" value={d.frame_cost || 0}
+                                                                data-testid={`pp-door-frame-cost-${idx}`}
+                                                                onChange={(e) => updateDoor(d._key, "frame_cost", Number(e.target.value))}
+                                                                className={`${inputCls} text-right`} />
+                                                        </div>
+                                                        <div>
+                                                            <label className={labelCls}>Heures M.O. cadre</label>
+                                                            <input type="number" step="0.5" value={d.frame_hours || 0}
+                                                                data-testid={`pp-door-frame-hours-${idx}`}
+                                                                onChange={(e) => updateDoor(d._key, "frame_hours", Number(e.target.value))}
+                                                                className={`${inputCls} text-right`} />
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                                 <div>
@@ -910,7 +1020,15 @@ export const ProductionPlansPanel = () => {
                                                 <div>
                                                     <label className={labelCls}>Type de vitrage</label>
                                                     <select value={d.glass_type || "6mm"} data-testid={`pp-door-glasstype-${idx}`}
-                                                        onChange={(e) => updateDoor(d._key, "glass_type", e.target.value)}
+                                                        onChange={(e) => {
+                                                            const gt = e.target.value;
+                                                            setForm((f) => ({
+                                                                ...f,
+                                                                doors: f.doors.map((x) => (x._key === d._key
+                                                                    ? { ...x, glass_type: gt, moulure: gt === "6mm" ? "AT1045" : "AT1050" }
+                                                                    : x)),
+                                                            }));
+                                                        }}
                                                         className={`${inputCls} bg-white`}>
                                                         <option value="6mm">Vitré 6 mm</option>
                                                         <option value="tht">Thermos 25,4 mm (THT)</option>
@@ -1197,6 +1315,7 @@ export const ProductionPlansPanel = () => {
                                                             <th className="text-left px-2 py-1">Description</th>
                                                             <th className="text-left px-2 py-1 w-32">N° de pièce</th>
                                                             <th className="text-right px-2 py-1 w-20">Coût ($)</th>
+                                                            <th className="text-right px-2 py-1 w-16">Marge %</th>
                                                             <th className="text-right px-2 py-1 w-20">Prix U. ($)</th>
                                                             <th className="text-center px-1 py-1 w-12">Actif</th>
                                                             <th className="text-center px-1 py-1 w-12">Inact.</th>
@@ -1233,6 +1352,12 @@ export const ProductionPlansPanel = () => {
                                                                     <input type="number" min="0" step="0.01" value={h.cost ?? 0}
                                                                         data-testid={`pp-hw-cost-${idx}`}
                                                                         onChange={(e) => updateHw(d._key, h._key, "cost", Number(e.target.value))}
+                                                                        className="w-full px-2 py-1 border border-[#e6d9b3] bg-[#fffdf5] text-sm text-right" />
+                                                                </td>
+                                                                <td className="px-1 py-1">
+                                                                    <input type="number" min="0" step="1" value={h.margin_pct ?? 35}
+                                                                        data-testid={`pp-hw-margin-${idx}`}
+                                                                        onChange={(e) => updateHw(d._key, h._key, "margin_pct", Number(e.target.value))}
                                                                         className="w-full px-2 py-1 border border-[#e6d9b3] bg-[#fffdf5] text-sm text-right" />
                                                                 </td>
                                                                 <td className="px-1 py-1">
@@ -1275,7 +1400,7 @@ export const ProductionPlansPanel = () => {
                                                                     return t > 0 ? `${t.toFixed(2)} $` : "—";
                                                                 })()}
                                                             </td>
-                                                            <td colSpan={4}></td>
+                                                            <td colSpan={5}></td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>

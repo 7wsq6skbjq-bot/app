@@ -47,8 +47,9 @@ class HardwareLine(BaseModel):
     description: str = ""
     part_number: str = ""
     note: str = ""
-    unit_price: float = 0
     cost: float = 0
+    margin_pct: float = 35
+    unit_price: float = 0
     included: bool = True
     from_master: bool = False
     on_active: bool = False
@@ -60,7 +61,13 @@ class DoorPlan(BaseModel):
     master_model_key: str = ""                          # modèle Master LDP source
     material_cost: float = 0                            # coût alu (fixe par modèle, modifiable)
     labor_hours: float = 0                              # heures M.O. (du modèle)
-    profit_pct: float = 0.6                             # profit matériel+M.O. (du modèle)
+    profit_pct: float = 0.6                             # majoration matériel+M.O. (fraction)
+    thickness: str = "1-3/4\""                          # épaisseur (ATi = 2-1/4")
+    cladding: bool = False                              # cladding alu intérieur (portes ATi isolées)
+    moulure: str = "AT1045"                             # modèle de moulure (suit le vitrage)
+    frame_type: str = ""                                # "", flush_iso, flush_non_iso, tube_fin, adapteur
+    frame_cost: float = 0
+    frame_hours: float = 0
     series: DoorSeries = "AT1000"
     config: DoorConfig = "simple"
     opening_width_in: float = Field(36, ge=1)
