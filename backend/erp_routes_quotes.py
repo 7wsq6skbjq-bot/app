@@ -129,6 +129,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             taxable=data.taxable, notes=data.notes, status=data.status,
             drawing_pages=data.drawing_pages,
             include_sales_conditions=data.include_sales_conditions,
+            show_deposit=data.show_deposit,
+            deposit_pct=data.deposit_pct,
         )
         await db.erp_quotes.insert_one(q.model_dump())
         return q
@@ -156,6 +158,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             "taxable": data.taxable, "notes": data.notes, "status": data.status,
             "drawing_pages": data.drawing_pages,
             "include_sales_conditions": data.include_sales_conditions,
+            "show_deposit": data.show_deposit,
+            "deposit_pct": data.deposit_pct,
         }
         await db.erp_quotes.update_one({"id": quote_id}, {"$set": update_fields})
         doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})

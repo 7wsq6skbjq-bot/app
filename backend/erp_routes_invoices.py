@@ -8,7 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from erp_helpers import compute_totals, csv_response, send_pdf_email
 from erp_models import EmailSendRequest, Invoice, InvoiceIn, Party
-from erp_pdf import render_invoice_pdf
+from erp_pdf import render_invoice_pdf, render_deposit_receipt_pdf
 
 
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number) -> None:
@@ -16,6 +16,38 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
     async def list_invoices(_: dict = Depends(auth_dep)):
         cur = db.erp_invoices.find({}, {"_id": 0}).sort("number", -1)
         return [Invoice(**d) async for d in cur]
+
+    @router.get("/invoices/deposits")
+    async def list_deposits(_: dict = Depends(auth_dep)):
+        """Factures avec dépôt reçu — solde restant à encaisser."""
+        cur = db.erp_invoices.find(
+            {"deposit_received": True, "status": {"$ne": "annulée"}}, {"_id": 0}
+        ).sort("number", -1)
+        rows, total_dep, total_bal = [], 0.0, 0.0
+        async for i in cur:
+            paid = i.get("status") == "payée"
+            dep = float(i.get("deposit_amount") or 0)
+            bal_raw = i.get("balance_due")
+            bal = float(bal_raw) if bal_raw is not None else round(float(i.get("total") or 0) - dep, 2)
+            remaining = 0.0 if paid else bal
+            cs = i.get("customer_snapshot") or {}
+            rows.append({
+                "id": i.get("id"),
+                "number": i.get("number"),
+                "date": i.get("date"),
+                "customer_name": cs.get("name") or "—",
+                "total": float(i.get("total") or 0),
+                "deposit_pct": float(i.get("deposit_pct") or 0),
+                "deposit_amount": dep,
+                "balance_due": bal,
+                "remaining": remaining,
+                "status": i.get("status") or "",
+            })
+            total_dep += dep
+            total_bal += remaining
+        return {"invoices": rows,
+                "total_deposit": round(total_dep, 2),
+                "total_remaining": round(total_bal, 2)}
 
     @router.post("/invoices", response_model=Invoice, status_code=201)
     async def create_invoice(data: InvoiceIn, _: dict = Depends(auth_dep)):
@@ -94,6 +126,20 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         )
         doc = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})
         return Invoice(**doc)
+
+    @router.get("/invoices/{invoice_id}/deposit-receipt.pdf")
+    async def deposit_receipt_pdf(invoice_id: str, _: dict = Depends(auth_dep)):
+        doc = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Facture introuvable")
+        if not doc.get("deposit_received"):
+            raise HTTPException(400, "Aucun dépôt reçu sur cette facture.")
+        pdf_bytes = await asyncio.to_thread(render_deposit_receipt_pdf, doc)
+        filename = f"recu-depot-FAC-{int(doc['number']):04d}.pdf"
+        return Response(
+            content=pdf_bytes, media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        )
 
     @router.get("/exports/invoices.csv")
     async def export_invoices(_: dict = Depends(auth_dep)):

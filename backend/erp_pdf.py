@@ -5,7 +5,7 @@ Uses reportlab — no headless browser, deterministic output.
 import io
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Iterable
 
 from reportlab.lib import colors
@@ -593,6 +593,81 @@ def render_tax_recap_pdf(data: dict) -> bytes:
 
 
 
+def render_deposit_receipt_pdf(inv: dict) -> bytes:
+    """Reçu de dépôt — confirme au client le dépôt reçu et le solde restant."""
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+    GREEN = colors.HexColor("#0f6b3a")
+
+    number = f"FAC-{int(inv.get('number', 0)):04d}"
+    total = float(inv.get("total") or 0)
+    pct = float(inv.get("deposit_pct") or 0)
+    dep = float(inv.get("deposit_amount") or 0)
+    bal = inv.get("balance_due")
+    bal = float(bal) if bal is not None else round(total - dep, 2)
+
+    story.append(_header(s, "REÇU DE DÉPÔT", number, None))
+    story.append(Spacer(1, 8 * mm))
+
+    party = _party_block(s, "Reçu de", inv.get("customer_snapshot") or {})
+    meta = _meta_grid(s, [
+        ("Facture liée", number),
+        ("Date du reçu", _date_fr(datetime.now(timezone.utc).date().isoformat())),
+        ("Date facture", _date_fr(inv.get("date"))),
+        ("Nº TPS", COMPANY["tps"]),
+    ])
+    side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
+    side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(side)
+    story.append(Spacer(1, 8 * mm))
+
+    story.append(Paragraph(
+        "Nous confirmons avoir reçu le dépôt suivant en lien avec la facture "
+        f"<b>{number}</b>. Merci de votre confiance.", s["body"]))
+    story.append(Spacer(1, 5 * mm))
+
+    rows = [
+        ["Total de la facture (taxes incl.)", _money(total)],
+        [f"Dépôt reçu ({pct:g} %)", "\u2212 " + _money(dep)],
+        ["SOLDE RESTANT À PAYER", _money(bal)],
+    ]
+    t = Table(rows, colWidths=[110 * mm, 55 * mm], hAlign="LEFT")
+    t.setStyle(TableStyle([
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 11),
+        ("TEXTCOLOR", (0, 0), (-1, -1), NAVY),
+        ("TEXTCOLOR", (0, 1), (-1, 1), colors.HexColor("#0f6b3a")),
+        ("LINEBELOW", (0, 0), (-1, 1), 0.5, NAVY_BORDER),
+        ("LINEABOVE", (0, 2), (-1, 2), 1.5, NAVY),
+        ("FONTNAME", (0, 2), (-1, 2), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 2), (-1, 2), 13),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("BOX", (0, 0), (-1, -1), 0.5, NAVY_BORDER),
+    ]))
+    story.append(t)
+
+    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph(
+        f"<b>Dépôt reçu : {_money(dep)}</b>", ParagraphStyle(
+            "dep", parent=s["party_name"], fontSize=13, textColor=GREEN)))
+
+    story.append(Spacer(1, 10 * mm))
+    story.append(Paragraph(
+        "Ce reçu confirme le dépôt reçu à ce jour. Le solde restant est payable "
+        "selon les modalités de la facture / soumission. "
+        f"Merci — {COMPANY['name']}, {COMPANY['email']}", s["footer"]))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
+
+
 SALES_CONDITIONS = [
     ("1. ACCEPTATION DE LA SOUMISSION",
      "L'acceptation de la soumission par le client constitue une autorisation ferme de procéder à la commande des matériaux, à la fabrication et/ou à l'exécution des travaux décrits à la soumission. Toute acceptation écrite, électronique ou toute autorisation permettant à Portech de débuter les travaux ou de commander les matériaux sera considérée comme une acceptation des présentes conditions. La soumission est valide pour une période de 30 jours, sauf indication contraire."),
@@ -717,6 +792,32 @@ def render_quote_pdf(q: dict) -> bytes:
         q.get("tvq", 0), q.get("total", 0),
         q.get("taxable", True), "Total estimé",
     ))
+
+    if q.get("show_deposit") and float(q.get("deposit_pct") or 0) > 0:
+        pct = float(q.get("deposit_pct") or 0)
+        total = float(q.get("total") or 0)
+        dep = round(total * pct / 100, 2)
+        bal = round(total - dep, 2)
+        story.append(Spacer(1, 5 * mm))
+        dep_tbl = Table([
+            [Paragraph(f"<b>Dépôt à verser à l'acceptation ({pct:g} %)</b>", s["body"]), _money(dep)],
+            [Paragraph("Solde payable à la livraison", s["body"]), _money(bal)],
+        ], colWidths=[110 * mm, 55 * mm], hAlign="RIGHT")
+        dep_tbl.setStyle(TableStyle([
+            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+            ("BOX", (0, 0), (-1, -1), 1, NAVY),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eaf1fb")),
+            ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+            ("FONTNAME", (1, 0), (1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("TEXTCOLOR", (0, 0), (-1, -1), NAVY),
+            ("LINEBELOW", (0, 0), (-1, 0), 0.5, NAVY_BORDER),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.append(dep_tbl)
 
     if q.get("notes"):
         story.append(Spacer(1, 6 * mm))

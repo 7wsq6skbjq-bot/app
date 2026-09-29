@@ -394,6 +394,9 @@ export const DocumentForm = ({
     const depPct = isInvoice && value.deposit_received ? Number(value.deposit_pct || 0) : 0;
     const depAmount = Math.round(totals.total * depPct / 100 * 100) / 100;
     const balanceDue = Math.round((totals.total - depAmount) * 100) / 100;
+    const qDepPct = isQuote && value.show_deposit ? Number(value.deposit_pct ?? 50) : 0;
+    const qDepAmount = Math.round(totals.total * qDepPct / 100 * 100) / 100;
+    const qBalance = Math.round((totals.total - qDepAmount) * 100) / 100;
 
     const set = (k, v) => onChange({ ...value, [k]: v });
 
@@ -603,6 +606,33 @@ export const DocumentForm = ({
                             Joindre les conditions de vente (annexe contrat)
                         </label>
                     )}
+                    {isQuote && (
+                        <div className="mt-3 border border-[#dde5f0] bg-white p-3">
+                            <label className="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={!!value.show_deposit}
+                                    onChange={(e) => onChange({ ...value, show_deposit: e.target.checked, deposit_pct: value.deposit_pct ?? 50 })}
+                                    data-testid="doc-quote-show-deposit"
+                                />
+                                Afficher le dépôt à verser à l&apos;acceptation
+                            </label>
+                            {value.show_deposit && (
+                                <div className="mt-2 flex items-center gap-2 text-sm">
+                                    <span className="text-[#4b5d7a]">Pourcentage du dépôt</span>
+                                    <input
+                                        type="number" step="1" min="0" max="100"
+                                        value={value.deposit_pct ?? 50}
+                                        onChange={(e) => set("deposit_pct", e.target.value === "" ? 0 : Number(e.target.value))}
+                                        data-testid="doc-quote-deposit-pct"
+                                        className="w-24 px-2 py-1.5 border border-[#c5d4e7] text-right"
+                                    />
+                                    <span className="text-[#4b5d7a]">%</span>
+                                    <span className="ml-auto text-xs text-[#4b5d7a]">sur le total (taxes incl.)</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {isInvoice && (
                         <div className="mt-3 border border-[#dde5f0] bg-white p-3">
                             <label className="flex items-center gap-2 text-sm">
@@ -651,6 +681,18 @@ export const DocumentForm = ({
                                 <span className="font-display font-bold" data-testid="doc-invoice-balance-due">{formatCurrency(balanceDue)}</span>
                             </div>
                         </>
+                    )}
+                    {isQuote && value.show_deposit && qDepPct > 0 && (
+                        <div className="mt-2 pt-2 border-t border-[#dde5f0]" data-testid="doc-quote-deposit-preview">
+                            <div className="flex justify-between text-sm py-1 text-[#2f4f7f]">
+                                <span>Dépôt à verser à l&apos;acceptation ({qDepPct} %)</span>
+                                <span className="font-display font-bold">{formatCurrency(qDepAmount)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm py-1 text-[#4b5d7a]">
+                                <span>Solde à la livraison</span>
+                                <span className="font-display font-bold">{formatCurrency(qBalance)}</span>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
