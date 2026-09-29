@@ -141,6 +141,84 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             headers={"Content-Disposition": f'inline; filename="{filename}"'},
         )
 
+    @router.post("/invoices/{invoice_id}/deposit-receipt/send")
+    async def send_deposit_receipt(invoice_id: str, body: dict | None = None,
+                                   _: dict = Depends(auth_dep)):
+        """Email the deposit receipt PDF to the client (defaults to the
+        customer's email on the invoice)."""
+        doc = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Facture introuvable")
+        if not doc.get("deposit_received"):
+            raise HTTPException(400, "Aucun dépôt reçu sur cette facture.")
+        cs = doc.get("customer_snapshot") or {}
+        to_email = ((body or {}).get("to_email") or cs.get("email") or "").strip()
+        if not to_email:
+            raise HTTPException(400, "Aucun courriel client. Entrez une adresse.")
+        num = f"FAC-{int(doc['number']):04d}"
+        dep = float(doc.get("deposit_amount") or 0)
+        bal = doc.get("balance_due")
+        bal = float(bal) if bal is not None else round(float(doc.get("total") or 0) - dep, 2)
+        pdf_bytes = await asyncio.to_thread(render_deposit_receipt_pdf, doc)
+        html = (
+            f"<p>Bonjour,</p>"
+            f"<p>Nous confirmons la réception de votre dépôt de <b>{dep:,.2f} $</b> "
+            f"en lien avec la facture <b>{num}</b>.</p>"
+            f"<p>Solde restant à payer : <b>{bal:,.2f} $</b>.</p>"
+            f"<p>Le reçu officiel est en pièce jointe. Merci de votre confiance !</p>"
+        )
+        await send_pdf_email(
+            to_email=to_email,
+            subject=f"Reçu de dépôt — {num} — Portech",
+            html=html, pdf_bytes=pdf_bytes,
+            filename=f"recu-depot-{num}.pdf",
+        )
+        return {"sent": True, "to_email": to_email}
+
+    @router.post("/invoices/{invoice_id}/bill-balance", response_model=Invoice)
+    async def bill_balance(invoice_id: str, _: dict = Depends(auth_dep)):
+        """Create the FINAL invoice for the remaining balance after a deposit.
+
+        The balance invoice is NON-taxable (a single line at the exact remaining
+        amount) because the taxes were already declared on the original invoice —
+        this avoids any double taxation. The original invoice is marked 'payée'
+        (deposit collected, balance now billed separately)."""
+        orig = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})
+        if not orig:
+            raise HTTPException(404, "Facture introuvable")
+        if not orig.get("deposit_received"):
+            raise HTTPException(400, "Cette facture n'a pas de dépôt reçu.")
+        if orig.get("status") in ("payée", "annulée"):
+            raise HTTPException(400, "Facture déjà payée ou annulée.")
+        dep = float(orig.get("deposit_amount") or 0)
+        bal = orig.get("balance_due")
+        bal = float(bal) if bal is not None else round(float(orig.get("total") or 0) - dep, 2)
+        if bal <= 0:
+            raise HTTPException(400, "Aucun solde restant à facturer.")
+        orig_num = f"FAC-{int(orig['number']):04d}"
+        pct = float(orig.get("deposit_pct") or 0)
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).date().isoformat()
+        number = await next_number("invoice")
+        line = {
+            "description": f"Solde final — réf. {orig_num} (après dépôt de {pct:g} %, taxes déjà facturées)",
+            "quantity": 1, "unit_price": bal, "product_id": None,
+        }
+        inv = Invoice(
+            number=number,
+            customer_id=orig.get("customer_id"),
+            customer_snapshot=Party(**(orig.get("customer_snapshot") or {})),
+            date=today,
+            items=[line],
+            subtotal=bal, tps=0.0, tvq=0.0, total=bal,
+            taxable=False,
+            notes=f"Facture de solde suite au dépôt reçu sur {orig_num}.",
+            status="envoyée",
+        )
+        await db.erp_invoices.insert_one(inv.model_dump())
+        await db.erp_invoices.update_one({"id": invoice_id}, {"$set": {"status": "payée"}})
+        return inv
+
     @router.get("/exports/invoices.csv")
     async def export_invoices(_: dict = Depends(auth_dep)):
         invoices = await db.erp_invoices.find({}, {"_id": 0}).sort("number", -1).to_list(length=None)

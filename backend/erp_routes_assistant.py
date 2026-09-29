@@ -460,6 +460,24 @@ async def _erp_snapshot(db) -> str:
         cs = i.get("customer_snapshot") or {}
         lines.append(f"  • FAC-{int(i.get('number',0)):04d} {cs.get('name','')} "
                      f"{_money(i.get('total'))} échéance={i.get('due_date') or '—'}")
+    # Deposit balances outstanding (dépôt reçu, solde non encaissé)
+    dep = await db.erp_invoices.find(
+        {"deposit_received": True, "status": {"$nin": ["payée", "annulée"]}},
+        {"_id": 0}).sort("number", 1).to_list(200)
+    dep_open = []
+    for i in dep:
+        b = i.get("balance_due")
+        b = float(b) if b is not None else round(float(i.get("total") or 0) - float(i.get("deposit_amount") or 0), 2)
+        if b > 0:
+            dep_open.append((i, b))
+    if dep_open:
+        lines.append(f"DÉPÔTS reçus avec solde à encaisser: {len(dep_open)} — "
+                     f"reste {_money(sum(b for _, b in dep_open))}")
+        for i, b in dep_open[:15]:
+            cs = i.get("customer_snapshot") or {}
+            lines.append(f"  • FAC-{int(i.get('number',0)):04d} {cs.get('name','')} "
+                         f"dépôt {_money(i.get('deposit_amount'))} reçu, solde {_money(b)} "
+                         f"(facture du {i.get('date') or '—'})")
     # Pending quotes
     q = await db.erp_quotes.find({"status": {"$in": ["brouillon", "envoyée"]}}, {"_id": 0}).sort("number", 1).to_list(200)
     lines.append(f"SOUMISSIONS en cours: {len(q)}")

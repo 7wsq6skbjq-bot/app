@@ -49,6 +49,7 @@ STAGE_PATTERN = "^(" + "|".join(_ALL_STAGE_KEYS) + ")$"
 ADMIN_STAGES = ["lead", "soumission_a_produire", "soumission_envoyee",
                 "dessin_a_produire", "attente_depot"]
 RELANCE_DAYS = 3  # une soumission envoyée sans réponse depuis N jours = à relancer
+STALE_DEPOSIT_DAYS = 30  # dépôt reçu mais solde non encaissé depuis N jours = alerte
 DOC_TYPES = [
     "quote", "production_plan", "purchase_order", "mosquito_order",
     "bol", "invoice", "payment_notice", "expert_report",
@@ -292,17 +293,60 @@ def render_briefing_html(b: dict) -> str:
     )
 
 
+async def _stale_deposit_balances(db, days: int = 30) -> list[dict]:
+    """Factures avec dépôt reçu dont le solde n'est pas encaissé depuis `days`+ jours."""
+    today = datetime.now(timezone.utc).date()
+    cur = db.erp_invoices.find(
+        {"deposit_received": True, "status": {"$nin": ["payée", "annulée"]}},
+        {"_id": 0})
+    stale = []
+    async for i in cur:
+        d = _parse_date(i.get("date"))
+        if not d:
+            continue
+        age = (today - d).days
+        if age < days:
+            continue
+        dep = float(i.get("deposit_amount") or 0)
+        bal = i.get("balance_due")
+        bal = float(bal) if bal is not None else round(float(i.get("total") or 0) - dep, 2)
+        if bal <= 0:
+            continue
+        cs = i.get("customer_snapshot") or {}
+        stale.append({
+            "number": f"FAC-{int(i.get('number', 0)):04d}",
+            "client": cs.get("name") or "client ?",
+            "balance": bal, "age": age,
+        })
+    stale.sort(key=lambda x: x["age"], reverse=True)
+    return stale
+
+
+def _deposit_alert_html(stale_dep: list[dict]) -> str:
+    if not stale_dep:
+        return ""
+    rows = "".join(
+        f"<li style='margin:0 0 6px 0;'><b>{s['number']}</b> — {s['client']} "
+        f"<span style='color:#a31a1a;'>solde {s['balance']:,.2f} $ en attente depuis {s['age']} j</span></li>"
+        for s in stale_dep)
+    return (
+        f"<p style='margin:16px 0 4px 0;font-weight:bold;color:#0c182b;'>"
+        f"💰 Soldes de dépôt à encaisser (+{STALE_DEPOSIT_DAYS} j)</p>"
+        f"<ul style='margin:0 0 4px 0;padding-left:18px;'>{rows}</ul>")
+
+
 async def run_daily_briefing(db: AsyncIOMotorDatabase) -> dict:
     jobs = await db.erp_jobs.find({}, {"_id": 0}).to_list(length=None)
     b = build_briefing(jobs)
+    stale_dep = await _stale_deposit_balances(db, days=STALE_DEPOSIT_DAYS)
     subject = f"Portech — Briefing du {b['date']} · {b['total_active']} job(s) active(s)"
-    html = render_briefing_html(b)
+    html = render_briefing_html(b) + _deposit_alert_html(stale_dep)
     try:
         await send_html_email(
             to_email=BRIEFING_EMAIL, subject=subject, html=html,
             footer_note="Briefing quotidien · Portech ERP",
         )
-        return {"sent": True, "to": BRIEFING_EMAIL, **b}
+        return {"sent": True, "to": BRIEFING_EMAIL, "stale_deposits": stale_dep, **b}
     except Exception as exc:  # pragma: no cover - email issues shouldn't crash scheduler
         return {"sent": False, "error": str(exc), **b}
 
@@ -468,7 +512,9 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
     async def briefing_preview(_: dict = Depends(auth_dep)):
         jobs = await db.erp_jobs.find({}, {"_id": 0}).to_list(length=None)
         b = build_briefing(jobs)
-        b["html"] = render_briefing_html(b)
+        stale_dep = await _stale_deposit_balances(db, days=STALE_DEPOSIT_DAYS)
+        b["stale_deposits"] = stale_dep
+        b["html"] = render_briefing_html(b) + _deposit_alert_html(stale_dep)
         b["to"] = BRIEFING_EMAIL
         return b
 

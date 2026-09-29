@@ -128,6 +128,12 @@ async def run_morning_push(db) -> dict:
                and _stale_days(j.get("updated_at") or j.get("created_at")) >= 3]
     inv = await db.erp_invoices.find({"status": "envoyée"}, {"_id": 0}).to_list(300)
     overdue_inv = [i for i in inv if i.get("due_date") and i["due_date"] < today]
+    # Dépôts reçus dont le solde traîne (+30 j)
+    dep_inv = await db.erp_invoices.find(
+        {"deposit_received": True, "status": {"$nin": ["payée", "annulée"]}}, {"_id": 0}).to_list(300)
+    stale_dep = [i for i in dep_inv if i.get("date") and _stale_days(i.get("date")) >= 30
+                 and float(i.get("balance_due") if i.get("balance_due") is not None
+                           else (i.get("total", 0) - i.get("deposit_amount", 0))) > 0]
 
     parts = [f"{len(active)} job(s) actif(s)"]
     if leads:
@@ -138,7 +144,9 @@ async def run_morning_push(db) -> dict:
         parts.append(f"{len(due)} à livrer/en retard")
     if overdue_inv:
         parts.append(f"{len(overdue_inv)} facture(s) en retard")
-    body = " · ".join(parts) if (leads or relance or due or overdue_inv) else (
+    if stale_dep:
+        parts.append(f"{len(stale_dep)} solde(s) de dépôt à encaisser")
+    body = " · ".join(parts) if (leads or relance or due or overdue_inv or stale_dep) else (
         f"{len(active)} job(s) actif(s). Aucune urgence aujourd'hui — bonne journée !"
     )
     return await send_push(db, title=f"Résumé du matin — {today}", body=body, tag="briefing")

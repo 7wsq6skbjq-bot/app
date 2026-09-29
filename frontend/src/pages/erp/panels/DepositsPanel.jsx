@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, FileDown, Loader2 } from "lucide-react";
+import { RefreshCw, FileDown, Loader2, Mail, FilePlus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatCurrency } from "../utils";
 
@@ -10,6 +10,10 @@ export const DepositsPanel = () => {
     const [totalRemaining, setTotalRemaining] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [notice, setNotice] = useState("");
+    const [busyId, setBusyId] = useState("");
+
+    const flash = (m) => { setNotice(m); setTimeout(() => setNotice(""), 6000); };
 
     const load = useCallback(async () => {
         setLoading(true); setError("");
@@ -32,6 +36,35 @@ export const DepositsPanel = () => {
         if (isMobile) window.location.href = url; else window.open(url, "_blank");
     };
 
+    const sendReceipt = async (id, retryEmail) => {
+        setBusyId(id + "-mail"); setError("");
+        try {
+            const payload = retryEmail ? { to_email: retryEmail } : {};
+            const { data } = await http.post(`/admin/invoices/${id}/deposit-receipt/send`, payload);
+            flash(`✅ Reçu envoyé à ${data.to_email}.`);
+        } catch (e) {
+            const detail = e?.response?.data?.detail || "Échec de l'envoi";
+            if (!retryEmail && /courriel/i.test(detail)) {
+                const to = window.prompt("Courriel du client :", "") || "";
+                if (to.trim()) return sendReceipt(id, to.trim());
+            } else { setError(detail); }
+        } finally { setBusyId(""); }
+    };
+
+    const billBalance = async (id, number) => {
+        if (!window.confirm(`Créer la facture de solde pour FAC-${String(number).padStart(4, "0")} ? `
+            + `Une facture finale (sans taxes, taxes déjà facturées) sera créée pour le solde, `
+            + `et cette facture passera à « payée ».`)) return;
+        setBusyId(id + "-bill"); setError("");
+        try {
+            const { data } = await http.post(`/admin/invoices/${id}/bill-balance`);
+            flash(`✅ Facture de solde FAC-${String(data.number).padStart(4, "0")} créée (${formatCurrency(data.total)}).`);
+            await load();
+        } catch (e) {
+            setError(e?.response?.data?.detail || "Échec de la facturation du solde");
+        } finally { setBusyId(""); }
+    };
+
     const num = (n) => `FAC-${String(n).padStart(4, "0")}`;
 
     return (
@@ -48,6 +81,7 @@ export const DepositsPanel = () => {
             </div>
 
             {error && <div className="mb-4 p-4 border border-red-400 bg-red-50 text-red-800 text-sm">{error}</div>}
+            {notice && <div className="mb-4 p-3 border border-[#8ec79d] bg-[#e6f4ea] text-[#0b6b2f] text-sm" data-testid="deposits-notice">{notice}</div>}
 
             <div className="grid grid-cols-2 gap-3 mb-6 max-w-lg">
                 <div className="border border-[#0c182b] bg-[#0c182b] text-white px-5 py-3">
@@ -70,7 +104,7 @@ export const DepositsPanel = () => {
                         <th className="px-3 py-2 text-right">Dépôt reçu</th>
                         <th className="px-3 py-2 text-right">Solde restant</th>
                         <th className="px-3 py-2">Statut</th>
-                        <th className="px-3 py-2 text-right">Reçu</th>
+                        <th className="px-3 py-2 text-right">Actions</th>
                     </tr></thead>
                     <tbody>
                         {!loading && rows.length === 0 && (
@@ -85,12 +119,27 @@ export const DepositsPanel = () => {
                                 <td className="px-3 py-2 text-right text-[#0f6b3a] font-display font-bold">{formatCurrency(r.deposit_amount)} <span className="text-[#93a3bd] text-xs">({r.deposit_pct}%)</span></td>
                                 <td className={`px-3 py-2 text-right font-display font-bold ${r.remaining > 0 ? "text-[#a31a1a]" : "text-[#0f6b3a]"}`}>{formatCurrency(r.remaining)}</td>
                                 <td className="px-3 py-2"><span className="text-xs uppercase tech-stamp">{r.status}</span></td>
-                                <td className="px-3 py-2 text-right">
-                                    <button onClick={() => receiptPdf(r.id)} title="Reçu de dépôt PDF"
-                                        data-testid={`deposit-receipt-${r.id}`}
-                                        className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
-                                        <FileDown className="w-3.5 h-3.5" />
-                                    </button>
+                                <td className="px-3 py-2">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                        <button onClick={() => receiptPdf(r.id)} title="Reçu de dépôt PDF"
+                                            data-testid={`deposit-receipt-${r.id}`}
+                                            className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]">
+                                            <FileDown className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button onClick={() => sendReceipt(r.id)} title="Envoyer le reçu par courriel"
+                                            data-testid={`deposit-email-${r.id}`} disabled={busyId === r.id + "-mail"}
+                                            className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f] disabled:opacity-50">
+                                            {busyId === r.id + "-mail" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                                        </button>
+                                        {r.remaining > 0 && (
+                                            <button onClick={() => billBalance(r.id, r.number)} title="Facturer le solde restant"
+                                                data-testid={`deposit-bill-${r.id}`} disabled={busyId === r.id + "-bill"}
+                                                className="px-2.5 py-2 border border-[#0c182b] bg-[#0c182b] text-white text-xs flex items-center gap-1 hover:bg-[#1f3a5f] disabled:opacity-50">
+                                                {busyId === r.id + "-bill" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FilePlus className="w-3.5 h-3.5" />}
+                                                Facturer le solde
+                                            </button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
