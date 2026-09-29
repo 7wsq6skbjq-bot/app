@@ -1,8 +1,8 @@
 {
-  "name": "Adjointe Portech",
-  "short_name": "Adjointe",
-  "description": "Votre adjointe administrative virtuelle Portech : posez vos questions sur vos jobs, soumissions et factures, par écrit ou à la voix.",
-  "start_url": "/adjointe",
+  "name": "Portech",
+  "short_name": "Portech",
+  "description": "Portech — gestion complète : jobs, soumissions, factures, production, dépenses et adjointe virtuelle.",
+  "start_url": "/admin",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0c182b",
@@ -10,54 +10,26 @@
   "lang": "fr-CA",
   "categories": ["business", "productivity"],
   "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-180.png",
-      "sizes": "180x180",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/icon-96.png", "sizes": "96x96", "type": "image/png" }
   ],
   "shortcuts": [
-    {
-      "name": "Assistante IA",
-      "short_name": "Chat",
-      "description": "Parler avec l'adjointe",
-      "url": "/adjointe",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
     {
       "name": "Tableau de bord ERP",
       "short_name": "ERP",
       "description": "Gestion complète",
       "url": "/admin",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Assistante IA",
+      "short_name": "Adjointe",
+      "description": "Parler avec l'adjointe",
+      "url": "/adjointe",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]

@@ -554,3 +554,9 @@ User language: **French**.
   * doorCost() + projectTotals (useMemo) : (material+heures×taux)×(1+profit) + quinc.×(1+0.35). Bandeau projet foncé « INTERNE · jamais sur le PDF » : coûtant / marge $/% / vendant. Mini-panneau coût par porte. Formules identiques au calculateur de soumission.
   * Bouton « Pousser vers soumission » (pp-push-quote) : POST /admin/quotes, 1 ligne/porte (unit_price=vendant, cost_price=coûtant caché, cost_category Portes), client = infos du dessin. Vérifié : décocher 1 quinc. → coûtant 555,54→486,54 ; push → SO créée vendant 739 $, cost_price 486,54 caché, PDF sans coût.
   * ⚠️ RESTE À FAIRE : formule verre = ouverture de moulure − 7 mm. Le backend erp_pdf_production a déjà un calcul verre « bible A.T. » (_glass_moulure) ; à confirmer avec le user avant de l'écraser pour éviter une régression.
+
+- MAJ 2026-06 (Fix installation PWA iPhone — 2 apps distinctes) : FAIT + TESTÉ.
+  * Problème : un seul manifest (name "Adjointe Portech", start_url /adjointe) + apple-mobile-web-app-title "Adjointe Portech" → toute installation « Ajouter à l'écran d'accueil » installait l'Adjointe, peu importe la page.
+  * Fix : manifest.json renommé « Portech » (start_url /admin) ; nouveau public/manifest-adjointe.json (« Adjointe Portech », start_url /adjointe). Composant src/components/PwaManifest.jsx (monté dans App.js) bascule <link rel=manifest> + meta apple-mobile-web-app-title selon la route (/adjointe → Adjointe, sinon → Portech). index.html apple title défaut = Portech.
+  * Vérifié e2e : /admin → /manifest.json + « Portech » ; /adjointe → /manifest-adjointe.json + « Adjointe Portech » ; les 2 JSON servis valides (name/start_url corrects).
+  * NB : nécessite un redéploiement pour portech.info. Sur iPhone, iOS peut garder l'ancien nom en cache : supprimer l'ancienne icône, fermer Safari, recharger la page voulue, puis Ajouter à l'écran d'accueil.

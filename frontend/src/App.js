@@ -18,6 +18,7 @@ import AdminPrintPurchaseOrder from "@/pages/erp/AdminPrintPurchaseOrder";
 import AdminPrintBol from "@/pages/erp/AdminPrintBol";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import PwaManifest from "@/components/PwaManifest";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -42,6 +43,7 @@ function App() {
         <div className="App">
             <BrowserRouter>
                 <AuthProvider>
+                    <PwaManifest />
                     <UpdatePrompt />
                     <PwaInstallPrompt />
                     <Routes>
