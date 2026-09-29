@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Calculator, AlertTriangle, Save } from "lucide-react";
+import { Plus, Trash2, Calculator, AlertTriangle, Save, DoorClosed, Search, X, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Field, inputClass } from "./Modal";
+import { Field, inputClass, Modal } from "./Modal";
 import { PartyForm } from "./PartyForm";
 import {
     computeTotals,
@@ -82,6 +82,179 @@ const QuoteAttachments = ({ http, quoteId, attachments, onChange }) => {
 };
 
 /**
+ * DoorBuilderModal — CONFIDENTIAL door pricing engine embedded in the quote/
+ * invoice builder. Replicates the exact LDP Excel formulas (same math as the
+ * standalone Coûts Master calculator) and, on confirm, appends a real line item
+ * carrying the computed sell price + hidden cost_price/cost_category so the
+ * profit panel below shows live cost & margin per line and total.
+ */
+const DoorBuilderModal = ({ http, onAdd, onClose }) => {
+    const [models, setModels] = useState([]);
+    const [rate, setRate] = useState(50);
+    const [hwMarkup, setHwMarkup] = useState(0.35);
+    const [modelKey, setModelKey] = useState("");
+    const [hw, setHw] = useState([]);
+    const [profitPct, setProfitPct] = useState(0.6);
+    const [laborHours, setLaborHours] = useState(3);
+    const [materialCost, setMaterialCost] = useState(0);
+    const [qty, setQty] = useState(1);
+    const [addQ, setAddQ] = useState("");
+    const [addResults, setAddResults] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const [{ data: m }, { data: params }] = await Promise.all([
+                    http.get("/admin/master/door-models"),
+                    http.get("/admin/master/params"),
+                ]);
+                setModels(m);
+                const r = params.find((p) => /TAUX HORAIRE/i.test(p.label));
+                const q = params.find((p) => /QUINCAILLERIE/i.test(p.label));
+                if (r) setRate(r.value);
+                if (q) setHwMarkup(q.value);
+            } finally { setLoading(false); }
+        })();
+    }, [http]);
+
+    const selectModel = (key) => {
+        setModelKey(key);
+        const m = models.find((x) => x.model_key === key);
+        if (!m) return;
+        setHw((m.hardware || []).map((h) => ({ ...h })));
+        setProfitPct(m.profit_pct ?? 0.6);
+        setLaborHours(m.labor_hours || 3);
+        setMaterialCost(m.material_cost || 0);
+    };
+
+    useEffect(() => {
+        if (!addQ) { setAddResults([]); return; }
+        const t = setTimeout(async () => {
+            const { data } = await http.get(`/admin/master/hardware?q=${encodeURIComponent(addQ)}`);
+            setAddResults(data.slice(0, 8));
+        }, 250);
+        return () => clearTimeout(t);
+    }, [addQ, http]);
+
+    const model = models.find((x) => x.model_key === modelKey);
+    const laborCost = Math.round(laborHours * rate * 100) / 100;
+    const mlCost = Math.round((materialCost + laborCost) * 100) / 100;
+    const hwCost = Math.round(hw.reduce((s, h) => s + (Number(h.cost) || 0), 0) * 100) / 100;
+    const mlProfit = Math.round(mlCost * profitPct * 100) / 100;
+    const hwProfit = Math.round(hwCost * hwMarkup * 100) / 100;
+    const costTotal = Math.round((mlCost + hwCost) * 100) / 100;
+    const sellTotal = Math.round((mlCost + mlProfit + hwCost + hwProfit) * 100) / 100;
+    const margin = Math.round((sellTotal - costTotal) * 100) / 100;
+    const marginPct = costTotal ? Math.round((margin / costTotal) * 1000) / 10 : 0;
+
+    const confirm = () => {
+        if (!model) return;
+        const q = Number(qty) || 1;
+        onAdd({
+            ...emptyLineItem(),
+            description: `Porte — ${model.label} (quincaillerie incluse)`,
+            quantity: q,
+            unit_price: sellTotal,
+            cost_price: costTotal,
+            cost_category: "Portes",
+            product_id: null,
+        });
+        onClose();
+    };
+
+    return (
+        <Modal open onClose={onClose} wide testId="door-builder-modal"
+            title="Ajouter une porte — calculateur LDP"
+            footer={<div className="flex items-center justify-between gap-3 w-full">
+                <span className="text-xs text-[#4b5d7a]">
+                    {model ? <>Coûtant <b>{formatCurrency(costTotal)}</b> · Marge <b className="text-[#0f6b3a]">{formatCurrency(margin)} ({marginPct} %)</b></> : "Choisis un modèle"}
+                </span>
+                <button type="button" data-testid="door-builder-add" onClick={confirm} disabled={!model}
+                    className="tech-stamp px-4 py-2 bg-[#0c182b] text-white flex items-center gap-1 disabled:opacity-40">
+                    <Plus className="w-4 h-4" /> Ajouter à la soumission
+                </button>
+            </div>}>
+            {loading ? (
+                <div className="py-10 text-center text-[#4b5d7a]"><Loader2 className="w-5 h-5 animate-spin inline" /></div>
+            ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                        <div className="border border-[#dde5f0] bg-white p-4 space-y-3">
+                            <Field label="Modèle de porte (base LDP)">
+                                <select data-testid="door-builder-model" value={modelKey} onChange={(e) => selectModel(e.target.value)} className={inputClass}>
+                                    <option value="">— Choisir un modèle —</option>
+                                    {models.map((m) => <option key={m.model_key} value={m.model_key}>{m.label}</option>)}
+                                </select>
+                            </Field>
+                            {model && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Field label="Matériel ($)"><input type="number" step="0.01" data-testid="door-builder-material" className={inputClass} value={materialCost} onChange={(e) => setMaterialCost(Number(e.target.value))} /></Field>
+                                    <Field label="Heures M.O."><input type="number" step="0.5" data-testid="door-builder-hours" className={inputClass} value={laborHours} onChange={(e) => setLaborHours(Number(e.target.value))} /></Field>
+                                    <Field label="Profit matériel (×)"><input type="number" step="0.05" data-testid="door-builder-profit" className={inputClass} value={profitPct} onChange={(e) => setProfitPct(Number(e.target.value))} /></Field>
+                                    <Field label="Quantité"><input type="number" step="1" min="1" data-testid="door-builder-qty" className={inputClass} value={qty} onChange={(e) => setQty(e.target.value)} /></Field>
+                                </div>
+                            )}
+                        </div>
+
+                        {model && (
+                            <div className="border border-[#dde5f0] bg-white p-4 space-y-2">
+                                <div className="tech-stamp text-[#4b5d7a] flex items-center justify-between">
+                                    <span>Quincaillerie ({hw.length})</span>
+                                    <span>{formatCurrency(hwCost)}</span>
+                                </div>
+                                {hw.map((h, i) => (
+                                    <div key={i} className="flex items-center gap-2 text-sm border-b border-[#f0f3f8] pb-1.5">
+                                        <span className="flex-1">{h.description}<span className="text-[#93a3bd] text-xs ml-1">{h.code}</span></span>
+                                        <span className="text-[#4b5d7a]">{formatCurrency(h.cost)}</span>
+                                        <button type="button" onClick={() => setHw(hw.filter((_, j) => j !== i))} className="text-red-500 hover:text-red-700"><X className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                ))}
+                                <div className="relative pt-2">
+                                    <Search className="w-4 h-4 absolute left-3 top-1/2 text-[#93a3bd]" />
+                                    <input data-testid="door-builder-add-hw" value={addQ} onChange={(e) => setAddQ(e.target.value)} placeholder="Ajouter une quincaillerie (code ou nom)…" className={`${inputClass} !pl-9`} />
+                                    {addResults.length > 0 && (
+                                        <div className="absolute z-10 left-0 right-0 bg-white border border-[#dde5f0] shadow-lg max-h-56 overflow-auto">
+                                            {addResults.map((r) => (
+                                                <button type="button" key={r.id} onClick={() => { setHw([...hw, { code: r.product_code, description: r.description, cost: r.unit_cost }]); setAddQ(""); setAddResults([]); }}
+                                                    className="block w-full text-left px-3 py-2 text-sm hover:bg-[#eaf1fb] border-b border-[#f0f3f8]">
+                                                    {r.description} <span className="text-[#2f4f7f] font-mono text-xs">{r.product_code}</span> — {formatCurrency(r.unit_cost)} <span className="text-[#93a3bd]">({r.supplier})</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border-2 border-[#0c182b] bg-[#0c182b] text-white p-6 h-fit md:sticky md:top-4">
+                        <div className="tech-stamp text-[#8fb4ff] mb-4">Calcul du prix (comme LDP)</div>
+                        {!model ? (
+                            <p className="text-[#8fb4ff] text-sm">Choisis un modèle pour calculer le prix, le coûtant et la marge.</p>
+                        ) : (
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between items-baseline"><span className="text-[#c3d2ea]">Matériel + M.O.<span className="text-[#6b7f9e] text-xs ml-1">({formatCurrency(materialCost)} + {laborHours}h × {formatCurrency(rate)})</span></span><span>{formatCurrency(mlCost)}</span></div>
+                                <div className="flex justify-between items-baseline"><span className="text-[#c3d2ea]">Profit matériel (×{profitPct})</span><span>{formatCurrency(mlProfit)}</span></div>
+                                <div className="flex justify-between items-baseline"><span className="text-[#c3d2ea]">Quincaillerie (coût)</span><span>{formatCurrency(hwCost)}</span></div>
+                                <div className="flex justify-between items-baseline"><span className="text-[#c3d2ea]">Profit quincaillerie (×{hwMarkup})</span><span>{formatCurrency(hwProfit)}</span></div>
+                                <div className="border-t border-[#2a3d5c] my-2" />
+                                <div className="flex justify-between items-center"><span className="text-[#8fb4ff]">COÛTANT (unité)</span><span data-testid="door-builder-cost" className="font-display font-bold text-lg">{formatCurrency(costTotal)}</span></div>
+                                <div className="flex justify-between items-center text-[#4fd1c5]"><span>MARGE</span><span data-testid="door-builder-margin">{formatCurrency(margin)} · {marginPct}%</span></div>
+                                <div className="border-t border-[#2a3d5c] my-2" />
+                                <div className="flex justify-between items-center"><span className="text-[#ffd27f] font-semibold">PRIX VENDANT (unité)</span><span data-testid="door-builder-sell" className="font-display font-bold text-2xl text-[#ffd27f]">{formatCurrency(sellTotal)}</span></div>
+                                {Number(qty) > 1 && <div className="flex justify-between items-center text-xs text-[#c3d2ea] pt-1">× {qty} portes = <span className="font-bold">{formatCurrency(sellTotal * Number(qty))}</span></div>}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </Modal>
+    );
+};
+
+
+/**
  * DocumentForm — shared UI for Invoice and Purchase Order (same shape).
  * Props:
  * - kind: "invoice" | "purchase-order"
@@ -115,6 +288,13 @@ export const DocumentForm = ({
 
     const [partyMode, setPartyMode] = useState(value[partyIdKey] ? "select" : "custom");
     const [showPartyForm, setShowPartyForm] = useState(!value[partyIdKey]);
+    const [doorOpen, setDoorOpen] = useState(false);
+    const showDoorBuilder = isQuote || isInvoice;
+
+    const addDoorLine = (line) => {
+        const base = (value.items || []).filter((it) => it.description || Number(it.unit_price));
+        onChange({ ...value, items: [...base, line] });
+    };
 
     const totals = computeTotals(value.items || [], value.taxable);
 
@@ -149,8 +329,10 @@ export const DocumentForm = ({
             unit_price: Number(p.unit_price || 0),
             product_id: p.id,
             // Cost price is used for the admin-only profit margin panel — the
-            // backend LineItem model ignores unknown fields (`extra="ignore"`)
-            // so this NEVER hits the PDF or the client-facing quote.
+            // backend LineItem model now persists cost_price/cost_category as
+            // CONFIDENTIAL fields (never rendered on the PDF or client quote).
+            cost_price: p.cost_price != null ? Number(p.cost_price) : null,
+            cost_category: p.category || null,
             _cost_price: p.cost_price != null ? Number(p.cost_price) : null,
         });
     };
@@ -236,10 +418,19 @@ export const DocumentForm = ({
             <div>
                 <div className="flex items-center justify-between mb-3">
                     <div className="tech-stamp">Lignes</div>
-                    <button type="button" onClick={addItem} data-testid={`doc-${kind}-add-item`} className="btn-secondary !py-1.5 !px-3 !text-xs">
-                        <Plus className="w-3 h-3" />
-                        Ligne
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {showDoorBuilder && (
+                            <button type="button" onClick={() => setDoorOpen(true)} data-testid={`doc-${kind}-add-door`}
+                                className="btn-primary !py-1.5 !px-3 !text-xs flex items-center gap-1">
+                                <DoorClosed className="w-3 h-3" />
+                                Ajouter une porte (LDP)
+                            </button>
+                        )}
+                        <button type="button" onClick={addItem} data-testid={`doc-${kind}-add-item`} className="btn-secondary !py-1.5 !px-3 !text-xs">
+                            <Plus className="w-3 h-3" />
+                            Ligne
+                        </button>
+                    </div>
                 </div>
                 <div className="border border-[#dde5f0] bg-white">
                     <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 border-b border-[#dde5f0] bg-[#f3f6fb] tech-stamp text-[10px]">
@@ -354,6 +545,10 @@ export const DocumentForm = ({
                     })}
                 />
             )}
+
+            {doorOpen && (
+                <DoorBuilderModal http={http} onAdd={addDoorLine} onClose={() => setDoorOpen(false)} />
+            )}
         </div>
     );
 };
@@ -392,12 +587,15 @@ const ProfitMarginPanel = ({ items, products, onBumpPrices }) => {
     const { rows, byCat, totalCost, totalSell } = useMemo(() => {
         const rws = (items || []).map((it) => {
             const p = productMap[it.product_id];
-            const cost = p && p.cost_price != null ? Number(p.cost_price) : null;
+            let cost = p && p.cost_price != null ? Number(p.cost_price) : null;
+            if (cost == null && it.cost_price != null) cost = Number(it.cost_price);
+            if (cost == null && it._cost_price != null) cost = Number(it._cost_price);
+            const category = (p && p.category) || it.cost_category || "Sans catégorie";
             const qty = Number(it.quantity || 0);
             const sell = Number(it.unit_price || 0);
             return {
                 desc: it.description || "—",
-                category: (p && p.category) || "Sans catégorie",
+                category,
                 qty, cost, sell,
                 hasCost: cost != null && cost > 0,
                 lineCost: cost != null ? cost * qty : 0,

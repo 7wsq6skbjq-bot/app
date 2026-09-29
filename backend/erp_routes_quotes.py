@@ -319,6 +319,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
                 "unit_price": float(it.get("unit_price") or 0),
                 "product_id": it.get("product_id"),
                 "total": it.get("total"),
+                "cost_price": it.get("cost_price"),
+                "cost_category": it.get("cost_category"),
             }
             for it in (doc.get("items") or [])
         ]

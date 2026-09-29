@@ -88,6 +88,8 @@ class LineItem(BaseModel):
     unit_price: float = Field(ge=0)
     product_id: Optional[str] = None
     total: Optional[float] = None
+    cost_price: Optional[float] = Field(default=None, ge=0)   # CONFIDENTIEL — jamais sur le PDF
+    cost_category: Optional[str] = None                        # CONFIDENTIEL — regroupement marge
 
 
 class BolItem(BaseModel):
