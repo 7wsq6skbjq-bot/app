@@ -45,9 +45,42 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             })
             total_dep += dep
             total_bal += remaining
+
+        # Dépôts ATTENDUS : soumissions acceptées avec dépôt annoncé, pas encore reçu
+        awaited, total_awaited = [], 0.0
+        qcur = db.erp_quotes.find(
+            {"status": "acceptée", "show_deposit": True}, {"_id": 0}
+        ).sort("number", -1)
+        async for q in qcur:
+            pct = float(q.get("deposit_pct") or 0)
+            if pct <= 0:
+                continue
+            # Déjà reçu ? (facture liée avec dépôt encaissé)
+            inv_id = q.get("converted_invoice_id")
+            if inv_id:
+                linked = await db.erp_invoices.find_one({"id": inv_id}, {"_id": 0, "deposit_received": 1})
+                if linked and linked.get("deposit_received"):
+                    continue
+            total = float(q.get("total") or 0)
+            expected = round(total * pct / 100, 2)
+            cs = q.get("customer_snapshot") or {}
+            awaited.append({
+                "id": q.get("id"),
+                "number": q.get("number"),
+                "date": q.get("date"),
+                "customer_name": cs.get("name") or "—",
+                "total": total,
+                "deposit_pct": pct,
+                "expected_deposit": expected,
+                "converted": bool(inv_id),
+            })
+            total_awaited += expected
+
         return {"invoices": rows,
                 "total_deposit": round(total_dep, 2),
-                "total_remaining": round(total_bal, 2)}
+                "total_remaining": round(total_bal, 2),
+                "awaited": awaited,
+                "total_awaited": round(total_awaited, 2)}
 
     @router.post("/invoices", response_model=Invoice, status_code=201)
     async def create_invoice(data: InvoiceIn, _: dict = Depends(auth_dep)):

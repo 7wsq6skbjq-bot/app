@@ -6,8 +6,10 @@ import { formatCurrency } from "../utils";
 export const DepositsPanel = () => {
     const { http, getToken } = useAuth();
     const [rows, setRows] = useState([]);
+    const [awaited, setAwaited] = useState([]);
     const [totalDep, setTotalDep] = useState(0);
     const [totalRemaining, setTotalRemaining] = useState(0);
+    const [totalAwaited, setTotalAwaited] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
@@ -20,8 +22,10 @@ export const DepositsPanel = () => {
         try {
             const { data } = await http.get("/admin/invoices/deposits");
             setRows(data.invoices || []);
+            setAwaited(data.awaited || []);
             setTotalDep(data.total_deposit || 0);
             setTotalRemaining(data.total_remaining || 0);
+            setTotalAwaited(data.total_awaited || 0);
         } catch (e) {
             setError(e?.response?.data?.detail || "Erreur de chargement");
         } finally { setLoading(false); }
@@ -83,7 +87,7 @@ export const DepositsPanel = () => {
             {error && <div className="mb-4 p-4 border border-red-400 bg-red-50 text-red-800 text-sm">{error}</div>}
             {notice && <div className="mb-4 p-3 border border-[#8ec79d] bg-[#e6f4ea] text-[#0b6b2f] text-sm" data-testid="deposits-notice">{notice}</div>}
 
-            <div className="grid grid-cols-2 gap-3 mb-6 max-w-lg">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6 max-w-2xl">
                 <div className="border border-[#0c182b] bg-[#0c182b] text-white px-5 py-3">
                     <span className="text-[10px] uppercase tracking-wider text-[#9fb3d1]">Total des dépôts reçus</span>
                     <div className="font-display font-bold text-2xl" data-testid="deposits-total">{formatCurrency(totalDep)}</div>
@@ -91,6 +95,10 @@ export const DepositsPanel = () => {
                 <div className="border border-[#a31a1a] bg-white px-5 py-3">
                     <span className="text-[10px] uppercase tracking-wider text-[#a31a1a]">Solde restant à encaisser</span>
                     <div className="font-display font-bold text-2xl text-[#a31a1a]" data-testid="deposits-remaining">{formatCurrency(totalRemaining)}</div>
+                </div>
+                <div className="border border-[#b8860b] bg-white px-5 py-3">
+                    <span className="text-[10px] uppercase tracking-wider text-[#8a6508]">Dépôts attendus (soumissions)</span>
+                    <div className="font-display font-bold text-2xl text-[#8a6508]" data-testid="deposits-awaited-total">{formatCurrency(totalAwaited)}</div>
                 </div>
             </div>
 
@@ -146,6 +154,42 @@ export const DepositsPanel = () => {
                     </tbody>
                 </table>
                 {loading && <div className="p-8 text-center text-[#4b5d7a]"><Loader2 className="w-5 h-5 animate-spin inline" /></div>}
+            </div>
+
+            <div className="mt-8" data-testid="deposits-awaited-section">
+                <h2 className="font-display font-bold uppercase text-lg tracking-tight text-[#8a6508] mb-1">Dépôts attendus</h2>
+                <p className="text-sm text-[#4b5d7a] mb-3">Soumissions acceptées avec dépôt annoncé, pas encore reçu.</p>
+                <div className="border border-[#e6d9b3] bg-[#fdfaf2] overflow-x-auto">
+                    <table className="w-full text-sm min-w-[720px]">
+                        <thead><tr className="bg-[#f6efdc] tech-stamp text-left">
+                            <th className="px-3 py-2">Soumission</th>
+                            <th className="px-3 py-2">Client</th>
+                            <th className="px-3 py-2">Date</th>
+                            <th className="px-3 py-2 text-right">Total</th>
+                            <th className="px-3 py-2 text-right">Dépôt attendu</th>
+                            <th className="px-3 py-2">État</th>
+                        </tr></thead>
+                        <tbody>
+                            {!loading && awaited.length === 0 && (
+                                <tr><td colSpan={6} className="p-8 text-center text-[#8a6508]">Aucun dépôt en attente. Tout est encaissé 🎉</td></tr>
+                            )}
+                            {awaited.map((a) => (
+                                <tr key={a.id} data-testid={`awaited-row-${a.id}`} className="border-t border-[#efe6c9] hover:bg-[#fcf6e6]">
+                                    <td className="px-3 py-2 font-mono text-xs text-[#8a6508]">SO-{String(a.number).padStart(4, "0")}</td>
+                                    <td className="px-3 py-2">{a.customer_name}</td>
+                                    <td className="px-3 py-2 text-xs text-[#4b5d7a]">{a.date}</td>
+                                    <td className="px-3 py-2 text-right">{formatCurrency(a.total)}</td>
+                                    <td className="px-3 py-2 text-right text-[#8a6508] font-display font-bold">{formatCurrency(a.expected_deposit)} <span className="text-[#b8a87a] text-xs">({a.deposit_pct}%)</span></td>
+                                    <td className="px-3 py-2">
+                                        <span className={`text-xs uppercase tech-stamp px-2 py-1 ${a.converted ? "bg-[#eaf1fb] text-[#2f4f7f]" : "bg-[#f6efdc] text-[#8a6508]"}`}>
+                                            {a.converted ? "Facture créée · dépôt à saisir" : "À convertir en facture"}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
