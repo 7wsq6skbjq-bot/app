@@ -512,6 +512,8 @@ async def startup_event():
         app.state.quote_followup_scheduler = start_quote_followup_scheduler(db)
         from push_notifications import start_push_scheduler
         app.state.push_scheduler = start_push_scheduler(db)
+        from erp_routes_tax_recap import start_tax_reminder_scheduler
+        app.state.tax_reminder_scheduler = start_tax_reminder_scheduler(db)
     else:
         app.state.scheduler = None
         app.state.recap_scheduler = None

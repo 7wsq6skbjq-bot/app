@@ -11,13 +11,20 @@ Endpoints (sous /api/admin) :
   GET  /tax-recap/pdf?year=&quarter=  -> PDF brandé (aperçu inline)
 """
 import asyncio
+import logging
 from datetime import datetime, timezone
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pydantic import BaseModel
 
 from erp_pdf import render_tax_recap_pdf
+
+logger = logging.getLogger("portech.erp.tax_recap")
+_TAX_SETTINGS_KEY = "tax_recap"
 
 COLLECTED_STATUSES = ("envoyée", "payée")
 _MONTH_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
@@ -105,6 +112,36 @@ async def _available_years(db) -> list[int]:
     return sorted(years, reverse=True)
 
 
+async def _get_accountant_email(db) -> str:
+    doc = await db.erp_settings.find_one({"key": _TAX_SETTINGS_KEY}, {"_id": 0})
+    return ((doc or {}).get("accountant_email") or "").strip()
+
+
+def _recap_email_html(data: dict) -> str:
+    col = data["collected"]
+    paid = data["paid"]
+    net = data["net"]
+    net_total = net["total"]
+    net_line = (f"<b>Montant net à remettre : {net_total:,.2f} $</b>"
+                if net_total >= 0
+                else f"<b>Remboursement net attendu : {abs(net_total):,.2f} $</b>")
+    return (
+        f"<p>Bonjour,</p>"
+        f"<p>Voici le récapitulatif des taxes pour la période "
+        f"<b>{data['period_label']}</b> ({data['start_fr']} au {data['end_fr']}).</p>"
+        f"<p><b>Taxes perçues (ventes)</b> — TPS {col['tps']:,.2f} $ · TVQ {col['tvq']:,.2f} $ "
+        f"({col['count']} facture(s))<br/>"
+        f"<b>Crédits de taxe (achats)</b> — TPS {paid['tps']:,.2f} $ · TVQ {paid['tvq']:,.2f} $ "
+        f"({paid['count']} dépense(s))<br/>"
+        f"<b>Net</b> — TPS {net['tps']:,.2f} $ · TVQ {net['tvq']:,.2f} $</p>"
+        f"<p>{net_line}</p>"
+        f"<p>Le rapport détaillé est en pièce jointe (PDF).</p>"
+        f"<p style='color:#8a97a8;font-size:12px'>Document à titre indicatif, basé sur les "
+        f"factures émises et les dépenses enregistrées. À valider avant toute déclaration "
+        f"officielle à Revenu Québec / ARC.</p>"
+    )
+
+
 def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
     def _now_quarter() -> tuple[int, int]:
@@ -136,3 +173,120 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         fname = f"recap-tps-tvq-T{quarter}-{year}.pdf"
         return Response(content=pdf, media_type="application/pdf",
                         headers={"Content-Disposition": f'inline; filename="{fname}"'})
+
+    @router.get("/tax-recap/settings")
+    async def get_settings(_: dict = Depends(auth_dep)):
+        return {"accountant_email": await _get_accountant_email(db)}
+
+    class TaxSettingsIn(BaseModel):
+        accountant_email: str = ""
+
+    @router.put("/tax-recap/settings")
+    async def put_settings(data: TaxSettingsIn, _: dict = Depends(auth_dep)):
+        email = (data.accountant_email or "").strip()
+        await db.erp_settings.update_one(
+            {"key": _TAX_SETTINGS_KEY},
+            {"$set": {"key": _TAX_SETTINGS_KEY, "accountant_email": email}},
+            upsert=True)
+        return {"accountant_email": email}
+
+    class TaxSendIn(BaseModel):
+        year: int | None = None
+        quarter: int | None = None
+        to_email: str | None = None
+
+    @router.post("/tax-recap/send")
+    async def send_recap(data: TaxSendIn, _: dict = Depends(auth_dep)):
+        from erp_helpers import send_pdf_email
+        y, q = _now_quarter()
+        year = data.year or y
+        quarter = data.quarter or q
+        if quarter < 1 or quarter > 4:
+            raise HTTPException(400, "Trimestre invalide (1-4).")
+        to_email = (data.to_email or "").strip() or await _get_accountant_email(db)
+        if not to_email:
+            raise HTTPException(400, "Aucun courriel de comptable enregistré. "
+                                     "Entrez une adresse ou enregistrez-la dans les réglages.")
+        recap = await _compute(db, year, quarter)
+        pdf = await asyncio.to_thread(render_tax_recap_pdf, recap)
+        await send_pdf_email(
+            to_email=to_email,
+            subject=f"Récap TPS/TVQ — {recap['period_label']} — Portech",
+            html=_recap_email_html(recap),
+            pdf_bytes=pdf,
+            filename=f"recap-tps-tvq-T{quarter}-{year}.pdf",
+        )
+        return {"sent": True, "to_email": to_email, "period_label": recap["period_label"]}
+
+
+# ── Rappel trimestriel automatique (push + courriel) ─────────────────
+def _prev_quarter(now: datetime) -> tuple[int, int]:
+    """Quarter that just closed relative to `now` (1st day of a new quarter)."""
+    q = (now.month - 1) // 3 + 1
+    if q == 1:
+        return now.year - 1, 4
+    return now.year, q - 1
+
+
+async def run_tax_reminder(db) -> dict:
+    """Compute the just-closed quarter and notify the owner (push + email)
+    + the accountant (email) that a new tax period is ready to declare."""
+    import os
+    from erp_helpers import send_pdf_email
+    from push_notifications import send_push
+
+    now = datetime.now(timezone.utc)
+    year, quarter = _prev_quarter(now)
+    recap = await _compute(db, year, quarter)
+    net_total = recap["net"]["total"]
+    net_txt = (f"{net_total:,.2f} $ à remettre" if net_total >= 0
+               else f"remboursement de {abs(net_total):,.2f} $")
+
+    # Push to all subscribed devices
+    try:
+        await send_push(
+            db,
+            title=f"Taxes prêtes — {recap['period_label']}",
+            body=f"Nouveau trimestre à déclarer : net {net_txt}. Tape pour voir le récap.",
+            url="/admin/gestion/recap-taxes",
+            tag="tax-recap",
+        )
+    except Exception as exc:
+        logger.warning("tax reminder push failed: %s", exc)
+
+    # Email owner + accountant (with PDF)
+    owner = (os.environ.get("BRIEFING_EMAIL")
+             or os.environ.get("LEADS_RECIPIENT_EMAIL")
+             or "portech.infos@gmail.com")
+    accountant = await _get_accountant_email(db)
+    recipients = [e for e in {owner, accountant} if e]
+    pdf = await asyncio.to_thread(render_tax_recap_pdf, recap)
+    sent = []
+    for to in recipients:
+        try:
+            await send_pdf_email(
+                to_email=to,
+                subject=f"Rappel — Taxes à déclarer : {recap['period_label']} (Portech)",
+                html=_recap_email_html(recap),
+                pdf_bytes=pdf,
+                filename=f"recap-tps-tvq-T{quarter}-{year}.pdf",
+            )
+            sent.append(to)
+        except Exception as exc:
+            logger.warning("tax reminder email to %s failed: %s", to, exc)
+    logger.info("Tax reminder sent for %s → %s", recap["period_label"], sent)
+    return {"period_label": recap["period_label"], "net_total": net_total, "emailed": sent}
+
+
+def start_tax_reminder_scheduler(db) -> AsyncIOScheduler:
+    """1st day of each calendar quarter (Jan/Apr/Jul/Oct) at 08:00 Montréal:
+    remind the owner + accountant that the just-closed quarter is ready."""
+    sched = AsyncIOScheduler(timezone="America/Montreal")
+    sched.add_job(
+        lambda: asyncio.create_task(run_tax_reminder(db)),
+        CronTrigger(month="1,4,7,10", day=1, hour=8, minute=0),
+        id="tax_recap_reminder", replace_existing=True,
+    )
+    sched.start()
+    logger.info("Tax recap reminder scheduler started (1st of quarter @ 08:00 America/Montreal)")
+    return sched

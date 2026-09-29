@@ -97,6 +97,8 @@ export const DocumentPanel = ({
                     quantity: Number(it.quantity || 0),
                     unit_price: Number(it.unit_price || 0),
                     product_id: it.product_id || null,
+                    ...(it.cost_price != null ? { cost_price: Number(it.cost_price) } : {}),
+                    ...(it.cost_category ? { cost_category: it.cost_category } : {}),
                 })),
             };
             if (editing) await http.put(`${apiPath}/${editing.id}`, payload);

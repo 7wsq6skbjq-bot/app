@@ -54,7 +54,10 @@ async def unpaid_groups(db) -> dict:
             "invoices": [], "balance": 0.0,
         })
         g["invoices"].append(inv)
-        g["balance"] += float(inv.get("total") or 0)
+        _eff = inv.get("balance_due")
+        if _eff is None or not inv.get("deposit_received"):
+            _eff = float(inv.get("total") or 0)
+        g["balance"] += float(_eff or 0)
         if snap.get("email") and not g["email"]:
             g["email"] = snap["email"].strip()
     return groups

@@ -21,6 +21,9 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
     async def create_invoice(data: InvoiceIn, _: dict = Depends(auth_dep)):
         number = await next_number("invoice")
         subtotal, tps, tvq, total = compute_totals(data.items, data.taxable)
+        dep_pct = float(data.deposit_pct or 0) if data.deposit_received else 0.0
+        dep_amount = round(total * dep_pct / 100, 2) if data.deposit_received else 0.0
+        balance = round(total - dep_amount, 2)
         inv = Invoice(
             number=number,
             customer_id=data.customer_id,
@@ -30,6 +33,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             items=data.items,
             subtotal=subtotal, tps=tps, tvq=tvq, total=total,
             taxable=data.taxable, notes=data.notes, status=data.status,
+            deposit_received=data.deposit_received, deposit_pct=dep_pct,
+            deposit_amount=dep_amount, balance_due=balance,
         )
         await db.erp_invoices.insert_one(inv.model_dump())
         return inv
@@ -47,6 +52,9 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         if not existing:
             raise HTTPException(404, "Facture introuvable")
         subtotal, tps, tvq, total = compute_totals(data.items, data.taxable)
+        dep_pct = float(data.deposit_pct or 0) if data.deposit_received else 0.0
+        dep_amount = round(total * dep_pct / 100, 2) if data.deposit_received else 0.0
+        balance = round(total - dep_amount, 2)
         update_fields = {
             "customer_id": data.customer_id,
             "customer_snapshot": Party(**data.customer_snapshot.model_dump()).model_dump(),
@@ -55,6 +63,8 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             "items": [it.model_dump() for it in data.items],
             "subtotal": subtotal, "tps": tps, "tvq": tvq, "total": total,
             "taxable": data.taxable, "notes": data.notes, "status": data.status,
+            "deposit_received": data.deposit_received, "deposit_pct": dep_pct,
+            "deposit_amount": dep_amount, "balance_due": balance,
         }
         await db.erp_invoices.update_one({"id": invoice_id}, {"$set": update_fields})
         doc = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})

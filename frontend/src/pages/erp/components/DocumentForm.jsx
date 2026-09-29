@@ -102,6 +102,7 @@ const DoorBuilderModal = ({ http, onAdd, onClose }) => {
     const [addResults, setAddResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [splitLines, setSplitLines] = useState(false);
+    const [addedCount, setAddedCount] = useState(0);
 
     useEffect(() => {
         (async () => {
@@ -149,8 +150,7 @@ const DoorBuilderModal = ({ http, onAdd, onClose }) => {
     const margin = Math.round((sellTotal - costTotal) * 100) / 100;
     const marginPct = costTotal ? Math.round((margin / costTotal) * 1000) / 10 : 0;
 
-    const confirm = () => {
-        if (!model) return;
+    const buildLines = () => {
         const q = Math.max(1, Math.round(Number(qty) || 1));
         const makeLine = (n, single) => ({
             ...emptyLineItem(),
@@ -162,25 +162,44 @@ const DoorBuilderModal = ({ http, onAdd, onClose }) => {
             cost_category: "Portes",
             product_id: null,
         });
-        if (splitLines && q > 1) {
-            onAdd(Array.from({ length: q }, (_, i) => makeLine(i + 1, true)));
-        } else {
-            onAdd([makeLine(1, false)]);
-        }
+        return (splitLines && q > 1)
+            ? Array.from({ length: q }, (_, i) => makeLine(i + 1, true))
+            : [makeLine(1, false)];
+    };
+    const resetForNext = () => {
+        setModelKey(""); setHw([]); setQty(1); setSplitLines(false);
+        setAddQ(""); setAddResults([]);
+    };
+    const addAndContinue = () => {
+        if (!model) return;
+        const lines = buildLines();
+        onAdd(lines);
+        setAddedCount((c) => c + lines.length);
+        resetForNext();
+    };
+    const addAndClose = () => {
+        if (model) onAdd(buildLines());
         onClose();
     };
 
     return (
         <Modal open onClose={onClose} wide testId="door-builder-modal"
             title="Ajouter une porte — calculateur LDP"
-            footer={<div className="flex items-center justify-between gap-3 w-full">
+            footer={<div className="flex items-center justify-between gap-3 w-full flex-wrap">
                 <span className="text-xs text-[#4b5d7a]">
+                    {addedCount > 0 && <b className="text-[#0f6b3a] mr-2" data-testid="door-builder-count">✓ {addedCount} porte(s) ajoutée(s)</b>}
                     {model ? <>Coûtant <b>{formatCurrency(costTotal)}</b> · Marge <b className="text-[#0f6b3a]">{formatCurrency(margin)} ({marginPct} %)</b></> : "Choisis un modèle"}
                 </span>
-                <button type="button" data-testid="door-builder-add" onClick={confirm} disabled={!model}
-                    className="tech-stamp px-4 py-2 bg-[#0c182b] text-white flex items-center gap-1 disabled:opacity-40">
-                    <Plus className="w-4 h-4" /> Ajouter à la soumission
-                </button>
+                <div className="flex items-center gap-2">
+                    <button type="button" data-testid="door-builder-add-continue" onClick={addAndContinue} disabled={!model}
+                        className="tech-stamp px-4 py-2 border border-[#0c182b] text-[#0c182b] bg-white flex items-center gap-1 disabled:opacity-40">
+                        <Plus className="w-4 h-4" /> Ajouter et continuer
+                    </button>
+                    <button type="button" data-testid="door-builder-add" onClick={addAndClose}
+                        className="tech-stamp px-4 py-2 bg-[#0c182b] text-white flex items-center gap-1">
+                        {model ? "Ajouter et terminer" : "Terminer"}
+                    </button>
+                </div>
             </div>}>
             {loading ? (
                 <div className="py-10 text-center text-[#4b5d7a]"><Loader2 className="w-5 h-5 animate-spin inline" /></div>
@@ -372,6 +391,9 @@ export const DocumentForm = ({
     };
 
     const totals = computeTotals(value.items || [], value.taxable);
+    const depPct = isInvoice && value.deposit_received ? Number(value.deposit_pct || 0) : 0;
+    const depAmount = Math.round(totals.total * depPct / 100 * 100) / 100;
+    const balanceDue = Math.round((totals.total - depAmount) * 100) / 100;
 
     const set = (k, v) => onChange({ ...value, [k]: v });
 
@@ -581,6 +603,33 @@ export const DocumentForm = ({
                             Joindre les conditions de vente (annexe contrat)
                         </label>
                     )}
+                    {isInvoice && (
+                        <div className="mt-3 border border-[#dde5f0] bg-white p-3">
+                            <label className="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={!!value.deposit_received}
+                                    onChange={(e) => set("deposit_received", e.target.checked)}
+                                    data-testid="doc-invoice-deposit-received"
+                                />
+                                Dépôt reçu — déduire du solde à payer
+                            </label>
+                            {value.deposit_received && (
+                                <div className="mt-2 flex items-center gap-2 text-sm">
+                                    <span className="text-[#4b5d7a]">Pourcentage du dépôt</span>
+                                    <input
+                                        type="number" step="1" min="0" max="100"
+                                        value={value.deposit_pct ?? ""}
+                                        onChange={(e) => set("deposit_pct", e.target.value === "" ? 0 : Number(e.target.value))}
+                                        data-testid="doc-invoice-deposit-pct"
+                                        className="w-24 px-2 py-1.5 border border-[#c5d4e7] text-right"
+                                    />
+                                    <span className="text-[#4b5d7a]">%</span>
+                                    <span className="ml-auto text-xs text-[#4b5d7a]">sur le total (taxes incl.)</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <Field label="Notes" className="mt-4">
                         <textarea rows={3} value={value.notes || ""} onChange={(e) => set("notes", e.target.value)} className={inputClass} />
                     </Field>
@@ -591,6 +640,18 @@ export const DocumentForm = ({
                     <div className="flex justify-between text-sm py-1"><span>TPS (5 %)</span><span className="font-display font-bold">{formatCurrency(totals.tps)}</span></div>
                     <div className="flex justify-between text-sm py-1"><span>TVQ (9,975 %)</span><span className="font-display font-bold">{formatCurrency(totals.tvq)}</span></div>
                     <div className="flex justify-between py-2 mt-2 border-t-2 border-[#0c182b] text-lg"><span className="font-display font-bold uppercase">Total</span><span className="font-display font-bold">{formatCurrency(totals.total)}</span></div>
+                    {isInvoice && value.deposit_received && depPct > 0 && (
+                        <>
+                            <div className="flex justify-between text-sm py-1 text-[#a31a1a]" data-testid="doc-invoice-deposit-line">
+                                <span>Dépôt reçu ({depPct} %)</span>
+                                <span className="font-display font-bold">− {formatCurrency(depAmount)}</span>
+                            </div>
+                            <div className="flex justify-between py-2 mt-1 border-t-2 border-[#0f6b3a] text-lg text-[#0f6b3a]">
+                                <span className="font-display font-bold uppercase">Solde à payer</span>
+                                <span className="font-display font-bold" data-testid="doc-invoice-balance-due">{formatCurrency(balanceDue)}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 

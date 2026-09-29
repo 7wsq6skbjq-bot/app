@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, FileDown, Loader2 } from "lucide-react";
+import { RefreshCw, FileDown, Loader2, Mail, Save } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatCurrency } from "../utils";
 
@@ -32,6 +32,43 @@ export const TaxRecapPanel = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [accountantEmail, setAccountantEmail] = useState("");
+    const [savingEmail, setSavingEmail] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [notice, setNotice] = useState("");
+
+    const flash = (m) => { setNotice(m); setTimeout(() => setNotice(""), 6000); };
+
+    useEffect(() => {
+        http.get("/admin/tax-recap/settings")
+            .then(({ data }) => setAccountantEmail(data.accountant_email || ""))
+            .catch(() => {});
+    }, [http]);
+
+    const saveEmail = async () => {
+        setSavingEmail(true);
+        try {
+            await http.put("/admin/tax-recap/settings", { accountant_email: accountantEmail.trim() });
+            flash("✅ Courriel du comptable enregistré.");
+        } catch (e) {
+            setError(e?.response?.data?.detail || "Échec de l'enregistrement");
+        } finally { setSavingEmail(false); }
+    };
+
+    const sendToAccountant = async () => {
+        let to = accountantEmail.trim();
+        if (!to) {
+            to = window.prompt("Courriel du comptable :", "") || "";
+            if (!to.trim()) return;
+        }
+        setSending(true); setError("");
+        try {
+            const { data } = await http.post("/admin/tax-recap/send", { year, quarter, to_email: to.trim() });
+            flash(`✅ Récap ${data.period_label} envoyé à ${data.to_email}.`);
+        } catch (e) {
+            setError(e?.response?.data?.detail || "Échec de l'envoi");
+        } finally { setSending(false); }
+    };
 
     const load = useCallback(async () => {
         setLoading(true); setError("");
@@ -74,7 +111,25 @@ export const TaxRecapPanel = () => {
                         className="btn-primary !py-2 !px-4 !text-xs disabled:opacity-40">
                         <FileDown className="w-3.5 h-3.5" /> Aperçu PDF
                     </button>
+                    <button onClick={sendToAccountant} disabled={!data || sending} data-testid="tax-recap-send"
+                        className="btn-primary !py-2 !px-4 !text-xs disabled:opacity-40">
+                        {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />} Envoyer au comptable
+                    </button>
                 </div>
+            </div>
+
+            {notice && <div className="mb-4 p-3 border border-[#8ec79d] bg-[#e6f4ea] text-[#0b6b2f] text-sm" data-testid="tax-recap-notice">{notice}</div>}
+
+            <div className="flex flex-wrap items-center gap-2 mb-4 border border-[#dde5f0] bg-white p-3">
+                <span className="text-xs uppercase tracking-wider text-[#4b5d7a] font-bold">Courriel du comptable</span>
+                <input type="email" value={accountantEmail} onChange={(e) => setAccountantEmail(e.target.value)}
+                    data-testid="tax-recap-accountant-email" placeholder="comptable@exemple.com"
+                    className="flex-1 min-w-[220px] px-3 py-2 border border-[#c5d4e7] text-sm" />
+                <button onClick={saveEmail} disabled={savingEmail} data-testid="tax-recap-save-email"
+                    className="tech-stamp px-3 py-2 bg-[#1f3a5f] text-white text-xs flex items-center gap-1 disabled:opacity-50">
+                    <Save className="w-3.5 h-3.5" /> {savingEmail ? "…" : "Enregistrer"}
+                </button>
+                <span className="text-[11px] text-[#4b5d7a] w-full sm:w-auto">Rappel auto push + courriel au 1er jour de chaque nouveau trimestre.</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mb-6">

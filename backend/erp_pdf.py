@@ -273,28 +273,41 @@ def _items_table_bol(items: list[dict]) -> Table:
     return t
 
 
-def _totals_box(subtotal, tps, tvq, total, taxable, label_total="Total à payer"):
+def _totals_box(subtotal, tps, tvq, total, taxable, label_total="Total à payer",
+                deposit_amount=0, deposit_pct=0):
     rows = [["Sous-total", _money(subtotal)]]
     if taxable:
         rows.append(["TPS (5 %)", _money(tps)])
         rows.append(["TVQ (9,975 %)", _money(tvq)])
-    rows.append([label_total.upper(), _money(total)])
+    has_dep = bool(deposit_amount and deposit_amount > 0)
+    rows.append(["TOTAL" if has_dep else label_total.upper(), _money(total)])
+    total_idx = len(rows) - 1
+    if has_dep:
+        rows.append([f"Dépôt reçu ({deposit_pct:g} %)", "\u2212 " + _money(deposit_amount)])
+        rows.append(["SOLDE À PAYER", _money(round(total - deposit_amount, 2))])
     t = Table(rows, colWidths=[50 * mm, 35 * mm], hAlign="RIGHT")
     last = len(rows) - 1
-    t.setStyle(TableStyle([
+    style = [
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("FONTNAME", (0, 0), (-1, -2), "Helvetica"),
-        ("FONTSIZE", (0, 0), (-1, -2), 10),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("TEXTCOLOR", (0, 0), (-1, -1), NAVY),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LINEABOVE", (0, total_idx), (-1, total_idx), 1, NAVY),
+        ("FONTNAME", (0, total_idx), (-1, total_idx), "Helvetica-Bold"),
+        ("FONTSIZE", (0, total_idx), (-1, total_idx), 11),
         ("LINEABOVE", (0, last), (-1, last), 1.5, NAVY),
         ("FONTNAME", (0, last), (-1, last), "Helvetica-Bold"),
         ("FONTSIZE", (0, last), (-1, last), 12),
         ("TOPPADDING", (0, last), (-1, last), 8),
-        ("TEXTCOLOR", (0, 0), (-1, -1), NAVY),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -2), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
+    ]
+    if has_dep:
+        style.append(("TEXTCOLOR", (0, last), (-1, last), colors.HexColor("#0f6b3a")))
+        style.append(("TEXTCOLOR", (0, total_idx + 1), (-1, total_idx + 1), colors.HexColor("#a31a1a")))
+    t.setStyle(TableStyle(style))
     return t
 
 
@@ -343,6 +356,8 @@ def render_invoice_pdf(inv: dict) -> bytes:
         inv.get("subtotal", 0), inv.get("tps", 0),
         inv.get("tvq", 0), inv.get("total", 0),
         inv.get("taxable", True), "Total à payer",
+        deposit_amount=inv.get("deposit_amount", 0) if inv.get("deposit_received") else 0,
+        deposit_pct=inv.get("deposit_pct", 0) if inv.get("deposit_received") else 0,
     ))
 
     story.append(Spacer(1, 3 * mm))
@@ -399,11 +414,14 @@ def render_statement_pdf(customer: dict, invoices: list, *,
     balance = 0.0
     for inv in invoices:
         num = f"FAC-{int(inv.get('number', 0)):04d}"
-        total = float(inv.get("total") or 0)
-        balance += total
+        eff = inv.get("balance_due")
+        if eff is None or not inv.get("deposit_received"):
+            eff = float(inv.get("total") or 0)
+        eff = float(eff or 0)
+        balance += eff
         data.append([
             num, _date_fr(inv.get("date")), _date_fr(inv.get("due_date")),
-            (inv.get("status") or "—").upper(), _money(total),
+            (inv.get("status") or "—").upper(), _money(eff),
         ])
     if len(data) == 1:
         data.append(["—", "—", "—", "—", _money(0)])
