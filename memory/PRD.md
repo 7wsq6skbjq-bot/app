@@ -1,5 +1,11 @@
 # Portech ERP & Lead-Gen — PRD
 
+
+## Changelog — 2026-06 (fork)
+- **Cadre dessiné (Production Plans 2.0)** : le cadre est maintenant dessiné à l'échelle (linteau + 2 jambages, alu) autour de l'ouverture dans l'élévation PDF, UNIQUEMENT quand un type de cadre est sélectionné. Largeurs de profilé : `tube_fin`=1 3/4", `flush_non_iso`=1 3/4", `flush_iso`=2", `adapteur`=15/16". Sans cadre → contour mince conservé. Bloc de specs « Cadre (entrée complète) » ajouté. Voir `FRAME_FACE_IN`/`FRAME_LABELS` dans `erp_pdf_production.py`.
+- **Rapport de quincaillerie consommée** : nouveau bouton (éditeur + liste des plans) → PDF portrait Portech listant la quincaillerie consommée du projet : TOTAL du projet + détail par porte. Quantités = qté ligne × qté portes. Module `erp_pdf_hardware_report.py`, endpoint `GET /api/admin/production-plans/{id}/hardware-report`.
+  - NOTE UTILISATEUR : Cédrick veut sortir un **rapport mensuel** de la quincaillerie utilisée (agrégat multi-projets par mois). Backlog P2 : ajouter une vue « Rapport mensuel quincaillerie » qui agrège tous les plans d'un mois donné.
+
 ## Original Problem Statement
 Fully functional lead-generation **and** ERP web app for a commercial door
 hardware business (Portech). Internal ERP for Clients, POs, BOL, Appointments,

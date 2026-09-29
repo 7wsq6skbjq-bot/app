@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Plus, Save, Trash2, RefreshCw, Download, Eye, FileText,
     AlertCircle, CheckCircle2, Loader2, DraftingCompass, ChevronDown, ChevronRight,
-    Mail, Send,
+    Mail, Send, Package,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -559,6 +559,14 @@ export const ProductionPlansPanel = () => {
         const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
         const token = encodeURIComponent(getToken() || "");
         const url = `${base}/api/admin/production-plans/${id}/pdf?token=${token}`;
+        const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) window.location.href = url; else window.open(url, "_blank");
+    };
+
+    const downloadHwReport = (id) => {
+        const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
+        const token = encodeURIComponent(getToken() || "");
+        const url = `${base}/api/admin/production-plans/${id}/hardware-report?token=${token}`;
         const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) window.location.href = url; else window.open(url, "_blank");
     };
@@ -1453,6 +1461,12 @@ export const ProductionPlansPanel = () => {
                         </button>
                     )}
                     {editingId && (
+                        <button onClick={() => downloadHwReport(editingId)}
+                            className="btn-secondary !py-2 !px-3 !text-sm" data-testid="pp-hw-report">
+                            <Package className="w-4 h-4" /> Rapport quincaillerie
+                        </button>
+                    )}
+                    {editingId && (
                         <button onClick={() => openEmail({ id: editingId, plan_number: form.plan_number, client_contact: form.client_contact })}
                             className="btn-secondary !py-2 !px-3 !text-sm" data-testid="pp-email-editor">
                             <Mail className="w-4 h-4" /> Envoyer au client
@@ -1595,6 +1609,10 @@ export const ProductionPlansPanel = () => {
                                             </button>
                                             <button onClick={() => downloadPdf(p.id)} className="p-1 hover:bg-[#f3f6fb] text-[#0c182b]" title="Télécharger PDF">
                                                 <Download className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button onClick={() => downloadHwReport(p.id)} className="p-1 hover:bg-[#f3f6fb] text-[#0c182b]" title="Rapport de quincaillerie consommée"
+                                                data-testid={`pp-hw-report-${p.id}`}>
+                                                <Package className="w-3.5 h-3.5" />
                                             </button>
                                             <button onClick={() => openEmail(p)} className="p-1 hover:bg-[#eaf1fb] text-[#2f4f7f]" title="Envoyer au client par courriel"
                                                 data-testid={`pp-email-${p.id}`}>

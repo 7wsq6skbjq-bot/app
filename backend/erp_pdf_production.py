@@ -107,6 +107,21 @@ SERIES_DEFAULT_PROFILES = {
     "ATi2000": {"head": "ATB1000", "base": "ATB2000", "hinge": "ATV2010", "lock": "ATV2015", "lock_inactive": "ATV2010"},
 }
 
+# Cadre (frame) — largeur de profilé visible (pouces) par type. Dessiné à
+# l'échelle autour de l'ouverture UNIQUEMENT lorsqu'un type est sélectionné.
+FRAME_FACE_IN = {
+    "tube_fin": 1.75,        # Tube à fin
+    "flush_non_iso": 1.75,   # Flush glazed non isolé
+    "flush_iso": 2.0,        # Flush glazed isolé (isolé)
+    "adapteur": 0.9375,      # Adapteur (15/16")
+}
+FRAME_LABELS = {
+    "tube_fin": "Tube à fin",
+    "flush_non_iso": "Flush glazed non isolé",
+    "flush_iso": "Flush glazed isolé",
+    "adapteur": "Adapteur",
+}
+
 
 def _door_profiles(door):
     """Resolve the element profile codes for a door (selection or default)."""
@@ -858,12 +873,29 @@ def _elevation_page(c, plan, door, page_no):
     lock_pt = _face_in(prof["lock"], 2.125) * scale
     lock_inactive_pt = _face_in(prof.get("lock_inactive"), 2.0) * scale
 
-    # frame (jamb) drawn slightly outside opening
-    fo = 6
-    c.setFillColor(colors.white)
-    c.setStrokeColor(LINE)
-    c.setLineWidth(1.4)
-    c.rect(ox - fo, oy - fo, dw + 2 * fo, dh + fo, fill=1, stroke=1)
+    # frame around the opening — drawn to scale (head + 2 jambs, aluminium)
+    # ONLY when a frame type is selected. Otherwise a thin contour is kept.
+    frame_type = (door.get("frame_type") or "").strip()
+    frame_face_in = FRAME_FACE_IN.get(frame_type)
+    if frame_face_in:
+        fo = frame_face_in * scale
+        c.setFillColor(ALU)
+        c.setStrokeColor(LINE)
+        c.setLineWidth(1.1)
+        c.rect(ox - fo, oy + dh, dw + 2 * fo, fo, fill=1, stroke=1)   # head (linteau)
+        c.rect(ox - fo, oy, fo, dh, fill=1, stroke=1)                 # left jamb (jambage)
+        c.rect(ox + dw, oy, fo, dh, fill=1, stroke=1)                 # right jamb (jambage)
+        # mitre lines in the corners for a picture-frame look
+        c.setLineWidth(0.5)
+        c.line(ox - fo, oy + dh, ox, oy + dh + 0)
+        c.line(ox - fo, oy + dh + fo, ox, oy + dh)
+        c.line(ox + dw + fo, oy + dh + fo, ox + dw, oy + dh)
+    else:
+        fo = 6
+        c.setFillColor(colors.white)
+        c.setStrokeColor(LINE)
+        c.setLineWidth(1.4)
+        c.rect(ox - fo, oy - fo, dw + 2 * fo, dh + fo, fill=1, stroke=1)
 
     if is_pair:
         gap = 3
@@ -1219,6 +1251,11 @@ def _elevation_page(c, plan, door, page_no):
         ry = _spec_block(c, rx, ry, rw_col, "Vitrage (fourni et installé par autres)", [
             ("Type", door.get("glass") or "—"),
         ], tint=colors.HexColor("#eef4ff"))
+    if frame_face_in:
+        ry = _spec_block(c, rx, ry, rw_col, "Cadre (entrée complète)", [
+            ("Type", FRAME_LABELS.get(frame_type, frame_type)),
+            ("Profilé", f'{_inch_fmt(frame_face_in)} ({frame_face_in * 25.4:.1f} mm)'),
+        ], tint=colors.HexColor("#f6efdc"))
 
     # Verre & moulures — same calculation as the Cut-List module. Convert the
     # OPENING into the FINISHED-LEAF dimensions with the per-series offsets first.

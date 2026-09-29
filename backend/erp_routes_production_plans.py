@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from erp_helpers import csv_response, send_pdf_email
 from erp_models import EmailSendRequest
 from erp_pdf_production import render_production_plan_pdf
+from erp_pdf_hardware_report import render_hardware_report_pdf
 from adams_rite_drawings import detect_from_hardware, load_index, merge_drawing_pages
 
 
@@ -455,6 +456,20 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if pages:
             pdf_bytes = await asyncio.to_thread(merge_drawing_pages, pdf_bytes, pages)
         filename = f"{doc.get('plan_number') or 'PLAN'}.pdf"
+        return Response(
+            content=pdf_bytes, media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        )
+
+    @router.get("/production-plans/{plan_id}/hardware-report")
+    async def hardware_report_pdf(plan_id: str, _: dict = Depends(auth_dep)):
+        """Rapport de quincaillerie consommée (total + détail par porte)."""
+        doc = await db.erp_production_plans.find_one({"id": plan_id}, {"_id": 0})
+        if not doc:
+            raise HTTPException(404, "Plan introuvable")
+        pdf_bytes = await asyncio.to_thread(render_hardware_report_pdf, doc)
+        num = doc.get("plan_number") or "PLAN"
+        filename = f"quincaillerie-{num}.pdf"
         return Response(
             content=pdf_bytes, media_type="application/pdf",
             headers={"Content-Disposition": f'inline; filename="{filename}"'},
