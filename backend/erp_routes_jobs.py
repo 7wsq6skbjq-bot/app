@@ -431,6 +431,45 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
         await db.erp_jobs.insert_one(job.model_dump())
         return job
 
+    @router.post("/jobs/from-invoice/{invoice_id}", response_model=Job)
+    async def create_job_from_invoice(invoice_id: str, _: dict = Depends(auth_dep)):
+        inv = await db.erp_invoices.find_one({"id": invoice_id}, {"_id": 0})
+        if not inv:
+            raise HTTPException(404, "Facture introuvable")
+        existing = await db.erp_jobs.find_one(
+            {"links.doc_type": "invoice", "links.doc_id": invoice_id}, {"_id": 0})
+        if existing:
+            return Job(**existing)
+        cust = inv.get("customer_snapshot") or {}
+        num = f"FAC-{int(inv.get('number', 0)):04d}"
+        total = float(inv.get("total") or 0)
+        status = inv.get("status")
+        if status == "payée":
+            stage = "paye"
+        elif inv.get("deposit_received"):
+            stage = "depot_recu"
+        else:
+            stage = "facture"
+        dep = inv.get("deposit_amount")
+        deposit_expected = float(dep) if dep else round(total * 0.5, 2)
+        job = Job(
+            job_number=await _job_number(),
+            title=f"Facture {num}" + (f" — {cust.get('name')}" if cust.get("name") else ""),
+            client_name=cust.get("name") or "",
+            client_email=cust.get("email"),
+            party_id=inv.get("customer_id"),
+            stage=stage,
+            source="invoice",
+            total=total,
+            deposit_expected=deposit_expected,
+            links=[JobLink(doc_type="invoice", doc_id=invoice_id, number=num,
+                           label=f"Facture {num}")],
+            history=[{"stage": stage, "at": _now(),
+                      "note": f"Job créée depuis la facture {num}"}],
+        )
+        await db.erp_jobs.insert_one(job.model_dump())
+        return job
+
     @router.get("/jobs/{job_id}", response_model=Job)
     async def get_job(job_id: str, _: dict = Depends(auth_dep)):
         doc = await db.erp_jobs.find_one({"id": job_id}, {"_id": 0})

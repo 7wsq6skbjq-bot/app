@@ -69,6 +69,7 @@ export const JobsPanel = () => {
     const [saving, setSaving] = useState(false);
 
     const [quotePicker, setQuotePicker] = useState(null); // null | array
+    const [invoicePicker, setInvoicePicker] = useState(null); // null | array
     const [detail, setDetail] = useState(null); // job object
     const [briefing, setBriefing] = useState(null); // preview data
     const [briefBusy, setBriefBusy] = useState(false);
@@ -163,6 +164,22 @@ export const JobsPanel = () => {
         } catch { setError("Création depuis la soumission échouée."); }
     };
 
+    // ── From invoice ────────────────────────
+    const openInvoicePicker = async () => {
+        try {
+            const { data } = await http.get("/admin/invoices");
+            setInvoicePicker(data);
+        } catch { setError("Impossible de charger les factures."); }
+    };
+    const createFromInvoice = async (iid) => {
+        try {
+            const { data } = await http.post(`/admin/jobs/from-invoice/${iid}`);
+            setInvoicePicker(null);
+            flash(`Job ${data.job_number} liée à la facture.`);
+            load();
+        } catch { setError("Création depuis la facture échouée."); }
+    };
+
     // ── Stage move ──────────────────────────
     const moveStage = async (job, dir) => {
         const idx = STAGES.findIndex((s) => s.key === job.stage);
@@ -220,6 +237,9 @@ export const JobsPanel = () => {
                     </button>
                     <button data-testid="jobs-from-quote-btn" onClick={openQuotePicker} className="tech-stamp px-3 py-2 border border-[#dde5f0] text-[#2f4f7f] hover:bg-white flex items-center gap-1">
                         <FileText className="w-4 h-4" /> Depuis une soumission
+                    </button>
+                    <button data-testid="jobs-from-invoice-btn" onClick={openInvoicePicker} className="tech-stamp px-3 py-2 border border-[#dde5f0] text-[#2f4f7f] hover:bg-white flex items-center gap-1">
+                        <FileText className="w-4 h-4" /> Depuis une facture
                     </button>
                     <button data-testid="jobs-new-btn" onClick={openCreate} className="tech-stamp px-3 py-2 bg-[#0c182b] text-white hover:bg-[#16283f] flex items-center gap-1">
                         <Plus className="w-4 h-4" /> Nouvelle job
@@ -379,6 +399,20 @@ export const JobsPanel = () => {
                             className="w-full text-left px-3 py-2 border border-[#dde5f0] hover:bg-[#f3f6fb] flex items-center justify-between">
                             <span className="text-sm"><b>SO-{String(q.number).padStart(4, "0")}</b> · {q.customer_snapshot?.name || "—"} <span className="text-[#4b5d7a]">({q.status})</span></span>
                             <span className="text-sm font-bold">{money(q.total)}</span>
+                        </button>
+                    ))}
+                </div>
+            </Modal>
+
+            {/* Invoice picker */}
+            <Modal open={!!invoicePicker} onClose={() => setInvoicePicker(null)} title="Créer une job depuis une facture" testId="jobs-invoice-picker">
+                <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+                    {(invoicePicker || []).length === 0 && <div className="text-sm text-[#4b5d7a]">Aucune facture.</div>}
+                    {(invoicePicker || []).map((inv) => (
+                        <button key={inv.id} data-testid={`jobs-pick-invoice-${inv.id}`} onClick={() => createFromInvoice(inv.id)}
+                            className="w-full text-left px-3 py-2 border border-[#dde5f0] hover:bg-[#f3f6fb] flex items-center justify-between">
+                            <span className="text-sm"><b>FAC-{String(inv.number).padStart(4, "0")}</b> · {inv.customer_snapshot?.name || "—"} <span className="text-[#4b5d7a]">({inv.status})</span></span>
+                            <span className="text-sm font-bold">{money(inv.total)}</span>
                         </button>
                     ))}
                 </div>

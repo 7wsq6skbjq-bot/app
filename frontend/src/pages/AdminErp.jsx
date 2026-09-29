@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AdminHeader } from "./admin/AdminHeader";
 import { PartiesPanel } from "./erp/panels/PartiesPanel";
@@ -57,6 +58,82 @@ const TABS = [
     { slug: "prospection",     label: "Prospection",     panel: "prospection" },
 ];
 
+const TAB_MAP = Object.fromEntries(TABS.map((t) => [t.slug, t]));
+
+// Menu condensé : liens directs pour l'essentiel, le reste regroupé par catégorie.
+const NAV = [
+    { type: "link", slug: "tableau-de-bord" },
+    { type: "link", slug: "suivi-jobs" },
+    { type: "link", slug: "assistante-ia" },
+    { type: "group", label: "Ventes", slugs: ["soumissions", "factures", "suivi-depots", "etats-de-compte", "avis-paiement"] },
+    { type: "group", label: "Comptabilité", slugs: ["depenses", "recap-taxes", "kilometrage"] },
+    { type: "group", label: "Fabrication", slugs: ["fabrication", "inventaire-alu", "commandes-at", "bons-commande", "connaissements"] },
+    { type: "group", label: "Produits & prix", slugs: ["produits", "catalogue-quincaillerie", "couts-master"] },
+    { type: "group", label: "Contacts", slugs: ["clients", "fournisseurs", "prospection"] },
+    { type: "group", label: "Outils", slugs: ["calendrier", "rapports", "courriel"] },
+];
+
+const GroupedNav = ({ activeSlug }) => {
+    const [openGroup, setOpenGroup] = useState(null);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const onClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpenGroup(null); };
+        document.addEventListener("mousedown", onClick);
+        return () => document.removeEventListener("mousedown", onClick);
+    }, []);
+
+    const linkClass = (active) =>
+        `tech-stamp px-3 py-2 border whitespace-nowrap transition-colors ${
+            active ? "border-[#0c182b] bg-[#0c182b] text-white" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-[#f3f6fb]"
+        }`;
+
+    return (
+        <div ref={ref} className="flex flex-wrap items-center gap-2">
+            {NAV.map((item) => {
+                if (item.type === "link") {
+                    const t = TAB_MAP[item.slug];
+                    return (
+                        <Link key={item.slug} to={`/admin/gestion/${item.slug}`} data-testid={`erp-tab-${item.slug}`}
+                            className={linkClass(item.slug === activeSlug)}>
+                            {t.label}
+                        </Link>
+                    );
+                }
+                const groupActive = item.slugs.includes(activeSlug);
+                const isOpen = openGroup === item.label;
+                return (
+                    <div key={item.label} className="relative">
+                        <button type="button" data-testid={`erp-group-${item.label}`}
+                            onClick={() => setOpenGroup(isOpen ? null : item.label)}
+                            className={`${linkClass(groupActive)} flex items-center gap-1`}>
+                            {item.label}
+                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                        </button>
+                        {isOpen && (
+                            <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-[#dde5f0] shadow-lg min-w-[210px] py-1">
+                                {item.slugs.map((slug) => {
+                                    const t = TAB_MAP[slug];
+                                    if (!t) return null;
+                                    return (
+                                        <Link key={slug} to={`/admin/gestion/${slug}`} data-testid={`erp-tab-${slug}`}
+                                            onClick={() => setOpenGroup(null)}
+                                            className={`block px-4 py-2 text-sm whitespace-nowrap transition-colors ${
+                                                slug === activeSlug ? "bg-[#0c182b] text-white" : "text-[#0c182b] hover:bg-[#f3f6fb]"
+                                            }`}>
+                                            {t.label}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 const AdminErp = () => {
     const { tab } = useParams();
     const navigate = useNavigate();
@@ -79,7 +156,7 @@ const AdminErp = () => {
 
             {/* Secondary nav — desktop / PWA Windows / tablet (sm+) */}
             <div className="hidden sm:block bg-white border-b border-[#dde5f0]">
-                <div className="container-portech flex items-center gap-2 overflow-x-auto py-3">
+                <div className="container-portech flex flex-wrap items-center gap-2 py-3">
                     <Link
                         to="/admin"
                         data-testid="erp-nav-leads"
@@ -88,20 +165,7 @@ const AdminErp = () => {
                         ← Leads (soumissions)
                     </Link>
                     <div className="w-px h-6 bg-[#dde5f0] mx-2" />
-                    {TABS.map((t) => (
-                        <Link
-                            key={t.slug}
-                            to={`/admin/gestion/${t.slug}`}
-                            data-testid={`erp-tab-${t.slug}`}
-                            className={`tech-stamp px-3 py-2 border whitespace-nowrap transition-colors ${
-                                t.slug === activeSlug
-                                    ? "border-[#0c182b] bg-[#0c182b] text-white"
-                                    : "border-[#dde5f0] text-[#4b5d7a] hover:bg-[#f3f6fb]"
-                            }`}
-                        >
-                            {t.label}
-                        </Link>
-                    ))}
+                    <GroupedNav activeSlug={activeSlug} />
                 </div>
             </div>
 
