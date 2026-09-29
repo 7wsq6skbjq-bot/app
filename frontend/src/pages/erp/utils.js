@@ -266,6 +266,9 @@ export const emptyHardwareLine = () => ({
     part_number: "",
     note: "",
     unit_price: 0,
+    cost: 0,
+    included: true,
+    from_master: false,
     on_active: false,
     on_inactive: false,
 });
@@ -273,6 +276,10 @@ export const emptyHardwareLine = () => ({
 export const emptyProductionDoor = () => ({
     _key: newKey(),
     tag: "",
+    master_model_key: "",
+    material_cost: 0,
+    labor_hours: 0,
+    profit_pct: 0.6,
     series: "AT1000",
     config: "simple",
     opening_width_in: 36,

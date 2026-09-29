@@ -16,7 +16,7 @@ const STORAGE_KEY = "portech.fabrication.subTab";
 const SUB_TABS = [
     { id: "cuts",       label: "Listes de coupe", icon: Scissors },
     { id: "mosquito",   label: "Moustiquaires",   icon: Bug },
-    { id: "plans",      label: "Dessins de production", icon: DraftingCompass },
+    { id: "plans",      label: "Dessin de production de porte", icon: DraftingCompass },
 ];
 
 export const FabricationPanel = () => {

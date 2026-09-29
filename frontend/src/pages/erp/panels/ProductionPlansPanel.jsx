@@ -48,6 +48,155 @@ export const ProductionPlansPanel = () => {
     const [emailSending, setEmailSending] = useState(false);
     const [emailError, setEmailError] = useState("");
     const formTopRef = useRef(null);
+    // ── Master (LDP) integration ──
+    const [masterModels, setMasterModels] = useState([]);
+    const [masterRate, setMasterRate] = useState(50);
+    const [masterHwMarkup, setMasterHwMarkup] = useState(0.35);
+    const [hwSearch, setHwSearch] = useState({});
+    const [hwResults, setHwResults] = useState({});
+    const [pushing, setPushing] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const [{ data: models }, { data: params }] = await Promise.all([
+                    http.get("/admin/master/door-models"),
+                    http.get("/admin/master/params"),
+                ]);
+                setMasterModels(Array.isArray(models) ? models : []);
+                const r = (params || []).find((p) => /TAUX HORAIRE/i.test(p.label));
+                const q = (params || []).find((p) => /QUINCAILLERIE/i.test(p.label));
+                if (r) setMasterRate(r.value);
+                if (q) setMasterHwMarkup(q.value);
+            } catch (_) { /* silent */ }
+        })();
+    }, [http]);
+
+    // Cost/margin/sell for a door (screen only — never on PDF)
+    const doorCost = useCallback((d) => {
+        const laborCost = (Number(d.labor_hours) || 0) * masterRate;
+        const mlCost = (Number(d.material_cost) || 0) + laborCost;
+        const hwCost = (d.hardware || []).reduce((s, h) => {
+            if (h.included === false) return s;
+            const q = parseFloat(String(h.qty || "1").replace(",", ".")) || 1;
+            return s + q * (Number(h.cost) || 0);
+        }, 0);
+        const profit = Number(d.profit_pct) || 0;
+        const mlProfit = mlCost * profit;
+        const hwProfit = hwCost * masterHwMarkup;
+        const cost = Math.round((mlCost + hwCost) * 100) / 100;
+        const sell = Math.round((mlCost + mlProfit + hwCost + hwProfit) * 100) / 100;
+        const margin = Math.round((sell - cost) * 100) / 100;
+        const marginPct = cost ? Math.round((margin / cost) * 1000) / 10 : 0;
+        return { cost, sell, margin, marginPct, hwCost, mlCost };
+    }, [masterRate, masterHwMarkup]);
+
+    const projectTotals = useMemo(() => {
+        let cost = 0, sell = 0;
+        for (const d of form.doors || []) {
+            const q = parseInt(d.qty, 10) || 1;
+            const c = doorCost(d);
+            cost += c.cost * q; sell += c.sell * q;
+        }
+        cost = Math.round(cost * 100) / 100; sell = Math.round(sell * 100) / 100;
+        const margin = Math.round((sell - cost) * 100) / 100;
+        const marginPct = cost ? Math.round((margin / cost) * 1000) / 10 : 0;
+        return { cost, sell, margin, marginPct };
+    }, [form.doors, doorCost]);
+
+    // Apply a Master LDP model to a door: series, finish, config, hours, cost, default hardware
+    const applyMasterModel = (dk, modelKey) => {
+        const m = masterModels.find((x) => x.model_key === modelKey);
+        if (!m) { updateDoor(dk, "master_model_key", ""); return; }
+        const label = m.label || "";
+        const seriesTok = (label.split(/[\s·]/)[0] || "").toUpperCase(); // AT1000 / ATI2000...
+        const seriesMap = { AT1000: "AT1000", ATI1000: "ATi1000", AT2000: "AT2000", ATI2000: "ATi2000" };
+        const series = seriesMap[seriesTok] || "AT1000";
+        const config = /paire/i.test(label) ? "pair" : "simple";
+        const finish = /noir/i.test(label) ? "Anodisé noir" : "Anodisé clair";
+        const hw = (m.hardware || []).map((h) => ({
+            ...emptyHardwareLine(),
+            qty: "1",
+            description: h.description || "",
+            part_number: h.code || "",
+            cost: Number(h.cost) || 0,
+            unit_price: Math.round((Number(h.cost) || 0) * (1 + masterHwMarkup) * 100) / 100,
+            included: true, from_master: true, on_active: true,
+        }));
+        setForm((f) => ({
+            ...f,
+            doors: f.doors.map((d) => (d._key === dk ? {
+                ...d,
+                master_model_key: modelKey,
+                series, config,
+                finish_ext: finish, finish_int: finish,
+                material_cost: Number(m.material_cost) || 0,
+                labor_hours: Number(m.labor_hours) || 3,
+                profit_pct: m.profit_pct ?? 0.6,
+                profile_head: "", profile_base: "",
+                profile_hinge_stile: "", profile_lock_stile: "", profile_lock_stile_inactive: "",
+                hardware: hw.length ? hw : d.hardware,
+            } : d)),
+        }));
+    };
+
+    // Master hardware search (per door)
+    const searchMasterHw = (dk, q) => {
+        setHwSearch((s) => ({ ...s, [dk]: q }));
+        if (!q || q.trim().length < 2) { setHwResults((r) => ({ ...r, [dk]: [] })); return; }
+        http.get(`/admin/master/hardware?q=${encodeURIComponent(q)}`)
+            .then(({ data }) => setHwResults((r) => ({ ...r, [dk]: (data || []).slice(0, 8) })))
+            .catch(() => {});
+    };
+    const addMasterHw = (dk, item) => {
+        setForm((f) => ({
+            ...f,
+            doors: f.doors.map((d) => (d._key === dk ? {
+                ...d,
+                hardware: [...(d.hardware || []), {
+                    ...emptyHardwareLine(),
+                    description: item.description || "",
+                    part_number: item.product_code || "",
+                    cost: Number(item.unit_cost) || 0,
+                    unit_price: Math.round((Number(item.unit_cost) || 0) * (1 + masterHwMarkup) * 100) / 100,
+                    included: true, from_master: true, on_active: true,
+                }],
+            } : d)),
+        }));
+        setHwSearch((s) => ({ ...s, [dk]: "" }));
+        setHwResults((r) => ({ ...r, [dk]: [] }));
+    };
+
+    const pushToQuote = async () => {
+        if (!form.doors?.length) { setErrorMsg("Ajoutez au moins une porte."); return; }
+        setPushing(true); setErrorMsg("");
+        try {
+            const items = (form.doors || []).map((d) => {
+                const c = doorCost(d);
+                const qty = parseInt(d.qty, 10) || 1;
+                const label = `Porte ${d.tag || d.series} — ${d.series} ${d.config === "pair" ? "paire" : "simple"} ${d.opening_width_in}×${d.opening_height_in} (quincaillerie incluse)`;
+                return { description: label, quantity: qty, unit_price: c.sell, cost_price: c.cost, cost_category: "Portes", product_id: null };
+            });
+            const { data } = await http.post("/admin/quotes", {
+                customer_snapshot: {
+                    name: form.client_name || form.project_name || "Client",
+                    kind: "customer",
+                    email: /\S+@\S+/.test(form.client_contact || "") ? form.client_contact : undefined,
+                    address: form.client_address || undefined,
+                    phone: form.client_phone || undefined,
+                },
+                date: todayISO(),
+                valid_until: todayISO(),
+                taxable: true,
+                status: "brouillon",
+                notes: `Généré depuis le dessin de production ${form.plan_number || ""} — ${form.project_name || ""}`.trim(),
+                items,
+            });
+            setSuccessMsg(`Soumission SO-${String(data.number).padStart(4, "0")} créée avec ${items.length} porte(s) · vendant ${projectTotals.sell.toFixed(2)} $. Ouvre l'onglet Ventes ▸ Soumissions pour la finaliser.`);
+        } catch (e) {
+            setErrorMsg(e?.response?.data?.detail || "Échec de la création de la soumission.");
+        } finally { setPushing(false); }
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -238,6 +387,10 @@ export const ProductionPlansPanel = () => {
         notes: form.notes || "",
         doors: (form.doors || []).map((d) => ({
             tag: d.tag || "",
+            master_model_key: d.master_model_key || "",
+            material_cost: Number(d.material_cost || 0) || 0,
+            labor_hours: Number(d.labor_hours || 0) || 0,
+            profit_pct: Number(d.profit_pct ?? 0.6),
             series: d.series || "AT1000",
             config: d.config || "simple",
             opening_width_in: Number(d.opening_width_in || 0) || 1,
@@ -289,12 +442,15 @@ export const ProductionPlansPanel = () => {
             profile_lock_stile_inactive: effProfile(d, "profile_lock_stile_inactive", "lock_inactive"),
             scale_note: d.scale_note || "1:30",
             notes: d.notes || "",
-            hardware: stripKeys(d.hardware || []).map((h) => ({
+            hardware: stripKeys((d.hardware || []).filter((h) => h.included !== false)).map((h) => ({
                 qty: String(h.qty || "1"),
                 description: h.description || "",
                 part_number: h.part_number || "",
                 note: h.note || "",
                 unit_price: Number(h.unit_price || 0) || 0,
+                cost: Number(h.cost || 0) || 0,
+                included: true,
+                from_master: !!h.from_master,
                 on_active: !!h.on_active,
                 on_inactive: !!h.on_inactive,
             })),
@@ -411,9 +567,9 @@ export const ProductionPlansPanel = () => {
         <div className="space-y-6" ref={formTopRef}>
             <div className="flex items-center gap-3 flex-wrap">
                 <DraftingCompass className="w-6 h-6 text-[#0c182b]" />
-                <h2 className="text-xl font-bold text-[#0c182b]">Dessins de production</h2>
+                <h2 className="text-xl font-bold text-[#0c182b]">Dessin de production de porte</h2>
                 <span className="text-xs text-[#4b5d7a]">
-                    Génère un plan complet (présentation · élévations à l&apos;échelle · détails) à partir des dimensions.
+                    Choisis un modèle Master (LDP) : profilés, quincaillerie et coûts réels pré-remplis. Coûtant &amp; marge visibles à l&apos;écran, jamais sur le PDF client.
                 </span>
                 <button onClick={resetForm} className="ml-auto btn-secondary !py-1.5 !px-3 !text-xs"
                     data-testid="pp-new">
@@ -584,6 +740,18 @@ export const ProductionPlansPanel = () => {
                     </label>
                 </div>
 
+                {/* Coûts & marge projet (interne — jamais sur le PDF) */}
+                <div className="flex flex-wrap items-center gap-4 border-2 border-[#0c182b] bg-[#0c182b] text-white px-4 py-3" data-testid="pp-cost-banner">
+                    <div className="text-[10px] uppercase tracking-wider text-[#8fb4ff]">Interne · jamais sur le PDF</div>
+                    <div className="flex items-baseline gap-1"><span className="text-[#c3d2ea] text-xs">Coûtant</span><span className="font-display font-bold text-lg" data-testid="pp-total-cost">{projectTotals.cost.toFixed(2)} $</span></div>
+                    <div className="flex items-baseline gap-1"><span className="text-[#4fd1c5] text-xs">Marge</span><span className="font-display font-bold text-lg text-[#4fd1c5]" data-testid="pp-total-margin">{projectTotals.margin.toFixed(2)} $ · {projectTotals.marginPct}%</span></div>
+                    <div className="flex items-baseline gap-1"><span className="text-[#ffd27f] text-xs">Vendant</span><span className="font-display font-bold text-xl text-[#ffd27f]" data-testid="pp-total-sell">{projectTotals.sell.toFixed(2)} $</span></div>
+                    <button onClick={pushToQuote} disabled={pushing} data-testid="pp-push-quote"
+                        className="ml-auto tech-stamp px-4 py-2 bg-[#ffd27f] text-[#0c182b] font-bold flex items-center gap-1 disabled:opacity-50">
+                        {pushing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Pousser vers soumission
+                    </button>
+                </div>
+
                 {/* Doors */}
                 <div>
                     <div className="flex items-center justify-between mb-2">
@@ -619,6 +787,51 @@ export const ProductionPlansPanel = () => {
 
                                     {isOpen && (
                                         <div className="p-3 space-y-3 border-t border-[#dde5f0]">
+                                            {/* Master model + live cost (interne) */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#eef3fb] border border-[#c5d4e7] p-3">
+                                                <div className="sm:col-span-2">
+                                                    <label className={labelCls}>Modèle Master (LDP) — pré-remplit profilés, quincaillerie &amp; coûts</label>
+                                                    <select value={d.master_model_key || ""} data-testid={`pp-door-master-${idx}`}
+                                                        onChange={(e) => applyMasterModel(d._key, e.target.value)}
+                                                        className={`${inputCls} bg-white`}>
+                                                        <option value="">— Choisir un modèle Master —</option>
+                                                        {masterModels.map((m) => <option key={m.model_key} value={m.model_key}>{m.label}</option>)}
+                                                    </select>
+                                                </div>
+                                                {(() => {
+                                                    const c = doorCost(d);
+                                                    return (
+                                                        <div className="flex flex-col justify-end text-xs" data-testid={`pp-door-costpanel-${idx}`}>
+                                                            <div className="flex justify-between"><span className="text-[#4b5d7a]">Coûtant unité</span><b>{c.cost.toFixed(2)} $</b></div>
+                                                            <div className="flex justify-between text-[#0f6b3a]"><span>Marge</span><b>{c.margin.toFixed(2)} $ · {c.marginPct}%</b></div>
+                                                            <div className="flex justify-between text-[#8a5a00]"><span>Vendant unité</span><b>{c.sell.toFixed(2)} $</b></div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                                <div className="sm:col-span-3 grid grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className={labelCls}>Coût matériel ($)</label>
+                                                        <input type="number" step="0.01" value={d.material_cost || 0}
+                                                            data-testid={`pp-door-material-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "material_cost", Number(e.target.value))}
+                                                            className={`${inputCls} text-right`} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelCls}>Heures M.O.</label>
+                                                        <input type="number" step="0.5" value={d.labor_hours || 0}
+                                                            data-testid={`pp-door-hours-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "labor_hours", Number(e.target.value))}
+                                                            className={`${inputCls} text-right`} />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelCls}>Profit matériel (×)</label>
+                                                        <input type="number" step="0.05" value={d.profit_pct ?? 0.6}
+                                                            data-testid={`pp-door-profit-${idx}`}
+                                                            onChange={(e) => updateDoor(d._key, "profit_pct", Number(e.target.value))}
+                                                            className={`${inputCls} text-right`} />
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                                 <div>
                                                     <label className={labelCls}>Repère / Tag</label>
@@ -949,21 +1162,42 @@ export const ProductionPlansPanel = () => {
 
                                             {/* Hardware */}
                                             <div>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <label className={labelCls}>Quincaillerie (libre)</label>
-                                                    <button onClick={() => addHw(d._key)}
-                                                        className="text-[#1d4ed8] hover:underline text-xs inline-flex items-center gap-1"
-                                                        data-testid={`pp-add-hw-${idx}`}>
-                                                        <Plus className="w-3 h-3" /> Ajouter une ligne
-                                                    </button>
+                                                <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
+                                                    <label className={labelCls}>Quincaillerie (Master — décoche pour retirer)</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="relative">
+                                                            <input type="text" value={hwSearch[d._key] || ""}
+                                                                data-testid={`pp-hw-master-search-${idx}`}
+                                                                onChange={(e) => searchMasterHw(d._key, e.target.value)}
+                                                                placeholder="Rechercher Master (nom / nº pièce)…"
+                                                                className="px-2 py-1 border border-[#c5d4e7] text-xs w-64" />
+                                                            {(hwResults[d._key] || []).length > 0 && (
+                                                                <div className="absolute z-20 right-0 left-0 mt-0.5 bg-white border border-[#dde5f0] shadow-lg max-h-56 overflow-auto">
+                                                                    {(hwResults[d._key] || []).map((r) => (
+                                                                        <button type="button" key={r.id} onClick={() => addMasterHw(d._key, r)}
+                                                                            className="block w-full text-left px-2 py-1.5 text-xs hover:bg-[#eaf1fb] border-b border-[#f0f3f8]">
+                                                                            {r.description} <span className="font-mono text-[#2f4f7f]">{r.product_code}</span> — {(Number(r.unit_cost) || 0).toFixed(2)} $
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <button onClick={() => addHw(d._key)}
+                                                            className="text-[#1d4ed8] hover:underline text-xs inline-flex items-center gap-1"
+                                                            data-testid={`pp-add-hw-${idx}`}>
+                                                            <Plus className="w-3 h-3" /> Ligne libre
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <table className="w-full text-sm">
                                                     <thead className="text-[10px] uppercase text-[#4b5d7a] bg-[#f3f6fb]">
                                                         <tr>
+                                                            <th className="text-center px-1 py-1 w-10">Inclus</th>
                                                             <th className="text-left px-2 py-1 w-14">Qté</th>
                                                             <th className="text-left px-2 py-1">Description</th>
-                                                            <th className="text-left px-2 py-1 w-36">N° de pièce</th>
-                                                            <th className="text-right px-2 py-1 w-24">Prix U. ($)</th>
+                                                            <th className="text-left px-2 py-1 w-32">N° de pièce</th>
+                                                            <th className="text-right px-2 py-1 w-20">Coût ($)</th>
+                                                            <th className="text-right px-2 py-1 w-20">Prix U. ($)</th>
                                                             <th className="text-center px-1 py-1 w-12">Actif</th>
                                                             <th className="text-center px-1 py-1 w-12">Inact.</th>
                                                             <th className="w-8"></th>
@@ -971,7 +1205,12 @@ export const ProductionPlansPanel = () => {
                                                     </thead>
                                                     <tbody>
                                                         {(d.hardware || []).map((h) => (
-                                                            <tr key={h._key} className="border-b border-[#f3f6fb]">
+                                                            <tr key={h._key} className={`border-b border-[#f3f6fb] ${h.included === false ? "opacity-40" : ""}`}>
+                                                                <td className="px-1 py-1 text-center">
+                                                                    <input type="checkbox" data-testid={`pp-hw-incl-${idx}`}
+                                                                        checked={h.included !== false}
+                                                                        onChange={(e) => updateHw(d._key, h._key, "included", e.target.checked)} />
+                                                                </td>
                                                                 <td className="px-1 py-1">
                                                                     <input type="text" value={h.qty}
                                                                         onChange={(e) => updateHw(d._key, h._key, "qty", e.target.value)}
@@ -989,6 +1228,12 @@ export const ProductionPlansPanel = () => {
                                                                         onChange={(e) => updateHw(d._key, h._key, "part_number", e.target.value)}
                                                                         placeholder="Ex : 8400"
                                                                         className="w-full px-2 py-1 border border-[#dde5f0] text-sm font-mono" />
+                                                                </td>
+                                                                <td className="px-1 py-1">
+                                                                    <input type="number" min="0" step="0.01" value={h.cost ?? 0}
+                                                                        data-testid={`pp-hw-cost-${idx}`}
+                                                                        onChange={(e) => updateHw(d._key, h._key, "cost", Number(e.target.value))}
+                                                                        className="w-full px-2 py-1 border border-[#e6d9b3] bg-[#fffdf5] text-sm text-right" />
                                                                 </td>
                                                                 <td className="px-1 py-1">
                                                                     <input type="number" min="0" step="0.01" value={h.unit_price ?? 0}
@@ -1017,19 +1262,20 @@ export const ProductionPlansPanel = () => {
                                                     </tbody>
                                                     <tfoot>
                                                         <tr className="border-t border-[#dde5f0] bg-[#fff8e6]">
-                                                            <td colSpan={3} className="px-2 py-1 text-right text-xs font-bold text-[#8a5a00]">
-                                                                Coût quincaillerie (interne)
+                                                            <td colSpan={4} className="px-2 py-1 text-right text-xs font-bold text-[#8a5a00]">
+                                                                Coût quincaillerie incluse (interne)
                                                             </td>
                                                             <td className="px-2 py-1 text-right text-xs font-bold text-[#8a5a00]" data-testid={`pp-door-cost-${idx}`}>
                                                                 {(() => {
                                                                     const t = (d.hardware || []).reduce((s, h) => {
+                                                                        if (h.included === false) return s;
                                                                         const q = parseFloat(String(h.qty || "1").replace(",", ".")) || 1;
-                                                                        return s + q * (Number(h.unit_price) || 0);
+                                                                        return s + q * (Number(h.cost) || 0);
                                                                     }, 0);
                                                                     return t > 0 ? `${t.toFixed(2)} $` : "—";
                                                                 })()}
                                                             </td>
-                                                            <td colSpan={3}></td>
+                                                            <td colSpan={4}></td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>

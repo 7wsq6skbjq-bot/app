@@ -48,12 +48,19 @@ class HardwareLine(BaseModel):
     part_number: str = ""
     note: str = ""
     unit_price: float = 0
+    cost: float = 0
+    included: bool = True
+    from_master: bool = False
     on_active: bool = False
     on_inactive: bool = False
 
 
 class DoorPlan(BaseModel):
     tag: str = Field("", max_length=60)                 # ex : P-104
+    master_model_key: str = ""                          # modèle Master LDP source
+    material_cost: float = 0                            # coût alu (fixe par modèle, modifiable)
+    labor_hours: float = 0                              # heures M.O. (du modèle)
+    profit_pct: float = 0.6                             # profit matériel+M.O. (du modèle)
     series: DoorSeries = "AT1000"
     config: DoorConfig = "simple"
     opening_width_in: float = Field(36, ge=1)
