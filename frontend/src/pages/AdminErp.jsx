@@ -25,6 +25,7 @@ import { StatementsPanel } from "./erp/panels/StatementsPanel";
 import { AssistantPanel } from "./erp/panels/AssistantPanel";
 import { MileagePanel } from "./erp/panels/MileagePanel";
 import { MasterCostsPanel } from "./erp/panels/MasterCostsPanel";
+import { TaxRecapPanel } from "./erp/panels/TaxRecapPanel";
 import { MobileTabBar } from "../components/mobile/MobileTabBar";
 
 const TABS = [
@@ -42,6 +43,7 @@ const TABS = [
     { slug: "bons-commande",   label: "Bons de commande", panel: "purchase-orders" },
     { slug: "connaissements",  label: "Connaissements",  panel: "bills-of-lading" },
     { slug: "depenses",        label: "Dépenses",        panel: "expenses" },
+    { slug: "recap-taxes",     label: "Récap TPS/TVQ",   panel: "tax-recap" },
     { slug: "kilometrage",     label: "Rapport kilométrique", panel: "mileage" },
     { slug: "couts-master",    label: "Coûts Master",     panel: "master" },
     { slug: "fabrication",     label: "Fabrication",     panel: "fabrication" },
@@ -122,6 +124,7 @@ const AdminErp = () => {
                 {activeTab.panel === "purchase-orders" && <PurchaseOrdersPanel />}
                 {activeTab.panel === "bills-of-lading" && <BolPanel />}
                 {activeTab.panel === "expenses" && <ExpensesPanel />}
+                {activeTab.panel === "tax-recap" && <TaxRecapPanel />}
                 {activeTab.panel === "mileage" && <MileagePanel />}
                 {activeTab.panel === "master" && <MasterCostsPanel />}
                 {activeTab.panel === "cuts" && <CutListPanel />}

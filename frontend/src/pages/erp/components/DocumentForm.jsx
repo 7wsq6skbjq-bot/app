@@ -101,6 +101,7 @@ const DoorBuilderModal = ({ http, onAdd, onClose }) => {
     const [addQ, setAddQ] = useState("");
     const [addResults, setAddResults] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [splitLines, setSplitLines] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -150,16 +151,22 @@ const DoorBuilderModal = ({ http, onAdd, onClose }) => {
 
     const confirm = () => {
         if (!model) return;
-        const q = Number(qty) || 1;
-        onAdd({
+        const q = Math.max(1, Math.round(Number(qty) || 1));
+        const makeLine = (n, single) => ({
             ...emptyLineItem(),
-            description: `Porte — ${model.label} (quincaillerie incluse)`,
-            quantity: q,
+            description: `Porte — ${model.label} (quincaillerie incluse)`
+                + (single && q > 1 ? ` · nº ${n}/${q}` : ""),
+            quantity: single ? 1 : q,
             unit_price: sellTotal,
             cost_price: costTotal,
             cost_category: "Portes",
             product_id: null,
         });
+        if (splitLines && q > 1) {
+            onAdd(Array.from({ length: q }, (_, i) => makeLine(i + 1, true)));
+        } else {
+            onAdd([makeLine(1, false)]);
+        }
         onClose();
     };
 
@@ -194,6 +201,12 @@ const DoorBuilderModal = ({ http, onAdd, onClose }) => {
                                     <Field label="Profit matériel (×)"><input type="number" step="0.05" data-testid="door-builder-profit" className={inputClass} value={profitPct} onChange={(e) => setProfitPct(Number(e.target.value))} /></Field>
                                     <Field label="Quantité"><input type="number" step="1" min="1" data-testid="door-builder-qty" className={inputClass} value={qty} onChange={(e) => setQty(e.target.value)} /></Field>
                                 </div>
+                            )}
+                            {model && Number(qty) > 1 && (
+                                <label className="flex items-center gap-2 text-xs text-[#4b5d7a] pt-1">
+                                    <input type="checkbox" data-testid="door-builder-split" checked={splitLines} onChange={(e) => setSplitLines(e.target.checked)} />
+                                    Une ligne distincte par porte (au lieu d&apos;une seule ligne × {qty})
+                                </label>
                             )}
                         </div>
 
@@ -255,6 +268,67 @@ const DoorBuilderModal = ({ http, onAdd, onClose }) => {
 
 
 /**
+ * ProductPicker — searchable product combobox for quote/invoice line items.
+ * Searches by name AND sku (Adams Rite part number), not just a long <select>.
+ */
+const ProductPicker = ({ products, value, onPick, testId }) => {
+    const [open, setOpen] = useState(false);
+    const [q, setQ] = useState("");
+    const selected = (products || []).find((p) => p.id === value);
+
+    const matches = useMemo(() => {
+        const term = q.trim().toLowerCase();
+        if (!term) return (products || []).slice(0, 25);
+        return (products || []).filter((p) =>
+            (p.name || "").toLowerCase().includes(term)
+            || (p.sku || "").toLowerCase().includes(term)
+            || (p.category || "").toLowerCase().includes(term),
+        ).slice(0, 25);
+    }, [q, products]);
+
+    if (selected && !open) {
+        return (
+            <div className="flex items-center gap-1 border border-[#c5d4e7] bg-[#eaf1fb] px-2 py-1.5 min-h-[38px]" data-testid={testId}>
+                <span className="flex-1 truncate text-[11px] text-[#2f4f7f] font-mono">{selected.sku || selected.name}</span>
+                <button type="button" onClick={() => { onPick(""); setQ(""); setOpen(true); }}
+                    className="text-[#4b5d7a] hover:text-red-600" title="Changer de produit">
+                    <X className="w-3 h-3" />
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative">
+            <input
+                type="text"
+                value={q}
+                data-testid={testId}
+                onFocus={() => setOpen(true)}
+                onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+                onBlur={() => setTimeout(() => setOpen(false), 180)}
+                placeholder="Produit / nº pièce…"
+                className={inputClass + " !text-xs"}
+            />
+            {open && matches.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 mt-0.5 bg-white border border-[#dde5f0] shadow-lg max-h-60 overflow-auto">
+                    {matches.map((p) => (
+                        <button type="button" key={p.id}
+                            onMouseDown={(e) => { e.preventDefault(); onPick(p.id); setQ(""); setOpen(false); }}
+                            className="block w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[#eaf1fb] border-b border-[#f0f3f8]">
+                            {p.sku && <span className="font-mono text-[#2f4f7f] mr-1">{p.sku}</span>}
+                            <span className="text-[#0c182b]">{p.name}</span>
+                            {p.category && <span className="text-[#93a3bd] ml-1">· {p.category}</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+/**
  * DocumentForm — shared UI for Invoice and Purchase Order (same shape).
  * Props:
  * - kind: "invoice" | "purchase-order"
@@ -291,9 +365,10 @@ export const DocumentForm = ({
     const [doorOpen, setDoorOpen] = useState(false);
     const showDoorBuilder = isQuote || isInvoice;
 
-    const addDoorLine = (line) => {
+    const addDoorLines = (lines) => {
+        const arr = Array.isArray(lines) ? lines : [lines];
         const base = (value.items || []).filter((it) => it.description || Number(it.unit_price));
-        onChange({ ...value, items: [...base, line] });
+        onChange({ ...value, items: [...base, ...arr] });
     };
 
     const totals = computeTotals(value.items || [], value.taxable);
@@ -456,14 +531,12 @@ export const DocumentForm = ({
                                     />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <select
-                                        value={it.product_id || ""}
-                                        onChange={(e) => pickProduct(idx, e.target.value)}
-                                        className={inputClass + " !text-xs"}
-                                    >
-                                        <option value="">— Produit —</option>
-                                        {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                    </select>
+                                    <ProductPicker
+                                        products={products}
+                                        value={it.product_id}
+                                        onPick={(pid) => pid ? pickProduct(idx, pid) : updateItem(idx, { product_id: null })}
+                                        testId={`doc-${kind}-item-product-${idx}`}
+                                    />
                                 </div>
                                 <div className="md:col-span-1">
                                     <input type="number" step="0.01" min="0" value={it.quantity} onChange={(e) => updateItem(idx, { quantity: e.target.value })} className={inputClass + " !text-xs text-right"} />
@@ -547,7 +620,7 @@ export const DocumentForm = ({
             )}
 
             {doorOpen && (
-                <DoorBuilderModal http={http} onAdd={addDoorLine} onClose={() => setDoorOpen(false)} />
+                <DoorBuilderModal http={http} onAdd={addDoorLines} onClose={() => setDoorOpen(false)} />
             )}
         </div>
     );

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, RefreshCw, FileDown } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, FileDown, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { formatCurrency } from "../utils";
@@ -23,6 +23,18 @@ export const ProductsPanel = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState(null);
     const [form, setForm] = useState(emptyProduct());
+    const [q, setQ] = useState("");
+    const [category, setCategory] = useState("");
+
+    const categories = [...new Set(rows.map((p) => p.category).filter(Boolean))].sort();
+    const filtered = rows.filter((p) => {
+        if (category && p.category !== category) return false;
+        const term = q.trim().toLowerCase();
+        if (!term) return true;
+        return (p.name || "").toLowerCase().includes(term)
+            || (p.sku || "").toLowerCase().includes(term)
+            || (p.description || "").toLowerCase().includes(term);
+    });
 
     const load = useCallback(async () => {
         setLoading(true); setError("");
@@ -103,6 +115,33 @@ export const ProductsPanel = () => {
 
             {error && <div className="mb-4 p-4 border border-red-400 bg-red-50 text-red-800 text-sm">{error}</div>}
 
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+                <div className="relative flex-1 min-w-[220px]">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#93a3bd]" />
+                    <input data-testid="product-search" value={q} onChange={(e) => setQ(e.target.value)}
+                        placeholder="Rechercher par nom, SKU ou nº de pièce…" className={`${inputClass} !pl-9`} />
+                </div>
+                <select data-testid="product-category-filter" value={category} onChange={(e) => setCategory(e.target.value)}
+                    className={inputClass.replace("w-full", "w-auto")}>
+                    <option value="">Toutes catégories ({rows.length})</option>
+                    {categories.map((c) => (
+                        <option key={c} value={c}>{c} ({rows.filter((p) => p.category === c).length})</option>
+                    ))}
+                </select>
+                {categories.includes("Adams Rite") && (
+                    <button data-testid="product-filter-adamsrite" onClick={() => setCategory(category === "Adams Rite" ? "" : "Adams Rite")}
+                        className={`tech-stamp px-3 py-2 border text-xs ${category === "Adams Rite" ? "bg-[#0c182b] text-white border-[#0c182b]" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-white"}`}>
+                        Adams Rite
+                    </button>
+                )}
+                {(q || category) && (
+                    <button onClick={() => { setQ(""); setCategory(""); }} className="tech-stamp px-3 py-2 border border-[#dde5f0] text-[#4b5d7a] hover:bg-white text-xs">
+                        Réinitialiser
+                    </button>
+                )}
+                <span className="text-xs text-[#4b5d7a] ml-auto">{filtered.length} résultat(s)</span>
+            </div>
+
             <div className="border border-[#dde5f0] bg-white">
                 <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-[#dde5f0] bg-[#f3f6fb] tech-stamp">
                     <div className="col-span-2">SKU</div>
@@ -111,13 +150,13 @@ export const ProductsPanel = () => {
                     <div className="col-span-2 text-right">Prix unitaire</div>
                     <div className="col-span-2 text-right">Actions</div>
                 </div>
-                {rows.length === 0 && !loading && (
+                {filtered.length === 0 && !loading && (
                     <div className="p-12 text-center text-[#4b5d7a] text-sm">
-                        Aucun produit. Ajoutez vos pièces et services fréquents pour les réutiliser sur les factures.
+                        {rows.length ? "Aucun produit ne correspond à la recherche." : "Aucun produit. Ajoutez vos pièces et services fréquents pour les réutiliser sur les factures."}
                     </div>
                 )}
                 <ul>
-                    {rows.map((p) => (
+                    {filtered.map((p) => (
                         <li key={p.id} className="border-b border-[#dde5f0] last:border-b-0 hover:bg-[#f3f6fb] transition-colors">
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-6 py-3 items-center">
                                 <div className="col-span-2 text-sm font-mono text-[#4b5d7a]">{p.sku || "—"}</div>

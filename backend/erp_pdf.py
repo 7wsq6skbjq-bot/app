@@ -450,6 +450,131 @@ def render_statement_pdf(customer: dict, invoices: list, *,
     return buf.read()
 
 
+def render_tax_recap_pdf(data: dict) -> bytes:
+    """Récapitulatif trimestriel TPS/TVQ — à remettre au comptable.
+
+    `data` = {
+        "period_label": "T2 2026 (avril à juin)",
+        "year": 2026, "quarter": 2,
+        "start_fr": "...", "end_fr": "...",
+        "collected": {"subtotal","tps","tvq","total","count"},
+        "paid":      {"subtotal","tps","tvq","total","count"},
+        "net":       {"tps","tvq","total"},
+    }
+    """
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+    GREEN = colors.HexColor("#0f6b3a")
+    RED = colors.HexColor("#a31a1a")
+
+    col = data.get("collected", {})
+    paid = data.get("paid", {})
+    net = data.get("net", {})
+
+    story.append(_header(s, "RÉCAP TPS / TVQ", data.get("period_label", ""), None))
+    story.append(Spacer(1, 8 * mm))
+
+    meta = _meta_grid(s, [
+        ("Période", data.get("period_label", "—")),
+        ("Du / au", f"{data.get('start_fr','—')} — {data.get('end_fr','—')}"),
+        ("Nº TPS", COMPANY["tps"]),
+        ("Nº TVQ", COMPANY["tvq"]),
+    ])
+    story.append(meta)
+    story.append(Spacer(1, 8 * mm))
+
+    def _section(title, blk, subtitle):
+        story.append(Paragraph(f"<b>{title}</b>", ParagraphStyle(
+            "sec", parent=s["party_name"], fontSize=12, spaceAfter=2)))
+        story.append(Paragraph(subtitle, s["footer"]))
+        story.append(Spacer(1, 2 * mm))
+        rows = [
+            ["", "Montant"],
+            ["Sous-total (avant taxes)", _money(blk.get("subtotal", 0))],
+            ["TPS (5 %)", _money(blk.get("tps", 0))],
+            ["TVQ (9,975 %)", _money(blk.get("tvq", 0))],
+            ["Total", _money(blk.get("total", 0))],
+        ]
+        t = Table(rows, colWidths=[110 * mm, 55 * mm])
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 8),
+            ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTNAME", (0, 4), (-1, 4), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 1), (-1, -1), 9.5),
+            ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+            ("LINEBELOW", (0, 1), (-1, -1), 0.4, NAVY_BORDER),
+            ("LINEABOVE", (0, 4), (-1, 4), 1, NAVY),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 7 * mm))
+
+    _section(
+        f"TAXES PERÇUES — ventes ({col.get('count', 0)} facture(s))", col,
+        "Factures émises (envoyées + payées) durant la période.")
+    _section(
+        f"CRÉDITS DE TAXE — achats ({paid.get('count', 0)} dépense(s))", paid,
+        "Taxes payées sur vos dépenses (CTI / RTI déductibles).")
+
+    # Net to remit
+    net_total = float(net.get("total", 0))
+    net_color = RED if net_total >= 0 else GREEN
+    net_label = "MONTANT NET À REMETTRE" if net_total >= 0 else "REMBOURSEMENT NET ATTENDU"
+    net_rows = [
+        ["", "TPS", "TVQ", "Total"],
+        ["Taxes perçues (ventes)", _money(col.get("tps", 0)), _money(col.get("tvq", 0)),
+         _money(float(col.get("tps", 0)) + float(col.get("tvq", 0)))],
+        ["− Taxes payées (achats)", _money(paid.get("tps", 0)), _money(paid.get("tvq", 0)),
+         _money(float(paid.get("tps", 0)) + float(paid.get("tvq", 0)))],
+        ["= NET", _money(net.get("tps", 0)), _money(net.get("tvq", 0)), _money(net_total)],
+    ]
+    nt = Table(net_rows, colWidths=[70 * mm, 31 * mm, 31 * mm, 33 * mm])
+    nt.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Courier-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTNAME", (0, 3), (-1, 3), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 1), (-1, -1), 9.5),
+        ("TEXTCOLOR", (0, 1), (-1, 2), NAVY),
+        ("TEXTCOLOR", (0, 3), (-1, 3), net_color),
+        ("LINEABOVE", (0, 3), (-1, 3), 1.2, NAVY),
+        ("LINEBELOW", (0, 1), (-1, 2), 0.4, NAVY_BORDER),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+    ]))
+    story.append(nt)
+    story.append(Spacer(1, 4 * mm))
+    story.append(Paragraph(
+        f"<b>{net_label} : {_money(abs(net_total))}</b>", ParagraphStyle(
+            "nettot", parent=s["party_name"], fontSize=13, textColor=net_color, alignment=2)))
+
+    story.append(Spacer(1, 10 * mm))
+    story.append(Paragraph(
+        "Document généré à titre indicatif pour faciliter la déclaration de taxes. "
+        "Basé sur les factures émises et les dépenses enregistrées dans le système "
+        "pour la période. Vérifiez avec votre comptable avant toute déclaration officielle "
+        f"à Revenu Québec / ARC. — {COMPANY['name']}, {COMPANY['email']}",
+        s["footer"]))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
+
+
 SALES_CONDITIONS = [
     ("1. ACCEPTATION DE LA SOUMISSION",
      "L'acceptation de la soumission par le client constitue une autorisation ferme de procéder à la commande des matériaux, à la fabrication et/ou à l'exécution des travaux décrits à la soumission. Toute acceptation écrite, électronique ou toute autorisation permettant à Portech de débuter les travaux ou de commander les matériaux sera considérée comme une acceptation des présentes conditions. La soumission est valide pour une période de 30 jours, sauf indication contraire."),
