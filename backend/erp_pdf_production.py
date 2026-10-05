@@ -1589,10 +1589,9 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
         c.drawCentredString((W - 150) / 2, H / 2,
                             "Détail indisponible pour ce type de porte.")
 
-    # Porte main gauche, VUE EN PLAN uniquement : le dessin de référence est en
-    # main droite (MD) ; on pose une note directement sur le dessin, juste au-
-    # dessus du détail, pour indiquer qu'il doit être lu miroité et renversé.
-    if place and kind == "plan" and handing.startswith("MG"):
+    # Note posée sur le dessin (vue en plan uniquement), pour les portes MD et
+    # MG (pas MDR/MGR) : indique que le détail doit être lu miroité et renversé.
+    if place and kind == "plan" and handing in ("MD", "MG"):
         dx, dy, dw, dh = place
         nw, nh = 168, 24
         nx = dx + dw / 2 - nw / 2

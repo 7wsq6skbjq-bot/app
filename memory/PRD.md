@@ -618,3 +618,7 @@ User language: **French**.
 ## 2026-10-05 — Note "Miroité et renversé" (portes MG, vue en plan)
 - Pour les portes main gauche (MG/MGR), le dessin de reference reste en MD; une note encadree rouge "Miroite et renverse" est posee sur le dessin, centree juste au-dessus du detail.
 - Uniquement sur la vue en plan (page 300), jamais sur la coupe (400) ni sur les portes MD. Verifie par rendu PDF.
+
+## 2026-10-05 — Note "Miroite et renverse" : regle mise a jour
+- La note sapplique desormais aux portes MD ET MG (pas MDR/MGR), toutes series (AT1000/AT2000), vue en plan (300) uniquement.
+- Condition: kind==plan and handing in (MD, MG). Verifie par rendu AT2000 MD.
