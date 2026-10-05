@@ -631,3 +631,10 @@ User language: **French**.
 - Elevation: largeur zone dessin = W*0.56, colonne droite recalculee; note VUE INTERIEUR (pastille) sur portes MD/MG seulement.
 - Page ancrage 500: mise en page simple (reserve bande droite + cartouche par defaut), pas de masque.
 - Verifie par rendu (AT2000 pair MDR, AT1000 simple MD, coupe, ancrage).
+
+## 2026-10-05 — Nouvelle banque de dessins (plans/coupes) + marge ancrage
+- Importe la banque REV-04-2026 (Plans 12 pages, Coupes 6 pages) et regenere les 18 PNG de /assets/production_details/ref (recadres sur le cadre, 3138x1966). AT1000 utilise desormais le meme gabarit KOVO que AT2000 (cadre + cartouches integres).
+- Mapping: plans p1-12 -> plan_{at1000,ati1000,at2000,ati2000}_{simple,pair}_{6,25}; coupes p1-6 -> coupe_{...}_{6,25}.
+- _mask_ref_titleblock recale sur le nouveau gabarit (bloc projet bas-droite + bloc series haut-droite masques, cadre redessine au bord).
+- Page ancrage 500: bande droite elargie (embed (28,56,W-250,H-64)) => le cartouche ne couvre plus le dessin.
+- Verifie par rendu (AT1000 simple MD 300, AT1000 paire MG 301, coupe 400, ancrage 500).

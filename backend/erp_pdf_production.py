@@ -1451,28 +1451,27 @@ def _embed_detail(c, path, box):
 
 def _mask_ref_titleblock(c, place):
     """Cover the reference sheet's embedded title blocks (bottom-right project
-    block + top-right 'SERIES … DETAILS' block) with white, redraw a clean full
-    frame (encadré pleine largeur) and return the bottom-right box
-    (bx, by, cw, ch) where our own cartouche must be drawn to replace the
-    drawing's cartouche."""
+    block + top-right 'SERIES … DETAILS' block) with white, redraw a clean frame
+    flush to the image edges (encadré pleine largeur) and return the bottom-right
+    box (bx, by, cw, ch) where our own cartouche replaces the drawing's."""
     dx, dy, dw, dh = place
     c.saveState()
     c.setFillColor(colors.white)
     c.setStrokeColor(colors.white)
     # bottom-right project title block
-    c.rect(dx + dw * 0.781, dy + dh * 0.018, dw * 0.182, dh * 0.452,
+    c.rect(dx + dw * 0.820, dy + dh * 0.004, dw * 0.178, dh * 0.470,
            fill=1, stroke=1)
-    # top-right 'AT2000 SERIES … DOOR DETAILS' block
-    c.rect(dx + dw * 0.700, dy + dh * 0.788, dw * 0.263, dh * 0.185,
+    # top-right 'SERIES … DOOR DETAILS' block
+    c.rect(dx + dw * 0.728, dy + dh * 0.790, dw * 0.270, dh * 0.206,
            fill=1, stroke=1)
-    # redraw a clean, full-width frame around the drawing
+    # redraw a clean frame flush to the image edges
     c.setFillColor(colors.white)
     c.setStrokeColor(colors.black)
     c.setLineWidth(2.2)
-    c.rect(dx + dw * 0.044, dy + dh * 0.032, dw * 0.914, dh * 0.920,
+    c.rect(dx + dw * 0.005, dy + dh * 0.007, dw * 0.990, dh * 0.986,
            fill=0, stroke=1)
     c.restoreState()
-    return (dx + dw * 0.786, dy + dh * 0.034, dw * 0.172, dh * 0.410)
+    return (dx + dw * 0.826, dy + dh * 0.014, dw * 0.167, dh * 0.440)
 
 
 def _date_fr_short(iso) -> str:
@@ -1677,8 +1676,8 @@ def _anchor_page(c, plan, page_no):
               if plan.get("anonymous")
               else f"Détail d'ancrage standard Portech  ·  série {primary}")
     _prod_banner(c, plan)
-    # drawing reserves a right band for our cartouche (no embedded title block here)
-    place = _embed_detail(c, path, (40, 48, W - 210, H - 48))
+    # drawing reserves a generous right band so the cartouche never covers it
+    place = _embed_detail(c, path, (28, 56, W - 250, H - 64))
     if not place:
         c.setFillColor(RED)
         c.setFont("Helvetica", 9)
