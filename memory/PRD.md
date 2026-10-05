@@ -1,6 +1,13 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, cartouche Portech + détails restaurés)
+- **Dessins de détail restaurés** : retour aux feuilles A.T. originales **complètes** (exactes, avec cotes) — fini le nettoyage raster destructeur (qui coupait les profilés). Le miroir MG a été désactivé en attendant une source propre (le client exporte une version du dessin depuis sa CAO — option a).
+- **Cartouche Portech auto-généré (étampe)** : `_draw_cartouche()` redessiné en style tabulaire A.T. (en-tête PORTECH + logo, NOM DU CLIENT, table DATE/VERSION « POUR PRODUCTION / APPROBATION », NOM DU PROJET, # DU PROJET, DESCRIPTION, PAGE), opaque par-dessus l'ancien cartouche 20308. Appliqué aux pages de détail (plan/coupe) et à la page d'ancrage. `_draw_cartouche(c, place, plan, desc, page_code, tag)`.
+- Constatation technique clé : les PDF de référence n'ont **aucun texte extractible** (texte vectorisé) et les cotes sont collées à la géométrie → nettoyage/suppression automatique des cotes **impossible** proprement. Solution retenue : le client fournit le dessin voulu depuis sa CAO.
+- EN ATTENTE : le client envoie un dessin à intégrer.
+
+
 ## Changelog — 2026-06 (fork, détails en plan orientés par main)
 - **Détail en plan orienté selon la main (portes simples)** : on utilise le dessin EXACT fourni par le client (feuilles A.T.), désormais nettoyé de tout texte/cotes (bandes de cotes, notes, blocs-titres, « PLAN », cotes de profondeur, note 2,4). MD/MDR → feuille telle quelle (charnières à gauche) ; MG/MGR → feuille **miroir** (charnières à droite) — comme le texte est retiré avant le miroir, aucune cote n'apparaît à l'envers.
   - Variantes générées dans `ref/` : `plan_*_simple_*.png` (nettoyées, charn. gauche) + `plan_*_simple_*_mg.png` (miroir, charn. droite). `_resolve_detail_image(kind, door, mirrored)` choisit la variante miroir pour les simples MG/MGR.
