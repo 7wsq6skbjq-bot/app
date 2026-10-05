@@ -614,3 +614,7 @@ User language: **French**.
 - Nouveau champ plan "anonymous" (ProductionPlanIn) + case à cocher "Version anonyme" dans ProductionPlansPanel (buildPayload + emptyProductionPlan).
 - render_production_plan_pdf respecte plan["anonymous"]: retire logo/nom PORTECH + coordonnées sur couverture, bandeau haut/bas, cartouche (en-tête masqué, infos client conservées), ligne usinage/installation (INSTALLATION: —) et titre PDF.
 - Dessins, cotes et mentions fournisseur (A.T. Fabrication) conservés. Vérifié par rendu PDF (couverture, élévation, détails, ancrage).
+
+## 2026-10-05 — Note "Miroité et renversé" (portes MG, vue en plan)
+- Pour les portes main gauche (MG/MGR), le dessin de reference reste en MD; une note encadree rouge "Miroite et renverse" est posee sur le dessin, centree juste au-dessus du detail.
+- Uniquement sur la vue en plan (page 300), jamais sur la coupe (400) ni sur les portes MD. Verifie par rendu PDF.

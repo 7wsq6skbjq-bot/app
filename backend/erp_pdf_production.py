@@ -1588,6 +1588,25 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
         c.setFont("Helvetica", 9)
         c.drawCentredString((W - 150) / 2, H / 2,
                             "Détail indisponible pour ce type de porte.")
+
+    # Porte main gauche, VUE EN PLAN uniquement : le dessin de référence est en
+    # main droite (MD) ; on pose une note directement sur le dessin, juste au-
+    # dessus du détail, pour indiquer qu'il doit être lu miroité et renversé.
+    if place and kind == "plan" and handing.startswith("MG"):
+        dx, dy, dw, dh = place
+        nw, nh = 168, 24
+        nx = dx + dw / 2 - nw / 2
+        ny = dy + dh - nh - 4
+        c.saveState()
+        c.setFillColor(colors.white)
+        c.setStrokeColor(RED)
+        c.setLineWidth(1.1)
+        c.roundRect(nx, ny, nw, nh, 4, fill=1, stroke=1)
+        c.setFillColor(RED)
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawCentredString(nx + nw / 2, ny + 8.5, "Miroité et renversé")
+        c.restoreState()
+
     _draw_cartouche(c, plan, label, code, tag)
     c.showPage()
 
