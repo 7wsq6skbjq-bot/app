@@ -609,3 +609,8 @@ User language: **French**.
 - Dessin de détail décalé vers la gauche (bande droite réservée) => plus aucune superposition cartouche/dessin.
 - Dessins de détail existants (AT1000, etc.) conservés tels quels.
 - Vérifié par rendu PDF (plan réel, pages 300/400/500).
+
+## 2026-10-05 — Export PDF anonyme (sous-traitance)
+- Nouveau champ plan "anonymous" (ProductionPlanIn) + case à cocher "Version anonyme" dans ProductionPlansPanel (buildPayload + emptyProductionPlan).
+- render_production_plan_pdf respecte plan["anonymous"]: retire logo/nom PORTECH + coordonnées sur couverture, bandeau haut/bas, cartouche (en-tête masqué, infos client conservées), ligne usinage/installation (INSTALLATION: —) et titre PDF.
+- Dessins, cotes et mentions fournisseur (A.T. Fabrication) conservés. Vérifié par rendu PDF (couverture, élévation, détails, ancrage).

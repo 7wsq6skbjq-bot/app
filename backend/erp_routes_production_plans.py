@@ -143,6 +143,7 @@ class ProductionPlanIn(BaseModel):
     include_section_details: bool = True
     include_anchors: bool = True
     show_costs: bool = False
+    anonymous: bool = False   # version sous-traitance : retire toute marque Portech
     include_hardware_drawings: bool = False   # annexer auto les dessins Adams Rite (manuel par défaut)
     drawing_pages: Optional[List[int]] = None  # pages manuelles supplémentaires
     status: PlanStatus = "brouillon"

@@ -489,30 +489,33 @@ def _bubble(c, x, y, num, ref="300", r=6):
 
 # ── page chrome (header / footer bands) ────────────────────────────
 def _band_top(c, plan, doc_title):
+    anon = bool(plan.get("anonymous"))
     c.saveState()
     c.setFillColor(NAVY)
     c.rect(0, H - 48, W, 48, fill=1, stroke=0)
-    if os.path.exists(MARK_WHITE):
-        try:
-            c.drawImage(MARK_WHITE, 14, H - 42, width=34, height=34,
-                        preserveAspectRatio=True, mask="auto")
-        except Exception:
-            pass
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(54, H - 24, "PORTECH")
-    c.setFont("Helvetica", 8)
-    c.setFillColor(colors.HexColor("#9bb6d8"))
-    c.drawString(54, H - 36, COMPANY["tagline"])
+    if not anon:
+        if os.path.exists(MARK_WHITE):
+            try:
+                c.drawImage(MARK_WHITE, 14, H - 42, width=34, height=34,
+                            preserveAspectRatio=True, mask="auto")
+            except Exception:
+                pass
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(54, H - 24, "PORTECH")
+        c.setFont("Helvetica", 8)
+        c.setFillColor(colors.HexColor("#9bb6d8"))
+        c.drawString(54, H - 36, COMPANY["tagline"])
     # doc title (centered-ish)
+    tx = 54 if anon else 230
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(230, H - 24, doc_title.upper())
+    c.drawString(tx, H - 24, doc_title.upper())
     mention = (plan.get("mention") or "").strip()
     if mention:
         c.setFillColor(colors.HexColor("#ffd27f"))
         c.setFont("Helvetica-Bold", 8)
-        c.drawString(230, H - 37, mention.upper())
+        c.drawString(tx, H - 37, mention.upper())
     # PRODUCTION box on the right — only when a production name/note is set
     if plan.get("production_name") or plan.get("production_note"):
         bx, bw, bh = W - 214, 200, 38
@@ -530,14 +533,16 @@ def _band_top(c, plan, doc_title):
 
 
 def _band_bottom(c, plan, page_label):
+    anon = bool(plan.get("anonymous"))
     c.saveState()
     c.setFillColor(NAVY)
     c.rect(0, 0, W, 26, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica", 7)
-    c.drawString(14, 15,
-                 f"{COMPANY['name']}  ·  {COMPANY['line1']}  ·  "
-                 f"Tél. {COMPANY['phone']}  ·  {COMPANY['email']}")
+    if not anon:
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica", 7)
+        c.drawString(14, 15,
+                     f"{COMPANY['name']}  ·  {COMPANY['line1']}  ·  "
+                     f"Tél. {COMPANY['phone']}  ·  {COMPANY['email']}")
     c.setFont("Courier", 6.5)
     c.setFillColor(colors.HexColor("#9bb6d8"))
     proj = plan.get("project_name") or "—"
@@ -569,6 +574,7 @@ COVER_BG = "/app/backend/assets/production_details/cover_bg.png"
 
 
 def _cover(c, plan):
+    anon = bool(plan.get("anonymous"))
     # full-bleed faded storefront + blueprint grid background
     if os.path.exists(COVER_BG):
         try:
@@ -578,21 +584,22 @@ def _cover(c, plan):
     # top navy band
     c.setFillColor(NAVY)
     c.rect(0, H - 96, W, 96, fill=1, stroke=0)
-    if os.path.exists(MARK_WHITE):
-        try:
-            c.drawImage(MARK_WHITE, 24, H - 78, width=56, height=56,
-                        preserveAspectRatio=True, mask="auto")
-        except Exception:
-            pass
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 30)
-    c.drawString(92, H - 52, "PORTECH")
-    c.setFont("Helvetica", 11)
-    c.setFillColor(colors.HexColor("#9bb6d8"))
-    c.drawString(94, H - 68, COMPANY["tagline"])
-    c.setFont("Courier", 8)
-    c.drawString(94, H - 82,
-                 f"{COMPANY['line1']}  ·  Tél. {COMPANY['phone']}  ·  {COMPANY['email']}")
+    if not anon:
+        if os.path.exists(MARK_WHITE):
+            try:
+                c.drawImage(MARK_WHITE, 24, H - 78, width=56, height=56,
+                            preserveAspectRatio=True, mask="auto")
+            except Exception:
+                pass
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 30)
+        c.drawString(92, H - 52, "PORTECH")
+        c.setFont("Helvetica", 11)
+        c.setFillColor(colors.HexColor("#9bb6d8"))
+        c.drawString(94, H - 68, COMPANY["tagline"])
+        c.setFont("Courier", 8)
+        c.drawString(94, H - 82,
+                     f"{COMPANY['line1']}  ·  Tél. {COMPANY['phone']}  ·  {COMPANY['email']}")
 
     # PRODUCTION box — only when a production name/note is set
     if plan.get("production_name") or plan.get("production_note"):
@@ -709,11 +716,12 @@ def _cover(c, plan):
     # footer band
     c.setFillColor(NAVY)
     c.rect(0, 0, W, 26, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica", 7.5)
-    c.drawCentredString(W / 2, 10,
-                        f"{COMPANY['name']}  ·  {COMPANY['tagline']}  ·  "
-                        f"{COMPANY['email']}  ·  {COMPANY['site']}")
+    if not anon:
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica", 7.5)
+        c.drawCentredString(W / 2, 10,
+                            f"{COMPANY['name']}  ·  {COMPANY['tagline']}  ·  "
+                            f"{COMPANY['email']}  ·  {COMPANY['site']}")
     c.showPage()
 
 
@@ -1301,9 +1309,10 @@ def _elevation_page(c, plan, door, page_no):
         ry = _spec_block(c, rx, ry, rw_col, "Charnières / Pentures", [
             ("Détail", door.get("hinges") or "—"),
         ])
+    _installer = plan.get("installer") or ("—" if plan.get("anonymous") else "Portech")
     ry = _hardware_table(c, rx, ry, rw_col, door.get("hardware") or [],
                          plan.get("machining_by") or "A.T. Fabrication",
-                         plan.get("installer") or "Portech")
+                         _installer)
 
     # optional internal cost total — shown only when enabled AND a price exists
     # (never print "0.00 $" when nothing was entered)
@@ -1474,11 +1483,15 @@ def _detail_frame(c, footer):
 
 def _draw_cartouche(c, plan, desc, page_code, repere=None):
     """Vertical Portech title block anchored to the sheet's right margin
-    (Maupas style): navy header, labelled rows, big page number."""
+    (Maupas style): navy header, labelled rows, big page number. In anonymous
+    mode the PORTECH header band is omitted (client/project data kept)."""
+    anon = bool(plan.get("anonymous"))
     cw = 150
     bx = (W - 24) - cw
     by = 46
     H_HDR, H_ROW, H_PAGE = 34, 29, 32
+    if anon:
+        H_HDR = 0
     rows = [
         ("CLIENT", plan.get("client_name") or "—"),
         ("DATE", _date_fr(plan.get("date"))),
@@ -1503,21 +1516,22 @@ def _draw_cartouche(c, plan, desc, page_code, repere=None):
     c.setLineWidth(1.1)
     c.rect(bx, by, cw, ch, fill=1, stroke=1)
 
-    # header
+    # header (hidden in anonymous mode)
     y = top - H_HDR
-    c.setFillColor(NAVY)
-    c.rect(bx, y, cw, H_HDR, fill=1, stroke=0)
-    if os.path.exists(MARK_WHITE):
-        try:
-            c.drawImage(MARK_WHITE, bx + 6, y + 8, width=18, height=18, mask="auto")
-        except Exception:
-            pass
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(bx + 29, y + 17, "PORTECH")
-    c.setFont("Helvetica", 5.6)
-    c.setFillColor(colors.HexColor("#9bb6d8"))
-    c.drawString(bx + 29, y + 7, "Portes et quincaillerie")
+    if not anon:
+        c.setFillColor(NAVY)
+        c.rect(bx, y, cw, H_HDR, fill=1, stroke=0)
+        if os.path.exists(MARK_WHITE):
+            try:
+                c.drawImage(MARK_WHITE, bx + 6, y + 8, width=18, height=18, mask="auto")
+            except Exception:
+                pass
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(bx + 29, y + 17, "PORTECH")
+        c.setFont("Helvetica", 5.6)
+        c.setFillColor(colors.HexColor("#9bb6d8"))
+        c.drawString(bx + 29, y + 7, "Portes et quincaillerie")
 
     # labelled rows
     CREAM = colors.HexColor("#f4f1e6")
@@ -1583,7 +1597,9 @@ def _anchor_page(c, plan, page_no):
     primary = (doors[0].get("series") if doors else "AT1000") or "AT1000"
     fam = "ATi" if _series_key(primary).startswith("ATI") else "AT"
     path = os.path.join(DETAIL_DIR, ANCHOR_MAP[fam])
-    footer = f"Détail d'ancrage standard Portech  ·  série {primary}"
+    footer = (f"Détail d'ancrage standard  ·  série {primary}"
+              if plan.get("anonymous")
+              else f"Détail d'ancrage standard Portech  ·  série {primary}")
     _detail_frame(c, footer)
     _prod_banner(c, plan)
     place = _embed_detail(c, path, (36, 48, W - 186, H - 44))
@@ -1599,7 +1615,10 @@ def _anchor_page(c, plan, page_no):
 def render_production_plan_pdf(plan: dict) -> bytes:
     buf = io.BytesIO()
     c = canvas_mod.Canvas(buf, pagesize=landscape(LETTER))
-    c.setTitle(f"Portech — Dessins de production {plan.get('plan_number') or ''}")
+    title = (f"Dessins de production {plan.get('plan_number') or ''}"
+             if plan.get("anonymous")
+             else f"Portech — Dessins de production {plan.get('plan_number') or ''}")
+    c.setTitle(title)
 
     _cover(c, plan)
 

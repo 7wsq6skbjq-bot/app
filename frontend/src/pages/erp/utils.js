@@ -356,6 +356,7 @@ export const emptyProductionPlan = () => ({
     include_section_details: true,
     include_anchors: true,
     show_costs: false,
+    anonymous: false,
     include_hardware_drawings: false,
     status: "brouillon",
     doors: [emptyProductionDoor()],
