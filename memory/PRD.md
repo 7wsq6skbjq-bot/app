@@ -1,6 +1,12 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, détails KOVO réels + cartouche intégré)
+- **Détails AT1000 remplacés par le vrai dessin client KOVO** (option a) : pages p.300 (détail en plan : 01–04/300 jambage simple, astragale de paire, jambages de paire) et p.400 (détail en coupe : linteau/seuil 01–02/400) extraites du PDF « KOVO INTERIEUR - DESSIN DE PRODUCTION - AVEC ETAMPE », recadrées sur la zone de dessin (sans l'étampe AT fabrication), orientées MD, avec cotes et bulles. Enregistrées en `ref/plan_at1000_*` et `ref/coupe_at1000_*`. ATi/AT2000 restent sur les feuilles génériques (pas encore fournies par le client).
+- **Cartouche Portech tabulaire intégré** (style AT fabrication) : en-tête PORTECH + logo, NOM DU CLIENT, table DATE/VERSION (POUR PRODUCTION / APPROBATION), NOM DU PROJET, # DU PROJET, DESCRIPTION, PAGE — dessiné par-dessus l'ancienne étampe, bien aligné en bas à droite. Vérifié visuellement (p.300 et p.400 du projet Kovo).
+- MG : reste orienté MD pour l'instant (option a « telles quelles »). Pour une vraie MG le client fournira une version miroir depuis sa CAO.
+
+
 ## Changelog — 2026-06 (fork, cartouche Portech + détails restaurés)
 - **Dessins de détail restaurés** : retour aux feuilles A.T. originales **complètes** (exactes, avec cotes) — fini le nettoyage raster destructeur (qui coupait les profilés). Le miroir MG a été désactivé en attendant une source propre (le client exporte une version du dessin depuis sa CAO — option a).
 - **Cartouche Portech auto-généré (étampe)** : `_draw_cartouche()` redessiné en style tabulaire A.T. (en-tête PORTECH + logo, NOM DU CLIENT, table DATE/VERSION « POUR PRODUCTION / APPROBATION », NOM DU PROJET, # DU PROJET, DESCRIPTION, PAGE), opaque par-dessus l'ancien cartouche 20308. Appliqué aux pages de détail (plan/coupe) et à la page d'ancrage. `_draw_cartouche(c, place, plan, desc, page_code, tag)`.
