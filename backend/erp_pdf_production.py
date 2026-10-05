@@ -1356,17 +1356,48 @@ def _elevation_page(c, plan, door, page_no):
 
 
 # ── standard detail pages (plan / section / anchor) ────────────────
-# Real, cleaned CAD details extracted from the reference production plans,
-# embedded under the Portech header/footer. Mapped per door family.
+# Reference CAD sheets (client A.T. Fabrication drawings) rasterised per
+# combination of série × config × vitrage, embedded under the Portech
+# header/footer. The correct sheet is auto-selected for EACH door, and an
+# orientation panel (INT/EXT + hinge side) is stamped per the door's handing.
 DETAIL_DIR = "/app/backend/assets/production_details"
-DETAIL_MAP = {
-    "AT": {"plan": "plan_at.png", "section": "coupe_at.png", "anchor": "ancrage_ati.png"},
-    "ATi": {"plan": "plan_ati.png", "section": "coupe_ati.png", "anchor": "ancrage_ati.png"},
-}
+REF_DIR = os.path.join(DETAIL_DIR, "ref")
+ANCHOR_MAP = {"AT": "ancrage_ati.png", "ATi": "ancrage_ati.png"}
+
+
+def _series_key(series):
+    return (series or "AT1000").upper().replace(" ", "").replace("_", "")
+
+
+def _glz_key(door):
+    """'6' or '25' from the door glazing thickness."""
+    return "25" if _glass_thickness_mm(door) >= 20 else "6"
+
+
+def _resolve_detail_image(kind, door):
+    """Best-matching reference PNG for a door, or None. Falls back on glazing
+    when an exact sheet is missing (ex. porte isolée commandée avec verre
+    6 mm → feuille ATi 25 mm, correcte pour la série / bris thermique)."""
+    s = _series_key(door.get("series")).lower()  # at1000 / ati1000 / at2000 / ati2000
+    glz = _glz_key(door)
+    config = "pair" if door.get("config") == "pair" else "simple"
+    other = "simple" if config == "pair" else "pair"
+    if kind == "plan":
+        cands = [f"plan_{s}_{config}_{glz}", f"plan_{s}_{config}_25",
+                 f"plan_{s}_{config}_6", f"plan_{s}_{other}_{glz}",
+                 f"plan_{s}_{other}_25"]
+    else:  # coupe sheets are not split by config
+        cands = [f"coupe_{s}_{glz}", f"coupe_{s}_25", f"coupe_{s}_6"]
+    for name in cands:
+        p = os.path.join(REF_DIR, name + ".png")
+        if os.path.exists(p):
+            return p
+    return None
 
 
 def _embed_detail(c, path, box):
-    """Draw a detail image centered inside box=(x0,y0,x1,y1), keep aspect."""
+    """Draw a detail image centered inside box=(x0,y0,x1,y1), keep aspect.
+    Returns the placement (dx, dy, dw, dh) or None."""
     x0, y0, x1, y1 = box
     bw, bh = x1 - x0, y1 - y0
     try:
@@ -1374,7 +1405,7 @@ def _embed_detail(c, path, box):
         img = ImageReader(path)
         iw, ih = img.getSize()
     except Exception:
-        return False
+        return None
     scale = min(bw / iw, bh / ih)
     dw, dh = iw * scale, ih * scale
     dx = x0 + (bw - dw) / 2
@@ -1382,34 +1413,130 @@ def _embed_detail(c, path, box):
     try:
         c.drawImage(path, dx, dy, width=dw, height=dh,
                     preserveAspectRatio=True, mask="auto")
-        return True
+        return (dx, dy, dw, dh)
     except Exception:
-        return False
+        return None
 
 
-def _detail_page(c, plan, kind, page_no):
-    titles = {
-        "plan": ("Détails en plan", "300"),
-        "section": ("Détails en coupe", "400"),
-        "anchor": ("Ancrages", "500"),
-    }
-    label, code = titles[kind]
-    _page_frame(c, plan, label, code)
+def _mask_ref_titleblock(c, place):
+    """Cover the reference sheet's bottom-right title block (projet 20308 /
+    watermark MODEL) with a clean white panel — the top-right série block and
+    the drawing stay visible."""
+    dx, dy, dw, dh = place
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.white)
+    c.rect(dx + dw * 0.785, dy + dh * 0.03, dw * 0.215 + 1, dh * 0.49,
+           fill=1, stroke=1)
 
-    # pick the primary door family in the project
-    doors = plan.get("doors") or []
-    primary = (doors[0].get("series") if doors else "AT1000") or "AT1000"
-    fam = "ATi" if str(primary).startswith("ATi") else "AT"
-    fname = DETAIL_MAP[fam][kind]
-    path = os.path.join(DETAIL_DIR, fname)
+
+def _handing_label(handing):
+    return {"MD": "Main droite (MD)", "MG": "Main gauche (MG)",
+            "MDR": "Main droite inversée (MDR)",
+            "MGR": "Main gauche inversée (MGR)"}.get(
+        (handing or "MD").upper(), (handing or "MD").upper())
+
+
+def _orientation_panel(c, place, door):
+    """Self-contained INTÉRIEUR/EXTÉRIEUR + hinge-side panel, drawn in the empty
+    top-left of the reference sheet. MD/MGR → charnières à gauche (même
+    convention que l'élévation). La porte ouvre toujours vers l'intérieur."""
+    dx, dy, dw, dh = place
+    handing = (door.get("handing") or "MD").upper()
+    hinge_left = handing in ("MD", "MGR")
+    px = dx + dw * 0.045
+    pw = max(dw * 0.30, 168)
+    ph = 120
+    py = dy + dh - ph - dh * 0.05
+    c.saveState()
+    c.setFillColor(colors.white)
+    c.setStrokeColor(NAVY)
+    c.setLineWidth(1)
+    c.rect(px, py, pw, ph, fill=1, stroke=1)
+    c.setFillColor(NAVY)
+    c.rect(px, py + ph - 16, pw, 16, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 8)
+    c.drawString(px + 6, py + ph - 11.5, "ORIENTATION")
+    c.setFont("Helvetica", 6.5)
+    c.setFillColor(colors.HexColor("#9bb6d8"))
+    c.drawRightString(px + pw - 6, py + ph - 11.5, _handing_label(handing))
+
+    mx0, mx1 = px + 24, px + pw - 24
+    midx = (mx0 + mx1) / 2
+    my = py + 52
+    # EXTÉRIEUR (top) / INTÉRIEUR (bottom) with an inswing arrow
+    c.setFont("Helvetica-Bold", 8)
+    c.setFillColor(NAVY)
+    c.drawCentredString(midx, my + 24, "EXTÉRIEUR")
+    c.setFillColor(NAVY_LIGHT)
+    c.drawCentredString(midx, my - 30, "INTÉRIEUR")
+    # door plane
+    c.setStrokeColor(LINE)
+    c.setLineWidth(2.2)
+    c.line(mx0, my, mx1, my)
+    # hinge (red) + lock side markers
+    hx = mx0 if hinge_left else mx1
+    lx = mx1 if hinge_left else mx0
+    c.setFillColor(RED)
+    c.circle(hx, my, 3.2, fill=1, stroke=0)
+    c.setFont("Helvetica-Bold", 6)
+    c.setFillColor(RED)
+    c.drawCentredString(hx, my + 8, "charnières")
+    c.setFillColor(NAVY_LIGHT)
+    c.drawCentredString(lx, my + 8, "serrure")
+    # inswing arrow (ext → int)
+    c.setStrokeColor(NAVY_LIGHT)
+    c.setLineWidth(1.2)
+    c.line(midx, my - 6, midx, my - 20)
+    _arrow(c, midx, my - 20, 0, -1, 4.5)
+    c.setFont("Helvetica-Oblique", 6)
+    c.setFillColor(TEXT_MUTED)
+    c.drawCentredString(midx, py + 6, "La porte ouvre vers l'intérieur")
+    c.restoreState()
+
+
+def _detail_page_for_door(c, plan, door, kind, page_no):
+    tag = door.get("tag") or f"Porte {page_no}"
+    series = door.get("series") or "AT1000"
+    config = "Paire de portes" if door.get("config") == "pair" else "Porte simple"
+    handing = (door.get("handing") or "MD").upper()
+    glz = "25,4 mm" if _glz_key(door) == "25" else "6 mm"
+    label = "Détail en plan" if kind == "plan" else "Détail en coupe"
+    code = "300" if kind == "plan" else "400"
+    _page_frame(c, plan, f"{tag} — {label}", f"{code} · {tag}")
 
     c.setFillColor(TEXT_MUTED)
     c.setFont("Helvetica-Oblique", 7.5)
     c.drawString(20, H - 60,
-                 f"Détail standard Portech — série {primary} · cotes en mm [pouces].")
+                 f"{series} · {config} · vitrage {glz} · Main {handing}  ·  "
+                 f"cotes en mm [pouces].")
 
-    ok = _embed_detail(c, path, (20, 38, W - 20, H - 66))
-    if not ok:
+    path = _resolve_detail_image(kind, door)
+    place = _embed_detail(c, path, (20, 40, W - 20, H - 66)) if path else None
+    if not place:
+        c.setFillColor(RED)
+        c.setFont("Helvetica", 9)
+        c.drawCentredString(W / 2, H / 2,
+                            "Détail indisponible pour ce type de porte.")
+        c.showPage()
+        return
+    _mask_ref_titleblock(c, place)
+    _orientation_panel(c, place, door)
+    c.showPage()
+
+
+def _anchor_page(c, plan, page_no):
+    _page_frame(c, plan, "Ancrages", "500")
+    doors = plan.get("doors") or []
+    primary = (doors[0].get("series") if doors else "AT1000") or "AT1000"
+    fam = "ATi" if _series_key(primary).startswith("ATI") else "AT"
+    path = os.path.join(DETAIL_DIR, ANCHOR_MAP[fam])
+    c.setFillColor(TEXT_MUTED)
+    c.setFont("Helvetica-Oblique", 7.5)
+    c.drawString(20, H - 60,
+                 f"Détail d'ancrage standard Portech — série {primary}.")
+    place = _embed_detail(c, path, (20, 40, W - 20, H - 66))
+    if not place:
         c.setFillColor(RED)
         c.setFont("Helvetica", 9)
         c.drawCentredString(W / 2, H / 2, "Détail indisponible.")
@@ -1431,11 +1558,13 @@ def render_production_plan_pdf(plan: dict) -> bytes:
         _elevation_page(c, plan, door, i)
 
     if plan.get("include_plan_details", True):
-        _detail_page(c, plan, "plan", 300)
+        for i, door in enumerate(doors, start=1):
+            _detail_page_for_door(c, plan, door, "plan", i)
     if plan.get("include_section_details", True):
-        _detail_page(c, plan, "section", 400)
+        for i, door in enumerate(doors, start=1):
+            _detail_page_for_door(c, plan, door, "section", i)
     if plan.get("include_anchors", True):
-        _detail_page(c, plan, "anchor", 500)
+        _anchor_page(c, plan, 500)
 
     c.save()
     buf.seek(0)
