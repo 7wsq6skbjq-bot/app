@@ -1,6 +1,14 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, détails en plan orientés par main)
+- **Détail en plan orienté selon la main (portes simples)** : on utilise le dessin EXACT fourni par le client (feuilles A.T.), désormais nettoyé de tout texte/cotes (bandes de cotes, notes, blocs-titres, « PLAN », cotes de profondeur, note 2,4). MD/MDR → feuille telle quelle (charnières à gauche) ; MG/MGR → feuille **miroir** (charnières à droite) — comme le texte est retiré avant le miroir, aucune cote n'apparaît à l'envers.
+  - Variantes générées dans `ref/` : `plan_*_simple_*.png` (nettoyées, charn. gauche) + `plan_*_simple_*_mg.png` (miroir, charn. droite). `_resolve_detail_image(kind, door, mirrored)` choisit la variante miroir pour les simples MG/MGR.
+  - Les **paires** et les **coupes** restent sur la feuille complète cotée (symétriques / pas de problème de main).
+  - Résidu connu : quelques minuscules traits de cote (stubs) subsistent près des profilés (impossible de les retirer sans toucher au dessin) — plus aucun texte.
+  - La tentative de redessin vectoriel a été ABANDONNÉE (le client exige son dessin exact, pas une recréation).
+
+
 ## Changelog — 2026-06 (fork, suite)
 - **Détails en plan & en coupe auto-générés (vrais dessins A.T.)** : les PDF de référence du client (Plans 13 p. + Coupes 7 p.) ont été rasterisés par combinaison **série × simple/paire × vitrage (6,35 / 25,4 mm)** dans `backend/assets/production_details/ref/`. À la génération du dessin de production, quand « détails en plan » et/ou « détails en coupe » sont cochés, la **bonne feuille est auto-sélectionnée pour CHAQUE porte** (`_resolve_detail_image`), le bloc-titre projet 20308 d'origine est masqué, et un **panneau ORIENTATION** est estampillé : EXTÉRIEUR (haut) / INTÉRIEUR (bas, sens d'ouverture), côté charnières/serrure selon la main (MD/MGR → charnières à gauche ; MG/MDR → à droite). Une page de détail par porte. Fichiers : `erp_pdf_production.py` (`_resolve_detail_image`, `_orientation_panel`, `_detail_page_for_door`, `_anchor_page`).
   - LIMITE CONNUE : les PDF de référence n'ont pas de feuille ATi (isolée) en verre 6 mm → pour une porte isolée commandée en 6 mm, on utilise la feuille ATi 25,4 mm (correcte pour la série / bris thermique, mais montre le vitrage 25,4). À remplacer si le client fournit les feuilles ATi 6 mm.

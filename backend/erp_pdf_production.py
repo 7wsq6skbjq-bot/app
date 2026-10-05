@@ -1374,10 +1374,12 @@ def _glz_key(door):
     return "25" if _glass_thickness_mm(door) >= 20 else "6"
 
 
-def _resolve_detail_image(kind, door):
+def _resolve_detail_image(kind, door, mirrored=False):
     """Best-matching reference PNG for a door, or None. Falls back on glazing
     when an exact sheet is missing (ex. porte isolée commandée avec verre
-    6 mm → feuille ATi 25 mm, correcte pour la série / bris thermique)."""
+    6 mm → feuille ATi 25 mm, correcte pour la série / bris thermique).
+    When `mirrored` is set (single door, left hand) the horizontally-flipped
+    variant (charnières à droite) is preferred."""
     s = _series_key(door.get("series")).lower()  # at1000 / ati1000 / at2000 / ati2000
     glz = _glz_key(door)
     config = "pair" if door.get("config") == "pair" else "simple"
@@ -1389,6 +1391,10 @@ def _resolve_detail_image(kind, door):
     else:  # coupe sheets are not split by config
         cands = [f"coupe_{s}_{glz}", f"coupe_{s}_25", f"coupe_{s}_6"]
     for name in cands:
+        if mirrored:
+            pm = os.path.join(REF_DIR, name + "_mg.png")
+            if os.path.exists(pm):
+                return pm
         p = os.path.join(REF_DIR, name + ".png")
         if os.path.exists(p):
             return p
@@ -1434,7 +1440,7 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
     series = door.get("series") or "AT1000"
     config = "Paire de portes" if door.get("config") == "pair" else "Porte simple"
     handing = (door.get("handing") or "MD").upper()
-    hinge_side = "gauche" if handing in ("MD", "MGR") else "droite"
+    hinge_side = "gauche" if handing in ("MD", "MDR") else "droite"
     swing = "INTÉRIEUR" if handing in ("MD", "MG") else "EXTÉRIEUR"
     glz = "25,4 mm" if _glz_key(door) == "25" else "6 mm"
     label = "Détail en plan" if kind == "plan" else "Détail en coupe"
@@ -1448,7 +1454,11 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
                  f"ouvrant vers l'{swing}, charnières à {hinge_side}  ·  "
                  f"cotes en mm [pouces].")
 
-    path = _resolve_detail_image(kind, door)
+    # SINGLE door plan with a left-hand (MG/MGR) → use the mirrored sheet so
+    # the hinge side shows on the right (exact drawing, just flipped).
+    mirrored = (kind == "plan" and door.get("config") != "pair"
+                and handing in ("MG", "MGR"))
+    path = _resolve_detail_image(kind, door, mirrored)
     place = _embed_detail(c, path, (20, 40, W - 20, H - 66)) if path else None
     if not place:
         c.setFillColor(RED)
@@ -1457,7 +1467,8 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
                             "Détail indisponible pour ce type de porte.")
         c.showPage()
         return
-    _mask_ref_titleblock(c, place)
+    if not mirrored:
+        _mask_ref_titleblock(c, place)
     c.showPage()
 
 
