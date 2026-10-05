@@ -622,3 +622,12 @@ User language: **French**.
 ## 2026-10-05 — Note "Miroite et renverse" : regle mise a jour
 - La note sapplique desormais aux portes MD ET MG (pas MDR/MGR), toutes series (AT1000/AT2000), vue en plan (300) uniquement.
 - Condition: kind==plan and handing in (MD, MG). Verifie par rendu AT2000 MD.
+
+## 2026-10-05 — Dessins 11x17, pleine largeur, cartouche remplace celui du dessin
+- PDF production passe en 11x17 (landscape TABLOID, 1224x792) dans erp_pdf_production.py (W,H + canvas).
+- Pagination detail corrigee: code = 300/400 + (page_no-1) => 300,301 / 400,401.
+- Pages detail (plan/coupe): dessin embed pleine page (24,26,W-24,H-20); _mask_ref_titleblock masque le bloc projet bas-droite + bloc SERIES haut-droite, redessine un cadre complet et renvoie la box ou notre cartouche est dessine (remplace celui du dessin). Bandeau rouge place sur zone SERIES masquee.
+- _draw_cartouche accepte box=(bx,by,cw,ch) et sadapte pour remplir la zone.
+- Elevation: largeur zone dessin = W*0.56, colonne droite recalculee; note VUE INTERIEUR (pastille) sur portes MD/MG seulement.
+- Page ancrage 500: mise en page simple (reserve bande droite + cartouche par defaut), pas de masque.
+- Verifie par rendu (AT2000 pair MDR, AT1000 simple MD, coupe, ancrage).

@@ -20,7 +20,7 @@ from datetime import datetime
 from fractions import Fraction
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import LETTER, landscape
+from reportlab.lib.pagesizes import LETTER, TABLOID, landscape
 from reportlab.pdfgen import canvas as canvas_mod
 
 from at_profile_library import PROFILES as AL_PROFILES
@@ -96,7 +96,7 @@ SERIES_SPECS = {
     },
 }
 
-W, H = landscape(LETTER)          # 792 x 612 pt
+W, H = landscape(TABLOID)         # 1224 x 792 pt (11x17)
 
 # Default aluminium profile per element for each series (codes from
 # at_profile_library.PROFILES — the single source of truth for dimensions).
@@ -854,7 +854,8 @@ def _elevation_page(c, plan, door, page_no):
                  f"   ·   Main : {(door.get('handing') or 'MD').upper()}")
 
     # ── drawing area (left) ──
-    ax0, ay0, ax1, ay1 = 40, 46, 430, H - 78
+    ax0, ay0, ax1, ay1 = 40, 46, int(W * 0.56), H - 78
+    _handing0 = (door.get("handing") or "MD").upper()
     try:
         rw = float(door.get("opening_width_in") or 36)
         rh = float(door.get("opening_height_in") or 84)
@@ -1236,8 +1237,23 @@ def _elevation_page(c, plan, door, page_no):
     c.setFont("Helvetica-Bold", 10)
     c.drawCentredString((ox + dw / 2), oy - 20, f"Élévation {tag}")
 
+    # Grosse note "VUE INTÉRIEUR" sur l'élévation (portes MD / MG seulement)
+    if _handing0 in ("MD", "MG"):
+        c.saveState()
+        nw, nh = 156, 26
+        ncx = ox + dw / 2
+        ny = oy + dh - nh - 14
+        c.setFillColor(colors.white)
+        c.setStrokeColor(NAVY)
+        c.setLineWidth(1.3)
+        c.roundRect(ncx - nw / 2, ny, nw, nh, 5, fill=1, stroke=1)
+        c.setFillColor(NAVY)
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(ncx, ny + 8, "VUE INTÉRIEUR")
+        c.restoreState()
+
     # ── right column : specs + hardware ──
-    rx, rw_col = 448, W - 448 - 22
+    rx, rw_col = ax1 + 18, W - (ax1 + 18) - 22
     ry = H - 62
 
     def _prow(label, code):
@@ -1434,14 +1450,29 @@ def _embed_detail(c, path, box):
 
 
 def _mask_ref_titleblock(c, place):
-    """Cover the reference sheet's bottom-right title block (projet 20308 /
-    watermark MODEL) with a clean white panel — the top-right série block and
-    the drawing stay visible."""
+    """Cover the reference sheet's embedded title blocks (bottom-right project
+    block + top-right 'SERIES … DETAILS' block) with white, redraw a clean full
+    frame (encadré pleine largeur) and return the bottom-right box
+    (bx, by, cw, ch) where our own cartouche must be drawn to replace the
+    drawing's cartouche."""
     dx, dy, dw, dh = place
+    c.saveState()
     c.setFillColor(colors.white)
     c.setStrokeColor(colors.white)
-    c.rect(dx + dw * 0.785, dy + dh * 0.03, dw * 0.215 + 1, dh * 0.49,
+    # bottom-right project title block
+    c.rect(dx + dw * 0.781, dy + dh * 0.018, dw * 0.182, dh * 0.452,
            fill=1, stroke=1)
+    # top-right 'AT2000 SERIES … DOOR DETAILS' block
+    c.rect(dx + dw * 0.700, dy + dh * 0.788, dw * 0.263, dh * 0.185,
+           fill=1, stroke=1)
+    # redraw a clean, full-width frame around the drawing
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.black)
+    c.setLineWidth(2.2)
+    c.rect(dx + dw * 0.044, dy + dh * 0.032, dw * 0.914, dh * 0.920,
+           fill=0, stroke=1)
+    c.restoreState()
+    return (dx + dw * 0.786, dy + dh * 0.034, dw * 0.172, dh * 0.410)
 
 
 def _date_fr_short(iso) -> str:
@@ -1454,11 +1485,14 @@ def _date_fr_short(iso) -> str:
         return _date_fr(iso)
 
 
-def _prod_banner(c, plan):
-    """Red PRODUCTION banner, top-right (aligned with the cartouche column)."""
+def _prod_banner(c, plan, bx=None, by=None):
+    """Red PRODUCTION banner. Defaults to the page's top-right corner; a custom
+    (bx, by) is used to drop it over the drawing's masked top-right block."""
     bw, bh = 182, 22
-    bx = (W - 24) - bw
-    by = H - 72
+    if bx is None:
+        bx = (W - 24) - bw
+    if by is None:
+        by = H - 72
     c.saveState()
     c.setFillColor(RED)
     c.rect(bx, by, bw, bh, fill=1, stroke=0)
@@ -1481,17 +1515,11 @@ def _detail_frame(c, footer):
     c.restoreState()
 
 
-def _draw_cartouche(c, plan, desc, page_code, repere=None):
-    """Vertical Portech title block anchored to the sheet's right margin
-    (Maupas style): navy header, labelled rows, big page number. In anonymous
-    mode the PORTECH header band is omitted (client/project data kept)."""
+def _draw_cartouche(c, plan, desc, page_code, repere=None, box=None):
+    """Portech title block (Maupas style). When `box`=(bx,by,cw,ch) is given the
+    block is laid out to fill that box (used to replace the reference drawing's
+    own title block). In anonymous mode the PORTECH header band is omitted."""
     anon = bool(plan.get("anonymous"))
-    cw = 150
-    bx = (W - 24) - cw
-    by = 46
-    H_HDR, H_ROW, H_PAGE = 34, 29, 32
-    if anon:
-        H_HDR = 0
     rows = [
         ("CLIENT", plan.get("client_name") or "—"),
         ("DATE", _date_fr(plan.get("date"))),
@@ -1501,8 +1529,20 @@ def _draw_cartouche(c, plan, desc, page_code, repere=None):
         ("DESCRIPTION", desc),
         ("REPÈRE", repere or "—"),
     ]
-    ch = H_HDR + H_ROW * len(rows) + H_PAGE
+    n = len(rows)
+    if box:
+        bx, by, cw, ch = box
+    else:
+        cw = 150
+        bx = (W - 24) - cw
+        by = 46
+        ch = (0 if anon else 34) + 29 * n + 32
+    H_PAGE = max(28, min(42, ch * 0.13))
+    H_HDR = 0 if anon else max(28, min(40, ch * 0.13))
+    H_ROW = (ch - H_HDR - H_PAGE) / n
     top = by + ch
+    lab_sz = 5.6 if H_ROW < 26 else 6.6
+    val_sz = 8.0 if H_ROW < 26 else 9.5
 
     def fit(t, font, size, mw):
         t = str(t)
@@ -1521,17 +1561,19 @@ def _draw_cartouche(c, plan, desc, page_code, repere=None):
     if not anon:
         c.setFillColor(NAVY)
         c.rect(bx, y, cw, H_HDR, fill=1, stroke=0)
+        ms = min(22, H_HDR - 12)
         if os.path.exists(MARK_WHITE):
             try:
-                c.drawImage(MARK_WHITE, bx + 6, y + 8, width=18, height=18, mask="auto")
+                c.drawImage(MARK_WHITE, bx + 7, y + (H_HDR - ms) / 2,
+                            width=ms, height=ms, mask="auto")
             except Exception:
                 pass
         c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(bx + 29, y + 17, "PORTECH")
-        c.setFont("Helvetica", 5.6)
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(bx + 9 + ms + 4, y + H_HDR / 2 - 1, "PORTECH")
+        c.setFont("Helvetica", 5.8)
         c.setFillColor(colors.HexColor("#9bb6d8"))
-        c.drawString(bx + 29, y + 7, "Portes et quincaillerie")
+        c.drawString(bx + 9 + ms + 4, y + H_HDR / 2 - 11, "Portes et quincaillerie")
 
     # labelled rows
     CREAM = colors.HexColor("#f4f1e6")
@@ -1543,21 +1585,21 @@ def _draw_cartouche(c, plan, desc, page_code, repere=None):
         c.setLineWidth(0.5)
         c.line(bx, y + H_ROW, bx + cw, y + H_ROW)
         c.setFillColor(TEXT_MUTED)
-        c.setFont("Helvetica", 5.6)
-        c.drawString(bx + 7, y + H_ROW - 9, lab)
+        c.setFont("Helvetica", lab_sz)
+        c.drawString(bx + 8, y + H_ROW - lab_sz - 4, lab)
         c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 8)
-        c.drawString(bx + 7, y + 5, fit(val, "Helvetica-Bold", 8, cw - 14))
+        c.setFont("Helvetica-Bold", val_sz)
+        c.drawString(bx + 8, y + 5, fit(val, "Helvetica-Bold", val_sz, cw - 16))
 
     # page band
     y -= H_PAGE
     c.setFillColor(NAVY)
     c.rect(bx, y, cw, H_PAGE, fill=1, stroke=0)
     c.setFillColor(colors.HexColor("#9bb6d8"))
-    c.setFont("Helvetica", 6)
-    c.drawString(bx + 7, y + H_PAGE - 11, "PAGE")
+    c.setFont("Helvetica", 6.5)
+    c.drawString(bx + 8, y + H_PAGE - 12, "PAGE")
     c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 20)
+    c.setFont("Helvetica-Bold", min(28, H_PAGE * 0.72))
     c.drawRightString(bx + cw - 10, y + 7, str(page_code))
     c.restoreState()
 
@@ -1572,30 +1614,40 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
     swing = "intérieur" if handing in ("MD", "MG") else "extérieur"
     glz = "25,4 mm" if _glz_key(door) == "25" else "6,35 mm"
     label = "Détail en plan" if kind == "plan" else "Détail en coupe"
-    code = "300" if kind == "plan" else "400"
+    code = str((300 if kind == "plan" else 400) + (page_no - 1))
     real = "plan réel" if kind == "plan" else "coupe réelle"
     footer = (f"{tag}  ·  {config}  ·  {series} {iso}  ·  vitrage {glz}  ·  "
               f"Main {handing} (ouvrant {swing})  ·  {real}")
 
-    _detail_frame(c, footer)
-    _prod_banner(c, plan)
+    _handing0 = handing  # already uppercased above
 
     path = _resolve_detail_image(kind, door, mirrored=False)
-    # Dessin décalé vers la gauche : bande droite réservée au bandeau + cartouche.
-    place = _embed_detail(c, path, (36, 48, W - 186, H - 44)) if path else None
+    # Dessin en PLEINE LARGEUR : l'encadré du dessin occupe presque toute la page.
+    place = _embed_detail(c, path, (24, 26, W - 24, H - 20)) if path else None
     if not place:
         c.setFillColor(RED)
         c.setFont("Helvetica", 9)
-        c.drawCentredString((W - 150) / 2, H / 2,
+        c.drawCentredString(W / 2, H / 2,
                             "Détail indisponible pour ce type de porte.")
+        cart_box = None
+    else:
+        # Masque le cartouche intégré du dessin et renvoie la zone où dessiner le nôtre.
+        cart_box = _mask_ref_titleblock(c, place)
+
+    # Bandeau rouge PRODUCTION (par-dessus l'ancien bloc série, en haut à droite)
+    if place:
+        dx, dy, dw, dh = place
+        _prod_banner(c, plan, dx + dw * 0.952 - 182, dy + dh * 0.905)
+    else:
+        _prod_banner(c, plan)
 
     # Note posée sur le dessin (vue en plan uniquement), pour les portes MD et
     # MG (pas MDR/MGR) : indique que le détail doit être lu miroité et renversé.
-    if place and kind == "plan" and handing in ("MD", "MG"):
+    if place and kind == "plan" and _handing0 in ("MD", "MG"):
         dx, dy, dw, dh = place
-        nw, nh = 168, 24
+        nw, nh = 170, 24
         nx = dx + dw / 2 - nw / 2
-        ny = dy + dh - nh - 4
+        ny = dy + dh - nh - 10
         c.saveState()
         c.setFillColor(colors.white)
         c.setStrokeColor(RED)
@@ -1606,7 +1658,13 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
         c.drawCentredString(nx + nw / 2, ny + 8.5, "Miroité et renversé")
         c.restoreState()
 
-    _draw_cartouche(c, plan, label, code, tag)
+    # Notre cartouche, placé à la place du cartouche d'origine du dessin
+    _draw_cartouche(c, plan, label, code, tag, box=cart_box)
+
+    # Pied de page discret sous le dessin
+    c.setFillColor(TEXT_MUTED)
+    c.setFont("Helvetica", 7)
+    c.drawString(22, 11, footer)
     c.showPage()
 
 
@@ -1618,21 +1676,24 @@ def _anchor_page(c, plan, page_no):
     footer = (f"Détail d'ancrage standard  ·  série {primary}"
               if plan.get("anonymous")
               else f"Détail d'ancrage standard Portech  ·  série {primary}")
-    _detail_frame(c, footer)
     _prod_banner(c, plan)
-    place = _embed_detail(c, path, (36, 48, W - 186, H - 44))
+    # drawing reserves a right band for our cartouche (no embedded title block here)
+    place = _embed_detail(c, path, (40, 48, W - 210, H - 48))
     if not place:
         c.setFillColor(RED)
         c.setFont("Helvetica", 9)
-        c.drawCentredString((W - 150) / 2, H / 2, "Détail indisponible.")
+        c.drawCentredString((W - 180) / 2, H / 2, "Détail indisponible.")
     _draw_cartouche(c, plan, "Détail d'ancrage", "500", primary)
+    c.setFillColor(TEXT_MUTED)
+    c.setFont("Helvetica", 7)
+    c.drawString(22, 11, footer)
     c.showPage()
 
 
 # ── public entry point ─────────────────────────────────────────────
 def render_production_plan_pdf(plan: dict) -> bytes:
     buf = io.BytesIO()
-    c = canvas_mod.Canvas(buf, pagesize=landscape(LETTER))
+    c = canvas_mod.Canvas(buf, pagesize=landscape(TABLOID))
     title = (f"Dessins de production {plan.get('plan_number') or ''}"
              if plan.get("anonymous")
              else f"Portech — Dessins de production {plan.get('plan_number') or ''}")
