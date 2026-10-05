@@ -1435,6 +1435,7 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
     config = "Paire de portes" if door.get("config") == "pair" else "Porte simple"
     handing = (door.get("handing") or "MD").upper()
     hinge_side = "gauche" if handing in ("MD", "MGR") else "droite"
+    swing = "INTÉRIEUR" if handing in ("MD", "MG") else "EXTÉRIEUR"
     glz = "25,4 mm" if _glz_key(door) == "25" else "6 mm"
     label = "Détail en plan" if kind == "plan" else "Détail en coupe"
     code = "300" if kind == "plan" else "400"
@@ -1444,7 +1445,7 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
     c.setFont("Helvetica-Oblique", 7.5)
     c.drawString(20, H - 60,
                  f"{series} · {config} · vitrage {glz} · Main {handing} — "
-                 f"ouvre vers l'INTÉRIEUR, charnières à {hinge_side}  ·  "
+                 f"ouvrant vers l'{swing}, charnières à {hinge_side}  ·  "
                  f"cotes en mm [pouces].")
 
     path = _resolve_detail_image(kind, door)
