@@ -1560,7 +1560,15 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
                  f"ouvrant vers l'{swing}  ·  cotes en mm [pouces].")
 
     path = _resolve_detail_image(kind, door, mirrored=False)
-    place = _embed_detail(c, path, (20, 40, W - 20, H - 66)) if path else None
+    # Pour la coupe (page 400), on réserve une bande à droite et on décale le
+    # dessin vers la gauche afin que le cartouche ne cache plus les détails.
+    if path and kind != "plan":
+        reserve = 236
+        place = _embed_detail(c, path, (20, 40, W - 20 - reserve, H - 66))
+        cart_place = (20, 40, W - 40, H - 66) if place else None
+    else:
+        place = _embed_detail(c, path, (20, 40, W - 20, H - 66)) if path else None
+        cart_place = place
     if not place:
         c.setFillColor(RED)
         c.setFont("Helvetica", 9)
@@ -1568,7 +1576,7 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
                             "Détail indisponible pour ce type de porte.")
         c.showPage()
         return
-    _draw_cartouche(c, place, plan, label, code, tag)
+    _draw_cartouche(c, cart_place, plan, label, code, tag)
     c.showPage()
 
 
