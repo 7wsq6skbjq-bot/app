@@ -1429,77 +1429,12 @@ def _mask_ref_titleblock(c, place):
            fill=1, stroke=1)
 
 
-def _handing_label(handing):
-    return {"MD": "Main droite (MD)", "MG": "Main gauche (MG)",
-            "MDR": "Main droite inversée (MDR)",
-            "MGR": "Main gauche inversée (MGR)"}.get(
-        (handing or "MD").upper(), (handing or "MD").upper())
-
-
-def _orientation_panel(c, place, door):
-    """Self-contained INTÉRIEUR/EXTÉRIEUR + hinge-side panel, drawn in the empty
-    top-left of the reference sheet. MD/MGR → charnières à gauche (même
-    convention que l'élévation). La porte ouvre toujours vers l'intérieur."""
-    dx, dy, dw, dh = place
-    handing = (door.get("handing") or "MD").upper()
-    hinge_left = handing in ("MD", "MGR")
-    px = dx + dw * 0.045
-    pw = max(dw * 0.30, 168)
-    ph = 120
-    py = dy + dh - ph - dh * 0.05
-    c.saveState()
-    c.setFillColor(colors.white)
-    c.setStrokeColor(NAVY)
-    c.setLineWidth(1)
-    c.rect(px, py, pw, ph, fill=1, stroke=1)
-    c.setFillColor(NAVY)
-    c.rect(px, py + ph - 16, pw, 16, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 8)
-    c.drawString(px + 6, py + ph - 11.5, "ORIENTATION")
-    c.setFont("Helvetica", 6.5)
-    c.setFillColor(colors.HexColor("#9bb6d8"))
-    c.drawRightString(px + pw - 6, py + ph - 11.5, _handing_label(handing))
-
-    mx0, mx1 = px + 24, px + pw - 24
-    midx = (mx0 + mx1) / 2
-    my = py + 52
-    # EXTÉRIEUR (top) / INTÉRIEUR (bottom) with an inswing arrow
-    c.setFont("Helvetica-Bold", 8)
-    c.setFillColor(NAVY)
-    c.drawCentredString(midx, my + 24, "EXTÉRIEUR")
-    c.setFillColor(NAVY_LIGHT)
-    c.drawCentredString(midx, my - 30, "INTÉRIEUR")
-    # door plane
-    c.setStrokeColor(LINE)
-    c.setLineWidth(2.2)
-    c.line(mx0, my, mx1, my)
-    # hinge (red) + lock side markers
-    hx = mx0 if hinge_left else mx1
-    lx = mx1 if hinge_left else mx0
-    c.setFillColor(RED)
-    c.circle(hx, my, 3.2, fill=1, stroke=0)
-    c.setFont("Helvetica-Bold", 6)
-    c.setFillColor(RED)
-    c.drawCentredString(hx, my + 8, "charnières")
-    c.setFillColor(NAVY_LIGHT)
-    c.drawCentredString(lx, my + 8, "serrure")
-    # inswing arrow (ext → int)
-    c.setStrokeColor(NAVY_LIGHT)
-    c.setLineWidth(1.2)
-    c.line(midx, my - 6, midx, my - 20)
-    _arrow(c, midx, my - 20, 0, -1, 4.5)
-    c.setFont("Helvetica-Oblique", 6)
-    c.setFillColor(TEXT_MUTED)
-    c.drawCentredString(midx, py + 6, "La porte ouvre vers l'intérieur")
-    c.restoreState()
-
-
 def _detail_page_for_door(c, plan, door, kind, page_no):
     tag = door.get("tag") or f"Porte {page_no}"
     series = door.get("series") or "AT1000"
     config = "Paire de portes" if door.get("config") == "pair" else "Porte simple"
     handing = (door.get("handing") or "MD").upper()
+    hinge_side = "gauche" if handing in ("MD", "MGR") else "droite"
     glz = "25,4 mm" if _glz_key(door) == "25" else "6 mm"
     label = "Détail en plan" if kind == "plan" else "Détail en coupe"
     code = "300" if kind == "plan" else "400"
@@ -1508,7 +1443,8 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
     c.setFillColor(TEXT_MUTED)
     c.setFont("Helvetica-Oblique", 7.5)
     c.drawString(20, H - 60,
-                 f"{series} · {config} · vitrage {glz} · Main {handing}  ·  "
+                 f"{series} · {config} · vitrage {glz} · Main {handing} — "
+                 f"ouvre vers l'INTÉRIEUR, charnières à {hinge_side}  ·  "
                  f"cotes en mm [pouces].")
 
     path = _resolve_detail_image(kind, door)
@@ -1521,7 +1457,6 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
         c.showPage()
         return
     _mask_ref_titleblock(c, place)
-    _orientation_panel(c, place, door)
     c.showPage()
 
 
