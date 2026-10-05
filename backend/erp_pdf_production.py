@@ -1435,168 +1435,163 @@ def _mask_ref_titleblock(c, place):
            fill=1, stroke=1)
 
 
-def _draw_cartouche(c, place, plan, desc, page_code, tag=None):
-    """Auto-generated Portech title block (étampe) in the AT-fabrication tabular
-    style, drawn over the reference sheet's bottom-right cartouche."""
-    dx, dy, dw, dh = place
-    cw = min(dw * 0.30, 226)
-    H_HDR, H_CLI, H_DVH, H_DVR, H_PRJ, H_NUM, H_DESC = 30, 23, 11, 13, 23, 23, 42
-    ch = H_HDR + H_CLI + H_DVH + 2 * H_DVR + H_PRJ + H_NUM + H_DESC
-    bx = dx + dw - cw - 2
-    by = dy + 2
-    y = by + ch  # top
+def _date_fr_short(iso) -> str:
+    _abbr = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juill.",
+             "août", "sept.", "oct.", "nov.", "déc."]
+    try:
+        d = datetime.strptime(str(iso)[:10], "%Y-%m-%d")
+        return f"{d.day} {_abbr[d.month - 1]} {d.year}"
+    except Exception:
+        return _date_fr(iso)
 
+
+def _prod_banner(c, plan):
+    """Red PRODUCTION banner, top-right (aligned with the cartouche column)."""
+    bw, bh = 182, 22
+    bx = (W - 24) - bw
+    by = H - 72
+    c.saveState()
+    c.setFillColor(RED)
+    c.rect(bx, by, bw, bh, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 8.5)
+    c.drawCentredString(bx + bw / 2, by + 7,
+                        f"PRODUCTION   ·   {_date_fr_short(plan.get('date'))}")
+    c.restoreState()
+
+
+def _detail_frame(c, footer):
+    """Thin black rounded page border + a discreet footer line (Maupas style)."""
+    c.saveState()
+    c.setStrokeColor(colors.black)
+    c.setLineWidth(1.3)
+    c.roundRect(18, 28, W - 36, H - 52, 8, fill=0, stroke=1)
+    c.setFillColor(TEXT_MUTED)
+    c.setFont("Helvetica", 7)
+    c.drawString(22, 15, footer)
+    c.restoreState()
+
+
+def _draw_cartouche(c, plan, desc, page_code, repere=None):
+    """Vertical Portech title block anchored to the sheet's right margin
+    (Maupas style): navy header, labelled rows, big page number."""
+    cw = 150
+    bx = (W - 24) - cw
+    by = 46
+    H_HDR, H_ROW, H_PAGE = 34, 29, 32
+    rows = [
+        ("CLIENT", plan.get("client_name") or "—"),
+        ("DATE", _date_fr(plan.get("date"))),
+        ("STATUT", "POUR PRODUCTION"),
+        ("PROJET", plan.get("project_name") or "—"),
+        ("# PROJET", str(plan.get("project_number") or "—")),
+        ("DESCRIPTION", desc),
+        ("REPÈRE", repere or "—"),
+    ]
+    ch = H_HDR + H_ROW * len(rows) + H_PAGE
+    top = by + ch
+
+    def fit(t, font, size, mw):
+        t = str(t)
+        while c.stringWidth(t, font, size) > mw and len(t) > 2:
+            t = t[:-2]
+        return t
+
+    c.saveState()
     c.setFillColor(colors.white)
     c.setStrokeColor(NAVY)
     c.setLineWidth(1.1)
     c.rect(bx, by, cw, ch, fill=1, stroke=1)
 
-    def hline(yy):
-        c.setStrokeColor(NAVY)
-        c.setLineWidth(0.6)
-        c.line(bx, yy, bx + cw, yy)
-
-    def lab(x, yy, t):
-        c.setFont("Helvetica-Bold", 5.2)
-        c.setFillColor(TEXT_MUTED)
-        c.drawString(x + 3, yy - 6.5, t)
-
-    def val(x, yy, t, size=8.2, mw=None):
-        t = str(t)
-        mw = mw or (cw - 10)
-        c.setFont("Helvetica", size)
-        while c.stringWidth(t, "Helvetica", size) > mw and len(t) > 2:
-            t = t[:-2]
-        c.setFillColor(NAVY)
-        c.drawString(x + 4, yy - 16.5, t)
-
-    # header band
+    # header
+    y = top - H_HDR
     c.setFillColor(NAVY)
-    c.rect(bx, y - H_HDR, cw, H_HDR, fill=1, stroke=0)
+    c.rect(bx, y, cw, H_HDR, fill=1, stroke=0)
     if os.path.exists(MARK_WHITE):
         try:
-            c.drawImage(MARK_WHITE, bx + 5, y - H_HDR + 7, width=16, height=16, mask="auto")
+            c.drawImage(MARK_WHITE, bx + 6, y + 8, width=18, height=18, mask="auto")
         except Exception:
             pass
     c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(bx + 27, y - 13, "PORTECH")
-    c.setFont("Helvetica", 5.8)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(bx + 29, y + 17, "PORTECH")
+    c.setFont("Helvetica", 5.6)
     c.setFillColor(colors.HexColor("#9bb6d8"))
-    c.drawString(bx + 27, y - 23, "Portes & quincaillerie commerciales")
-    y -= H_HDR
+    c.drawString(bx + 29, y + 7, "Portes et quincaillerie")
 
-    # CLIENT
-    hline(y)
-    lab(bx, y, "NOM DU CLIENT :")
-    val(bx, y, plan.get("client_name") or "—")
-    y -= H_CLI
-
-    # DATE / VERSION table
-    hline(y)
-    midx = bx + cw * 0.42
-    c.setStrokeColor(NAVY)
-    c.setLineWidth(0.6)
-    c.line(midx, y - H_DVH - 2 * H_DVR, midx, y)
-    c.setFont("Helvetica-Bold", 5.2)
-    c.setFillColor(TEXT_MUTED)
-    c.drawString(bx + 3, y - 7.5, "DATE :")
-    c.drawString(midx + 3, y - 7.5, "VERSION :")
-    y -= H_DVH
-    for dte, ver in ((_date_fr(plan.get("date")), "POUR PRODUCTION"), ("—", "APPROBATION")):
-        hline(y)
-        c.setFont("Helvetica", 6.2)
+    # labelled rows
+    CREAM = colors.HexColor("#f4f1e6")
+    for i, (lab, val) in enumerate(rows):
+        y -= H_ROW
+        c.setFillColor(CREAM if i % 2 == 0 else colors.white)
+        c.rect(bx, y, cw, H_ROW, fill=1, stroke=0)
+        c.setStrokeColor(NAVY_BORDER)
+        c.setLineWidth(0.5)
+        c.line(bx, y + H_ROW, bx + cw, y + H_ROW)
+        c.setFillColor(TEXT_MUTED)
+        c.setFont("Helvetica", 5.6)
+        c.drawString(bx + 7, y + H_ROW - 9, lab)
         c.setFillColor(NAVY)
-        c.drawString(bx + 4, y - 9, dte)
-        c.setFont("Helvetica-Bold", 5.6)
-        c.drawString(midx + 3, y - 9, ver)
-        y -= H_DVR
+        c.setFont("Helvetica-Bold", 8)
+        c.drawString(bx + 7, y + 5, fit(val, "Helvetica-Bold", 8, cw - 14))
 
-    # NOM DU PROJET
-    hline(y)
-    lab(bx, y, "NOM DU PROJET :")
-    val(bx, y, plan.get("project_name") or "—")
-    y -= H_PRJ
-
-    # # DU PROJET
-    hline(y)
-    lab(bx, y, "# DU PROJET :")
-    val(bx, y, "#" + str(plan.get("project_number") or "—"))
-    y -= H_NUM
-
-    # DESCRIPTION | PAGE
-    hline(y)
-    px = bx + cw * 0.62
-    c.setStrokeColor(NAVY)
-    c.setLineWidth(0.6)
-    c.line(px, y - H_DESC, px, y)
-    lab(bx, y, "DESCRIPTION :")
-    c.setFont("Helvetica", 8)
+    # page band
+    y -= H_PAGE
     c.setFillColor(NAVY)
-    c.drawString(bx + 4, y - 17, str(desc))
-    if tag:
-        c.drawString(bx + 4, y - 28, str(tag))
-    lab(px, y, "PAGE :")
-    c.setFont("Helvetica-Bold", 15)
-    c.setFillColor(NAVY)
-    c.drawCentredString((px + bx + cw) / 2, y - 30, str(page_code))
+    c.rect(bx, y, cw, H_PAGE, fill=1, stroke=0)
+    c.setFillColor(colors.HexColor("#9bb6d8"))
+    c.setFont("Helvetica", 6)
+    c.drawString(bx + 7, y + H_PAGE - 11, "PAGE")
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 20)
+    c.drawRightString(bx + cw - 10, y + 7, str(page_code))
+    c.restoreState()
 
 
 def _detail_page_for_door(c, plan, door, kind, page_no):
-    tag = door.get("tag") or f"Porte {page_no}"
+    tag = door.get("tag") or f"P-{page_no:02d}"
     series = door.get("series") or "AT1000"
-    config = "Paire de portes" if door.get("config") == "pair" else "Porte simple"
+    is_pair = door.get("config") == "pair"
+    config = "paire" if is_pair else "simple"
+    iso = "isolée" if _series_key(series).startswith("ATI") else "non isolée"
     handing = (door.get("handing") or "MD").upper()
-    swing = "INTÉRIEUR" if handing in ("MD", "MG") else "EXTÉRIEUR"
-    glz = "25,4 mm" if _glz_key(door) == "25" else "6 mm"
+    swing = "intérieur" if handing in ("MD", "MG") else "extérieur"
+    glz = "25,4 mm" if _glz_key(door) == "25" else "6,35 mm"
     label = "Détail en plan" if kind == "plan" else "Détail en coupe"
     code = "300" if kind == "plan" else "400"
-    _page_frame(c, plan, f"{tag} — {label}", f"{code} · {tag}")
+    real = "plan réel" if kind == "plan" else "coupe réelle"
+    footer = (f"{tag}  ·  {config}  ·  {series} {iso}  ·  vitrage {glz}  ·  "
+              f"Main {handing} (ouvrant {swing})  ·  {real}")
 
-    c.setFillColor(TEXT_MUTED)
-    c.setFont("Helvetica-Oblique", 7.5)
-    c.drawString(20, H - 60,
-                 f"{series} · {config} · vitrage {glz} · Main {handing} — "
-                 f"ouvrant vers l'{swing}  ·  cotes en mm [pouces].")
+    _detail_frame(c, footer)
+    _prod_banner(c, plan)
 
     path = _resolve_detail_image(kind, door, mirrored=False)
-    # Pour la coupe (page 400), on réserve une bande à droite et on décale le
-    # dessin vers la gauche afin que le cartouche ne cache plus les détails.
-    if path and kind != "plan":
-        reserve = 236
-        place = _embed_detail(c, path, (20, 40, W - 20 - reserve, H - 66))
-        cart_place = (20, 40, W - 40, H - 66) if place else None
-    else:
-        place = _embed_detail(c, path, (20, 40, W - 20, H - 66)) if path else None
-        cart_place = place
+    # Dessin décalé vers la gauche : bande droite réservée au bandeau + cartouche.
+    place = _embed_detail(c, path, (36, 48, W - 186, H - 44)) if path else None
     if not place:
         c.setFillColor(RED)
         c.setFont("Helvetica", 9)
-        c.drawCentredString(W / 2, H / 2,
+        c.drawCentredString((W - 150) / 2, H / 2,
                             "Détail indisponible pour ce type de porte.")
-        c.showPage()
-        return
-    _draw_cartouche(c, cart_place, plan, label, code, tag)
+    _draw_cartouche(c, plan, label, code, tag)
     c.showPage()
 
 
 def _anchor_page(c, plan, page_no):
-    _page_frame(c, plan, "Ancrages", "500")
     doors = plan.get("doors") or []
     primary = (doors[0].get("series") if doors else "AT1000") or "AT1000"
     fam = "ATi" if _series_key(primary).startswith("ATI") else "AT"
     path = os.path.join(DETAIL_DIR, ANCHOR_MAP[fam])
-    c.setFillColor(TEXT_MUTED)
-    c.setFont("Helvetica-Oblique", 7.5)
-    c.drawString(20, H - 60,
-                 f"Détail d'ancrage standard Portech — série {primary}.")
-    place = _embed_detail(c, path, (20, 40, W - 20, H - 66))
+    footer = f"Détail d'ancrage standard Portech  ·  série {primary}"
+    _detail_frame(c, footer)
+    _prod_banner(c, plan)
+    place = _embed_detail(c, path, (36, 48, W - 186, H - 44))
     if not place:
         c.setFillColor(RED)
         c.setFont("Helvetica", 9)
-        c.drawCentredString(W / 2, H / 2, "Détail indisponible.")
-    else:
-        _draw_cartouche(c, place, plan, "Ancrages", "500")
+        c.drawCentredString((W - 150) / 2, H / 2, "Détail indisponible.")
+    _draw_cartouche(c, plan, "Détail d'ancrage", "500", primary)
     c.showPage()
 
 

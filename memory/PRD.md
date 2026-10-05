@@ -600,3 +600,12 @@ User language: **French**.
   * BUG CORRIGÉ : prix du menu déroulant catalogue ne s'arrachait pas → onHwDescription tire maintenant part_number+coût+prix (prix = match.price sinon coût×(1+marge%)).
   * PDF (erp_pdf_production) : poignées grossies (grip 4pt, offset 8, plots 2.4/cercles 2.6) ; verrous affleurés TOUJOURS sur vantail inactif (impossible sur actif) ; protège-pêne dessiné APRÈS l'astragale (premier plan) et à 75 %. PDF vérifié 5 pages valides.
   * ⚠️ RESTE À FAIRE (lot 2) : dessiner le CADRE autour de la porte sur l'élévation (gauche/droite/haut ; bas = seuil). Nécessite largeur de profilé de cadre + travail sur les coordonnées de l'élévation. Non fait ce tour.
+
+
+## 2026-10-05 — Refonte cartouche pages de détail (style Maupas)
+- Pages Plan (300/301), Coupe (400/401) et Ancrage (500) refaites dans erp_pdf_production.py pour correspondre au PDF de référence Maupas.
+- Nouveau cartouche vertical ancré à la marge droite: en-tête PORTECH navy + CLIENT/DATE/STATUT(POUR PRODUCTION)/PROJET/# PROJET/DESCRIPTION/REPÈRE(tag porte) + bande PAGE (gros numéro).
+- Bandeau rouge "PRODUCTION · <date>" en haut à droite; cadre noir arrondi; ligne de pied de page descriptive.
+- Dessin de détail décalé vers la gauche (bande droite réservée) => plus aucune superposition cartouche/dessin.
+- Dessins de détail existants (AT1000, etc.) conservés tels quels.
+- Vérifié par rendu PDF (plan réel, pages 300/400/500).
