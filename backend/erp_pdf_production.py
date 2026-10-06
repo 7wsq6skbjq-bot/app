@@ -1410,9 +1410,15 @@ def _resolve_detail_image(kind, door, mirrored=False):
     config = "pair" if door.get("config") == "pair" else "simple"
     other = "simple" if config == "pair" else "pair"
     if kind == "plan":
-        cands = [f"plan_{s}_{config}_{glz}", f"plan_{s}_{config}_25",
-                 f"plan_{s}_{config}_6", f"plan_{s}_{other}_{glz}",
-                 f"plan_{s}_{other}_25"]
+        hand = (door.get("handing") or "MD").lower()
+        cands = []
+        if config == "simple":
+            cands += [f"plan_{s}_simple_{glz}_{hand}",
+                      f"plan_{s}_simple_25_{hand}",
+                      f"plan_{s}_simple_6_{hand}"]
+        cands += [f"plan_{s}_{config}_{glz}", f"plan_{s}_{config}_25",
+                  f"plan_{s}_{config}_6", f"plan_{s}_{other}_{glz}",
+                  f"plan_{s}_{other}_25"]
     else:  # coupe sheets are not split by config
         cands = [f"coupe_{s}_{glz}", f"coupe_{s}_25", f"coupe_{s}_6"]
     for name in cands:
@@ -1449,29 +1455,37 @@ def _embed_detail(c, path, box):
         return None
 
 
-def _mask_ref_titleblock(c, place):
-    """Cover the reference sheet's embedded title blocks (bottom-right project
-    block + top-right 'SERIES … DETAILS' block) with white, redraw a clean frame
-    flush to the image edges (encadré pleine largeur) and return the bottom-right
-    box (bx, by, cw, ch) where our own cartouche replaces the drawing's."""
+def _mask_ref_titleblock(c, place, style="kovo"):
+    """Cover the reference sheet's embedded title block(s) with white, redraw a
+    clean frame flush to the image edges (encadré pleine largeur) and return the
+    bottom-right box (bx, by, cw, ch) where our own cartouche replaces the
+    drawing's. style='kovo' masks the two KOVO blocks (bottom-right project +
+    top-right series). style='simple' masks only the single bottom-right block
+    of the per-hand plan sheets (which keep their top title)."""
     dx, dy, dw, dh = place
     c.saveState()
     c.setFillColor(colors.white)
     c.setStrokeColor(colors.white)
-    # bottom-right project title block
-    c.rect(dx + dw * 0.820, dy + dh * 0.004, dw * 0.178, dh * 0.470,
-           fill=1, stroke=1)
-    # top-right 'SERIES … DOOR DETAILS' block
-    c.rect(dx + dw * 0.728, dy + dh * 0.790, dw * 0.270, dh * 0.206,
-           fill=1, stroke=1)
+    if style == "simple":
+        c.rect(dx + dw * 0.816, dy + dh * 0.010, dw * 0.182, dh * 0.455,
+               fill=1, stroke=1)
+        box = (dx + dw * 0.824, dy + dh * 0.026, dw * 0.168, dh * 0.418)
+    else:
+        # bottom-right project title block
+        c.rect(dx + dw * 0.820, dy + dh * 0.004, dw * 0.178, dh * 0.470,
+               fill=1, stroke=1)
+        # top-right 'SERIES … DOOR DETAILS' block
+        c.rect(dx + dw * 0.728, dy + dh * 0.790, dw * 0.270, dh * 0.206,
+               fill=1, stroke=1)
+        box = (dx + dw * 0.826, dy + dh * 0.014, dw * 0.167, dh * 0.440)
     # redraw a clean frame flush to the image edges
     c.setFillColor(colors.white)
     c.setStrokeColor(colors.black)
     c.setLineWidth(2.2)
-    c.rect(dx + dw * 0.005, dy + dh * 0.007, dw * 0.990, dh * 0.986,
+    c.rect(dx + dw * 0.006, dy + dh * 0.010, dw * 0.988, dh * 0.980,
            fill=0, stroke=1)
     c.restoreState()
-    return (dx + dw * 0.826, dy + dh * 0.014, dw * 0.167, dh * 0.440)
+    return box
 
 
 def _date_fr_short(iso) -> str:
@@ -1621,6 +1635,10 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
     _handing0 = handing  # already uppercased above
 
     path = _resolve_detail_image(kind, door, mirrored=False)
+    # Dessin spécifique à la main (nouvelle banque de plans) ? -> cartouche simple
+    # et pas de note « Miroité » (le dessin est déjà dans le bon sens).
+    hand_specific = bool(path) and os.path.splitext(os.path.basename(path))[0] \
+        .rsplit("_", 1)[-1] in ("md", "mg", "mdr", "mgr")
     # Dessin en PLEINE LARGEUR : l'encadré du dessin occupe presque toute la page.
     place = _embed_detail(c, path, (24, 26, W - 24, H - 20)) if path else None
     if not place:
@@ -1631,18 +1649,22 @@ def _detail_page_for_door(c, plan, door, kind, page_no):
         cart_box = None
     else:
         # Masque le cartouche intégré du dessin et renvoie la zone où dessiner le nôtre.
-        cart_box = _mask_ref_titleblock(c, place)
+        cart_box = _mask_ref_titleblock(c, place,
+                                        style="simple" if hand_specific else "kovo")
 
-    # Bandeau rouge PRODUCTION (par-dessus l'ancien bloc série, en haut à droite)
+    # Bandeau rouge PRODUCTION (haut à droite, dans la zone libérée)
     if place:
         dx, dy, dw, dh = place
-        _prod_banner(c, plan, dx + dw * 0.952 - 182, dy + dh * 0.905)
+        if hand_specific:
+            _prod_banner(c, plan, dx + dw * 0.992 - 182, dy + dh * 0.935)
+        else:
+            _prod_banner(c, plan, dx + dw * 0.952 - 182, dy + dh * 0.905)
     else:
         _prod_banner(c, plan)
 
-    # Note posée sur le dessin (vue en plan uniquement), pour les portes MD et
-    # MG (pas MDR/MGR) : indique que le détail doit être lu miroité et renversé.
-    if place and kind == "plan" and _handing0 in ("MD", "MG"):
+    # Note « Miroité et renversé » : seulement si le dessin n'est PAS spécifique à
+    # la main (ancien gabarit MD unique), vue en plan, portes MD/MG.
+    if place and kind == "plan" and not hand_specific and _handing0 in ("MD", "MG"):
         dx, dy, dw, dh = place
         nw, nh = 170, 24
         nx = dx + dw / 2 - nw / 2

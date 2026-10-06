@@ -638,3 +638,11 @@ User language: **French**.
 - _mask_ref_titleblock recale sur le nouveau gabarit (bloc projet bas-droite + bloc series haut-droite masques, cadre redessine au bord).
 - Page ancrage 500: bande droite elargie (embed (28,56,W-250,H-64)) => le cartouche ne couvre plus le dessin.
 - Verifie par rendu (AT1000 simple MD 300, AT1000 paire MG 301, coupe 400, ancrage 500).
+
+## 2026-10-06 — Dessins de plan par main (MD/MG/MDR/MGR) pour portes simples
+- Banque Cedrick (24 pages) importee: plan_{at1000,ati1000,at2000,ati2000}_simple_{6,25}_{md,mg,mdr,mgr}.png (recadres).
+- _resolve_detail_image (plan simple) essaie dabord le fichier specifique a la main, puis fallback.
+- _mask_ref_titleblock(style): style=simple (un seul bloc bas-droite, garde le titre haut) pour ces dessins; style=kovo (2 blocs) pour lancienne banque. Cadre pleine largeur redessine.
+- Note Miroite et renverse supprimee quand un dessin specifique a la main est utilise (le dessin est deja oriente correctement). Conservee en fallback pour MD/MG.
+- Bandeau rouge PRODUCTION place en haut-droite (zone libre) pour le style simple.
+- Verifie: AT1000 MD/MG, AT2000 MDR/MGR (plans 300-303), coupe 400, ancrage 500.
