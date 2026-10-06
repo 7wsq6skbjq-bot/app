@@ -646,3 +646,8 @@ User language: **French**.
 - Note Miroite et renverse supprimee quand un dessin specifique a la main est utilise (le dessin est deja oriente correctement). Conservee en fallback pour MD/MG.
 - Bandeau rouge PRODUCTION place en haut-droite (zone libre) pour le style simple.
 - Verifie: AT1000 MD/MG, AT2000 MDR/MGR (plans 300-303), coupe 400, ancrage 500.
+
+## 2026-10-06 — Coupes foncees + couverture complete de lancien cartouche
+- Les 6 PNG coupe_*.png assombris/epaissis (gamma 2.1, white cut 243, MinFilter 3) pour des traits bien visibles.
+- _mask_ref_titleblock style=simple: masque etendu vers le haut (h 0.560) pour couvrir aussi la petite case Par dautres au-dessus du cartouche => plus de reste visible.
+- Verifie: coupe 400 (traits fonces), plans simples MD/MGR (cartouche couvre tout).

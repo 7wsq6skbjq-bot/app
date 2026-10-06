@@ -1467,7 +1467,8 @@ def _mask_ref_titleblock(c, place, style="kovo"):
     c.setFillColor(colors.white)
     c.setStrokeColor(colors.white)
     if style == "simple":
-        c.rect(dx + dw * 0.816, dy + dh * 0.010, dw * 0.182, dh * 0.455,
+        # couvre le bloc cartouche + la petite case « Par d'autres » au-dessus
+        c.rect(dx + dw * 0.810, dy + dh * 0.010, dw * 0.188, dh * 0.560,
                fill=1, stroke=1)
         box = (dx + dw * 0.824, dy + dh * 0.026, dw * 0.168, dh * 0.418)
     else:
