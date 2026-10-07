@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Plus, Save, Trash2, RefreshCw, Download, Eye, FileText,
-    AlertCircle, CheckCircle2, Loader2, DraftingCompass, ChevronDown, ChevronRight,
+    AlertCircle, CheckCircle2, Loader2, DraftingCompass, ChevronDown, ChevronUp, ChevronRight,
     Mail, Send, Package,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -337,6 +337,18 @@ export const ProductionPlansPanel = () => {
         ...f,
         doors: f.doors.map((d) => (d._key === dk
             ? { ...d, hardware: (d.hardware || []).filter((h) => h._key !== hk) } : d)),
+    }));
+    const moveHw = (dk, hk, dir) => setForm((f) => ({
+        ...f,
+        doors: f.doors.map((d) => {
+            if (d._key !== dk) return d;
+            const hw = [...(d.hardware || [])];
+            const i = hw.findIndex((h) => h._key === hk);
+            const j = i + dir;
+            if (i < 0 || j < 0 || j >= hw.length) return d;
+            [hw[i], hw[j]] = [hw[j], hw[i]];
+            return { ...d, hardware: hw };
+        }),
     }));
     const updateHw = (dk, hk, key, value) => setForm((f) => ({
         ...f,
@@ -1338,7 +1350,7 @@ export const ProductionPlansPanel = () => {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {(d.hardware || []).map((h) => (
+                                                        {(d.hardware || []).map((h, hi) => (
                                                             <tr key={h._key} className={`border-b border-[#f3f6fb] ${h.included === false ? "opacity-40" : ""}`}>
                                                                 <td className="px-1 py-1 text-center">
                                                                     <input type="checkbox" data-testid={`pp-hw-incl-${idx}`}
@@ -1391,8 +1403,20 @@ export const ProductionPlansPanel = () => {
                                                                         checked={!!h.on_inactive}
                                                                         onChange={(e) => updateHw(d._key, h._key, "on_inactive", e.target.checked)} />
                                                                 </td>
-                                                                <td className="px-1 py-1 text-right">
-                                                                    <button onClick={() => removeHw(d._key, h._key)}
+                                                                <td className="px-1 py-1 text-right whitespace-nowrap">
+                                                                    <button type="button" onClick={() => moveHw(d._key, h._key, -1)}
+                                                                        disabled={hi === 0} title="Monter"
+                                                                        data-testid={`pp-hw-up-${idx}-${hi}`}
+                                                                        className="text-[#2f4f7f] hover:bg-[#eaf1fb] p-1 disabled:opacity-25 disabled:cursor-not-allowed">
+                                                                        <ChevronUp className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    <button type="button" onClick={() => moveHw(d._key, h._key, 1)}
+                                                                        disabled={hi === (d.hardware || []).length - 1} title="Descendre"
+                                                                        data-testid={`pp-hw-down-${idx}-${hi}`}
+                                                                        className="text-[#2f4f7f] hover:bg-[#eaf1fb] p-1 disabled:opacity-25 disabled:cursor-not-allowed">
+                                                                        <ChevronDown className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    <button onClick={() => removeHw(d._key, h._key)} title="Supprimer"
                                                                         className="text-[#a31a1a] hover:bg-[#fde7e7] p-1">
                                                                         <Trash2 className="w-3.5 h-3.5" />
                                                                     </button>

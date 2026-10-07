@@ -651,3 +651,10 @@ User language: **French**.
 - Les 6 PNG coupe_*.png assombris/epaissis (gamma 2.1, white cut 243, MinFilter 3) pour des traits bien visibles.
 - _mask_ref_titleblock style=simple: masque etendu vers le haut (h 0.560) pour couvrir aussi la petite case Par dautres au-dessus du cartouche => plus de reste visible.
 - Verifie: coupe 400 (traits fonces), plans simples MD/MGR (cartouche couvre tout).
+
+## 2026-10-07 — Quincaillerie (retour ligne + reorder) + Connaissement (facture/client) + dessins fonces
+- _hardware_table (erp_pdf_production): description renvoyee a la ligne (wrap jusqu a 4 lignes) au lieu detre coupee a 48 car.; hauteur de ligne dynamique.
+- ProductionPlansPanel: boutons Monter/Descendre (ChevronUp/Down, moveHw) sur chaque ligne de quincaillerie.
+- BolPanel: select Creer depuis une facture (pre-remplit destinataire + articles depuis la facture) et select Destinataire depuis la base de clients (parties kind=customer). Charge /admin/invoices.
+- Dessins de plan AT1000/AT2000 assombris (gamma 2.1 + MinFilter); portes doubles (pair) epaissies davantage (MinFilter x2 + contraste). Coupes aussi assombries precedemment.
+- Verifie: rendu PDF (quincaillerie longue desc, plans/coupes fonces) + screenshots UI (BOL prefill, reorder).

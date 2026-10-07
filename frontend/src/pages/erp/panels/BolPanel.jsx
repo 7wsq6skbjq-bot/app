@@ -18,6 +18,7 @@ export const BolPanel = () => {
     const { http } = useAuth();
     const [rows, setRows] = useState([]);
     const [parties, setParties] = useState([]);
+    const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [query, setQuery] = useState("");
@@ -39,6 +40,10 @@ export const BolPanel = () => {
             ]);
             setRows(bols.data || []);
             setParties(prts.data || []);
+            try {
+                const inv = await http.get("/admin/invoices");
+                setInvoices(inv.data || []);
+            } catch { /* factures optionnelles */ }
         } catch (e) {
             setError(e?.response?.data?.detail || "Erreur");
         } finally {
@@ -156,6 +161,39 @@ export const BolPanel = () => {
     };
 
     const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+    // Pré-remplir le destinataire depuis un client de la base
+    const applyClient = (partyId) => {
+        const p = parties.find((x) => x.id === partyId);
+        if (!p) return;
+        const { id, kind, created_at, ...snap } = p;
+        setForm((f) => ({ ...f, consignee_snapshot: { ...snap, kind: "customer" } }));
+    };
+
+    // Créer un connaissement à partir d'une facture (destinataire + articles)
+    const applyInvoice = (invoiceId) => {
+        const inv = invoices.find((x) => x.id === invoiceId);
+        if (!inv) return;
+        const cs = inv.customer_snapshot || {};
+        const { id, kind, created_at, ...snap } = cs;
+        setForm((f) => ({
+            ...f,
+            consignee_snapshot: { ...snap, kind: "customer" },
+            items: (inv.items || []).length
+                ? inv.items.map((it) => ({
+                    _key: newKey(),
+                    description: it.description,
+                    quantity: Number(it.quantity || 1),
+                    unit: "unité",
+                    weight_kg: "",
+                    dimensions: "",
+                }))
+                : [emptyBolItem()],
+            special_instructions: f.special_instructions
+                || `Référence facture ${String(inv.number).padStart(4, "0")}`,
+        }));
+    };
+
     const updateItem = (idx, patch) => setForm((f) => ({ ...f, items: f.items.map((it, i) => (i === idx ? { ...it, ...patch } : it)) }));
     const addItem = () => setForm((f) => ({ ...f, items: [...f.items, emptyBolItem()] }));
     const removeItem = (idx) => setForm((f) => {
@@ -260,6 +298,30 @@ export const BolPanel = () => {
                 }
             >
                 <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-[#dde5f0] bg-[#f3f6fb] p-3">
+                        <Field label="Créer depuis une facture">
+                            <select data-testid="bol-from-invoice" defaultValue=""
+                                onChange={(e) => { applyInvoice(e.target.value); e.target.value = ""; }}
+                                className={inputClass}>
+                                <option value="">— Choisir une facture —</option>
+                                {invoices.map((inv) => (
+                                    <option key={inv.id} value={inv.id}>
+                                        {`FACT-${String(inv.number).padStart(4, "0")} · ${inv.customer_snapshot?.name || ""}`}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label="Destinataire depuis la base de clients">
+                            <select data-testid="bol-from-client" defaultValue=""
+                                onChange={(e) => { applyClient(e.target.value); e.target.value = ""; }}
+                                className={inputClass}>
+                                <option value="">— Choisir un client —</option>
+                                {parties.filter((p) => p.kind === "customer").map((p) => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                        </Field>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="border border-[#dde5f0] p-4 bg-[#f9fbfd]">
                             <div className="tech-stamp mb-3">Expéditeur (Shipper)</div>

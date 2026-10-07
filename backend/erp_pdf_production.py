@@ -748,9 +748,32 @@ def _spec_block(c, x, y, w, title, rows, tint=BG_LIGHT):
     return y - height - 8
 
 
+def _wrap_text(c, text, font, size, max_w, max_lines=4):
+    """Word-wrap `text` to fit `max_w`, returning a list of lines."""
+    words = str(text or "").split()
+    if not words:
+        return ["—"]
+    lines, cur = [], words[0]
+    for w in words[1:]:
+        if c.stringWidth(cur + " " + w, font, size) <= max_w:
+            cur += " " + w
+        else:
+            lines.append(cur)
+            cur = w
+    lines.append(cur)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        while (c.stringWidth(lines[-1] + "…", font, size) > max_w
+               and len(lines[-1]) > 1):
+            lines[-1] = lines[-1][:-1]
+        lines[-1] += "…"
+    return lines
+
+
 def _hardware_table(c, x, y, w, hardware, machining_by="A.T. Fabrication",
                     installer="Portech"):
-    """Quincaillerie table with ACTIF / INACT. placement columns."""
+    """Quincaillerie table with ACTIF / INACT. placement columns.
+    Les longues descriptions sont renvoyées à la ligne au lieu d'être coupées."""
     c.setFillColor(NAVY)
     c.rect(x, y - 12, w, 12, fill=1, stroke=0)
     c.setFillColor(colors.white)
@@ -784,24 +807,33 @@ def _hardware_table(c, x, y, w, hardware, machining_by="A.T. Fabrication",
         c.setStrokeColor(NAVY_BORDER)
         c.rect(x, yy, w, (y - 12) - yy, fill=0, stroke=1)
         return yy - 6
+
+    line_h = 7.5
+    desc_w = (col_no - col_qty) - 6
     for i, hw in enumerate(hardware):
-        rh = 12
+        lines = _wrap_text(c, hw.get("description") or "—",
+                           "Helvetica", 6.5, desc_w)
+        rh = max(12, 5 + len(lines) * line_h)
         yy -= rh
         if i % 2 == 0:
             c.setFillColor(BG_LIGHT)
             c.rect(x, yy, w, rh, fill=1, stroke=0)
+        top = yy + rh - 8
         c.setFillColor(NAVY)
         c.setFont("Helvetica-Bold", 6.5)
-        c.drawString(x + 3, yy + 3.5, str(hw.get("qty") or "1"))
+        c.drawString(x + 3, top, str(hw.get("qty") or "1"))
         c.setFont("Helvetica", 6.5)
-        c.drawString(x + col_qty, yy + 3.5, str(hw.get("description") or "—")[:48])
+        ty = top
+        for ln in lines:
+            c.drawString(x + col_qty, ty, ln)
+            ty -= line_h
         c.setFont("Courier", 6)
         c.setFillColor(TEXT_MUTED)
-        c.drawString(x + col_no, yy + 3.5, str(hw.get("part_number") or "")[:13])
+        c.drawString(x + col_no, top, str(hw.get("part_number") or "")[:13])
         for flag, cx in ((hw.get("on_active"), col_act), (hw.get("on_inactive"), col_inact)):
             if flag:
                 c.setFillColor(NAVY)
-                c.circle(x + cx, yy + 5.5, 2.4, fill=1, stroke=0)
+                c.circle(x + cx, top + 2, 2.4, fill=1, stroke=0)
     c.setStrokeColor(NAVY_BORDER)
     c.rect(x, yy, w, (yh - 9) - yy, fill=0, stroke=1)
     return yy - 6
