@@ -169,7 +169,7 @@ const PortesAluminium = () => {
                     </p>
                     <div className="mt-10 flex flex-wrap gap-4">
                         <Link
-                            to="/contact"
+                            to="/contact?produit=aluminium"
                             data-testid="alu-hero-cta"
                             className="btn-ghost-dark"
                         >
@@ -470,7 +470,7 @@ const PortesAluminium = () => {
                 title="Demandez votre soumission dès aujourd'hui."
                 description="Décrivez votre ouverture, votre usage et vos besoins — on revient avec une soumission précise pour vos portes en aluminium, partout dans le Grand Montréal."
                 buttonLabel="Demander une soumission"
-                buttonTo="/contact"
+                buttonTo="/contact?produit=aluminium"
                 variant="dark"
                 testId="alu-final-cta"
             />

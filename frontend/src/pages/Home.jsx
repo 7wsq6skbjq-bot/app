@@ -23,9 +23,9 @@ const Home = () => {
     return (
         <div data-testid="page-home">
             <HomeHero />
+            <HomeAluminium />
             <HomeSectors />
             <HomeShowcase />
-            <HomeAluminium />
             <HomeBrandsWall />
             <HomeProblems />
             <HomeSolution />

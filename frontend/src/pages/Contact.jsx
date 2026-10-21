@@ -24,9 +24,17 @@ const initialForm = {
     project_type: "",
     work_location: "",
     message: "",
+    // Projet de porte (facultatif) — repliés dans le message à l'envoi
+    door_gamme: "",
+    door_config: "",
+    door_qty: "",
+    door_width: "",
+    door_height: "",
+    door_finish: "",
 };
 
 const projectTypes = [
+    "Porte en aluminium",
     "Commerce / Boutique",
     "Restaurant",
     "École",
@@ -36,11 +44,30 @@ const projectTypes = [
     "Autre",
 ];
 
+const doorGammes = [
+    "AT1000 (profil étroit)",
+    "AT2000 (robuste, fort trafic)",
+    "Isolée (bris thermique)",
+    "Sur mesure",
+    "Je ne suis pas certain",
+];
+
+const doorConfigs = ["Simple", "Double"];
+
+const doorFinishes = [
+    "Anodisé clair",
+    "Bronze",
+    "Noir mat",
+    "Blanc",
+    "À déterminer",
+];
+
 const Contact = () => {
     const location = useLocation();
     const [form, setForm] = useState(initialForm);
     const [status, setStatus] = useState("idle");
     const [errorMsg, setErrorMsg] = useState("");
+    const [showDoor, setShowDoor] = useState(false);
 
     useSeo({
         title: "Contact · Demander une soumission — Quincaillerie et portes commerciales en aluminium | Portech",
@@ -60,6 +87,23 @@ const Contact = () => {
                     `Bonjour, je viens de télécharger votre fiche « ${categorie} » et j'aimerais discuter d'un projet. `,
             }));
         }
+        // Arriving from the aluminium door page → open the door-project form
+        const gamme = params.get("gamme");
+        const produit = params.get("produit");
+        if (gamme || produit === "aluminium") {
+            setShowDoor(true);
+            setForm((f) => ({
+                ...f,
+                project_type: f.project_type || "Porte en aluminium",
+                door_gamme:
+                    f.door_gamme ||
+                    (gamme
+                        ? doorGammes.find((g) =>
+                              g.toLowerCase().startsWith(gamme.toLowerCase()),
+                          ) || gamme
+                        : ""),
+            }));
+        }
     }, [location.search]);
 
     const onChange = (e) =>
@@ -71,6 +115,38 @@ const Contact = () => {
         setErrorMsg("");
         try {
             const payload = { ...form };
+            // Fold the optional "projet de porte" details into the message
+            const hasDoor =
+                payload.door_gamme ||
+                payload.door_config ||
+                payload.door_qty ||
+                payload.door_width ||
+                payload.door_height ||
+                payload.door_finish;
+            if (hasDoor) {
+                const dims =
+                    payload.door_width || payload.door_height
+                        ? `${payload.door_width || "?"} × ${payload.door_height || "?"}`
+                        : "";
+                const lines = [
+                    "",
+                    "--- Projet de porte en aluminium ---",
+                    payload.door_gamme && `Gamme : ${payload.door_gamme}`,
+                    payload.door_config && `Configuration : ${payload.door_config}`,
+                    payload.door_qty && `Nombre de portes : ${payload.door_qty}`,
+                    dims && `Dimensions (L × H) : ${dims}`,
+                    payload.door_finish && `Fini : ${payload.door_finish}`,
+                ].filter(Boolean);
+                payload.message = `${payload.message}\n${lines.join("\n")}`.trim();
+                if (!payload.project_type) payload.project_type = "Porte en aluminium";
+            }
+            // Strip the helper fields — backend doesn't store them
+            delete payload.door_gamme;
+            delete payload.door_config;
+            delete payload.door_qty;
+            delete payload.door_width;
+            delete payload.door_height;
+            delete payload.door_finish;
             if (!payload.project_type) delete payload.project_type;
             if (!payload.company) delete payload.company;
             await axios.post(`${API}/contact`, payload);
@@ -276,6 +352,143 @@ const Contact = () => {
                                                     </option>
                                                 ))}
                                             </select>
+                                        </div>
+
+                                        {/* Projet de porte (facultatif) */}
+                                        <div className="border border-[#dde5f0] bg-[#f8fafc]">
+                                            <button
+                                                type="button"
+                                                data-testid="contact-door-toggle"
+                                                onClick={() => setShowDoor((v) => !v)}
+                                                className="w-full flex items-center justify-between px-5 py-4 text-left"
+                                            >
+                                                <span className="font-display font-semibold uppercase text-sm tracking-wider text-[#1e3457]">
+                                                    Projet de porte en aluminium
+                                                    <span className="text-[#97b0d0] normal-case font-normal tracking-normal ml-2">
+                                                        (facultatif)
+                                                    </span>
+                                                </span>
+                                                <span className="tech-stamp text-[#2f4f7f]">
+                                                    {showDoor ? "Masquer −" : "Préciser +"}
+                                                </span>
+                                            </button>
+
+                                            {showDoor && (
+                                                <div
+                                                    data-testid="contact-door-fields"
+                                                    className="px-5 pb-6 pt-1 space-y-5 border-t border-[#dde5f0]"
+                                                >
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                        <div>
+                                                            <label htmlFor="door_gamme" className="tech-stamp block mb-2">
+                                                                Gamme / type
+                                                            </label>
+                                                            <select
+                                                                id="door_gamme"
+                                                                name="door_gamme"
+                                                                value={form.door_gamme}
+                                                                onChange={onChange}
+                                                                data-testid="contact-door-gamme"
+                                                                className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                                            >
+                                                                <option value="">Sélectionner…</option>
+                                                                {doorGammes.map((g) => (
+                                                                    <option key={g} value={g}>{g}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label htmlFor="door_config" className="tech-stamp block mb-2">
+                                                                Configuration
+                                                            </label>
+                                                            <select
+                                                                id="door_config"
+                                                                name="door_config"
+                                                                value={form.door_config}
+                                                                onChange={onChange}
+                                                                data-testid="contact-door-config"
+                                                                className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                                            >
+                                                                <option value="">Sélectionner…</option>
+                                                                {doorConfigs.map((c) => (
+                                                                    <option key={c} value={c}>{c}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                                        <div>
+                                                            <label htmlFor="door_qty" className="tech-stamp block mb-2">
+                                                                Nombre de portes
+                                                            </label>
+                                                            <input
+                                                                id="door_qty"
+                                                                name="door_qty"
+                                                                type="number"
+                                                                min="1"
+                                                                value={form.door_qty}
+                                                                onChange={onChange}
+                                                                data-testid="contact-door-qty"
+                                                                placeholder="Ex. : 2"
+                                                                className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] placeholder-[#97b0d0] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label htmlFor="door_width" className="tech-stamp block mb-2">
+                                                                Largeur
+                                                            </label>
+                                                            <input
+                                                                id="door_width"
+                                                                name="door_width"
+                                                                type="text"
+                                                                value={form.door_width}
+                                                                onChange={onChange}
+                                                                data-testid="contact-door-width"
+                                                                placeholder='Ex. : 36"'
+                                                                className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] placeholder-[#97b0d0] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label htmlFor="door_height" className="tech-stamp block mb-2">
+                                                                Hauteur
+                                                            </label>
+                                                            <input
+                                                                id="door_height"
+                                                                name="door_height"
+                                                                type="text"
+                                                                value={form.door_height}
+                                                                onChange={onChange}
+                                                                data-testid="contact-door-height"
+                                                                placeholder={'Ex. : 84"'}
+                                                                className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] placeholder-[#97b0d0] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label htmlFor="door_finish" className="tech-stamp block mb-2">
+                                                            Fini souhaité
+                                                        </label>
+                                                        <select
+                                                            id="door_finish"
+                                                            name="door_finish"
+                                                            value={form.door_finish}
+                                                            onChange={onChange}
+                                                            data-testid="contact-door-finish"
+                                                            className="w-full border border-[#c5d4e7] px-4 py-3 bg-white text-[#0c182b] focus:outline-none focus:ring-2 focus:ring-[#2f4f7f] focus:border-[#2f4f7f] transition-colors"
+                                                        >
+                                                            <option value="">Sélectionner…</option>
+                                                            {doorFinishes.map((fin) => (
+                                                                <option key={fin} value={fin}>{fin}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <p className="tech-stamp text-[#4b5d7a] leading-relaxed normal-case tracking-normal text-sm">
+                                                        Ces détails sont ajoutés à votre message pour une soumission plus précise.
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div>
