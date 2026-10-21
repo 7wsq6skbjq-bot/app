@@ -413,7 +413,7 @@ const PortesAluminium = () => {
                         <div className="md:col-span-7 relative overflow-hidden border border-[#dde5f0] group">
                             <img
                                 src={`${A}/alu-gal2.png`}
-                                alt="Portes en aluminium dans un hall de bureau"
+                                alt="Porte commerciale en aluminium robuste à l'entrée d'un bâtiment"
                                 loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
@@ -421,7 +421,7 @@ const PortesAluminium = () => {
                         <div className="md:col-span-5 relative overflow-hidden border border-[#dde5f0] group">
                             <img
                                 src={`${A}/alu-cta.png`}
-                                alt="Barre antipanique sur une porte en aluminium commerciale"
+                                alt="Porte isolée en aluminium à bris thermique"
                                 loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
