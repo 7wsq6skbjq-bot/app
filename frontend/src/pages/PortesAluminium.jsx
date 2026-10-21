@@ -273,7 +273,6 @@ const PortesAluminium = () => {
                                             <img loading="lazy" decoding="async"
                                                 src={g.img}
                                                 alt={g.title}
-                                                loading="lazy"
                                                 className="w-full h-72 object-cover"
                                             />
                                             <div className="absolute top-4 left-4 tech-stamp bg-[#0c182b] text-white px-3 py-2">
@@ -388,7 +387,6 @@ const PortesAluminium = () => {
                                 <img loading="lazy" decoding="async"
                                     src={`${A}/alu-finis.webp`}
                                     alt="Échantillons de finis d'aluminium : anodisé clair, bronze, noir mat et blanc"
-                                    loading="lazy"
                                     className="w-full h-80 object-cover"
                                 />
                             </div>
@@ -414,7 +412,6 @@ const PortesAluminium = () => {
                             <img loading="lazy" decoding="async"
                                 src={`${A}/alu-gal2.webp`}
                                 alt="Porte commerciale en aluminium robuste à l'entrée d'un bâtiment"
-                                loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                         </div>
@@ -422,7 +419,6 @@ const PortesAluminium = () => {
                             <img loading="lazy" decoding="async"
                                 src={`${A}/alu-cta.webp`}
                                 alt="Porte isolée en aluminium à bris thermique"
-                                loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                         </div>

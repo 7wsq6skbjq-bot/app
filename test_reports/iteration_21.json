@@ -1,0 +1,28 @@
+{
+  "summary": "Iteration 21: tested the 4 new features: WebP + lazy images, French contact-form validation, the ERP 'Demandes de porte' table with structured door_* fields, and SMS 'texto' links. Backend: 31/31 pytest passed (new test_door_requests_iter21.py plus the iter20 regression). Frontend: all flows passed on desktop and mobile.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "ERP Demandes de porte (desktop)", "issues": ["The right-aligned 'Qté' column sits right against the 'Dimensions' column (3 | 72\" × 84\" looks glued together). Add padding-right or left-align it."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_door_requests_iter21.py", "/app/backend/tests/test_contact_door_project.py", "/app/test_reports/pytest/pytest_iter21.xml"],
+  "action_items": [
+    "Optional: add maxLength to the door_width/door_height inputs (backend limit 40) and to door_qty (limit 20). Today a longer value only gets the generic 422 message in French.",
+    "Optional: remove the duplicate loading=\"lazy\" props on the <img> tags in PortesAluminium.jsx (lines ~273/276, 388/391, 414/417, 422/425). JSX duplicate props produce a lint warning.",
+    "Optional: add an aria-label to the icon-only door-requests-refresh button."
+  ],
+  "critical_code_review_comments": [
+    "The contact form uses noValidate together with a custom French validate(). Native English browser bubbles are correctly bypassed, and a 422 falls back to a French message. Good.",
+    "GET /admin/door-requests: the $or/$nin filter correctly excludes plain submissions. It requires auth, excludes _id and is capped at 1000 rows (no pagination)."
+  ],
+  "updated_files": ["/app/backend/tests/test_door_requests_iter21.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created TEST_ submissions, then deleted all TEST_-prefixed contact_submissions (103) and their linked erp_jobs (103)",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Verified: the 11 alu-*.webp files are valid WebP, 5-35x smaller than PNG, with naturalWidth>0 on /portes-aluminium and the home page. The hero background is alu-hero.webp. On /contact?produit=aluminium the door panel opens automatically; email 'abc' gives 'Veuillez indiquer une adresse courriel valide.' and an empty message gives 'Veuillez écrire un court message…'. A valid submit returns 201 with structured door_* fields and shows contact-success. On the ERP tab /admin/gestion/demandes-porte the rows show gamme/config/qty/dims/fini. nav-sms, mobile-nav-sms, footer-sms and contact-info-sms all point to sms:+14383764177."
+}

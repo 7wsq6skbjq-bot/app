@@ -86,7 +86,7 @@ export const DoorRequestsPanel = () => {
                     <div className="col-span-3">Client</div>
                     <div className="col-span-2">Gamme</div>
                     <div className="col-span-1">Config.</div>
-                    <div className="col-span-1 text-right">Qté</div>
+                    <div className="col-span-1 text-right pr-4">Qté</div>
                     <div className="col-span-2">Dimensions (L × H)</div>
                     <div className="col-span-1">Fini</div>
                 </div>
@@ -141,7 +141,7 @@ export const DoorRequestsPanel = () => {
                                     <span className="lg:hidden tech-stamp text-[#6485b4] mr-2">Config. :</span>
                                     {r.door_config || "—"}
                                 </div>
-                                <div className="lg:col-span-1 text-sm lg:text-right font-display font-bold">
+                                <div className="lg:col-span-1 text-sm lg:text-right lg:pr-4 font-display font-bold">
                                     <span className="lg:hidden tech-stamp text-[#6485b4] mr-2">Qté :</span>
                                     {r.door_qty || "—"}
                                 </div>

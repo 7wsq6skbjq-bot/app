@@ -1,6 +1,15 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, 4 améliorations aluminium : WebP, validation FR, ERP demandes de porte, SMS)
+- **Images WebP + lazy-load** : les 11 visuels `/app/frontend/public/generated/aluminium/alu-*.png` convertis en `.webp` (qualité 80) — total 7,6 Mo → 0,7 Mo. Références mises à jour dans `PortesAluminium.jsx` (hero en background-image + cartes gammes + galerie) et `home/sections/HomeAluminium.jsx`. `loading="lazy" decoding="async"` sur les `<img>` sous la ligne de flottaison. Les `.png` sont conservés sur disque (regression test iter20). Vérifié : naturalWidth>0.
+- **Validation formulaire Contact en français** : fonction `validate()` dans `Contact.jsx` (nom, téléphone ≥5, regex courriel, lieu, message) → messages FR dans `contact-error` avant envoi ; `catch` mappe 422/erreurs réseau en FR (plus d'erreur Pydantic en anglais). `maxLength` : message 3500, door_qty 20, door_width/height 40.
+- **ERP « Demandes de porte »** : champs `door_gamme/door_config/door_qty/door_width/door_height/door_finish` ajoutés aux modèles `ContactSubmissionCreate`/`ContactSubmission` (server.py) et persistés ; le frontend envoie maintenant ces champs structurés (en plus de les replier dans `message` pour l'email). Nouvel endpoint `GET /api/admin/door-requests` (auth admin, filtre `$or/$nin` sur champs porte). Nouveau panneau `DoorRequestsPanel.jsx` + onglet `demandes-porte` (lien direct après « Suivi des jobs ») dans `AdminErp.jsx`.
+- **Liens SMS « texto » cliquables** (`sms:+14383764177`) : navbar desktop (`nav-sms`), menu mobile (`mobile-nav-sms`, boutons Appeler/Texto côte à côte, icône MessageSquare), footer (`footer-sms`), page Contact (`contact-info-sms`).
+- Tests : iteration_21.json — backend 31/31 pytest, frontend 100% (desktop + mobile). Polish appliqué après rapport (doublons loading retirés, colonne Qté espacée, maxLength).
+
+
+
 ## Changelog — 2026-06 (fork, détails KOVO réels + cartouche intégré)
 - **Détails AT1000 remplacés par le vrai dessin client KOVO** (option a) : pages p.300 (détail en plan : 01–04/300 jambage simple, astragale de paire, jambages de paire) et p.400 (détail en coupe : linteau/seuil 01–02/400) extraites du PDF « KOVO INTERIEUR - DESSIN DE PRODUCTION - AVEC ETAMPE », recadrées sur la zone de dessin (sans l'étampe AT fabrication), orientées MD, avec cotes et bulles. Enregistrées en `ref/plan_at1000_*` et `ref/coupe_at1000_*`. ATi/AT2000 restent sur les feuilles génériques (pas encore fournies par le client).
 - **Cartouche Portech tabulaire intégré** (style AT fabrication) : en-tête PORTECH + logo, NOM DU CLIENT, table DATE/VERSION (POUR PRODUCTION / APPROBATION), NOM DU PROJET, # DU PROJET, DESCRIPTION, PAGE — dessiné par-dessus l'ancienne étampe, bien aligné en bas à droite. Vérifié visuellement (p.300 et p.400 du projet Kovo).

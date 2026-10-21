@@ -452,6 +452,7 @@ const Contact = () => {
                                                                 name="door_qty"
                                                                 type="number"
                                                                 min="1"
+                                                                maxLength={20}
                                                                 value={form.door_qty}
                                                                 onChange={onChange}
                                                                 data-testid="contact-door-qty"
@@ -467,6 +468,7 @@ const Contact = () => {
                                                                 id="door_width"
                                                                 name="door_width"
                                                                 type="text"
+                                                                maxLength={40}
                                                                 value={form.door_width}
                                                                 onChange={onChange}
                                                                 data-testid="contact-door-width"
@@ -482,6 +484,7 @@ const Contact = () => {
                                                                 id="door_height"
                                                                 name="door_height"
                                                                 type="text"
+                                                                maxLength={40}
                                                                 value={form.door_height}
                                                                 onChange={onChange}
                                                                 data-testid="contact-door-height"
