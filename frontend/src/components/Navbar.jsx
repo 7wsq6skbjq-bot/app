@@ -7,6 +7,7 @@ import { trackContact } from "@/lib/fb-pixel";
 const links = [
     { to: "/", label: "Accueil", slug: "accueil" },
     { to: "/services", label: "Services", slug: "services" },
+    { to: "/portes-aluminium", label: "Portes aluminium", slug: "aluminium" },
     { to: "/a-propos", label: "À propos", slug: "apropos" },
     { to: "/contact", label: "Contact", slug: "contact" },
 ];

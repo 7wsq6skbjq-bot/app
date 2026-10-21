@@ -3,6 +3,7 @@ import { useSeo } from "@/hooks/use-seo";
 import { HomeHero } from "./home/sections/HomeHero";
 import { HomeSectors } from "./home/sections/HomeSectors";
 import { HomeShowcase } from "./home/sections/HomeShowcase";
+import { HomeAluminium } from "./home/sections/HomeAluminium";
 import { HomeBrandsWall } from "./home/sections/HomeBrandsWall";
 import { HomeProblems } from "./home/sections/HomeProblems";
 import { HomeSolution } from "./home/sections/HomeSolution";
@@ -24,6 +25,7 @@ const Home = () => {
             <HomeHero />
             <HomeSectors />
             <HomeShowcase />
+            <HomeAluminium />
             <HomeBrandsWall />
             <HomeProblems />
             <HomeSolution />

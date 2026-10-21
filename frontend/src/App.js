@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
 import Services from "@/pages/Services";
+import PortesAluminium from "@/pages/PortesAluminium";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Galerie from "@/pages/Galerie";
@@ -51,6 +52,7 @@ function App() {
                         <Route element={<Layout />}>
                             <Route index element={<Home />} />
                             <Route path="/services" element={<Services />} />
+                            <Route path="/portes-aluminium" element={<PortesAluminium />} />
                             <Route path="/a-propos" element={<About />} />
                             <Route path="/contact" element={<Contact />} />
                             <Route path="/galerie" element={<Navigate to="/galerie/interventions" replace />} />
