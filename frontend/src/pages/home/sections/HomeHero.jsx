@@ -28,7 +28,7 @@ export const HomeHero = () => (
                     >
                         Votre <span className="text-[#97b0d0]">expert</span>
                         <br />
-                        en quincaillerie
+                        en quincaillerie et
                         <br />
                         de portes commerciales
                         <br />
