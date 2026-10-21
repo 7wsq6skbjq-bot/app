@@ -90,6 +90,7 @@ class LineItem(BaseModel):
     total: Optional[float] = None
     cost_price: Optional[float] = Field(default=None, ge=0)   # CONFIDENTIEL — jamais sur le PDF
     cost_category: Optional[str] = None                        # CONFIDENTIEL — regroupement marge
+    margin_pct: Optional[float] = Field(default=None, ge=0)    # CONFIDENTIEL — profit % par ligne
 
 
 class BolItem(BaseModel):

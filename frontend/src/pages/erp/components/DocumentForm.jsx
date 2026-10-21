@@ -348,6 +348,48 @@ const ProductPicker = ({ products, value, onPick, testId }) => {
 
 
 /**
+ * MasterCostPicker — searchable combobox over the master B2B cost catalog
+ * (erp_hardware_master). On pick it fills the line description + cost + a
+ * selling price computed from the line's current profit %.
+ */
+const MasterCostPicker = ({ http, onPick, testId }) => {
+    const [q, setQ] = useState("");
+    const [res, setRes] = useState([]);
+    useEffect(() => {
+        if (!q) { setRes([]); return; }
+        const t = setTimeout(async () => {
+            try {
+                const { data } = await http.get(`/admin/master/hardware?q=${encodeURIComponent(q)}`);
+                setRes((data || []).slice(0, 8));
+            } catch { setRes([]); }
+        }, 250);
+        return () => clearTimeout(t);
+    }, [q, http]);
+    return (
+        <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[#93a3bd]" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} data-testid={testId}
+                placeholder="Coût master (code ou nom)…" className={inputClass + " !text-xs !pl-7"} />
+            {res.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 bg-white border border-[#dde5f0] shadow-lg max-h-56 overflow-auto">
+                    {res.map((r) => (
+                        <button type="button" key={r.id}
+                            onMouseDown={(e) => { e.preventDefault(); onPick(r); setQ(""); setRes([]); }}
+                            className="block w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[#eaf1fb] border-b border-[#f0f3f8]">
+                            <span className="text-[#0c182b]">{r.description}</span>
+                            <span className="font-mono text-[#2f4f7f] ml-1">{r.product_code}</span>
+                            {" — "}{formatCurrency(r.unit_cost)}
+                            <span className="text-[#93a3bd] ml-1">({r.supplier})</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+/**
  * DocumentForm — shared UI for Invoice and Purchase Order (same shape).
  * Props:
  * - kind: "invoice" | "purchase-order"
@@ -420,6 +462,31 @@ export const DocumentForm = ({
         const items = value.items.filter((_, i) => i !== idx);
         onChange({ ...value, items: items.length ? items : [emptyLineItem()] });
     };
+    // Per-line cost/profit helpers — sell = cost × (1 + profit%).
+    const sellFromCost = (cost, pct) => Math.round(Number(cost || 0) * (1 + Number(pct || 0) / 100) * 100) / 100;
+    const setCost = (idx, cost) => {
+        const it = value.items[idx];
+        const pct = it.margin_pct != null && it.margin_pct !== "" ? it.margin_pct : 40;
+        updateItem(idx, { cost_price: cost === "" ? null : Number(cost), margin_pct: pct, unit_price: cost === "" ? it.unit_price : sellFromCost(cost, pct) });
+    };
+    const setMargin = (idx, pct) => {
+        const it = value.items[idx];
+        const patch = { margin_pct: pct === "" ? null : Number(pct) };
+        if (it.cost_price != null && pct !== "") patch.unit_price = sellFromCost(it.cost_price, pct);
+        updateItem(idx, patch);
+    };
+    const pickMasterCost = (idx, r) => {
+        const it = value.items[idx];
+        const pct = it.margin_pct != null && it.margin_pct !== "" ? it.margin_pct : 40;
+        updateItem(idx, {
+            description: it.description || r.description,
+            cost_price: Number(r.unit_cost || 0),
+            cost_category: r.category || "Quincaillerie",
+            margin_pct: pct,
+            unit_price: sellFromCost(r.unit_cost, pct),
+        });
+    };
+
     const pickProduct = (idx, productId) => {
         if (!productId) return;
         const p = products.find((x) => x.id === productId);
@@ -576,6 +643,32 @@ export const DocumentForm = ({
                                     <button type="button" onClick={() => removeItem(idx)} className="p-1.5 border border-[#dde5f0] hover:bg-red-50 text-red-600">
                                         <Trash2 className="w-3 h-3" />
                                     </button>
+                                </div>
+                                {/* Per-line cost / profit / sell strip (admin pricing) */}
+                                <div className="md:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-2 items-center bg-[#f7f9fc] border-t border-dashed border-[#e3e9f2] px-1 pt-2 mt-1">
+                                    <MasterCostPicker http={http} onPick={(r) => pickMasterCost(idx, r)} testId={`doc-${kind}-item-master-${idx}`} />
+                                    <label className="flex items-center gap-1 text-[11px] text-[#4b5d7a]">
+                                        <span className="whitespace-nowrap">Coûtant $</span>
+                                        <input type="number" step="0.01" min="0" value={it.cost_price ?? ""}
+                                            onChange={(e) => setCost(idx, e.target.value)}
+                                            data-testid={`doc-${kind}-item-cost-${idx}`}
+                                            className={inputClass + " !text-xs text-right !py-1"} />
+                                    </label>
+                                    <label className="flex items-center gap-1 text-[11px] text-[#4b5d7a]">
+                                        <span className="whitespace-nowrap">Profit %</span>
+                                        <input type="number" step="1" value={it.margin_pct ?? ""}
+                                            onChange={(e) => setMargin(idx, e.target.value)}
+                                            placeholder="40"
+                                            data-testid={`doc-${kind}-item-margin-${idx}`}
+                                            className={inputClass + " !text-xs text-right !py-1"} />
+                                    </label>
+                                    <div className="text-[11px] text-right whitespace-nowrap">
+                                        <span className="text-[#4b5d7a]">Vendant </span>
+                                        <b className="text-[#0c182b]" data-testid={`doc-${kind}-item-sell-${idx}`}>{formatCurrency(Number(it.unit_price || 0))}</b>
+                                        {it.cost_price != null && Number(it.cost_price) > 0 && (
+                                            <span className="ml-1 text-[#0f6b3a]">· marge {formatCurrency((Number(it.unit_price || 0) - Number(it.cost_price)) * Number(it.quantity || 0))}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );
