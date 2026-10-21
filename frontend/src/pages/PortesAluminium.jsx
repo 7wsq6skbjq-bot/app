@@ -146,11 +146,11 @@ const PortesAluminium = () => {
                 className="relative bg-[#0c182b] text-white overflow-hidden border-b border-[#1e3457]"
             >
                 <div
-                    className="absolute inset-0 bg-cover bg-center opacity-40"
+                    className="absolute inset-0 bg-cover bg-center opacity-60"
                     style={{ backgroundImage: `url(${A}/alu-hero.png)` }}
                     aria-hidden
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-[#0c182b]/80 via-[#0c182b]/85 to-[#0c182b]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0c182b]/70 via-[#0c182b]/75 to-[#0c182b]/95" />
                 <div className="absolute inset-0 bg-blueprint-dark pointer-events-none" />
 
                 <div className="container-portech relative py-24 md:py-36">
@@ -260,7 +260,7 @@ const PortesAluminium = () => {
                         {gammes.map((g, idx) => (
                             <article
                                 key={g.num}
-                                data-testid={`alu-gamme-${g.tag.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                                data-testid={`alu-gamme-${g.tag.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-")}`}
                                 className="bg-white"
                             >
                                 <div
@@ -273,6 +273,7 @@ const PortesAluminium = () => {
                                             <img
                                                 src={g.img}
                                                 alt={g.title}
+                                                loading="lazy"
                                                 className="w-full h-72 object-cover"
                                             />
                                             <div className="absolute top-4 left-4 tech-stamp bg-[#0c182b] text-white px-3 py-2">
@@ -387,6 +388,7 @@ const PortesAluminium = () => {
                                 <img
                                     src={`${A}/alu-finis.png`}
                                     alt="Échantillons de finis d'aluminium : anodisé clair, bronze, noir mat et blanc"
+                                    loading="lazy"
                                     className="w-full h-80 object-cover"
                                 />
                             </div>
@@ -412,13 +414,15 @@ const PortesAluminium = () => {
                             <img
                                 src={`${A}/alu-gal2.png`}
                                 alt="Portes en aluminium dans un hall de bureau"
+                                loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                         </div>
                         <div className="md:col-span-5 relative overflow-hidden border border-[#dde5f0] group">
                             <img
-                                src={`${A}/alu-surmesure.png`}
-                                alt="Porte en aluminium sur mesure avec latéraux vitrés"
+                                src={`${A}/alu-cta.png`}
+                                alt="Barre antipanique sur une porte en aluminium commerciale"
+                                loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                         </div>

@@ -658,3 +658,12 @@ User language: **French**.
 - BolPanel: select Creer depuis une facture (pre-remplit destinataire + articles depuis la facture) et select Destinataire depuis la base de clients (parties kind=customer). Charge /admin/invoices.
 - Dessins de plan AT1000/AT2000 assombris (gamma 2.1 + MinFilter); portes doubles (pair) epaissies davantage (MinFilter x2 + contraste). Coupes aussi assombries precedemment.
 - Verifie: rendu PDF (quincaillerie longue desc, plans/coupes fonces) + screenshots UI (BOL prefill, reorder).
+
+## 2026-06 — Site public : offre "Portes commerciales en aluminium"
+- Nouvelle page publique /portes-aluminium (PortesAluminium.jsx) : hero, intro/valeur, 5 gammes (AT1000, AT2000, isolées/bris thermique, simples & doubles, sur mesure), avantages, configurations & finis (mains MD/MG/MDR/MGR, vitrage simple/thermos, finis), galerie, note "prête à poser", CTA soumission.
+- Soumission sur demande uniquement — AUCUN prix affiché. Tous les CTA pointent vers /contact.
+- Route ajoutée dans App.js. Lien nav desktop+mobile (nav-link-aluminium) et footer (footer-link-aluminium).
+- Nouvelle section accueil HomeAluminium.jsx (après HomeShowcase) avec CTA vers /portes-aluminium.
+- Visuels IA (Gemini Nano Banana) dans /app/frontend/public/generated/aluminium/ : alu-hero, alu-at1000, alu-at2000, alu-isolee, alu-double, alu-surmesure, alu-finis, alu-gal1, alu-gal2, alu-cta. 3 images (at1000, isolee, finis) régénérées en style photo réaliste après retour utilisateur sur défauts.
+- SEO: titre/description/canonical sur la nouvelle page.
+- Testé: testing_agent iteration_19 — 7 flux PASS (desktop+mobile), frontend 100%, aucun prix, toutes images 200.
