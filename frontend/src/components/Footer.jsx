@@ -99,8 +99,14 @@ const Footer = () => {
                                     >
                                         438 376-4177
                                     </a>
-                                    <div className="text-[#6485b4] text-xs mt-0.5">
-                                        Appel ou texto
+                                    <div className="text-xs mt-0.5">
+                                        <a
+                                            href="sms:+14383764177"
+                                            data-testid="footer-sms"
+                                            className="text-[#6485b4] hover:text-white transition-colors"
+                                        >
+                                            Appel ou texto
+                                        </a>
                                     </div>
                                 </div>
                             </li>

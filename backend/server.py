@@ -72,6 +72,12 @@ class ContactSubmissionCreate(BaseModel):
     project_type: Optional[str] = Field(default=None, max_length=120)
     company: Optional[str] = Field(default=None, max_length=160)
     work_location: str = Field(..., min_length=1, max_length=240)
+    door_gamme: Optional[str] = Field(default=None, max_length=80)
+    door_config: Optional[str] = Field(default=None, max_length=40)
+    door_qty: Optional[str] = Field(default=None, max_length=20)
+    door_width: Optional[str] = Field(default=None, max_length=40)
+    door_height: Optional[str] = Field(default=None, max_length=40)
+    door_finish: Optional[str] = Field(default=None, max_length=60)
 
 
 class ContactSubmission(BaseModel):
@@ -84,6 +90,12 @@ class ContactSubmission(BaseModel):
     project_type: Optional[str] = None
     company: Optional[str] = None
     work_location: Optional[str] = ""
+    door_gamme: Optional[str] = None
+    door_config: Optional[str] = None
+    door_qty: Optional[str] = None
+    door_width: Optional[str] = None
+    door_height: Optional[str] = None
+    door_finish: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     email_sent: bool = False
 
@@ -387,6 +399,17 @@ async def me(current: AdminUser = Depends(get_current_admin)):
 @api_router.get("/admin/submissions", response_model=List[ContactSubmission])
 async def list_submissions(_: AdminUser = Depends(get_current_admin)):
     rows = await db.contact_submissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for r in rows:
+        if isinstance(r.get("created_at"), str):
+            r["created_at"] = datetime.fromisoformat(r["created_at"])
+    return rows
+
+
+@api_router.get("/admin/door-requests", response_model=List[ContactSubmission])
+async def list_door_requests(_: AdminUser = Depends(get_current_admin)):
+    door_fields = ["door_gamme", "door_config", "door_qty", "door_width", "door_height", "door_finish"]
+    query = {"$or": [{f: {"$nin": [None, ""]}} for f in door_fields]}
+    rows = await db.contact_submissions.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for r in rows:
         if isinstance(r.get("created_at"), str):
             r["created_at"] = datetime.fromisoformat(r["created_at"])

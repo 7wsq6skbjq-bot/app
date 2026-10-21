@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
-import { Menu, X, ArrowUpRight, Phone, Facebook } from "lucide-react";
+import { Menu, X, ArrowUpRight, Phone, MessageSquare, Facebook } from "lucide-react";
 import { SOCIAL } from "@/config/social";
 import { trackContact } from "@/lib/fb-pixel";
 
@@ -71,16 +71,25 @@ const Navbar = () => {
                 </nav>
 
                 <div className="hidden md:flex items-center gap-3">
-                    <a
-                        href="tel:+14383764177"
-                        onClick={() => trackContact({ method: "phone", source: "navbar" })}
-                        data-testid="nav-phone"
-                        className="hidden lg:flex items-center gap-2 text-sm font-display font-bold uppercase tracking-tight text-[#0c182b] hover:text-[#1d3557] transition-colors"
-                    >
-                        <Phone className="w-4 h-4" />
-                        438 376-4177
-                        <span className="text-[#1d3557] font-semibold normal-case">· texto</span>
-                    </a>
+                    <div className="hidden lg:flex items-center gap-1.5 text-sm font-display font-bold uppercase tracking-tight">
+                        <a
+                            href="tel:+14383764177"
+                            onClick={() => trackContact({ method: "phone", source: "navbar" })}
+                            data-testid="nav-phone"
+                            className="flex items-center gap-2 text-[#0c182b] hover:text-[#1d3557] transition-colors"
+                        >
+                            <Phone className="w-4 h-4" />
+                            438 376-4177
+                        </a>
+                        <a
+                            href="sms:+14383764177"
+                            onClick={() => trackContact({ method: "sms", source: "navbar" })}
+                            data-testid="nav-sms"
+                            className="text-[#1d3557] font-semibold normal-case hover:underline"
+                        >
+                            · texto
+                        </a>
+                    </div>
                     <Link
                         to="/contact"
                         data-testid="nav-cta-quote"
@@ -123,15 +132,26 @@ const Navbar = () => {
                                 {l.label}
                             </NavLink>
                         ))}
-                        <a
-                            href="tel:+14383764177"
-                            onClick={() => trackContact({ method: "phone", source: "mobile-nav" })}
-                            data-testid="mobile-nav-phone"
-                            className="mt-4 inline-flex items-center justify-center gap-2 border border-[#0c182b] text-[#0c182b] font-display font-bold uppercase tracking-tight py-3"
-                        >
-                            <Phone className="w-4 h-4" />
-                            438 376-4177 · texto
-                        </a>
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                            <a
+                                href="tel:+14383764177"
+                                onClick={() => trackContact({ method: "phone", source: "mobile-nav" })}
+                                data-testid="mobile-nav-phone"
+                                className="inline-flex items-center justify-center gap-2 border border-[#0c182b] text-[#0c182b] font-display font-bold uppercase tracking-tight py-3"
+                            >
+                                <Phone className="w-4 h-4" />
+                                Appeler
+                            </a>
+                            <a
+                                href="sms:+14383764177"
+                                onClick={() => trackContact({ method: "sms", source: "mobile-nav" })}
+                                data-testid="mobile-nav-sms"
+                                className="inline-flex items-center justify-center gap-2 border border-[#0c182b] text-[#0c182b] font-display font-bold uppercase tracking-tight py-3"
+                            >
+                                <MessageSquare className="w-4 h-4" />
+                                Texto
+                            </a>
+                        </div>
                         <Link
                             to="/contact"
                             data-testid="mobile-nav-cta"

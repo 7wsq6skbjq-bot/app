@@ -50,8 +50,8 @@ export const HomeAluminium = () => (
                 </div>
                 <div className="lg:col-span-6">
                     <div className="relative overflow-hidden border border-[#1e3457] group">
-                        <img
-                            src={`${A}/alu-home.png`}
+                        <img loading="lazy" decoding="async"
+                            src={`${A}/alu-home.webp`}
                             alt="Portes commerciales en aluminium Portech"
                             className="w-full h-[380px] object-cover transition-transform duration-500 group-hover:scale-105"
                         />

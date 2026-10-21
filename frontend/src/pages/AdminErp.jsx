@@ -21,6 +21,7 @@ import { ATOrdersPanel } from "./erp/panels/ATOrdersPanel";
 import { PaymentNoticesPanel } from "./erp/panels/PaymentNoticesPanel";
 import { ComposeEmailPanel } from "./erp/panels/ComposeEmailPanel";
 import { JobsPanel } from "./erp/panels/JobsPanel";
+import { DoorRequestsPanel } from "./erp/panels/DoorRequestsPanel";
 import { CatalogPanel } from "./erp/panels/CatalogPanel";
 import { StatementsPanel } from "./erp/panels/StatementsPanel";
 import { AssistantPanel } from "./erp/panels/AssistantPanel";
@@ -33,6 +34,7 @@ import { MobileTabBar } from "../components/mobile/MobileTabBar";
 const TABS = [
     { slug: "tableau-de-bord", label: "Tableau de bord", panel: "dashboard" },
     { slug: "suivi-jobs",      label: "Suivi des jobs",  panel: "jobs" },
+    { slug: "demandes-porte",  label: "Demandes de porte", panel: "door-requests" },
     { slug: "assistante-ia",   label: "Assistante IA",   panel: "assistant" },
     { slug: "calendrier",      label: "Calendrier",      panel: "calendar" },
     { slug: "clients",         label: "Clients",         panel: "parties-customer" },
@@ -64,6 +66,7 @@ const TAB_MAP = Object.fromEntries(TABS.map((t) => [t.slug, t]));
 const NAV = [
     { type: "link", slug: "tableau-de-bord" },
     { type: "link", slug: "suivi-jobs" },
+    { type: "link", slug: "demandes-porte" },
     { type: "link", slug: "assistante-ia" },
     { type: "group", label: "Ventes", slugs: ["soumissions", "factures", "suivi-depots", "etats-de-compte", "avis-paiement"] },
     { type: "group", label: "Comptabilité", slugs: ["depenses", "recap-taxes", "kilometrage"] },
@@ -178,6 +181,7 @@ const AdminErp = () => {
             <main className="container-portech py-4 md:py-8 px-3 md:px-6">
                 {activeTab.panel === "dashboard" && <DashboardPanel />}
                 {activeTab.panel === "jobs" && <JobsPanel />}
+                {activeTab.panel === "door-requests" && <DoorRequestsPanel />}
                 {activeTab.panel === "assistant" && <AssistantPanel />}
                 {activeTab.panel === "calendar" && <CalendarPanel />}
                 {activeTab.panel === "parties-customer" && <PartiesPanel kind="customer" />}

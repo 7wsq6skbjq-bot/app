@@ -21,7 +21,7 @@ const gammes = [
         num: "01",
         tag: "AT1000",
         title: "Série AT1000 — profil étroit",
-        img: `${A}/alu-at1000.png`,
+        img: `${A}/alu-at1000.webp`,
         desc:
             "Notre porte d'entrée commerciale polyvalente. Profilés d'aluminium étroits qui maximisent le vitrage, pour commerces, bureaux et entrées à trafic standard.",
         points: [
@@ -34,7 +34,7 @@ const gammes = [
         num: "02",
         tag: "AT2000",
         title: "Série AT2000 — robuste, fort trafic",
-        img: `${A}/alu-at2000.png`,
+        img: `${A}/alu-at2000.webp`,
         desc:
             "Profilés larges et renforcés pour les entrées à fort achalandage : écoles, institutions, édifices publics. Conçue pour recevoir barre antipanique et ferme-porte lourds.",
         points: [
@@ -47,7 +47,7 @@ const gammes = [
         num: "03",
         tag: "ISOLÉES",
         title: "Portes isolées — bris thermique",
-        img: `${A}/alu-isolee.png`,
+        img: `${A}/alu-isolee.webp`,
         desc:
             "Aluminium à rupture de pont thermique avec vitrage thermos double. Réduit les pertes de chaleur et la condensation — parfait pour les entrées chauffées et le climat québécois.",
         points: [
@@ -60,7 +60,7 @@ const gammes = [
         num: "04",
         tag: "SIMPLES & DOUBLES",
         title: "Portes simples et doubles",
-        img: `${A}/alu-double.png`,
+        img: `${A}/alu-double.webp`,
         desc:
             "Configuration simple ou double, avec imposte et latéraux vitrés au besoin. Mains MD, MG, MDR ou MGR — on fabrique selon le sens d'ouverture exact de votre ouverture.",
         points: [
@@ -73,7 +73,7 @@ const gammes = [
         num: "05",
         tag: "SUR MESURE",
         title: "Fabrication sur mesure",
-        img: `${A}/alu-surmesure.png`,
+        img: `${A}/alu-surmesure.webp`,
         desc:
             "Dimensions hors norme, ouvertures grand format, configurations particulières : on dessine, on fabrique et on prépare la porte avec sa quincaillerie, prête à être posée.",
         points: [
@@ -147,7 +147,7 @@ const PortesAluminium = () => {
             >
                 <div
                     className="absolute inset-0 bg-cover bg-center opacity-60"
-                    style={{ backgroundImage: `url(${A}/alu-hero.png)` }}
+                    style={{ backgroundImage: `url(${A}/alu-hero.webp)` }}
                     aria-hidden
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-[#0c182b]/70 via-[#0c182b]/75 to-[#0c182b]/95" />
@@ -232,8 +232,8 @@ const PortesAluminium = () => {
                     </div>
                     <div className="lg:col-span-6">
                         <div className="relative overflow-hidden border border-[#dde5f0]">
-                            <img
-                                src={`${A}/alu-gal1.png`}
+                            <img loading="lazy" decoding="async"
+                                src={`${A}/alu-gal1.webp`}
                                 alt="Portes commerciales en aluminium installées à l'entrée d'un commerce"
                                 className="w-full h-80 object-cover"
                             />
@@ -270,7 +270,7 @@ const PortesAluminium = () => {
                                 >
                                     <div className="lg:col-span-5 lg:[direction:ltr]">
                                         <div className="relative overflow-hidden border border-[#dde5f0] bg-[#f3f6fb]">
-                                            <img
+                                            <img loading="lazy" decoding="async"
                                                 src={g.img}
                                                 alt={g.title}
                                                 loading="lazy"
@@ -385,8 +385,8 @@ const PortesAluminium = () => {
                         </div>
                         <div className="lg:col-span-7">
                             <div className="relative overflow-hidden border border-[#1e3457]">
-                                <img
-                                    src={`${A}/alu-finis.png`}
+                                <img loading="lazy" decoding="async"
+                                    src={`${A}/alu-finis.webp`}
                                     alt="Échantillons de finis d'aluminium : anodisé clair, bronze, noir mat et blanc"
                                     loading="lazy"
                                     className="w-full h-80 object-cover"
@@ -411,16 +411,16 @@ const PortesAluminium = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                         <div className="md:col-span-7 relative overflow-hidden border border-[#dde5f0] group">
-                            <img
-                                src={`${A}/alu-gal2.png`}
+                            <img loading="lazy" decoding="async"
+                                src={`${A}/alu-gal2.webp`}
                                 alt="Porte commerciale en aluminium robuste à l'entrée d'un bâtiment"
                                 loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                         </div>
                         <div className="md:col-span-5 relative overflow-hidden border border-[#dde5f0] group">
-                            <img
-                                src={`${A}/alu-cta.png`}
+                            <img loading="lazy" decoding="async"
+                                src={`${A}/alu-cta.webp`}
                                 alt="Porte isolée en aluminium à bris thermique"
                                 loading="lazy"
                                 className="w-full h-full min-h-[280px] object-cover transition-transform duration-500 group-hover:scale-105"

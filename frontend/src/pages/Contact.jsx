@@ -109,10 +109,31 @@ const Contact = () => {
     const onChange = (e) =>
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const validate = () => {
+        if (!form.name.trim()) return "Veuillez indiquer votre nom.";
+        if (form.phone.trim().length < 5)
+            return "Veuillez indiquer un numéro de téléphone valide.";
+        if (!emailRe.test(form.email.trim()))
+            return "Veuillez indiquer une adresse courriel valide.";
+        if (!form.work_location.trim())
+            return "Veuillez indiquer le lieu des travaux.";
+        if (!form.message.trim())
+            return "Veuillez écrire un court message décrivant votre besoin.";
+        return "";
+    };
+
     const onSubmit = async (e) => {
         e.preventDefault();
-        setStatus("submitting");
         setErrorMsg("");
+        const validationError = validate();
+        if (validationError) {
+            setStatus("error");
+            setErrorMsg(validationError);
+            return;
+        }
+        setStatus("submitting");
         try {
             const payload = { ...form };
             // Fold the optional "projet de porte" details into the message
@@ -140,13 +161,17 @@ const Contact = () => {
                 payload.message = `${payload.message}\n${lines.join("\n")}`.trim();
                 if (!payload.project_type) payload.project_type = "Porte en aluminium";
             }
-            // Strip the helper fields — backend doesn't store them
-            delete payload.door_gamme;
-            delete payload.door_config;
-            delete payload.door_qty;
-            delete payload.door_width;
-            delete payload.door_height;
-            delete payload.door_finish;
+            // Keep structured door fields for the ERP; drop empties to stay tidy
+            [
+                "door_gamme",
+                "door_config",
+                "door_qty",
+                "door_width",
+                "door_height",
+                "door_finish",
+            ].forEach((k) => {
+                if (!payload[k]) delete payload[k];
+            });
             if (!payload.project_type) delete payload.project_type;
             if (!payload.company) delete payload.company;
             await axios.post(`${API}/contact`, payload);
@@ -158,15 +183,15 @@ const Contact = () => {
             setForm(initialForm);
         } catch (err) {
             setStatus("error");
-            const detail =
-                err?.response?.data?.detail?.[0]?.msg ||
-                err?.response?.data?.detail ||
-                "Une erreur est survenue. Veuillez réessayer.";
-            setErrorMsg(
-                typeof detail === "string"
-                    ? detail
-                    : "Erreur de validation. Vérifiez vos informations.",
-            );
+            if (err?.response?.status === 422) {
+                setErrorMsg(
+                    "Certaines informations semblent invalides. Vérifiez vos coordonnées et votre message, puis réessayez.",
+                );
+            } else {
+                setErrorMsg(
+                    "Une erreur est survenue lors de l'envoi. Veuillez réessayer dans un instant ou nous joindre par téléphone.",
+                );
+            }
         }
     };
 
@@ -500,6 +525,7 @@ const Contact = () => {
                                                 name="message"
                                                 required
                                                 rows={5}
+                                                maxLength={3500}
                                                 value={form.message}
                                                 onChange={onChange}
                                                 data-testid="contact-input-message"
@@ -567,7 +593,13 @@ const Contact = () => {
                                                     438 376-4177
                                                 </a>
                                                 <div className="text-[#b2c3dd] text-sm mt-1">
-                                                    Appel ou texto — comme vous préférez
+                                                    <a
+                                                        href="sms:+14383764177"
+                                                        data-testid="contact-info-sms"
+                                                        className="hover:text-white transition-colors underline-offset-2 hover:underline"
+                                                    >
+                                                        Appel ou texto — comme vous préférez
+                                                    </a>
                                                 </div>
                                             </div>
                                         </li>
