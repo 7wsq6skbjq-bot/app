@@ -79,6 +79,7 @@ const Navbar = () => {
                     >
                         <Phone className="w-4 h-4" />
                         438 376-4177
+                        <span className="text-[#6485b4] font-normal normal-case">· texto</span>
                     </a>
                     <Link
                         to="/contact"
@@ -129,7 +130,7 @@ const Navbar = () => {
                             className="mt-4 inline-flex items-center justify-center gap-2 border border-[#0c182b] text-[#0c182b] font-display font-bold uppercase tracking-tight py-3"
                         >
                             <Phone className="w-4 h-4" />
-                            438 376-4177
+                            438 376-4177 · texto
                         </a>
                         <Link
                             to="/contact"

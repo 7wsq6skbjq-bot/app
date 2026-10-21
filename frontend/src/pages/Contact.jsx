@@ -557,7 +557,7 @@ const Contact = () => {
                                             </div>
                                             <div>
                                                 <div className="tech-stamp text-[#97b0d0] mb-1">
-                                                    Téléphone
+                                                    Téléphone · texto
                                                 </div>
                                                 <a
                                                     href="tel:+14383764177"
@@ -566,6 +566,9 @@ const Contact = () => {
                                                 >
                                                     438 376-4177
                                                 </a>
+                                                <div className="text-[#b2c3dd] text-sm mt-1">
+                                                    Appel ou texto — comme vous préférez
+                                                </div>
                                             </div>
                                         </li>
                                         <li className="flex items-start gap-4">
