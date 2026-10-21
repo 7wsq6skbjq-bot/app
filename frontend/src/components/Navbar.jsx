@@ -79,7 +79,7 @@ const Navbar = () => {
                     >
                         <Phone className="w-4 h-4" />
                         438 376-4177
-                        <span className="text-[#6485b4] font-normal normal-case">· texto</span>
+                        <span className="text-[#1d3557] font-semibold normal-case">· texto</span>
                     </a>
                     <Link
                         to="/contact"

@@ -1,0 +1,29 @@
+{
+  "summary": "Tested the public FR flow for the aluminium features. Backend: POST /api/contact returns 201 when the door details are folded into the message, and returns 422 on bad input (missing work_location, invalid email, empty message). All 11 /generated/aluminium/*.png files are served (15/15 pytest passed). Frontend: on the home page, the HomeAluminium section comes right after the hero. On /portes-aluminium, the 9 <img> elements have naturalWidth > 0 and the hero background loads (1264px). Both 'Demander une soumission' CTAs (alu-hero-cta, alu-final-cta-button) link to /contact?produit=aluminium. On that page the door panel opens automatically and the type de projet is pre-filled with 'Porte en aluminium'. A full form submission (AT2000, Double, 2, 72\" x 84\", Noir mat) returned 201, the message contained the '--- Projet de porte en aluminium ---' block, and the contact-success message appeared. The 'texto' mention is present in the desktop navbar, the mobile menu (mobile-nav-phone), the footer ('Appel ou texto') and the Contact page ('Téléphone · texto' + 'Appel ou texto').",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Navbar desktop", "issues": ["The '· texto' text next to the number is small and pale (#6485b4 on white): low contrast, easy to miss"]},
+      {"screen": "/portes-aluminium + home", "issues": ["The aluminium images are uncompressed PNGs of 600-880 KB each (~7.6 MB total). Converting them to WebP/JPEG and adding loading='lazy' to the images below the fold would improve LCP/performance"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_contact_door_project.py", "/app/test_reports/pytest/pytest_iter20.xml"],
+  "action_items": [
+    "(Optional) Compress the aluminium images to WebP/JPEG and lazy-load them",
+    "(Optional) Increase the contrast of '· texto' in the desktop navbar"
+  ],
+  "critical_code_review_comments": [
+    "Contact.jsx useEffect ?gamme=: the match uses startsWith on labels that contain accents. For example ?gamme=isolee would not match 'Isolée (bris thermique)' and the raw value would be sent while the select shows 'Sélectionner…'. Normalize accents (NFD) or map to known keys. No CTA uses ?gamme= right now, so the risk is low.",
+    "Contact.jsx: the user's message plus the door block can exceed the backend's 4000-character limit (max_length) and produce a 422 with a generic message. Add maxLength to the textarea or truncate.",
+    "Contact.jsx is 655 lines; the door panel could be extracted into a DoorProjectFields component.",
+    "The form uses noValidate, so the required fields are only validated by the backend (422). The message shown is the Pydantic error in English, which is inconsistent on a French site."
+  ],
+  "updated_files": ["/app/backend/tests/test_contact_door_project.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Test contact submissions (name TEST_Door Lead / TEST_UI Door, emails test_door@example.com / test_ui_door@example.com) created real lead jobs plus email/push notifications; they can be deleted from contact_submissions and the jobs board",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "ERP not tested. Regression test: backend/tests/test_contact_door_project.py. Useful data-testids: contact-door-toggle, contact-door-fields, contact-door-gamme/config/qty/width/height/finish, contact-submit, contact-success, nav-phone, mobile-nav-phone, footer-phone, contact-info-phone, alu-hero-cta, alu-final-cta-button."
+}
