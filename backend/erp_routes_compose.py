@@ -23,6 +23,7 @@ from pydantic import BaseModel, EmailStr, Field
 from erp_helpers import (
     REPLY_TO_EMAIL,
     SENDER_EMAIL,
+    banner_attachments,
     normalize_message_to_html,
     wrap_branded_email,
 )
@@ -107,14 +108,14 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         }
         if payload.cc_email:
             params["cc"] = [payload.cc_email]
-        if decoded_atts:
-            params["attachments"] = [
-                {
-                    "filename": a["filename"],
-                    "content": base64.b64encode(a["raw"]).decode("ascii"),
-                }
-                for a in decoded_atts
-            ]
+        # Inline header/footer banners (CID) + any user attachments.
+        params["attachments"] = banner_attachments() + [
+            {
+                "filename": a["filename"],
+                "content": base64.b64encode(a["raw"]).decode("ascii"),
+            }
+            for a in decoded_atts
+        ]
 
         # ── Send and log ─────────────────────────────────────────
         log = EmailLogEntry(

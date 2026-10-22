@@ -1,6 +1,15 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, bannières courriel v2 + menu mobile ERP + accueil)
+- **Bannières courriel refaites (v2)** : nouvel en-tête (fond blanc, logo transparent navy, téléphone + « Appel ou texto ») et pied (fond navy, logo blanc, services, contact, **porte en aluminium en fondu** à droite via dégradé). Tagline corrigée → « Quincaillerie et portes commerciales en aluminium » (quincaillerie d'abord). Message portes = **fourniture** uniquement (jamais « installation de portes » — Portech ne pose pas les portes). Aucun mot en majuscules dans une phrase.
+  - Images générées localement via Chromium headless (crop sur fond repère magenta) : `/app/frontend/public/email/portech-header-v2.png` (1200×291) et `portech-footer-v2.png` (1200×545). Téléchargeables pour Gmail.
+  - **Appliqué partout dans l'app** : fichiers `backend/email_assets/email-header.png` & `email-footer.png` remplacés par les v2. `erp_helpers.wrap_branded_email()` passe en **inline CID** (`cid:portech-header.png` / `cid:portech-footer.png`) + nouveau `banner_attachments()` ; `send_html_email`/`send_pdf_email` et `erp_routes_compose.compose-email` joignent les bannières inline. Plus aucune dépendance à `portech.info/email/*`. Prospection déjà sur `email_assets` → mise à jour auto. Lien « texto » (sms:) ajouté dans la signature. Testé : `/api/admin/compose-email` → 201, email réellement envoyé (resend_id).
+- **Menu mobile ERP** : `MobileTabBar` mis à parité avec le desktop — ajout dans « Plus » de États de compte, Suivi des jobs, Demandes de porte, Assistante IA, Catalogue quincaillerie, Suivi des dépôts, Récap TPS/TVQ, Rapport kilométrique, Coûts Master (26 sections au total).
+- **Accueil** : phrase hero → « Votre expert en quincaillerie et de portes commerciales en aluminium. »
+- Note déploiement : changements en preview ; nécessite un redéploiement pour la production.
+
+
 ## Changelog — 2026-06 (fork, 4 améliorations aluminium : WebP, validation FR, ERP demandes de porte, SMS)
 - **Images WebP + lazy-load** : les 11 visuels `/app/frontend/public/generated/aluminium/alu-*.png` convertis en `.webp` (qualité 80) — total 7,6 Mo → 0,7 Mo. Références mises à jour dans `PortesAluminium.jsx` (hero en background-image + cartes gammes + galerie) et `home/sections/HomeAluminium.jsx`. `loading="lazy" decoding="async"` sur les `<img>` sous la ligne de flottaison. Les `.png` sont conservés sur disque (regression test iter20). Vérifié : naturalWidth>0.
 - **Validation formulaire Contact en français** : fonction `validate()` dans `Contact.jsx` (nom, téléphone ≥5, regex courriel, lieu, message) → messages FR dans `contact-error` avant envoi ; `catch` mappe 422/erreurs réseau en FR (plus d'erreur Pydantic en anglais). `maxLength` : message 3500, door_qty 20, door_width/height 40.

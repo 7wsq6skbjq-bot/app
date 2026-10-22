@@ -8,6 +8,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List, Optional
 
 import resend
@@ -74,6 +75,38 @@ def normalize_message_to_html(msg: str) -> str:
 
 
 # ---------- Branded email wrapper (matches prospection campaigns) ----------
+# Banners are inline-attached (CID) so recipients always see them, even if the
+# portech.info domain is unreachable or blocked by a corporate mail gateway.
+# Files live inside the backend folder so they ship with the backend container.
+_BANNER_DIR = Path(__file__).parent / "email_assets"
+HEADER_CID = "portech-header.png"
+FOOTER_CID = "portech-footer.png"
+
+
+def _load_banner_b64(filename: str) -> Optional[str]:
+    p = _BANNER_DIR / filename
+    if not p.exists():
+        logger.warning("Banner file not found: %s", p)
+        return None
+    return base64.b64encode(p.read_bytes()).decode("ascii")
+
+
+_BANNER_HEADER_B64 = _load_banner_b64("email-header.png")
+_BANNER_FOOTER_B64 = _load_banner_b64("email-footer.png")
+
+
+def banner_attachments() -> list[dict]:
+    """Inline header/footer banner attachments to embed in a Resend email."""
+    atts: list[dict] = []
+    if _BANNER_HEADER_B64:
+        atts.append({"filename": "email-header.png", "content": _BANNER_HEADER_B64,
+                     "content_id": HEADER_CID, "content_type": "image/png"})
+    if _BANNER_FOOTER_B64:
+        atts.append({"filename": "email-footer.png", "content": _BANNER_FOOTER_B64,
+                     "content_id": FOOTER_CID, "content_type": "image/png"})
+    return atts
+
+
 def wrap_branded_email(body_html: str, footer_note: str = "") -> str:
     """Wrap a transactional email body with the same banner header/footer that
     the prospection campaign uses. Keeps look-and-feel consistent across ALL
@@ -82,24 +115,28 @@ def wrap_branded_email(body_html: str, footer_note: str = "") -> str:
     `body_html` is the actual message content (Bonjour ... + paragraphs).
     `footer_note` is the small grey text under the bottom banner (e.g.,
     a unsubscribe hint or document number for traceability).
+
+    Banners are referenced via `cid:` so callers MUST attach `banner_attachments()`
+    to the Resend params for the images to render.
     """
     return (
         '<table width="100%" cellpadding="0" cellspacing="0" '
         'style="font-family: Arial, Helvetica, sans-serif; background:#f4f4f5; padding:0; margin:0;">'
         '<tr><td align="center">'
         '<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; max-width:600px;">'
-        '<tr><td><img src="https://portech.info/email/email-header.png" alt="Portech" '
+        '<tr><td><img src="cid:' + HEADER_CID + '" alt="Portech" '
         'style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>'
         '<tr><td style="padding:32px 32px 16px 32px; color:#0c182b; font-size:15px; line-height:1.6;">'
         + body_html
         + '<p style="margin:24px 0 4px 0;"><b><a href="tel:+14383764177" '
-          'style="color:#0c182b; text-decoration:none;">438-376-4177</a></b></p>'
+          'style="color:#0c182b; text-decoration:none;">438-376-4177</a> '
+          '&middot; <a href="sms:+14383764177" style="color:#2f4f7f; text-decoration:none;">texto</a></b></p>'
         + '<p style="margin:0 0 24px 0;"><a href="https://www.portech.info" '
           'style="color:#1d4ed8;">www.portech.info</a></p>'
         + '<p style="margin:16px 0 0 0;"><b>Cédrick Pimparé</b><br/>'
           'Portech — Quincaillerie et portes commerciales en aluminium</p>'
         + '</td></tr>'
-        + '<tr><td><img src="https://portech.info/email/email-footer.png" alt="Portech" '
+        + '<tr><td><img src="cid:' + FOOTER_CID + '" alt="Portech" '
           'style="display:block; width:100%; max-width:600px; height:auto; border:0;"/></td></tr>'
         + (
             '<tr><td style="padding:16px 32px; color:#71717a; font-size:11px; text-align:center;">'
@@ -177,16 +214,19 @@ async def send_pdf_email(*, to_email: str, subject: str, html: str,
     # If `html` already contains HTML tags, this is a no-op.
     html = normalize_message_to_html(html)
     final_html = wrap_branded_email(html, footer_note=footer_note) if branded else html
+    attachments = [{
+        "filename": filename,
+        "content": base64.b64encode(pdf_bytes).decode("ascii"),
+    }]
+    if branded:
+        attachments += banner_attachments()
     params = {
         "from": f"Portech <{SENDER_EMAIL}>",
         "to": [to_email],
         "reply_to": REPLY_TO_EMAIL,
         "subject": subject,
         "html": final_html,
-        "attachments": [{
-            "filename": filename,
-            "content": base64.b64encode(pdf_bytes).decode("ascii"),
-        }],
+        "attachments": attachments,
     }
     try:
         result = await asyncio.to_thread(resend.Emails.send, params)
@@ -213,6 +253,10 @@ async def send_html_email(*, to_email: str, subject: str, html: str,
         "subject": subject,
         "html": final_html,
     }
+    if branded:
+        atts = banner_attachments()
+        if atts:
+            params["attachments"] = atts
     try:
         result = await asyncio.to_thread(resend.Emails.send, params)
         logger.info("ERP html email sent id=%s to=%s", result.get("id"), to_email)
