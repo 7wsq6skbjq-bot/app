@@ -1,6 +1,15 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, outils comptables dépenses : comptable / catégorie / trimestriel / reçus)
+- **Envoi du rapport au comptable** : `POST /api/admin/expenses/report/send` (start/end/category/include_receipts/to) → génère le PDF et l'envoie via `send_pdf_email` (défaut `ACCOUNTANT_EMAIL`). Bouton « Envoyer au comptable » (exp-report-send, prompt destinataire). Testé : 200, courriel envoyé.
+- **Filtre par catégorie** dans le rapport : param `category` sur `report.pdf` + select `exp-report-cat`. Nom de fichier inclut la catégorie.
+- **Résumé trimestriel TPS/TVQ** : `GET /api/admin/expenses/quarterly?year=` → 4 trimestres + total annuel. Carte `exp-quarterly-card` (tableau T1–T4 + Année, sélecteur d'année). Testé.
+- **Annexe reçus dans le PDF** : case `exp-report-receipts` + param `include_receipts`. `render_expense_report_pdf(..., receipts)` ajoute une annexe avec les images (converties via PIL) ; reçus PDF notés comme fichiers séparés. Testé : PDF 2 pages avec « Annexe ».
+- **Polish** (suite testing iter22, 100% pass) : ne plus quitter « Tous les mois » après un enregistrement ; libellés KPI/empty adaptés en mode « all » ; `_date_fr` (erp_pdf) utilise des abréviations de mois FR avec accents (déc, août) — s'applique à tous les PDF.
+- Helper partagé `_build_report_inputs(db, start, end, category, include_receipts)` dans erp_routes_expenses.py.
+
+
 ## Changelog — 2026-06 (fork, rapport PDF de dépenses par plage de dates)
 - **Nouveau rapport comptable PDF** (Comptabilité → Dépenses) : export détaillé filtré **d'une date à une autre** pour les déclarations de taxes.
   - Backend : `GET /api/admin/expenses/report.pdf?start=YYYY-MM-DD&end=YYYY-MM-DD[&category=]` (erp_routes_expenses.py) → `render_expense_report_pdf()` dans erp_pdf.py. Garde-fou format de date (400 si invalide), inversion auto si start>end, tri par date, limite 5000.

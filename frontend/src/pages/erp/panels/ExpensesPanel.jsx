@@ -323,7 +323,7 @@ export const ExpensesPanel = () => {
             // a different month, switch the filter so the expense stays visible
             // instead of silently "disappearing".
             const savedMonth = String(saved?.date || payload.date || "").slice(0, 7);
-            if (savedMonth && savedMonth !== month) {
+            if (savedMonth && savedMonth !== month && month !== "all") {
                 setNotice(`✅ Dépense enregistrée au ${savedMonth}. Affichage de ce mois.`);
                 setMonth(savedMonth); // triggers reload via effect
             } else {
@@ -429,7 +429,8 @@ export const ExpensesPanel = () => {
             );
             const link = document.createElement("a");
             link.href = URL.createObjectURL(data);
-            link.download = `depenses_${rptStart}_au_${rptEnd}.pdf`;
+            const catPart = rptCat ? `_${rptCat.replace(/[^\w]+/g, "-")}` : "";
+            link.download = `depenses${catPart}_${rptStart}_au_${rptEnd}.pdf`;
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -523,7 +524,7 @@ export const ExpensesPanel = () => {
             {/* Summary tiles */}
             {summary && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#dde5f0] border border-[#dde5f0]">
-                    <SummaryTile icon={Receipt} label="Dépenses du mois" value={formatCurrency(summary.total)} sub={`${summary.count} dépense(s)`} testid="exp-stat-total" />
+                    <SummaryTile icon={Receipt} label={month === "all" ? "Dépenses (tout)" : "Dépenses du mois"} value={formatCurrency(summary.total)} sub={`${summary.count} dépense(s)`} testid="exp-stat-total" />
                     <SummaryTile icon={Wallet} label="Sous-total HT" value={formatCurrency(summary.subtotal)} testid="exp-stat-subtotal" />
                     <SummaryTile icon={TrendingDown} label="TPS récupérable" value={formatCurrency(summary.tps)} accent="text-[#0b6b2f]" testid="exp-stat-tps" />
                     <SummaryTile icon={TrendingDown} label="TVQ récupérable" value={formatCurrency(summary.tvq)} accent="text-[#0b6b2f]" testid="exp-stat-tvq" />
@@ -679,7 +680,7 @@ export const ExpensesPanel = () => {
             <div className="md:hidden space-y-3">
                 {!loading && rows.length === 0 && (
                     <div className="p-8 text-center text-[#4b5d7a] text-sm border border-[#dde5f0] bg-white">
-                        Aucune dépense ce mois-ci. Appuyez sur + pour ajouter.
+                        {month === "all" ? "Aucune dépense enregistrée. Appuyez sur + pour ajouter." : "Aucune dépense ce mois-ci. Appuyez sur + pour ajouter."}
                     </div>
                 )}
                 {rows.map((e) => (
@@ -715,7 +716,7 @@ export const ExpensesPanel = () => {
                     <div className="col-span-1 text-right">Actions</div>
                 </div>
                 {!loading && rows.length === 0 && (
-                    <div className="p-12 text-center text-[#4b5d7a] text-sm">Aucune dépense ce mois-ci.</div>
+                    <div className="p-12 text-center text-[#4b5d7a] text-sm">{month === "all" ? "Aucune dépense enregistrée." : "Aucune dépense ce mois-ci."}</div>
                 )}
                 <ul>
                     {rows.map((e) => (

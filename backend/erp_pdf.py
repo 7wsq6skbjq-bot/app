@@ -48,12 +48,18 @@ def _money(v) -> str:
     return f"{s} $"
 
 
+_FR_MONTH_ABBR = {
+    1: "jan", 2: "fév", 3: "mar", 4: "avr", 5: "mai", 6: "juin",
+    7: "juil", 8: "août", 9: "sep", 10: "oct", 11: "nov", 12: "déc",
+}
+
+
 def _date_fr(iso) -> str:
     if not iso:
         return "—"
     try:
         d = datetime.fromisoformat(str(iso).replace("Z", "+00:00")) if "T" in str(iso) else datetime.strptime(str(iso)[:10], "%Y-%m-%d")
-        return d.strftime("%d %b %Y")
+        return f"{d.day:02d} {_FR_MONTH_ABBR[d.month]} {d.year}"
     except Exception:
         return str(iso)
 

@@ -1,0 +1,36 @@
+{
+  "summary": "Frontend-only test of ERP > Dépenses accounting features (/admin/gestion/depenses) at 1920x1080 using admin PortechAdmin. All 8 requested flows PASS: the 'Tous les mois' (all) option is first in exp-month-filter and lists every expense (2 instead of 0 for the current month). The report card fields (start/end/cat with 14 categories + Toutes, receipts checkbox) are present. The 4 shortcuts fill in correct dates (Ce trimestre 2026-10-01→2026-12-31, Trimestre dernier 2026-07-01→2026-09-30, Cette année, L'an dernier 2025). Générer le PDF downloads a valid %PDF (depenses_<start>_au_<end>.pdf) with no 4xx/5xx, both with and without category+receipts. The quarterly card shows exp-quarter-1..4 plus the Année row, and the exp-quarterly-year change re-calls /quarterly?year=2025 (200) and refreshes the table. I created TEST_ expense, uploaded a JPEG via exp-file-input (201): exp-download-receipt + exp-remove-receipt appear in the modal, the modal download works (valid JPEG), the row button exp-download-receipt-{id} appears and downloads a valid JPEG, and it is absent on rows without a receipt. Reopening the edit modal shows Télécharger. A category+receipts PDF with a receipt is 2 pages (annex). exp-report-send was NOT clicked (per instructions). The test expense was deleted afterwards.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ExpensesPanel.save()", "issue": "When the filter is on 'Tous les mois' (all), saving an expense switches the filter to that expense's month (savedMonth !== 'all' → setMonth(savedMonth)), with the notice 'Affichage de ce mois.' The user loses the all view. Skip the switch when month === 'all'.", "selector": "[data-testid='exp-month-filter']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dépenses with 'Tous les mois'", "issues": ["The KPI card still says 'Dépenses du mois' and the empty state says 'Aucune dépense ce mois-ci' even when 'Tous les mois' is selected; change the labels when month==='all'."]},
+      {"screen": "PDF report", "issues": ["The month abbreviation is shown as 'DEC' without the accent ('DU 01 JAN 2020 AU 31 DEC 2026'); in French it should be 'DÉC'.", "The downloaded file name does not include the category, so several reports for different categories share the same name."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(LOW) In save(), do not change the month filter when month === 'all'",
+    "(LOW) Change the KPI label and empty-state text in 'Tous les mois' mode",
+    "(LOW) PDF: use French month abbreviations with accents (DÉC, FÉV, AOÛT)",
+    "(LOW) setQuarter uses Date.toISOString() on local dates: in UTC+ time zones the dates shift back one day (fine in Montréal UTC-5, but use a local formatter for robustness)"
+  ],
+  "critical_code_review_comments": [
+    "ExpensesPanel.jsx is 1019 lines; split it out (ReportCard, QuarterlyCard, ExpenseModal)",
+    "setQuarter: fmt = d.toISOString().slice(0,10) on local-midnight dates → off-by-one in positive-offset time zones",
+    "The 'Trimestre dernier', 'Cette année' and 'L'an dernier' shortcuts have no data-testid (only exp-report-q-this does)",
+    "The row Modifier/Supprimer buttons have no data-testid",
+    "remove() has no try/catch (a failed delete is silent / unhandled rejection)",
+    "exportCsv has no error handling"
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "test_credentials": "PortechAdmin / Portech2026! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created TEST_Depense recu (TEST_Fournisseur, with a JPEG receipt) and then deleted it via the API. Existing data: 'Test receipt' (2026-06-01, has a receipt) and 'TEST_BAD' (2026-01-15).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login: on /admin/login, wait for networkidle before typing (fill() too early gets wiped by hydration). The Dépenses route is /admin/gestion/depenses; the default month is the current one (2026-10 in the preview), so use 'all' to see data. Row selector: div.hidden.md:block ul > li. Upload: set_input_files on [data-testid=exp-file-input]. 401s on /api/auth/me before login are expected."
+}
