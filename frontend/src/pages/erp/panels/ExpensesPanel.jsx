@@ -55,6 +55,10 @@ export const ExpensesPanel = () => {
     const [notice, setNotice] = useState("");
     const [filterCat, setFilterCat] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const [rptStart, setRptStart] = useState(`${new Date().getFullYear()}-01-01`);
+    const [rptEnd, setRptEnd] = useState(todayISO);
+    const [rptBusy, setRptBusy] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [editing, setEditing] = useState(null);
     const [receiptPreview, setReceiptPreview] = useState(null);  // blob URL for preview
@@ -376,6 +380,55 @@ export const ExpensesPanel = () => {
     };
 
 
+    const setQuarter = (which) => {
+        const now = new Date();
+        const y = now.getFullYear();
+        if (which === "year") {
+            setRptStart(`${y}-01-01`);
+            setRptEnd(`${y}-12-31`);
+            return;
+        }
+        if (which === "lastyear") {
+            setRptStart(`${y - 1}-01-01`);
+            setRptEnd(`${y - 1}-12-31`);
+            return;
+        }
+        const q = Math.floor(now.getMonth() / 3) + (which === "last" ? 0 : 1); // 1..4 (or prev)
+        let qy = y, qi = q;
+        if (qi < 1) { qi = 4; qy = y - 1; }
+        const startMonth = (qi - 1) * 3; // 0-based
+        const s = new Date(qy, startMonth, 1);
+        const e = new Date(qy, startMonth + 3, 0);
+        const fmt = (d) => d.toISOString().slice(0, 10);
+        setRptStart(fmt(s));
+        setRptEnd(fmt(e));
+    };
+
+    const downloadReport = async () => {
+        if (!rptStart || !rptEnd) {
+            setNotice("⚠️ Choisissez une date de début et une date de fin.");
+            return;
+        }
+        setRptBusy(true);
+        try {
+            const { data } = await http.get(
+                `/admin/expenses/report.pdf?start=${rptStart}&end=${rptEnd}`,
+                { responseType: "blob" },
+            );
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(data);
+            link.download = `depenses_${rptStart}_au_${rptEnd}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+        } catch (err) {
+            setNotice("⚠️ Impossible de générer le rapport PDF. Réessayez.");
+        } finally {
+            setRptBusy(false);
+        }
+    };
+
     const sendRecapToAccountant = async () => {
         try {
             const { data: preview } = await http.get(`/admin/expenses/recap/preview?month=${month}`);
@@ -468,6 +521,50 @@ export const ExpensesPanel = () => {
                 <button onClick={openNew} data-testid="exp-new" className="hidden md:inline-flex btn-primary !py-2 !px-4 !text-xs ml-auto">
                     <Plus className="w-3.5 h-3.5" /> Nouvelle dépense
                 </button>
+            </div>
+
+            {/* Rapport comptable — export PDF détaillé par plage de dates */}
+            <div data-testid="exp-report-card" className="border border-[#dde5f0] bg-[#f3f6fb] p-4">
+                <div className="flex items-center gap-2 mb-3">
+                    <FileText className="w-4 h-4 text-[#2f4f7f]" />
+                    <span className="tech-stamp text-[#2f4f7f]">Rapport comptable — PDF détaillé (taxes TPS/TVQ)</span>
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                    <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-[#6485b4] mb-1">Du</label>
+                        <input
+                            type="date"
+                            data-testid="exp-report-start"
+                            value={rptStart}
+                            onChange={(e) => setRptStart(e.target.value)}
+                            className={inputClass.replace("w-full", "w-auto")}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-[#6485b4] mb-1">Au</label>
+                        <input
+                            type="date"
+                            data-testid="exp-report-end"
+                            value={rptEnd}
+                            onChange={(e) => setRptEnd(e.target.value)}
+                            className={inputClass.replace("w-full", "w-auto")}
+                        />
+                    </div>
+                    <button
+                        onClick={downloadReport}
+                        disabled={rptBusy}
+                        data-testid="exp-report-pdf"
+                        className="btn-primary !py-2 !px-4 !text-xs disabled:opacity-50"
+                    >
+                        <Download className="w-3.5 h-3.5" /> {rptBusy ? "Génération…" : "Générer le PDF détaillé"}
+                    </button>
+                    <div className="flex flex-wrap gap-1.5 ml-auto">
+                        <button onClick={() => setQuarter("this")} data-testid="exp-report-q-this" className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Ce trimestre</button>
+                        <button onClick={() => setQuarter("last")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Trimestre dernier</button>
+                        <button onClick={() => setQuarter("year")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Cette année</button>
+                        <button onClick={() => setQuarter("lastyear")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">L'an dernier</button>
+                    </div>
+                </div>
             </div>
 
             {/* Success / info notice */}

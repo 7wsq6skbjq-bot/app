@@ -1,4 +1,5 @@
 """Expense CRUD + monthly summary + CSV export + receipt photo upload + OCR."""
+import asyncio
 import csv
 import io
 import json
@@ -18,9 +19,11 @@ from emergentintegrations.llm.chat import (
     UserMessage,
 )
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from gridfs.errors import NoFile
 from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
+
+from erp_pdf import render_expense_report_pdf
 
 from erp_models_expense import (
     EXPENSE_CATEGORIES,
@@ -293,6 +296,32 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             "total": round(total, 2),
             "by_category": by_category,
         }
+
+    @router.get("/expenses/report.pdf")
+    async def expenses_report_pdf(
+        start: str = Query(..., description="Date de début YYYY-MM-DD"),
+        end: str = Query(..., description="Date de fin YYYY-MM-DD"),
+        category: Optional[str] = Query(default=None),
+        _: dict = Depends(auth_dep),
+    ):
+        """Detailed expense report (PDF) for a date range — accountant / tax ready."""
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", start) or not re.match(r"^\d{4}-\d{2}-\d{2}$", end):
+            raise HTTPException(400, "Dates invalides (format attendu : AAAA-MM-JJ)")
+        if start > end:
+            start, end = end, start
+        query = {"date": {"$gte": start, "$lte": end}}
+        if category:
+            query["category"] = category
+        cur = db.erp_expenses.find(query, {"_id": 0}).sort("date", 1).limit(5000)
+        expenses = [d async for d in cur]
+        pdf_bytes = await asyncio.to_thread(render_expense_report_pdf, expenses, start, end)
+        filename = f"depenses_{start}_au_{end}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
 
     @router.post("/expenses/{expense_id}/receipt", status_code=201)
     async def upload_receipt(

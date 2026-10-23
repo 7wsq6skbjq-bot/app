@@ -1,6 +1,14 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, rapport PDF de dépenses par plage de dates)
+- **Nouveau rapport comptable PDF** (Comptabilité → Dépenses) : export détaillé filtré **d'une date à une autre** pour les déclarations de taxes.
+  - Backend : `GET /api/admin/expenses/report.pdf?start=YYYY-MM-DD&end=YYYY-MM-DD[&category=]` (erp_routes_expenses.py) → `render_expense_report_pdf()` dans erp_pdf.py. Garde-fou format de date (400 si invalide), inversion auto si start>end, tri par date, limite 5000.
+  - Contenu du PDF : en-tête Portech + période, **Sommaire** (sous-total/TPS/TVQ/total), **Crédits de taxes sur intrants** (CTI TPS + RTI TVQ + total récupérable + coût net), **répartition par catégorie**, **détail ligne par ligne** (date, fournisseur, description, catégorie, mode, sous-total, TPS, TVQ, total) + ligne TOTAUX.
+  - Frontend : carte « Rapport comptable — PDF détaillé » dans ExpensesPanel avec 2 champs date + bouton `exp-report-pdf` + raccourcis (Ce trimestre / Trimestre dernier / Cette année / L'an dernier). Télécharge le PDF via blob.
+  - Testé : PDF valide 95 Ko, contient CTI/RTI/catégories/fournisseur/totaux ; rendu visuel vérifié ; dates invalides → 400.
+
+
 ## Changelog — 2026-06 (fork, dépenses: récupération visibilité + téléchargement reçus)
 - **AUCUNE PERTE DE DONNÉES** (confirmé via lecture base production par deployer) : 21 dépenses + images reçus intacts. Les reçus d'essence Ultramar existent, datés 2024-09-17 (année probablement saisie à tort), aucun reçu en août, aucune donnée 2025. Invisibles car ExpensesPanel filtrait toujours sur le mois courant (dropdown limité à 12 mois → sept. 2024 hors de portée).
 - **Correctif « Tous les mois »** : option `{value:"all"}` en tête de `monthOptions` (ExpensesPanel). Backend : `GET /admin/expenses?month=all` et `export.csv?month=all` renvoient déjà tout (garde `len==7`) ; `GET /admin/expenses/summary` gère désormais `month=all` (agrégation globale). Testé : une dépense sans date (invisible par mois) réapparaît sous « Tous les mois ».

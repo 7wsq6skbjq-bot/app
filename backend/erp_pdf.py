@@ -2483,3 +2483,156 @@ def render_mileage_annual_pdf(year: int, by_month: list, by_client: list, totals
     doc.build(story)
     buf.seek(0)
     return buf.read()
+
+
+def render_expense_report_pdf(expenses: list[dict], start: str, end: str) -> bytes:
+    """Detailed, accountant-ready expense report for a date range.
+    Includes period summary, input-tax-credit totals (CTI/RTI), a by-category
+    breakdown and a line-by-line table."""
+    s = _styles()
+    buf, doc = _build_doc()
+    story = []
+
+    period = f"DU {_date_fr(start)} AU {_date_fr(end)}".upper()
+    story.append(_header(s, "RAPPORT DE DÉPENSES", period, None))
+    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph(
+        f"Généré le {_date_fr(datetime.now(timezone.utc).isoformat())} &nbsp;·&nbsp; "
+        f"{len(expenses)} dépense(s) &nbsp;·&nbsp; Nº TPS {COMPANY['tps']} &nbsp;·&nbsp; Nº TVQ {COMPANY['tvq']}",
+        s["footer"]))
+    story.append(Spacer(1, 5 * mm))
+
+    t_sub = sum(float(e.get("subtotal") or 0) for e in expenses)
+    t_tps = sum(float(e.get("tps") or 0) for e in expenses)
+    t_tvq = sum(float(e.get("tvq") or 0) for e in expenses)
+    t_tot = sum(float(e.get("total") or 0) for e in expenses)
+
+    box_style = TableStyle([
+        ("SPAN", (0, 0), (1, 0)),
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("BACKGROUND", (0, -1), (-1, -1), BG_LIGHT),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+        ("BOX", (0, 0), (-1, -1), 0.5, NAVY_BORDER),
+        ("INNERGRID", (0, 1), (-1, -1), 0.3, NAVY_BORDER),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+    ])
+    summary_tbl = Table([
+        ["SOMMAIRE DE LA PÉRIODE", ""],
+        ["Sous-total (avant taxes)", _money(t_sub)],
+        ["TPS payée", _money(t_tps)],
+        ["TVQ payée", _money(t_tvq)],
+        ["Total des dépenses", _money(t_tot)],
+    ], colWidths=[52 * mm, 32 * mm])
+    summary_tbl.setStyle(box_style)
+
+    tax_tbl = Table([
+        ["CRÉDITS DE TAXES SUR INTRANTS", ""],
+        ["CTI — TPS à récupérer", _money(t_tps)],
+        ["RTI — TVQ à récupérer", _money(t_tvq)],
+        ["Total récupérable", _money(t_tps + t_tvq)],
+        ["Coût net (après crédits)", _money(t_sub)],
+    ], colWidths=[52 * mm, 32 * mm])
+    tax_tbl.setStyle(box_style)
+
+    two = Table([[summary_tbl, tax_tbl]], colWidths=[88 * mm, 88 * mm])
+    two.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (0, 0), 0)]))
+    story.append(two)
+    story.append(Spacer(1, 7 * mm))
+
+    # By-category breakdown
+    cats = {}
+    for e in expenses:
+        c = e.get("category") or "Autre"
+        d = cats.setdefault(c, {"n": 0, "sub": 0.0, "tps": 0.0, "tvq": 0.0, "tot": 0.0})
+        d["n"] += 1
+        d["sub"] += float(e.get("subtotal") or 0)
+        d["tps"] += float(e.get("tps") or 0)
+        d["tvq"] += float(e.get("tvq") or 0)
+        d["tot"] += float(e.get("total") or 0)
+
+    story.append(Paragraph("<b>Par catégorie</b>", s["body"]))
+    story.append(Spacer(1, 2 * mm))
+    cat_rows = [["Catégorie", "Nb", "Sous-total", "TPS", "TVQ", "Total"]]
+    for c in sorted(cats, key=lambda k: -cats[k]["tot"]):
+        d = cats[c]
+        cat_rows.append([c, str(d["n"]), _money(d["sub"]), _money(d["tps"]), _money(d["tvq"]), _money(d["tot"])])
+    cat_tbl = Table(cat_rows, colWidths=[52 * mm, 12 * mm, 29 * mm, 22 * mm, 24 * mm, 29 * mm], repeatRows=1)
+    cat_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("ALIGN", (0, 0), (0, -1), "LEFT"),
+        ("GRID", (0, 0), (-1, -1), 0.3, NAVY_BORDER),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, BG_LIGHT]),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(cat_tbl)
+    story.append(Spacer(1, 7 * mm))
+
+    # Line-by-line detail
+    story.append(Paragraph("<b>Détail des dépenses</b>", s["body"]))
+    story.append(Spacer(1, 2 * mm))
+    cell = ParagraphStyle("cell", fontName="Helvetica", fontSize=7.2, leading=8.6, textColor=NAVY)
+    rows = [["Date", "Fournisseur", "Description", "Catégorie", "Mode", "Sous-tot.", "TPS", "TVQ", "Total"]]
+    for e in expenses:
+        rows.append([
+            _date_fr(e.get("date")),
+            Paragraph(e.get("supplier_name") or "—", cell),
+            Paragraph(e.get("description") or "—", cell),
+            Paragraph(e.get("category") or "—", cell),
+            e.get("payment_method") or "—",
+            _money(e.get("subtotal")),
+            _money(e.get("tps")),
+            _money(e.get("tvq")),
+            _money(e.get("total")),
+        ])
+    rows.append(["", "", "", "", "TOTAUX", _money(t_sub), _money(t_tps), _money(t_tvq), _money(t_tot)])
+    det = Table(rows, colWidths=[15 * mm, 25 * mm, 37 * mm, 21 * mm, 13 * mm, 19 * mm, 13 * mm, 15 * mm, 18 * mm], repeatRows=1)
+    det.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7.2),
+        ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ALIGN", (5, 0), (-1, -1), "RIGHT"),
+        ("ALIGN", (4, 0), (4, -1), "CENTER"),
+        ("GRID", (0, 0), (-1, -1), 0.3, NAVY_BORDER),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("BACKGROUND", (0, -1), (-1, -1), BG_LIGHT),
+        ("SPAN", (0, -1), (4, -1)),
+        ("ALIGN", (0, -1), (4, -1), "RIGHT"),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(det)
+
+    if not expenses:
+        story.append(Spacer(1, 4 * mm))
+        story.append(Paragraph("Aucune dépense pour cette période.", s["body"]))
+
+    story.append(Spacer(1, 8 * mm))
+    story.append(Paragraph(
+        "Rapport généré par Portech ERP. Conservez vos reçus à l'appui de vos déclarations de taxes (TPS/TVQ). "
+        "Les montants « à récupérer » correspondent aux crédits de taxe sur les intrants (CTI) et aux remboursements "
+        "de la taxe sur les intrants (RTI). · info@portech.info",
+        s["footer"]))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
