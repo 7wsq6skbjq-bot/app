@@ -1,5 +1,6 @@
 """Expense CRUD + monthly summary + CSV export + receipt photo upload + OCR."""
 import asyncio
+import calendar
 import csv
 import io
 import json
@@ -18,12 +19,18 @@ from emergentintegrations.llm.chat import (
     LlmChat,
     UserMessage,
 )
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response, StreamingResponse
 from gridfs.errors import NoFile
 from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
 
 from erp_pdf import render_expense_report_pdf
+from erp_helpers import send_pdf_email
+
+ACCOUNTANT_EMAIL = os.environ.get(
+    "ACCOUNTANT_EMAIL",
+    os.environ.get("LEADS_RECIPIENT_EMAIL", "portech.infos@gmail.com"),
+)
 
 from erp_models_expense import (
     EXPENSE_CATEGORIES,
@@ -62,6 +69,30 @@ async def _fetch_receipt(db, key: str):
     stream = await bucket.open_download_stream(_id)
     data = await stream.read()
     return data, meta.get("content_type")
+
+
+async def _build_report_inputs(db, start, end, category, include_receipts):
+    """Shared query for the PDF report route and the email-to-accountant route."""
+    query = {"date": {"$gte": start, "$lte": end}}
+    if category:
+        query["category"] = category
+    cur = db.erp_expenses.find(query, {"_id": 0}).sort("date", 1).limit(5000)
+    expenses = [d async for d in cur]
+    receipts = None
+    if include_receipts:
+        receipts = []
+        for e in expenses:
+            fn = e.get("receipt_filename")
+            if not fn:
+                continue
+            label = f"{e.get('date') or ''} — {e.get('supplier_name') or e.get('description') or 'Reçu'}"
+            if Path(fn).suffix.lower() == ".pdf":
+                receipts.append({"label": label, "data": None, "kind": "PDF"})
+                continue
+            data, _ctype = await _fetch_receipt(db, fn)
+            if data:
+                receipts.append({"label": label, "data": data})
+    return expenses, receipts
 
 
 async def _delete_receipt(db, key: str) -> None:
@@ -302,6 +333,7 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         start: str = Query(..., description="Date de début YYYY-MM-DD"),
         end: str = Query(..., description="Date de fin YYYY-MM-DD"),
         category: Optional[str] = Query(default=None),
+        include_receipts: bool = Query(default=False),
         _: dict = Depends(auth_dep),
     ):
         """Detailed expense report (PDF) for a date range — accountant / tax ready."""
@@ -309,18 +341,81 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             raise HTTPException(400, "Dates invalides (format attendu : AAAA-MM-JJ)")
         if start > end:
             start, end = end, start
-        query = {"date": {"$gte": start, "$lte": end}}
-        if category:
-            query["category"] = category
-        cur = db.erp_expenses.find(query, {"_id": 0}).sort("date", 1).limit(5000)
-        expenses = [d async for d in cur]
-        pdf_bytes = await asyncio.to_thread(render_expense_report_pdf, expenses, start, end)
+        expenses, receipts = await _build_report_inputs(db, start, end, category, include_receipts)
+        pdf_bytes = await asyncio.to_thread(render_expense_report_pdf, expenses, start, end, receipts)
         filename = f"depenses_{start}_au_{end}.pdf"
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
+
+    @router.post("/expenses/report/send")
+    async def expenses_report_send(payload: dict = Body(...), _: dict = Depends(auth_dep)):
+        """Generate the period report PDF and email it to the accountant."""
+        start = (payload.get("start") or "").strip()
+        end = (payload.get("end") or "").strip()
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", start) or not re.match(r"^\d{4}-\d{2}-\d{2}$", end):
+            raise HTTPException(400, "Dates invalides (format attendu : AAAA-MM-JJ)")
+        if start > end:
+            start, end = end, start
+        category = payload.get("category") or None
+        include_receipts = bool(payload.get("include_receipts"))
+        to = (payload.get("to") or ACCOUNTANT_EMAIL).strip()
+        expenses, receipts = await _build_report_inputs(db, start, end, category, include_receipts)
+        pdf_bytes = await asyncio.to_thread(render_expense_report_pdf, expenses, start, end, receipts)
+        total = sum(float(e.get("total") or 0) for e in expenses)
+        cat_label = f" (catégorie : {category})" if category else ""
+        html = (
+            f"Bonjour,<br><br>Voici le rapport de dépenses de Portech pour la période "
+            f"<b>du {start} au {end}</b>{cat_label}.<br>"
+            f"{len(expenses)} dépense(s) · total {total:,.2f} $".replace(",", " ")
+            + "<br><br>Le détail, le sommaire des taxes (TPS/TVQ) et la répartition par catégorie "
+            "se trouvent dans le PDF ci-joint."
+        )
+        await send_pdf_email(
+            to_email=to,
+            subject=f"Rapport de dépenses Portech — {start} au {end}",
+            html=html,
+            pdf_bytes=pdf_bytes,
+            filename=f"depenses_{start}_au_{end}.pdf",
+        )
+        return {"to": to, "count": len(expenses), "total": round(total, 2)}
+
+    @router.get("/expenses/quarterly")
+    async def expenses_quarterly(
+        year: int = Query(..., ge=2000, le=2100),
+        _: dict = Depends(auth_dep),
+    ):
+        """Per-quarter TPS/TVQ totals for a year — tax-declaration overview."""
+        quarters = []
+        yt = {"n": 0, "sub": 0.0, "tps": 0.0, "tvq": 0.0, "tot": 0.0}
+        for q in range(1, 5):
+            sm = (q - 1) * 3 + 1
+            em = sm + 2
+            start = f"{year}-{sm:02d}-01"
+            end = f"{year}-{em:02d}-{calendar.monthrange(year, em)[1]:02d}"
+            sub = tps = tvq = tot = 0.0
+            n = 0
+            async for e in db.erp_expenses.find({"date": {"$gte": start, "$lte": end}}, {"_id": 0}):
+                sub += float(e.get("subtotal") or 0)
+                tps += float(e.get("tps") or 0)
+                tvq += float(e.get("tvq") or 0)
+                tot += float(e.get("total") or 0)
+                n += 1
+            quarters.append({
+                "quarter": q, "label": f"T{q}", "start": start, "end": end, "count": n,
+                "subtotal": round(sub, 2), "tps": round(tps, 2), "tvq": round(tvq, 2), "total": round(tot, 2),
+            })
+            yt["n"] += n; yt["sub"] += sub; yt["tps"] += tps; yt["tvq"] += tvq; yt["tot"] += tot
+        return {
+            "year": year,
+            "quarters": quarters,
+            "year_total": {
+                "count": yt["n"], "subtotal": round(yt["sub"], 2), "tps": round(yt["tps"], 2),
+                "tvq": round(yt["tvq"], 2), "total": round(yt["tot"], 2),
+            },
+        }
 
 
     @router.post("/expenses/{expense_id}/receipt", status_code=201)

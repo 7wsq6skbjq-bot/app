@@ -2485,10 +2485,11 @@ def render_mileage_annual_pdf(year: int, by_month: list, by_client: list, totals
     return buf.read()
 
 
-def render_expense_report_pdf(expenses: list[dict], start: str, end: str) -> bytes:
+def render_expense_report_pdf(expenses: list[dict], start: str, end: str, receipts=None) -> bytes:
     """Detailed, accountant-ready expense report for a date range.
     Includes period summary, input-tax-credit totals (CTI/RTI), a by-category
-    breakdown and a line-by-line table."""
+    breakdown and a line-by-line table. If `receipts` is provided (list of
+    {label, data(bytes)|None, kind}), appends an annex with the receipt images."""
     s = _styles()
     buf, doc = _build_doc()
     story = []
@@ -2631,6 +2632,32 @@ def render_expense_report_pdf(expenses: list[dict], start: str, end: str) -> byt
         "Les montants « à récupérer » correspondent aux crédits de taxe sur les intrants (CTI) et aux remboursements "
         "de la taxe sur les intrants (RTI). · info@portech.info",
         s["footer"]))
+
+    if receipts:
+        from PIL import Image as PILImage
+        story.append(PageBreak())
+        story.append(Paragraph("<b>Annexe — reçus justificatifs</b>", s["body"]))
+        story.append(Spacer(1, 3 * mm))
+        for r in receipts:
+            cap = r.get("label") or ""
+            data = r.get("data")
+            if not data:
+                story.append(Paragraph(
+                    f"{cap} — reçu {r.get('kind', 'PDF')} (fichier séparé, non intégré).", s["footer"]))
+                story.append(Spacer(1, 2 * mm))
+                continue
+            try:
+                pim = PILImage.open(io.BytesIO(data)).convert("RGB")
+                out = io.BytesIO()
+                pim.save(out, format="PNG")
+                out.seek(0)
+                story.append(Paragraph(cap, s["footer"]))
+                story.append(Spacer(1, 1 * mm))
+                story.append(Image(out, width=165 * mm, height=200 * mm, kind="proportional"))
+                story.append(Spacer(1, 6 * mm))
+            except Exception:
+                story.append(Paragraph(f"{cap} — aperçu non disponible.", s["footer"]))
+                story.append(Spacer(1, 2 * mm))
 
     doc.build(story)
     buf.seek(0)

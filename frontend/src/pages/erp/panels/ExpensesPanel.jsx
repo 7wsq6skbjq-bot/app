@@ -59,6 +59,11 @@ export const ExpensesPanel = () => {
     const [rptStart, setRptStart] = useState(`${new Date().getFullYear()}-01-01`);
     const [rptEnd, setRptEnd] = useState(todayISO);
     const [rptBusy, setRptBusy] = useState(false);
+    const [rptCat, setRptCat] = useState("");
+    const [rptReceipts, setRptReceipts] = useState(false);
+    const [rptSendBusy, setRptSendBusy] = useState(false);
+    const [qYear, setQYear] = useState(new Date().getFullYear());
+    const [quarterly, setQuarterly] = useState(null);
     const [editOpen, setEditOpen] = useState(false);
     const [editing, setEditing] = useState(null);
     const [receiptPreview, setReceiptPreview] = useState(null);  // blob URL for preview
@@ -404,6 +409,13 @@ export const ExpensesPanel = () => {
         setRptEnd(fmt(e));
     };
 
+    const reportQuery = () => {
+        const p = new URLSearchParams({ start: rptStart, end: rptEnd });
+        if (rptCat) p.set("category", rptCat);
+        if (rptReceipts) p.set("include_receipts", "true");
+        return p.toString();
+    };
+
     const downloadReport = async () => {
         if (!rptStart || !rptEnd) {
             setNotice("⚠️ Choisissez une date de début et une date de fin.");
@@ -412,7 +424,7 @@ export const ExpensesPanel = () => {
         setRptBusy(true);
         try {
             const { data } = await http.get(
-                `/admin/expenses/report.pdf?start=${rptStart}&end=${rptEnd}`,
+                `/admin/expenses/report.pdf?${reportQuery()}`,
                 { responseType: "blob" },
             );
             const link = document.createElement("a");
@@ -428,6 +440,43 @@ export const ExpensesPanel = () => {
             setRptBusy(false);
         }
     };
+
+    const sendReportToAccountant = async () => {
+        if (!rptStart || !rptEnd) {
+            setNotice("⚠️ Choisissez une date de début et une date de fin.");
+            return;
+        }
+        const target = window.prompt(
+            `Envoyer le rapport du ${rptStart} au ${rptEnd} au comptable ?\n\nCourriel destinataire :`,
+            meta.accountant_email || "",
+        );
+        if (!target) return;
+        setRptSendBusy(true);
+        try {
+            const { data } = await http.post("/admin/expenses/report/send", {
+                start: rptStart,
+                end: rptEnd,
+                category: rptCat || null,
+                include_receipts: rptReceipts,
+                to: target,
+            });
+            setNotice(`✅ Rapport envoyé à ${data.to} (${data.count} dépense(s), ${data.total.toFixed(2)} $).`);
+        } catch (e) {
+            setNotice(e?.response?.data?.detail || "⚠️ Erreur lors de l'envoi du rapport.");
+        } finally {
+            setRptSendBusy(false);
+        }
+    };
+
+    const loadQuarterly = useCallback(async () => {
+        try {
+            const { data } = await http.get(`/admin/expenses/quarterly?year=${qYear}`);
+            setQuarterly(data);
+        } catch (e) {
+            setQuarterly(null);
+        }
+    }, [http, qYear]);
+    useEffect(() => { loadQuarterly(); }, [loadQuarterly]);
 
     const sendRecapToAccountant = async () => {
         try {
@@ -532,40 +581,91 @@ export const ExpensesPanel = () => {
                 <div className="flex flex-wrap items-end gap-3">
                     <div>
                         <label className="block text-[10px] uppercase tracking-wider text-[#6485b4] mb-1">Du</label>
-                        <input
-                            type="date"
-                            data-testid="exp-report-start"
-                            value={rptStart}
-                            onChange={(e) => setRptStart(e.target.value)}
-                            className={inputClass.replace("w-full", "w-auto")}
-                        />
+                        <input type="date" data-testid="exp-report-start" value={rptStart} onChange={(e) => setRptStart(e.target.value)} className={inputClass.replace("w-full", "w-auto")} />
                     </div>
                     <div>
                         <label className="block text-[10px] uppercase tracking-wider text-[#6485b4] mb-1">Au</label>
-                        <input
-                            type="date"
-                            data-testid="exp-report-end"
-                            value={rptEnd}
-                            onChange={(e) => setRptEnd(e.target.value)}
-                            className={inputClass.replace("w-full", "w-auto")}
-                        />
+                        <input type="date" data-testid="exp-report-end" value={rptEnd} onChange={(e) => setRptEnd(e.target.value)} className={inputClass.replace("w-full", "w-auto")} />
                     </div>
-                    <button
-                        onClick={downloadReport}
-                        disabled={rptBusy}
-                        data-testid="exp-report-pdf"
-                        className="btn-primary !py-2 !px-4 !text-xs disabled:opacity-50"
-                    >
-                        <Download className="w-3.5 h-3.5" /> {rptBusy ? "Génération…" : "Générer le PDF détaillé"}
+                    <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-[#6485b4] mb-1">Catégorie</label>
+                        <select data-testid="exp-report-cat" value={rptCat} onChange={(e) => setRptCat(e.target.value)} className={inputClass.replace("w-full", "w-auto")}>
+                            <option value="">Toutes</option>
+                            {meta.categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-[#2f4f7f] pb-2 cursor-pointer" title="Joindre les photos de reçus en annexe du PDF">
+                        <input type="checkbox" data-testid="exp-report-receipts" checked={rptReceipts} onChange={(e) => setRptReceipts(e.target.checked)} />
+                        Joindre les reçus
+                    </label>
+                    <button onClick={downloadReport} disabled={rptBusy} data-testid="exp-report-pdf" className="btn-primary !py-2 !px-4 !text-xs disabled:opacity-50">
+                        <Download className="w-3.5 h-3.5" /> {rptBusy ? "Génération…" : "Générer le PDF"}
                     </button>
-                    <div className="flex flex-wrap gap-1.5 ml-auto">
-                        <button onClick={() => setQuarter("this")} data-testid="exp-report-q-this" className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Ce trimestre</button>
-                        <button onClick={() => setQuarter("last")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Trimestre dernier</button>
-                        <button onClick={() => setQuarter("year")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Cette année</button>
-                        <button onClick={() => setQuarter("lastyear")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">L'an dernier</button>
-                    </div>
+                    <button onClick={sendReportToAccountant} disabled={rptSendBusy} data-testid="exp-report-send" className="btn-secondary !py-2 !px-4 !text-xs disabled:opacity-50">
+                        <Mail className="w-3.5 h-3.5" /> {rptSendBusy ? "Envoi…" : "Envoyer au comptable"}
+                    </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                    <span className="text-[10px] uppercase tracking-wider text-[#6485b4] self-center mr-1">Raccourcis :</span>
+                    <button onClick={() => setQuarter("this")} data-testid="exp-report-q-this" className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Ce trimestre</button>
+                    <button onClick={() => setQuarter("last")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Trimestre dernier</button>
+                    <button onClick={() => setQuarter("year")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">Cette année</button>
+                    <button onClick={() => setQuarter("lastyear")} className="btn-secondary !py-1.5 !px-2.5 !text-[11px]">L'an dernier</button>
                 </div>
             </div>
+
+            {/* Résumé trimestriel TPS/TVQ */}
+            {quarterly && (
+                <div data-testid="exp-quarterly-card" className="border border-[#dde5f0] bg-white p-4">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                            <TrendingDown className="w-4 h-4 text-[#2f4f7f]" />
+                            <span className="tech-stamp text-[#2f4f7f]">Crédits de taxes par trimestre</span>
+                        </div>
+                        <select data-testid="exp-quarterly-year" value={qYear} onChange={(e) => setQYear(Number(e.target.value))} className={inputClass.replace("w-full", "w-auto")}>
+                            {Array.from({ length: 6 }).map((_, i) => {
+                                const y = new Date().getFullYear() - i;
+                                return <option key={y} value={y}>{y}</option>;
+                            })}
+                        </select>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm min-w-[560px]">
+                            <thead>
+                                <tr className="bg-[#0c182b] text-white tech-stamp text-[10px]">
+                                    <th className="text-left px-3 py-2">Trimestre</th>
+                                    <th className="text-right px-3 py-2">Nb</th>
+                                    <th className="text-right px-3 py-2">Sous-total</th>
+                                    <th className="text-right px-3 py-2">TPS</th>
+                                    <th className="text-right px-3 py-2">TVQ</th>
+                                    <th className="text-right px-3 py-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {quarterly.quarters.map((q) => (
+                                    <tr key={q.quarter} data-testid={`exp-quarter-${q.quarter}`} className="border-b border-[#dde5f0] odd:bg-[#f3f6fb]">
+                                        <td className="px-3 py-2 font-medium">{q.label} <span className="text-[#6485b4] text-xs">({q.start.slice(5)} → {q.end.slice(5)})</span></td>
+                                        <td className="px-3 py-2 text-right">{q.count}</td>
+                                        <td className="px-3 py-2 text-right">{formatCurrency(q.subtotal)}</td>
+                                        <td className="px-3 py-2 text-right text-[#0b6b2f]">{formatCurrency(q.tps)}</td>
+                                        <td className="px-3 py-2 text-right text-[#0b6b2f]">{formatCurrency(q.tvq)}</td>
+                                        <td className="px-3 py-2 text-right font-display font-bold">{formatCurrency(q.total)}</td>
+                                    </tr>
+                                ))}
+                                <tr className="bg-[#eaf1fb] font-display font-bold">
+                                    <td className="px-3 py-2">Année {quarterly.year}</td>
+                                    <td className="px-3 py-2 text-right">{quarterly.year_total.count}</td>
+                                    <td className="px-3 py-2 text-right">{formatCurrency(quarterly.year_total.subtotal)}</td>
+                                    <td className="px-3 py-2 text-right text-[#0b6b2f]">{formatCurrency(quarterly.year_total.tps)}</td>
+                                    <td className="px-3 py-2 text-right text-[#0b6b2f]">{formatCurrency(quarterly.year_total.tvq)}</td>
+                                    <td className="px-3 py-2 text-right">{formatCurrency(quarterly.year_total.total)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="text-[11px] text-[#6485b4] mt-2">TPS et TVQ = crédits de taxe sur intrants (CTI/RTI) récupérables pour vos déclarations.</p>
+                </div>
+            )}
 
             {/* Success / info notice */}
             {notice && (
