@@ -357,6 +357,25 @@ export const ExpensesPanel = () => {
         link.click();
     };
 
+    const downloadReceipt = async (e) => {
+        if (!e?.id || !e.receipt_filename) return;
+        try {
+            const { data } = await http.get(`/admin/expenses/${e.id}/receipt`, { responseType: "blob" });
+            const ext = (e.receipt_filename.split(".").pop() || "jpg").toLowerCase();
+            const safe = (s) => (s || "recu").replace(/[^\w-]+/g, "_").slice(0, 40);
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(data);
+            link.download = `recu-${e.date || "sans-date"}-${safe(e.supplier_name || e.description)}.${ext}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+        } catch (err) {
+            setNotice("⚠️ Impossible de télécharger ce reçu : l'image n'a pas été trouvée dans le stockage.");
+        }
+    };
+
+
     const sendRecapToAccountant = async () => {
         try {
             const { data: preview } = await http.get(`/admin/expenses/recap/preview?month=${month}`);
@@ -529,6 +548,11 @@ export const ExpensesPanel = () => {
                                     </span>
                                 </div>
                                 <div className="col-span-1 flex justify-end gap-1">
+                                    {e.receipt_filename && (
+                                        <button onClick={() => downloadReceipt(e)} data-testid={`exp-download-receipt-${e.id}`} className="p-2 border border-[#dde5f0] hover:bg-[#e6f4ea] text-[#0b6b2f]" aria-label="Télécharger le reçu" title="Télécharger le reçu">
+                                            <Download className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
                                     <button onClick={() => openEdit(e)} className="p-2 border border-[#dde5f0] hover:bg-[#eaf1fb] text-[#2f4f7f]" aria-label="Modifier">
                                         <Pencil className="w-3.5 h-3.5" />
                                     </button>
@@ -682,19 +706,29 @@ export const ExpensesPanel = () => {
                                     ) : (
                                         <div className="text-center py-6 text-[#4b5d7a] text-sm">Chargement de l'aperçu…</div>
                                     )}
-                                    <div className="mt-3 flex justify-between items-center">
+                                    <div className="mt-3 flex justify-between items-center gap-2">
                                         <div className="text-xs text-[#4b5d7a] truncate">
                                             {editing.receipt_filename || "Reçu en attente — sera attaché à l'enregistrement"}
                                         </div>
                                         {editing.receipt_filename && (
-                                            <button
-                                                type="button"
-                                                data-testid="exp-remove-receipt"
-                                                onClick={removeReceipt}
-                                                className="px-3 py-1.5 border border-red-300 text-red-700 tech-stamp text-xs hover:bg-red-50 flex items-center gap-1"
-                                            >
-                                                <XIcon className="w-3 h-3" /> Retirer
-                                            </button>
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <button
+                                                    type="button"
+                                                    data-testid="exp-download-receipt"
+                                                    onClick={() => downloadReceipt(editing)}
+                                                    className="px-3 py-1.5 border border-[#8ec79d] text-[#0b6b2f] tech-stamp text-xs hover:bg-[#e6f4ea] flex items-center gap-1"
+                                                >
+                                                    <Download className="w-3 h-3" /> Télécharger
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    data-testid="exp-remove-receipt"
+                                                    onClick={removeReceipt}
+                                                    className="px-3 py-1.5 border border-red-300 text-red-700 tech-stamp text-xs hover:bg-red-50 flex items-center gap-1"
+                                                >
+                                                    <XIcon className="w-3 h-3" /> Retirer
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

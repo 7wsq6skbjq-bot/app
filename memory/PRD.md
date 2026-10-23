@@ -1,6 +1,13 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, dépenses: récupération visibilité + téléchargement reçus)
+- **AUCUNE PERTE DE DONNÉES** (confirmé via lecture base production par deployer) : 21 dépenses + images reçus intacts. Les reçus d'essence Ultramar existent, datés 2024-09-17 (année probablement saisie à tort), aucun reçu en août, aucune donnée 2025. Invisibles car ExpensesPanel filtrait toujours sur le mois courant (dropdown limité à 12 mois → sept. 2024 hors de portée).
+- **Correctif « Tous les mois »** : option `{value:"all"}` en tête de `monthOptions` (ExpensesPanel). Backend : `GET /admin/expenses?month=all` et `export.csv?month=all` renvoient déjà tout (garde `len==7`) ; `GET /admin/expenses/summary` gère désormais `month=all` (agrégation globale). Testé : une dépense sans date (invisible par mois) réapparaît sous « Tous les mois ».
+- **Téléchargement des reçus** : nouveau `downloadReceipt()` + bouton Download sur chaque ligne (`exp-download-receipt-{id}`) et dans l'aperçu de la fenêtre d'édition (`exp-download-receipt`). Récupère le blob via `GET /admin/expenses/{id}/receipt` (GridFS) et déclenche le téléchargement (nom `recu-{date}-{fournisseur}.{ext}`). Testé : upload PNG → download → octets PNG identiques. Message d'erreur clair si l'image est absente du stockage.
+- Note : ~10 reçus référencés n'ont pas d'image dans GridFS en production (9 fichiers pour 19 références) — probablement d'anciennes images sur disque éphémère perdues avant la migration GridFS ; à investiguer séparément si besoin.
+
+
 ## Changelog — 2026-06 (fork, statuts étendus + police bannières + signatures perso + hero)
 - **Statuts ERP étendus** : Factures = brouillon · en attente d'approbation · envoyée · partiellement payée · payée · en retard · annulée. Soumissions = brouillon · en attente d'approbation · envoyée · acceptée · refusée · expirée · annulée. Patterns regex élargis dans `erp_models.py` (Invoice/InvoiceIn + QUOTE_STATUS_PATTERN), listes + `STATUS_BADGE` dans `frontend/src/pages/erp/utils.js`. Testé : création statut « en retard »/« en attente d'approbation » → 201.
 - **PDF client — masquage statuts internes** : `erp_pdf.py` nouveau `_client_status()` + `_PDF_HIDDEN_STATUSES={brouillon, en attente d'approbation}` appliqué au `_header()` et aux lignes « Statut » (facture + soumission). Testé : PDF brouillon → aucune mention « BROUILLON » (Statut = «—») ; PDF « en retard » → affiche bien EN RETARD.
