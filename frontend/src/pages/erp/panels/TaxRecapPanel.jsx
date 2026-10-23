@@ -29,6 +29,9 @@ export const TaxRecapPanel = () => {
     const now = new Date();
     const [year, setYear] = useState(now.getFullYear());
     const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1);
+    const [mode, setMode] = useState("quarter");
+    const [rStart, setRStart] = useState(`${now.getFullYear()}-01-01`);
+    const [rEnd, setREnd] = useState(new Date().toISOString().slice(0, 10));
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -63,7 +66,10 @@ export const TaxRecapPanel = () => {
         }
         setSending(true); setError("");
         try {
-            const { data } = await http.post("/admin/tax-recap/send", { year, quarter, to_email: to.trim() });
+            const payload = mode === "range"
+                ? { start: rStart, end: rEnd, to_email: to.trim() }
+                : { year, quarter, to_email: to.trim() };
+            const { data } = await http.post("/admin/tax-recap/send", payload);
             flash(`✅ Récap ${data.period_label} envoyé à ${data.to_email}.`);
         } catch (e) {
             setError(e?.response?.data?.detail || "Échec de l'envoi");
@@ -73,12 +79,15 @@ export const TaxRecapPanel = () => {
     const load = useCallback(async () => {
         setLoading(true); setError("");
         try {
-            const { data } = await http.get(`/admin/tax-recap?year=${year}&quarter=${quarter}`);
+            const qs = mode === "range"
+                ? `start=${rStart}&end=${rEnd}`
+                : `year=${year}&quarter=${quarter}`;
+            const { data } = await http.get(`/admin/tax-recap?${qs}`);
             setData(data);
         } catch (e) {
             setError(e?.response?.data?.detail || "Erreur de chargement");
         } finally { setLoading(false); }
-    }, [http, year, quarter]);
+    }, [http, year, quarter, mode, rStart, rEnd]);
     useEffect(() => { load(); }, [load]);
 
     const years = data?.available_years?.length ? data.available_years : [now.getFullYear()];
@@ -86,7 +95,10 @@ export const TaxRecapPanel = () => {
     const previewPdf = () => {
         const base = (process.env.REACT_APP_BACKEND_URL || "").replace(/\/+$/, "");
         const token = encodeURIComponent(getToken() || "");
-        const url = `${base}/api/admin/tax-recap/pdf?year=${year}&quarter=${quarter}&token=${token}`;
+        const qs = mode === "range"
+            ? `start=${rStart}&end=${rEnd}`
+            : `year=${year}&quarter=${quarter}`;
+        const url = `${base}/api/admin/tax-recap/pdf?${qs}&token=${token}`;
         const isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) window.location.href = url; else window.open(url, "_blank");
     };
@@ -133,18 +145,46 @@ export const TaxRecapPanel = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mb-6">
-                <select data-testid="tax-recap-year" value={year} onChange={(e) => setYear(Number(e.target.value))}
-                    className="px-3 py-2 border border-[#c5d4e7] bg-white text-sm">
-                    {years.map((y) => <option key={y} value={y}>{y}</option>)}
-                </select>
-                <div className="flex gap-1">
-                    {QUARTERS.map((qq) => (
-                        <button key={qq.q} data-testid={`tax-recap-q${qq.q}`} onClick={() => setQuarter(qq.q)}
-                            className={`tech-stamp px-3 py-2 border text-xs ${quarter === qq.q ? "bg-[#0c182b] text-white border-[#0c182b]" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-white"}`}>
-                            {qq.label}
-                        </button>
-                    ))}
+                <div className="flex gap-1 mr-1" data-testid="tax-recap-mode">
+                    <button onClick={() => setMode("quarter")} data-testid="tax-recap-mode-quarter"
+                        className={`tech-stamp px-3 py-2 border text-xs ${mode === "quarter" ? "bg-[#2f4f7f] text-white border-[#2f4f7f]" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-white"}`}>
+                        Trimestre
+                    </button>
+                    <button onClick={() => setMode("range")} data-testid="tax-recap-mode-range"
+                        className={`tech-stamp px-3 py-2 border text-xs ${mode === "range" ? "bg-[#2f4f7f] text-white border-[#2f4f7f]" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-white"}`}>
+                        Plage de dates
+                    </button>
                 </div>
+
+                {mode === "quarter" ? (
+                    <>
+                        <select data-testid="tax-recap-year" value={year} onChange={(e) => setYear(Number(e.target.value))}
+                            className="px-3 py-2 border border-[#c5d4e7] bg-white text-sm">
+                            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                        <div className="flex gap-1">
+                            {QUARTERS.map((qq) => (
+                                <button key={qq.q} data-testid={`tax-recap-q${qq.q}`} onClick={() => setQuarter(qq.q)}
+                                    className={`tech-stamp px-3 py-2 border text-xs ${quarter === qq.q ? "bg-[#0c182b] text-white border-[#0c182b]" : "border-[#dde5f0] text-[#4b5d7a] hover:bg-white"}`}>
+                                    {qq.label}
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex flex-wrap items-end gap-2">
+                        <div>
+                            <label className="block text-[10px] uppercase tracking-wider text-[#6485b4] mb-1">Du</label>
+                            <input type="date" data-testid="tax-recap-start" value={rStart} onChange={(e) => setRStart(e.target.value)}
+                                className="px-3 py-2 border border-[#c5d4e7] bg-white text-sm" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] uppercase tracking-wider text-[#6485b4] mb-1">Au</label>
+                            <input type="date" data-testid="tax-recap-end" value={rEnd} onChange={(e) => setREnd(e.target.value)}
+                                className="px-3 py-2 border border-[#c5d4e7] bg-white text-sm" />
+                        </div>
+                    </div>
+                )}
                 {data && <span className="text-sm text-[#4b5d7a] ml-2">{data.period_label} · {data.start_fr} → {data.end_fr}</span>}
             </div>
 

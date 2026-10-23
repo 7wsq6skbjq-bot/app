@@ -1,6 +1,13 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, Récap TPS/TVQ : filtre par plage de dates)
+- **Récap TPS/TVQ — mode « Plage de dates »** en plus du mode Trimestre.
+  - Backend (erp_routes_tax_recap.py) : `_compute` refactorisé en `_compute_core` ; nouveau `_compute_range(db, start, end)` (end inclusif, garde-fou format date → 400, inversion si start>end, label « Du … au … »). Params `start`/`end` ajoutés à `GET /tax-recap`, `GET /tax-recap/pdf` et `POST /tax-recap/send` (champ start/end dans TaxSendIn). Nom de fichier PDF : `recap-tps-tvq-{start}_au_{end}.pdf`.
+  - Frontend (TaxRecapPanel.jsx) : bascule `tax-recap-mode-quarter` / `tax-recap-mode-range`, champs Du/Au (`tax-recap-start` / `tax-recap-end`). Load, aperçu PDF et envoi au comptable utilisent start/end en mode plage.
+  - Testé : JSON range (label « Du 19 août 2026 au 30 septembre 2026 », net calculé), PDF range valide, mode trimestre intact, dates invalides → 400, frontend compile.
+
+
 ## Changelog — 2026-06 (fork, outils comptables dépenses : comptable / catégorie / trimestriel / reçus)
 - **Envoi du rapport au comptable** : `POST /api/admin/expenses/report/send` (start/end/category/include_receipts/to) → génère le PDF et l'envoie via `send_pdf_email` (défaut `ACCOUNTANT_EMAIL`). Bouton « Envoyer au comptable » (exp-report-send, prompt destinataire). Testé : 200, courriel envoyé.
 - **Filtre par catégorie** dans le rapport : param `category` sur `report.pdf` + select `exp-report-cat`. Nom de fichier inclut la catégorie.

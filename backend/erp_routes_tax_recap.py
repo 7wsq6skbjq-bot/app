@@ -56,9 +56,7 @@ def _date_fr(iso: str) -> str:
         return iso
 
 
-async def _compute(db, year: int, quarter: int) -> dict:
-    start, end_incl, end_excl = _quarter_bounds(year, quarter)
-
+async def _compute_core(db, start, end_incl, end_excl, period_label, year, quarter) -> dict:
     inv_cur = db.erp_invoices.find(
         {"status": {"$in": list(COLLECTED_STATUSES)},
          "date": {"$gte": start, "$lt": end_excl}},
@@ -94,11 +92,32 @@ async def _compute(db, year: int, quarter: int) -> dict:
 
     return {
         "year": year, "quarter": quarter,
-        "period_label": f"T{quarter} {year} ({_QUARTER_MONTHS[quarter]})",
+        "period_label": period_label,
         "start": start, "end": end_incl,
         "start_fr": _date_fr(start), "end_fr": _date_fr(end_incl),
         "collected": col, "paid": paid, "net": net,
     }
+
+
+async def _compute(db, year: int, quarter: int) -> dict:
+    start, end_incl, end_excl = _quarter_bounds(year, quarter)
+    return await _compute_core(
+        db, start, end_incl, end_excl,
+        f"T{quarter} {year} ({_QUARTER_MONTHS[quarter]})", year, quarter)
+
+
+async def _compute_range(db, start: str, end: str) -> dict:
+    from datetime import date, timedelta
+    import re as _re
+    if not _re.match(r"^\d{4}-\d{2}-\d{2}$", start) or not _re.match(r"^\d{4}-\d{2}-\d{2}$", end):
+        raise HTTPException(400, "Dates invalides (format attendu : AAAA-MM-JJ).")
+    s = date.fromisoformat(start)
+    e = date.fromisoformat(end)
+    if s > e:
+        s, e = e, s
+    end_excl = (e + timedelta(days=1)).isoformat()
+    label = f"Du {_date_fr(s.isoformat())} au {_date_fr(e.isoformat())}"
+    return await _compute_core(db, s.isoformat(), e.isoformat(), end_excl, label, s.year, 0)
 
 
 async def _available_years(db) -> list[int]:
@@ -150,27 +169,36 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
 
     @router.get("/tax-recap")
     async def tax_recap(year: int | None = None, quarter: int | None = None,
+                        start: str | None = None, end: str | None = None,
                         _: dict = Depends(auth_dep)):
-        y, q = _now_quarter()
-        year = year or y
-        quarter = quarter or q
-        if quarter < 1 or quarter > 4:
-            raise HTTPException(400, "Trimestre invalide (1-4).")
-        data = await _compute(db, year, quarter)
+        if start and end:
+            data = await _compute_range(db, start, end)
+        else:
+            y, q = _now_quarter()
+            year = year or y
+            quarter = quarter or q
+            if quarter < 1 or quarter > 4:
+                raise HTTPException(400, "Trimestre invalide (1-4).")
+            data = await _compute(db, year, quarter)
         data["available_years"] = await _available_years(db)
         return data
 
     @router.get("/tax-recap/pdf")
     async def tax_recap_pdf(year: int | None = None, quarter: int | None = None,
+                            start: str | None = None, end: str | None = None,
                             _: dict = Depends(auth_dep)):
-        y, q = _now_quarter()
-        year = year or y
-        quarter = quarter or q
-        if quarter < 1 or quarter > 4:
-            raise HTTPException(400, "Trimestre invalide (1-4).")
-        data = await _compute(db, year, quarter)
+        if start and end:
+            data = await _compute_range(db, start, end)
+            fname = f"recap-tps-tvq-{data['start']}_au_{data['end']}.pdf"
+        else:
+            y, q = _now_quarter()
+            year = year or y
+            quarter = quarter or q
+            if quarter < 1 or quarter > 4:
+                raise HTTPException(400, "Trimestre invalide (1-4).")
+            data = await _compute(db, year, quarter)
+            fname = f"recap-tps-tvq-T{quarter}-{year}.pdf"
         pdf = await asyncio.to_thread(render_tax_recap_pdf, data)
-        fname = f"recap-tps-tvq-T{quarter}-{year}.pdf"
         return Response(content=pdf, media_type="application/pdf",
                         headers={"Content-Disposition": f'inline; filename="{fname}"'})
 
@@ -193,28 +221,35 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
     class TaxSendIn(BaseModel):
         year: int | None = None
         quarter: int | None = None
+        start: str | None = None
+        end: str | None = None
         to_email: str | None = None
 
     @router.post("/tax-recap/send")
     async def send_recap(data: TaxSendIn, _: dict = Depends(auth_dep)):
         from erp_helpers import send_pdf_email
-        y, q = _now_quarter()
-        year = data.year or y
-        quarter = data.quarter or q
-        if quarter < 1 or quarter > 4:
-            raise HTTPException(400, "Trimestre invalide (1-4).")
+        if data.start and data.end:
+            recap = await _compute_range(db, data.start, data.end)
+            fname = f"recap-tps-tvq-{recap['start']}_au_{recap['end']}.pdf"
+        else:
+            y, q = _now_quarter()
+            year = data.year or y
+            quarter = data.quarter or q
+            if quarter < 1 or quarter > 4:
+                raise HTTPException(400, "Trimestre invalide (1-4).")
+            recap = await _compute(db, year, quarter)
+            fname = f"recap-tps-tvq-T{quarter}-{year}.pdf"
         to_email = (data.to_email or "").strip() or await _get_accountant_email(db)
         if not to_email:
             raise HTTPException(400, "Aucun courriel de comptable enregistré. "
                                      "Entrez une adresse ou enregistrez-la dans les réglages.")
-        recap = await _compute(db, year, quarter)
         pdf = await asyncio.to_thread(render_tax_recap_pdf, recap)
         await send_pdf_email(
             to_email=to_email,
             subject=f"Récap TPS/TVQ — {recap['period_label']} — Portech",
             html=_recap_email_html(recap),
             pdf_bytes=pdf,
-            filename=f"recap-tps-tvq-T{quarter}-{year}.pdf",
+            filename=fname,
         )
         return {"sent": True, "to_email": to_email, "period_label": recap["period_label"]}
 
