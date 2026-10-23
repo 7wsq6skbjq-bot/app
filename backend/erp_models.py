@@ -118,7 +118,7 @@ class Invoice(BaseModel):
     total: float
     taxable: bool = True
     notes: Optional[str] = None
-    status: str = Field(default="brouillon", pattern="^(brouillon|envoyée|payée|annulée)$")
+    status: str = Field(default="brouillon", pattern="^(brouillon|en attente d'approbation|envoyée|partiellement payée|payée|en retard|annulée)$")
     deposit_received: bool = False
     deposit_pct: float = 0.0
     deposit_amount: float = 0.0
@@ -137,14 +137,14 @@ class InvoiceIn(BaseModel):
     items: List[LineItem] = Field(min_length=1)
     taxable: bool = True
     notes: Optional[str] = None
-    status: str = Field(default="brouillon", pattern="^(brouillon|envoyée|payée|annulée)$")
+    status: str = Field(default="brouillon", pattern="^(brouillon|en attente d'approbation|envoyée|partiellement payée|payée|en retard|annulée)$")
     deposit_received: bool = False
     deposit_pct: float = 0.0
 
 
 
 # ---------- Quotes (Soumissions) ----------
-QUOTE_STATUS_PATTERN = "^(brouillon|envoyée|acceptée|refusée|expirée|annulée)$"
+QUOTE_STATUS_PATTERN = "^(brouillon|en attente d'approbation|envoyée|acceptée|refusée|expirée|annulée)$"
 
 
 class Quote(BaseModel):

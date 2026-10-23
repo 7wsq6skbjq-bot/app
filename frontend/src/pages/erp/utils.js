@@ -4,15 +4,18 @@ export const TVQ_RATE = 0.09975;
 
 export const PROVINCES = ["QC", "ON", "NB", "NS", "PE", "NL", "MB", "SK", "AB", "BC", "YT", "NT", "NU"];
 
-export const INVOICE_STATUSES = ["brouillon", "envoyée", "payée", "annulée"];
+export const INVOICE_STATUSES = ["brouillon", "en attente d'approbation", "envoyée", "partiellement payée", "payée", "en retard", "annulée"];
 export const PO_STATUSES = ["brouillon", "envoyée", "reçue", "annulée"];
 export const BOL_STATUSES = ["brouillon", "expédié", "livré", "annulé"];
-export const QUOTE_STATUSES = ["brouillon", "envoyée", "acceptée", "refusée", "expirée", "annulée"];
+export const QUOTE_STATUSES = ["brouillon", "en attente d'approbation", "envoyée", "acceptée", "refusée", "expirée", "annulée"];
 
 export const STATUS_BADGE = {
     brouillon: "bg-[#f3f6fb] text-[#4b5d7a] border-[#c5d4e7]",
+    "en attente d'approbation": "bg-[#fff4e0] text-[#925800] border-[#e5ba67]",
     envoyée: "bg-[#eaf1fb] text-[#2f4f7f] border-[#97b0d0]",
+    "partiellement payée": "bg-[#e7f0fb] text-[#1d4ed8] border-[#9db9e8]",
     payée: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]",
+    "en retard": "bg-[#fdecd8] text-[#9a3b00] border-[#e8b588]",
     reçue: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]",
     acceptée: "bg-[#e6f4ea] text-[#0b6b2f] border-[#8ec79d]",
     refusée: "bg-[#fbe8e8] text-[#8a1f1f] border-[#e8a5a5]",

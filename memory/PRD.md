@@ -1,6 +1,15 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, statuts étendus + police bannières + signatures perso + hero)
+- **Statuts ERP étendus** : Factures = brouillon · en attente d'approbation · envoyée · partiellement payée · payée · en retard · annulée. Soumissions = brouillon · en attente d'approbation · envoyée · acceptée · refusée · expirée · annulée. Patterns regex élargis dans `erp_models.py` (Invoice/InvoiceIn + QUOTE_STATUS_PATTERN), listes + `STATUS_BADGE` dans `frontend/src/pages/erp/utils.js`. Testé : création statut « en retard »/« en attente d'approbation » → 201.
+- **PDF client — masquage statuts internes** : `erp_pdf.py` nouveau `_client_status()` + `_PDF_HIDDEN_STATUSES={brouillon, en attente d'approbation}` appliqué au `_header()` et aux lignes « Statut » (facture + soumission). Testé : PDF brouillon → aucune mention « BROUILLON » (Statut = «—») ; PDF « en retard » → affiche bien EN RETARD.
+- **Bannières courriel v2 — police agrandie** (plus lisible sans être agressant) ; régénérées + copiées dans `backend/email_assets/email-header.png`/`email-footer.png` (backend redémarré pour recharger le b64 inline).
+- **Signatures personnelles** (courriels perso fournisseurs/collègues) : 2 styles générés avec avatar rond `brand/cedrick-avatar.png` (photo fournie, recadrée en cercle). Fichiers : `/email/portech-perso-navy.png` (1200×262) et `/email/portech-perso-light.png` (1200×279). Défauts : « Cédrick Pimparé — Propriétaire », info@portech.info — à confirmer par l'utilisateur.
+- **Accueil** : hero → « Votre expert en quincaillerie et portes commerciales en aluminium » (retrait du « de »).
+- Note : changements en preview ; redéploiement requis pour la production.
+
+
 ## Changelog — 2026-06 (fork, bannières courriel v2 + menu mobile ERP + accueil)
 - **Bannières courriel refaites (v2)** : nouvel en-tête (fond blanc, logo transparent navy, téléphone + « Appel ou texto ») et pied (fond navy, logo blanc, services, contact, **porte en aluminium en fondu** à droite via dégradé). Tagline corrigée → « Quincaillerie et portes commerciales en aluminium » (quincaillerie d'abord). Message portes = **fourniture** uniquement (jamais « installation de portes » — Portech ne pose pas les portes). Aucun mot en majuscules dans une phrase.
   - Images générées localement via Chromium headless (crop sur fond repère magenta) : `/app/frontend/public/email/portech-header-v2.png` (1200×291) et `portech-footer-v2.png` (1200×545). Téléchargeables pour Gmail.

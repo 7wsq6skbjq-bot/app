@@ -30,7 +30,7 @@ export const HomeHero = () => (
                         <br />
                         en quincaillerie et
                         <br />
-                        de portes commerciales
+                        portes commerciales
                         <br />
                         en aluminium.
                     </h1>

@@ -95,6 +95,17 @@ def _styles():
     }
 
 
+# Statuses that must NEVER appear on a client-facing PDF (internal/pre-send only).
+_PDF_HIDDEN_STATUSES = {"brouillon", "en attente d'approbation"}
+
+
+def _client_status(status):
+    """Hide internal statuses from client PDFs; return None so no stamp shows."""
+    if not status:
+        return None
+    return None if status.strip().lower() in _PDF_HIDDEN_STATUSES else status
+
+
 def _header(styles, doc_title: str, doc_number: str, status: str | None):
     """Return a Table containing logo+company on the left and title+number on the right."""
     left_cells = []
@@ -334,7 +345,7 @@ def render_invoice_pdf(inv: dict) -> bytes:
     story = []
 
     number = f"FAC-{int(inv['number']):04d}"
-    story.append(_header(s, "FACTURE", number, inv.get("status")))
+    story.append(_header(s, "FACTURE", number, _client_status(inv.get("status"))))
     story.append(Spacer(1, 8 * mm))
 
     # Two cols: customer + meta
@@ -343,7 +354,7 @@ def render_invoice_pdf(inv: dict) -> bytes:
         ("Numéro", number),
         ("Date", _date_fr(inv.get("date"))),
         ("Échéance", _date_fr(inv.get("due_date"))),
-        ("Statut", (inv.get("status") or "—").upper()),
+        ("Statut", (_client_status(inv.get("status")) or "—").upper()),
     ])
     side_by_side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
     side_by_side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
@@ -770,7 +781,7 @@ def render_quote_pdf(q: dict) -> bytes:
     story = []
 
     number = f"SO-{int(q['number']):04d}"
-    story.append(_header(s, "SOUMISSION", number, q.get("status")))
+    story.append(_header(s, "SOUMISSION", number, _client_status(q.get("status"))))
     story.append(Spacer(1, 8 * mm))
 
     party = _party_block(s, "Soumis à", q.get("customer_snapshot") or {})
@@ -778,7 +789,7 @@ def render_quote_pdf(q: dict) -> bytes:
         ("Numéro", number),
         ("Date", _date_fr(q.get("date"))),
         ("Valide jusqu'au", _date_fr(q.get("valid_until"))),
-        ("Statut", (q.get("status") or "—").upper()),
+        ("Statut", (_client_status(q.get("status")) or "—").upper()),
     ])
     side_by_side = Table([[party, meta]], colWidths=[80 * mm, 90 * mm])
     side_by_side.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
