@@ -375,7 +375,7 @@ export const ExpensesPanel = () => {
     };
 
     const monthOptions = useMemo(() => {
-        const out = [];
+        const out = [{ value: "all", label: "Tous les mois" }];
         const now = new Date();
         for (let i = 0; i < 12; i++) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);

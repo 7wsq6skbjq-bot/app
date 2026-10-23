@@ -260,13 +260,17 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         month: Optional[str] = Query(default=None),
         _: dict = Depends(auth_dep),
     ):
-        """Return totals + by-category breakdown for a given month (default: current)."""
-        if not month:
-            month = datetime.now(timezone.utc).strftime("%Y-%m")
-        cur = db.erp_expenses.find(
-            {"date": {"$gte": f"{month}-01", "$lt": f"{month}-32"}},
-            {"_id": 0},
-        )
+        """Return totals + by-category breakdown for a given month (default: current).
+        Pass month="all" to aggregate every expense (incl. ones with no/empty date)."""
+        if month == "all":
+            cur = db.erp_expenses.find({}, {"_id": 0})
+        else:
+            if not month:
+                month = datetime.now(timezone.utc).strftime("%Y-%m")
+            cur = db.erp_expenses.find(
+                {"date": {"$gte": f"{month}-01", "$lt": f"{month}-32"}},
+                {"_id": 0},
+            )
         rows = [d async for d in cur]
         total = sum(float(r.get("total", 0)) for r in rows)
         subtotal = sum(float(r.get("subtotal", 0)) for r in rows)
