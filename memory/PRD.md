@@ -742,3 +742,8 @@ User language: **French**.
 - **Design (identité blueprint conservée, pas de refonte générique)** : nouveau composant partagé `components/StatusBadge.jsx` (pastille colorée + libellé, via STATUS_BADGE + nouveau STATUS_DOT dans utils.js) utilisé dans DocumentPanel (table desktop) et DashboardPanel (factures en attente) ; micro-interaction au survol des tuiles KPI (accent gauche). Tentative de résumé « collant » du formulaire ANNULÉE (les lignes sont au-dessus des totaux, sticky sans effet) — totaux live conservés tels quels.
 - Testé : testing_agent iteration_23 — frontend 95% PASS (login, dashboard, soumissions sans bouton dessins, factures, catalogue 90 sans Adams Rite, master 102, produits 3, badges OK, 0 erreur JS). Backend vérifié via curl (quotes sans drawing_pages, PDF 200, /adams-rite/drawings 404).
 
+
+### Complément — Adams Rite retiré aussi des PLANS DE PRODUCTION (2026-06)
+- Case « Joindre les dessins Adams Rite (auto. selon la quincaillerie) » retirée de ProductionPlansPanel.jsx (payload include_hardware_drawings/drawing_pages retiré). Les pages de plan maison (Détails en plan/coupe, Ancrages, Cote Fab., Version anonyme) CONSERVÉES.
+- Backend erp_routes_production_plans.py : helper _plan_drawing_pages, merge dans les 3 PDF (download/preview/send-email), endpoint detect-drawings et champs modèle retirés. Module adams_rite_drawings.py + parse_adams_rite*.py SUPPRIMÉS (plus aucun import). 1 plan nettoyé en base.
+- Vérifié curl : plan PDF 200 (5 pages), detect-drawings 404, frontend compile. « Levier (Adams Rite) » (type de poignée) conservé, sans rapport avec la fonction retirée.

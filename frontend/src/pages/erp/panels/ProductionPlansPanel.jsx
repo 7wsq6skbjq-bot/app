@@ -441,8 +441,6 @@ export const ProductionPlansPanel = () => {
         include_anchors: !!form.include_anchors,
         show_costs: !!form.show_costs,
         anonymous: !!form.anonymous,
-        include_hardware_drawings: form.include_hardware_drawings !== false,
-        drawing_pages: form.drawing_pages || null,
         status: form.status || "brouillon",
         notes: form.notes || "",
         doors: (form.doors || []).map((d) => ({
@@ -808,11 +806,6 @@ export const ProductionPlansPanel = () => {
                         Version anonyme (sous-traitance — sans marque Portech)
                     </label>
                     <span className="w-px h-5 bg-[#dde5f0]" />
-                    <label className="inline-flex items-center gap-2 text-sm text-[#2f4f7f] cursor-pointer font-medium">
-                        <input type="checkbox" data-testid="pp-hw-drawings" checked={form.include_hardware_drawings !== false}
-                            onChange={(e) => setForm((f) => ({ ...f, include_hardware_drawings: e.target.checked }))} />
-                        Joindre les dessins Adams Rite (auto. selon la quincaillerie)
-                    </label>
                     <label className="inline-flex items-center gap-1 text-sm text-[#0c182b]">
                         Jeu Fab. (po)
                         <input type="number" step="0.0625" data-testid="pp-fab-allow" value={form.fab_allowance_in}

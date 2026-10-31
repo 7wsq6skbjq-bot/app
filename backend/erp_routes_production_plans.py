@@ -22,20 +22,6 @@ from erp_helpers import csv_response, send_pdf_email
 from erp_models import EmailSendRequest
 from erp_pdf_production import render_production_plan_pdf
 from erp_pdf_hardware_report import render_hardware_report_pdf
-from adams_rite_drawings import detect_from_hardware, load_index, merge_drawing_pages
-
-
-def _plan_drawing_pages(doc: dict) -> list:
-    """Union of manually-selected pages + auto-detected pages from hardware."""
-    pages = set(int(p) for p in (doc.get("drawing_pages") or []))
-    if doc.get("include_hardware_drawings", False):
-        texts = []
-        for d in doc.get("doors", []):
-            for hw in (d.get("hardware") or []):
-                texts.append(f"{hw.get('description', '')} {hw.get('part_number', '')}")
-        for hit in detect_from_hardware(texts):
-            pages.add(hit["page"])
-    return sorted(pages)
 
 
 DoorSeries = Literal["AT1000", "ATi1000", "AT2000", "ATi2000"]
@@ -144,8 +130,6 @@ class ProductionPlanIn(BaseModel):
     include_anchors: bool = True
     show_costs: bool = False
     anonymous: bool = False   # version sous-traitance : retire toute marque Portech
-    include_hardware_drawings: bool = False   # annexer auto les dessins Adams Rite (manuel par défaut)
-    drawing_pages: Optional[List[int]] = None  # pages manuelles supplémentaires
     status: PlanStatus = "brouillon"
     doors: List[DoorPlan] = Field(default_factory=list)
     notes: str = ""
@@ -433,29 +417,12 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
             })
         return csv_response(rows, "dessins-production-portech.csv")
 
-    @router.get("/production-plans/{plan_id}/detect-drawings")
-    async def detect_drawings(plan_id: str, _: dict = Depends(auth_dep)):
-        doc = await db.erp_production_plans.find_one({"id": plan_id}, {"_id": 0})
-        if not doc:
-            raise HTTPException(404, "Plan introuvable")
-        texts = []
-        for d in doc.get("doors", []):
-            for hw in (d.get("hardware") or []):
-                texts.append(f"{hw.get('description', '')} {hw.get('part_number', '')}")
-        return {"detected": detect_from_hardware(texts),
-                "manual_pages": doc.get("drawing_pages") or [],
-                "auto": doc.get("include_hardware_drawings", False),
-                "all_drawings": list(load_index())}
-
     @router.get("/production-plans/{plan_id}/pdf")
     async def download_pdf(plan_id: str, _: dict = Depends(auth_dep)):
         doc = await db.erp_production_plans.find_one({"id": plan_id}, {"_id": 0})
         if not doc:
             raise HTTPException(404, "Plan introuvable")
         pdf_bytes = await asyncio.to_thread(render_production_plan_pdf, doc)
-        pages = _plan_drawing_pages(doc)
-        if pages:
-            pdf_bytes = await asyncio.to_thread(merge_drawing_pages, pdf_bytes, pages)
         filename = f"{doc.get('plan_number') or 'PLAN'}.pdf"
         return Response(
             content=pdf_bytes, media_type="application/pdf",
@@ -482,9 +449,6 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         plan = ProductionPlan(**data.model_dump(), plan_number="APERÇU")
         doc = plan.model_dump(mode="json")
         pdf_bytes = await asyncio.to_thread(render_production_plan_pdf, doc)
-        pages = _plan_drawing_pages(doc)
-        if pages:
-            pdf_bytes = await asyncio.to_thread(merge_drawing_pages, pdf_bytes, pages)
         return Response(
             content=pdf_bytes, media_type="application/pdf",
             headers={"Content-Disposition": 'inline; filename="apercu-plan.pdf"'},
@@ -498,9 +462,6 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep) -> None:
         if not doc:
             raise HTTPException(404, "Plan introuvable")
         pdf_bytes = await asyncio.to_thread(render_production_plan_pdf, doc)
-        pages = _plan_drawing_pages(doc)
-        if pages:
-            pdf_bytes = await asyncio.to_thread(merge_drawing_pages, pdf_bytes, pages)
         number = doc.get("plan_number") or "PLAN"
         project = doc.get("project_name") or ""
         client = doc.get("client_contact") or doc.get("client_name") or ""
