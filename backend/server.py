@@ -494,13 +494,18 @@ async def startup_event():
     await db.admin_users.create_index("username", unique=True)
     await db.contact_submissions.create_index([("created_at", -1)])
     await seed_admin()
-    # Seed the Adams Rite catalog (idempotent) so production gets the same
-    # products/hardware that were imported in preview.
+    # One-time cleanup: the Adams Rite catalog has been retired (never used,
+    # broken costs). Remove its products + production hardware. Idempotent —
+    # nothing is left to delete after the first run, so it is safe every boot
+    # and also cleans the separate production database on deploy.
     try:
-        from seed_adams_rite import seed_adams_rite_catalog
-        await seed_adams_rite_catalog(db)
-    except Exception as exc:  # never block startup on a seed failure
-        print(f"[seed] Adams Rite seed skipped: {exc}")
+        pr = await db.erp_products.delete_many({"category": "Adams Rite"})
+        hw = await db.erp_production_hardware.delete_many({"category": "Adams Rite"})
+        if pr.deleted_count or hw.deleted_count:
+            print(f"[cleanup] Adams Rite retiré : {pr.deleted_count} produit(s), "
+                  f"{hw.deleted_count} quincaillerie(s)")
+    except Exception as exc:  # never block startup on a cleanup failure
+        print(f"[cleanup] Adams Rite purge skipped: {exc}")
     # Ensure a stable VAPID key pair exists for Web Push notifications.
     try:
         import push_notifications as push

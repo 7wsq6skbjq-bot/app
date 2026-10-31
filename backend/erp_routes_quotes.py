@@ -22,7 +22,6 @@ from pydantic import BaseModel
 from erp_helpers import compute_totals, csv_response, send_html_email, send_pdf_email
 from erp_models import EmailSendRequest, Invoice, Party, Quote, QuoteIn
 from erp_pdf import render_invoice_pdf, render_quote_pdf
-from adams_rite_drawings import load_index, merge_drawing_pages
 from quote_attachments import (
     append_files_to_pdf, delete_attachment, fetch_attachment, store_attachment,
 )
@@ -42,9 +41,6 @@ ATTACH_MIME = {
 async def _quote_pdf_with_annexes(db, doc: dict) -> bytes:
     """Render the quote PDF then append Adams Rite pages + client attachments."""
     pdf_bytes = await asyncio.to_thread(render_quote_pdf, doc)
-    if doc.get("drawing_pages"):
-        pdf_bytes = await asyncio.to_thread(
-            merge_drawing_pages, pdf_bytes, doc["drawing_pages"])
     atts = doc.get("attachments") or []
     if atts:
         files = []
@@ -127,7 +123,6 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             items=data.items,
             subtotal=subtotal, tps=tps, tvq=tvq, total=total,
             taxable=data.taxable, notes=data.notes, status=data.status,
-            drawing_pages=data.drawing_pages,
             include_sales_conditions=data.include_sales_conditions,
             show_deposit=data.show_deposit,
             deposit_pct=data.deposit_pct,
@@ -156,7 +151,6 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
             "items": [it.model_dump() for it in data.items],
             "subtotal": subtotal, "tps": tps, "tvq": tvq, "total": total,
             "taxable": data.taxable, "notes": data.notes, "status": data.status,
-            "drawing_pages": data.drawing_pages,
             "include_sales_conditions": data.include_sales_conditions,
             "show_deposit": data.show_deposit,
             "deposit_pct": data.deposit_pct,
@@ -193,26 +187,6 @@ def register(router: APIRouter, db: AsyncIOMotorDatabase, auth_dep, next_number)
                 "Notes": (q.get("notes") or "").replace("\n", " "),
             })
         return csv_response(rows, "soumissions-portech.csv")
-
-    class DrawingsIn(BaseModel):
-        pages: List[int] = []
-
-    @router.patch("/quotes/{quote_id}/drawings", response_model=Quote)
-    async def set_quote_drawings(quote_id: str, data: DrawingsIn,
-                                 _: dict = Depends(auth_dep)):
-        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
-        if not doc:
-            raise HTTPException(404, "Soumission introuvable")
-        pages = sorted({int(p) for p in data.pages})
-        await db.erp_quotes.update_one(
-            {"id": quote_id}, {"$set": {"drawing_pages": pages or None}})
-        doc = await db.erp_quotes.find_one({"id": quote_id}, {"_id": 0})
-        return Quote(**doc)
-
-    @router.get("/adams-rite/drawings")
-    async def adams_rite_drawings(_: dict = Depends(auth_dep)):
-        """Available Adams Rite Parts Manual drawings (label → printed page)."""
-        return {"drawings": list(load_index())}
 
     @router.get("/quotes/{quote_id}/pdf")
     async def download_quote_pdf(quote_id: str, _: dict = Depends(auth_dep)):

@@ -164,7 +164,6 @@ class Quote(BaseModel):
     notes: Optional[str] = None
     status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
     converted_invoice_id: Optional[str] = None       # set when converted → facture
-    drawing_pages: Optional[List[int]] = None         # Adams Rite Parts Manual pages
     include_sales_conditions: bool = False            # joindre l'annexe conditions de vente
     show_deposit: bool = False                        # afficher le dépôt à verser sur le PDF
     deposit_pct: float = 50.0                         # pourcentage du dépôt affiché
@@ -182,7 +181,6 @@ class QuoteIn(BaseModel):
     taxable: bool = True
     notes: Optional[str] = None
     status: str = Field(default="brouillon", pattern=QUOTE_STATUS_PATTERN)
-    drawing_pages: Optional[List[int]] = None         # Adams Rite Parts Manual pages
     include_sales_conditions: bool = False
     show_deposit: bool = False
     deposit_pct: float = 50.0

@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, RefreshCw, Printer, Send, Download, Search, Check
 import { useAuth } from "@/context/AuthContext";
 import { Modal, Field, inputClass } from "../components/Modal";
 import { DocumentForm } from "../components/DocumentForm";
+import { StatusBadge } from "../components/StatusBadge";
 import { DataCard } from "../../../components/mobile/DataCard";
 import { FAB } from "../../../components/mobile/FAB";
 import {
@@ -310,9 +311,7 @@ export const DocumentPanel = ({
                                 <div className="col-span-1 text-xs text-[#4b5d7a]">{formatDate(d.date)}</div>
                                 <div className="col-span-2 text-sm text-right font-display font-bold">{formatCurrency(d.total)}</div>
                                 <div className="col-span-2 flex flex-col gap-1 items-start">
-                                    <span className={`tech-stamp px-2 py-1 border ${STATUS_BADGE[d.status] || "border-[#dde5f0]"}`}>
-                                        {d.status}
-                                    </span>
+                                    <StatusBadge status={d.status} />
                                     {overdue && (
                                         <span
                                             className={`tech-stamp px-2 py-1 border whitespace-nowrap text-[10px] ${OVERDUE_BADGE[overdue.tone]}`}

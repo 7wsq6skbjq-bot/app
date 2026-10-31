@@ -26,6 +26,24 @@ export const STATUS_BADGE = {
     annulé: "bg-[#fbe8e8] text-[#8a1f1f] border-[#e8a5a5]",
 };
 
+// Leading dot colour per status — used by the shared StatusBadge component.
+export const STATUS_DOT = {
+    brouillon: "bg-[#8aa0bd]",
+    "en attente d'approbation": "bg-[#c98a1e]",
+    envoyée: "bg-[#2f4f7f]",
+    "partiellement payée": "bg-[#1d4ed8]",
+    payée: "bg-[#0b6b2f]",
+    "en retard": "bg-[#9a3b00]",
+    reçue: "bg-[#0b6b2f]",
+    acceptée: "bg-[#0b6b2f]",
+    refusée: "bg-[#8a1f1f]",
+    expirée: "bg-[#925800]",
+    expédié: "bg-[#925800]",
+    livré: "bg-[#0b6b2f]",
+    annulée: "bg-[#8a1f1f]",
+    annulé: "bg-[#8a1f1f]",
+};
+
 export const formatCurrency = (n) => {
     const v = Number(n || 0);
     return new Intl.NumberFormat("fr-CA", {

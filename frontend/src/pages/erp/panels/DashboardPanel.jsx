@@ -5,7 +5,8 @@ import {
     Truck, ShoppingCart, Inbox, AlertCircle, TrendingUp, TrendingDown, Wallet, Route,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { formatCurrency, formatDate, STATUS_BADGE } from "../utils";
+import { formatCurrency, formatDate } from "../utils";
+import { StatusBadge } from "../components/StatusBadge";
 
 export const DashboardPanel = () => {
     const { http } = useAuth();
@@ -162,7 +163,7 @@ export const DashboardPanel = () => {
                                     <div className="md:col-span-4 text-sm truncate">{i.customer || "—"}</div>
                                     <div className="md:col-span-2 text-xs text-[#4b5d7a]">{formatDate(i.date)}</div>
                                     <div className="md:col-span-1">
-                                        <span className={`tech-stamp px-2 py-1 border ${STATUS_BADGE[i.status] || ""}`}>{i.status}</span>
+                                        <StatusBadge status={i.status} />
                                     </div>
                                     <div className="md:col-span-3 text-right font-display font-bold text-sm">{formatCurrency(i.total)}</div>
                                 </div>
@@ -176,7 +177,7 @@ export const DashboardPanel = () => {
 };
 
 const KpiTile = ({ icon: Icon, label, value, sub, accent, testid, hideMobile = false }) => (
-    <div data-testid={testid} className={`bg-white p-4 md:p-6 ${hideMobile ? "hidden md:block" : ""}`}>
+    <div data-testid={testid} className={`bg-white p-4 md:p-6 transition-all duration-200 hover:bg-[#f9fbfd] hover:shadow-[inset_3px_0_0_0_#2f4f7f] ${hideMobile ? "hidden md:block" : ""}`}>
         <div className="flex items-center gap-2 mb-2 md:mb-3 tech-stamp">
             <Icon className={`w-4 h-4 ${accent || "text-[#2f4f7f]"}`} />
             <span className="truncate">{label}</span>
