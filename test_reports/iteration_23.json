@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only regression after Adams Rite drawings/catalog removal + visual refresh. Login, dashboard, Soumissions, Factures, quote/invoice editors, Catalogue quincaillerie, Coûts Master, Produits all render with no JS errors. Drawings button gone; Convertir en facture present. StatusBadge dots render everywhere. One design gap: the 'sticky' totals summary in DocumentForm does not actually stay visible while scrolling line items.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "DocumentForm (quote/invoice modal)", "issues": [
+        "Totals summary (md:sticky md:top-4 self-start) sits in a 2-col grid BELOW the line-items table, next to only the tax checkbox/notes. Grid row height ~205-237px vs totals box 180px, so it can stick for only ~25-57px. Measured: after scrolling the modal (scroll container = fixed inset-0 overlay), the totals box scrolled along with the content. It never stays visible while you scroll line items. To get the intended behaviour, put the totals in a side column next to the line-items table (e.g. a grid spanning lines + totals with the totals column sticky), or make the totals a sticky bottom bar inside the modal."
+      ]}
+    ]
+  },
+  "passed_checks": [
+    "Admin login PortechAdmin / Portech2026! works (POST /api/auth/login 200, redirect to /admin)",
+    "Dashboard /admin/gestion/tableau-de-bord renders, 'Factures en attente' section present, 8 StatusBadge pills with colored dots (brouillon/envoyée...)",
+    "Soumissions: 2 rows, row action titles = [Convertir en facture (brouillon), Télécharger PDF, Envoyer par courriel, Modifier, Supprimer]. No Adams Rite/dessins button. quote-convert-* buttons present (2)",
+    "Quote editor modal opens (quote-modal) and shows Sous-total/TPS/TVQ/Total",
+    "Factures: 46 rows, 46 badges with dots (brouillon, en retard, envoyée). Overdue badge still shown",
+    "Catalogue quincaillerie: Articles (90), no 'Adams Rite' category. Only 2 user items whose description includes 'ADAMS RITE' (category Serrure, ADAM-MS1853*), which is expected",
+    "Coûts Master: Quincaillerie tab shows 102 items, 3 suppliers, 10 categories",
+    "Produits: 3 products (VD-99EO, AR-1850S 'Serrure Adams Rite' in category Serrures, VAL-001). No Adams Rite category",
+    "No runtime JS errors. Only pre-login 401s from the auth check and a dev-tooling hydration warning (<span> inside <option> in ProductsPanel category select, injected by visual-edit instrumentation)"
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "Optional/design: make the DocumentForm totals summary actually sticky. Right now it is placed below the line items in a short grid row, so md:sticky has almost no effect."
+  ],
+  "critical_code_review_comments": [
+    "DocumentPanel row action buttons Modifier/Supprimer have no data-testid (only title attributes). Add e.g. `${kind}-edit-${d.id}` / `${kind}-delete-${d.id}`",
+    "StatusBadge testId is optional, and DocumentPanel/DashboardPanel do not pass one. Consider passing `${kind}-status-${d.id}`"
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "95%"},
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login: use press_sequentially after networkidle on /admin/login (an immediate page.fill right after load did not log in, likely a hydration race). ERP routes are /admin/gestion/{slug}: soumissions, factures, catalogue-quincaillerie, couts-master, produits, tableau-de-bord. The modal scroll container is the fixed inset-0 overlay."
+}

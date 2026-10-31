@@ -758,7 +758,7 @@ export const DocumentForm = ({
                     </Field>
                 </div>
 
-                <div className="border border-[#dde5f0] bg-[#f3f6fb] p-5 md:sticky md:top-4 self-start">
+                <div className="border border-[#dde5f0] bg-[#f3f6fb] p-5">
                     <div className="flex justify-between text-sm py-1"><span>Sous-total</span><span className="font-display font-bold">{formatCurrency(totals.subtotal)}</span></div>
                     <div className="flex justify-between text-sm py-1"><span>TPS (5 %)</span><span className="font-display font-bold">{formatCurrency(totals.tps)}</span></div>
                     <div className="flex justify-between text-sm py-1"><span>TVQ (9,975 %)</span><span className="font-display font-bold">{formatCurrency(totals.tvq)}</span></div>

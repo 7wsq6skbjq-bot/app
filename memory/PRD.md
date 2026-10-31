@@ -734,3 +734,11 @@ User language: **French**.
 - Visuels IA (Gemini Nano Banana) dans /app/frontend/public/generated/aluminium/ : alu-hero, alu-at1000, alu-at2000, alu-isolee, alu-double, alu-surmesure, alu-finis, alu-gal1, alu-gal2, alu-cta. 3 images (at1000, isolee, finis) régénérées en style photo réaliste après retour utilisateur sur défauts.
 - SEO: titre/description/canonical sur la nouvelle page.
 - Testé: testing_agent iteration_19 — 7 flux PASS (desktop+mobile), frontend 100%, aucun prix, toutes images 200.
+
+
+## 2026-06 — Retrait Adams Rite (dessins + catalogue) + rehaussement visuel ERP
+- **Dessins Adams Rite sur soumissions retirés** (jamais utilisés, 99% mal liés) : champ `drawing_pages` supprimé des modèles Quote/QuoteIn ; routes `PATCH /quotes/{id}/drawings` et `GET /adams-rite/drawings` supprimées ; merge des dessins retiré du PDF de soumission ; UI DrawingsModal + bouton retirés de QuotesPanel.jsx (conversion en facture conservée). Migration `migrate_remove_quote_drawings.py` exécutée (2 soumissions nettoyées). Le module `adams_rite_drawings.py` RESTE (utilisé par les plans de production).
+- **Catalogue Adams Rite supprimé entièrement** (prix à 0/cassés) : purge au démarrage dans server.py de `erp_products` et `erp_production_hardware` où `category=='Adams Rite'` (idempotent → nettoie aussi la prod au déploiement). Seeder `seed_adams_rite.py` + `seed_data/adams_rite_*.json` supprimés. Résultat preview : produits 285→3, production_hardware 665→90. **Master (`erp_hardware_master`=102) et catalogue perso de l'utilisateur intacts.**
+- **Design (identité blueprint conservée, pas de refonte générique)** : nouveau composant partagé `components/StatusBadge.jsx` (pastille colorée + libellé, via STATUS_BADGE + nouveau STATUS_DOT dans utils.js) utilisé dans DocumentPanel (table desktop) et DashboardPanel (factures en attente) ; micro-interaction au survol des tuiles KPI (accent gauche). Tentative de résumé « collant » du formulaire ANNULÉE (les lignes sont au-dessus des totaux, sticky sans effet) — totaux live conservés tels quels.
+- Testé : testing_agent iteration_23 — frontend 95% PASS (login, dashboard, soumissions sans bouton dessins, factures, catalogue 90 sans Adams Rite, master 102, produits 3, badges OK, 0 erreur JS). Backend vérifié via curl (quotes sans drawing_pages, PDF 200, /adams-rite/drawings 404).
+
