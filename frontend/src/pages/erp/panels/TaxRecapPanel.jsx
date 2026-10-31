@@ -218,6 +218,51 @@ export const TaxRecapPanel = () => {
                         </div>
                     </div>
 
+                    {data.collected_lines?.length > 0 && (
+                        <div className="border border-[#dde5f0] bg-white p-4" data-testid="tax-recap-invoice-detail">
+                            <div className="tech-stamp text-[#2f4f7f] mb-3">Détail des factures de vente ({data.collected_lines.length})</div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-[640px]">
+                                    <thead>
+                                        <tr className="bg-[#0c182b] text-white tech-stamp text-[10px]">
+                                            <th className="text-left px-3 py-2">Date</th>
+                                            <th className="text-left px-3 py-2">Nº</th>
+                                            <th className="text-left px-3 py-2">Client</th>
+                                            <th className="text-right px-3 py-2">Sous-total</th>
+                                            <th className="text-right px-3 py-2">TPS</th>
+                                            <th className="text-right px-3 py-2">TVQ</th>
+                                            <th className="text-right px-3 py-2">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.collected_lines.map((ln, i) => (
+                                            <tr key={i} data-testid={`tax-recap-inv-${ln.number}`} className={`border-b border-[#dde5f0] ${ln.non_taxable ? "bg-[#fff4e0]" : "odd:bg-[#f3f6fb]"}`}>
+                                                <td className="px-3 py-2">{ln.date}</td>
+                                                <td className="px-3 py-2">{ln.number}</td>
+                                                <td className="px-3 py-2">
+                                                    {ln.customer}
+                                                    {ln.non_taxable && <span className="ml-2 text-[10px] uppercase tracking-wider text-[#925800] bg-[#ffe3ab] px-1.5 py-0.5 rounded">Non taxable</span>}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-mono">{formatCurrency(ln.subtotal)}</td>
+                                                <td className="px-3 py-2 text-right font-mono">{formatCurrency(ln.tps)}</td>
+                                                <td className="px-3 py-2 text-right font-mono">{formatCurrency(ln.tvq)}</td>
+                                                <td className="px-3 py-2 text-right font-mono font-bold">{formatCurrency(ln.total)}</td>
+                                            </tr>
+                                        ))}
+                                        <tr className="bg-[#eaf1fb] font-bold">
+                                            <td className="px-3 py-2" colSpan={3}>TOTAUX</td>
+                                            <td className="px-3 py-2 text-right font-mono">{formatCurrency(data.collected.subtotal)}</td>
+                                            <td className="px-3 py-2 text-right font-mono">{formatCurrency(data.collected.tps)}</td>
+                                            <td className="px-3 py-2 text-right font-mono">{formatCurrency(data.collected.tvq)}</td>
+                                            <td className="px-3 py-2 text-right font-mono">{formatCurrency(data.collected.total)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className="text-[11px] text-[#6485b4] mt-2">Les lignes surlignées sont des ventes non taxables (TPS/TVQ à 0 $) — incluses au chiffre d'affaires mais pas à la base taxable.</p>
+                        </div>
+                    )}
+
                     <p className="text-xs text-[#4b5d7a] italic">
                         À titre indicatif. Basé sur les factures émises et les dépenses enregistrées.
                         Validez avec votre comptable avant toute déclaration à Revenu Québec / ARC.

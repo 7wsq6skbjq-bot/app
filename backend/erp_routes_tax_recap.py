@@ -26,7 +26,7 @@ from erp_pdf import render_tax_recap_pdf
 logger = logging.getLogger("portech.erp.tax_recap")
 _TAX_SETTINGS_KEY = "tax_recap"
 
-COLLECTED_STATUSES = ("envoyée", "payée")
+COLLECTED_STATUSES = ("envoyée", "payée", "partiellement payée", "en retard")
 _MONTH_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
              "août", "septembre", "octobre", "novembre", "décembre"]
 _QUARTER_MONTHS = {1: "janvier à mars", 2: "avril à juin",
@@ -60,14 +60,32 @@ async def _compute_core(db, start, end_incl, end_excl, period_label, year, quart
     inv_cur = db.erp_invoices.find(
         {"status": {"$in": list(COLLECTED_STATUSES)},
          "date": {"$gte": start, "$lt": end_excl}},
-        {"_id": 0, "subtotal": 1, "tps": 1, "tvq": 1, "total": 1})
+        {"_id": 0, "number": 1, "date": 1, "customer_snapshot": 1, "status": 1,
+         "taxable": 1, "subtotal": 1, "tps": 1, "tvq": 1, "total": 1})
     col = {"subtotal": 0.0, "tps": 0.0, "tvq": 0.0, "total": 0.0, "count": 0}
+    col_lines = []
     async for r in inv_cur:
-        col["subtotal"] += float(r.get("subtotal") or 0)
-        col["tps"] += float(r.get("tps") or 0)
-        col["tvq"] += float(r.get("tvq") or 0)
-        col["total"] += float(r.get("total") or 0)
+        sub = float(r.get("subtotal") or 0)
+        tps = float(r.get("tps") or 0)
+        tvq = float(r.get("tvq") or 0)
+        tot = float(r.get("total") or 0)
+        col["subtotal"] += sub
+        col["tps"] += tps
+        col["tvq"] += tvq
+        col["total"] += tot
         col["count"] += 1
+        expected_tps = round(sub * 0.05, 2)
+        col_lines.append({
+            "number": r.get("number") or "—",
+            "date": r.get("date") or "",
+            "customer": (r.get("customer_snapshot") or {}).get("name") or "—",
+            "status": r.get("status") or "",
+            "subtotal": round(sub, 2),
+            "tps": round(tps, 2),
+            "tvq": round(tvq, 2),
+            "total": round(tot, 2),
+            "non_taxable": tps == 0 or abs(expected_tps - round(tps, 2)) > 0.02,
+        })
 
     exp_cur = db.erp_expenses.find(
         {"date": {"$gte": start, "$lt": end_excl}},
@@ -96,6 +114,7 @@ async def _compute_core(db, start, end_incl, end_excl, period_label, year, quart
         "start": start, "end": end_incl,
         "start_fr": _date_fr(start), "end_fr": _date_fr(end_incl),
         "collected": col, "paid": paid, "net": net,
+        "collected_lines": sorted(col_lines, key=lambda x: x["date"]),
     }
 
 

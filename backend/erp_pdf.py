@@ -596,7 +596,57 @@ def render_tax_recap_pdf(data: dict) -> bytes:
         f"<b>{net_label} : {_money(abs(net_total))}</b>", ParagraphStyle(
             "nettot", parent=s["party_name"], fontSize=13, textColor=net_color, alignment=2)))
 
-    story.append(Spacer(1, 10 * mm))
+    story.append(Spacer(1, 8 * mm))
+
+    lines = data.get("collected_lines") or []
+    if lines:
+        story.append(Paragraph("<b>Détail des factures de vente</b>", ParagraphStyle(
+            "detsec", parent=s["party_name"], fontSize=12, spaceAfter=2)))
+        story.append(Paragraph(
+            "Statut « envoyée » ou « payée » durant la période. « NT » = vente non taxable.",
+            s["footer"]))
+        story.append(Spacer(1, 2 * mm))
+        cell = ParagraphStyle("dcell", fontName="Helvetica", fontSize=7.6, leading=9, textColor=NAVY)
+        drows = [["Date", "Nº", "Client", "Sous-total", "TPS", "TVQ", "Total"]]
+        for ln in lines:
+            name = ln.get("customer") or "—"
+            if ln.get("non_taxable"):
+                name += "  [NT]"
+            drows.append([
+                _date_fr(ln.get("date")),
+                str(ln.get("number") or "—"),
+                Paragraph(name, cell),
+                _money(ln.get("subtotal")),
+                _money(ln.get("tps")),
+                _money(ln.get("tvq")),
+                _money(ln.get("total")),
+            ])
+        drows.append(["", "", "TOTAUX",
+                      _money(col.get("subtotal", 0)), _money(col.get("tps", 0)),
+                      _money(col.get("tvq", 0)), _money(col.get("total", 0))])
+        dt = Table(drows, colWidths=[22 * mm, 14 * mm, 55 * mm, 24 * mm, 18 * mm, 18 * mm, 22 * mm], repeatRows=1)
+        dt.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 7.6),
+            ("TEXTCOLOR", (0, 1), (-1, -1), NAVY),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (3, 0), (-1, -1), "RIGHT"),
+            ("GRID", (0, 0), (-1, -1), 0.3, NAVY_BORDER),
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("BACKGROUND", (0, -1), (-1, -1), BG_LIGHT),
+            ("SPAN", (0, -1), (2, -1)),
+            ("ALIGN", (0, -1), (2, -1), "RIGHT"),
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story.append(dt)
+        story.append(Spacer(1, 6 * mm))
+
+    story.append(Spacer(1, 4 * mm))
     story.append(Paragraph(
         "Document généré à titre indicatif pour faciliter la déclaration de taxes. "
         "Basé sur les factures émises et les dépenses enregistrées dans le système "

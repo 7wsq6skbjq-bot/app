@@ -1,6 +1,15 @@
 # Portech ERP & Lead-Gen — PRD
 
 
+## Changelog — 2026-06 (fork, Récap TPS/TVQ : détail factures + réconciliation)
+- **Détail des factures de vente** dans le Récap TPS/TVQ (répond à la question du comptable « sous-total/TPS/TVQ par facture »).
+  - Backend : `_compute_core` renvoie `collected_lines` (par facture : number, date, customer, status, subtotal, tps, tvq, total, `non_taxable` = tps 0 ou tps ≠ 5% du sous-total). erp_pdf `render_tax_recap_pdf` ajoute un tableau « Détail des factures de vente » (marqueur [NT] pour non taxable).
+  - Frontend TaxRecapPanel : tableau `tax-recap-invoice-detail` avec ligne surlignée + badge « Non taxable », ligne TOTAUX.
+- **COLLECTED_STATUSES élargi** → `envoyée, payée, partiellement payée, en retard` (la taxe est due à la date de facture ; une facture partiellement payée ou en retard reste une vente émise à inclure). Brouillon / en attente d'approbation / annulée restent exclus.
+- **Réconciliation production confirmée (deployer, lecture seule)** : écart ~315 $ = facture #6 Vitrerie A2Z 2011 INC (2026-08-21, payée, 315,00 $, taxable=false, tps=0). Ligne 101 = 3 684,19 base taxable + 315,00 non taxable ; TPS 184,21 = 5% × 3 684,19. Aucun défaut système.
+- Testé : JSON collected_lines (NT flaggé), PDF range contient « Détail des factures »/[NT], compile OK.
+
+
 ## Changelog — 2026-06 (fork, Récap TPS/TVQ : filtre par plage de dates)
 - **Récap TPS/TVQ — mode « Plage de dates »** en plus du mode Trimestre.
   - Backend (erp_routes_tax_recap.py) : `_compute` refactorisé en `_compute_core` ; nouveau `_compute_range(db, start, end)` (end inclusif, garde-fou format date → 400, inversion si start>end, label « Du … au … »). Params `start`/`end` ajoutés à `GET /tax-recap`, `GET /tax-recap/pdf` et `POST /tax-recap/send` (champ start/end dans TaxSendIn). Nom de fichier PDF : `recap-tps-tvq-{start}_au_{end}.pdf`.
